@@ -1,0 +1,5 @@
+/target
+
+# Temp ignore some assets
+assets/models/Desert
+assets/models/DesertV2
