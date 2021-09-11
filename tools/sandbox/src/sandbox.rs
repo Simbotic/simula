@@ -107,7 +107,10 @@ pub fn setup(
         })
         .with_children(|parent| {
             parent.spawn_bundle(axes::AxesBundle {
-                axes: axes::Axes { size: 1. },
+                axes: axes::Axes {
+                    size: 1.,
+                    ..Default::default()
+                },
                 ..Default::default()
             });
         });

@@ -2,11 +2,15 @@ use super::line;
 use bevy::prelude::*;
 pub struct Axes {
     pub size: f32,
+    pub inner_offset: f32,
 }
 
 impl Default for Axes {
     fn default() -> Self {
-        Axes { size: 1. }
+        Axes {
+            size: 1.,
+            inner_offset: 0.,
+        }
     }
 }
 
@@ -29,12 +33,14 @@ impl Default for AxesBundle {
 
 pub fn system(mut lines: ResMut<line::Lines>, query: Query<(&Axes, &Transform)>) {
     for (axes, transform) in query.iter() {
-        let start = transform.translation;
-        let f_end = start + transform.forward() * axes.size;
-        let r_end = start + transform.right() * axes.size;
-        let u_end = start + transform.up() * axes.size;
-        lines.line_colored(start, f_end, 0., Color::BLUE);
-        lines.line_colored(start, r_end, 0., Color::RED);
-        lines.line_colored(start, u_end, 0., Color::GREEN);
+        let f_start = transform.translation + transform.forward() * axes.inner_offset;
+        let r_start = transform.translation + transform.right() * axes.inner_offset;
+        let u_start = transform.translation + transform.up() * axes.inner_offset;
+        let f_end = f_start + transform.forward() * axes.size;
+        let r_end = r_start + transform.right() * axes.size;
+        let u_end = u_start + transform.up() * axes.size;
+        lines.line_colored(f_start, f_end, 0., Color::BLUE);
+        lines.line_colored(r_start, r_end, 0., Color::RED);
+        lines.line_colored(u_start, u_end, 0., Color::GREEN);
     }
 }

@@ -87,7 +87,10 @@ fn setup(
         })
         .with_children(|parent| {
             parent.spawn_bundle(axes::AxesBundle {
-                axes: axes::Axes { size: 10. },
+                axes: axes::Axes {
+                    size: 10.,
+                    ..Default::default()
+                },
                 ..Default::default()
             });
         })

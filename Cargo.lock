@@ -3041,6 +3041,11 @@ checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 [[package]]
 name = "supershape"
 version = "0.1.0"
+dependencies = [
+ "bevy",
+ "simula_camera",
+ "simula_viz",
+]
 
 [[package]]
 name = "svg_fmt"

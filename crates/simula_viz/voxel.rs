@@ -227,7 +227,10 @@ pub fn setup(
         })
         .with_children(|parent| {
             parent.spawn_bundle(super::axes::AxesBundle {
-                axes: super::axes::Axes { size: 10. },
+                axes: super::axes::Axes {
+                    size: 10.,
+                    ..Default::default()
+                },
                 ..Default::default()
             });
         });
