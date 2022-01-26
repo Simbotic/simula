@@ -1,5 +1,7 @@
-use super::line;
+use super::lines;
 use bevy::prelude::*;
+
+#[derive(Component)]
 pub struct Grid {
     pub size: u32,
     pub divisions: u32,
@@ -33,7 +35,7 @@ impl Default for GridBundle {
     }
 }
 
-pub fn system(mut lines: ResMut<line::Lines>, query: Query<(&Grid, &Transform)>) {
+pub fn system(mut lines: ResMut<lines::Lines>, query: Query<(&Grid, &Transform)>) {
     for (grid, transform) in query.iter() {
         let center = grid.divisions / 2;
         let step = grid.size / grid.divisions;
@@ -50,11 +52,11 @@ pub fn system(mut lines: ResMut<line::Lines>, query: Query<(&Grid, &Transform)>)
 
             let x_a = transform.mul_vec3(Vec3::new(-half_size as f32, 0., k as f32));
             let x_b = transform.mul_vec3(Vec3::new(half_size as f32, 0., k as f32));
-            lines.line_colored(x_a, x_b, 0., color);
+            lines.line_colored(x_a, x_b, color);
 
             let z_a = transform.mul_vec3(Vec3::new(k as f32, 0., -half_size as f32));
             let z_b = transform.mul_vec3(Vec3::new(k as f32, 0., half_size as f32));
-            lines.line_colored(z_a, z_b, 0., color);
+            lines.line_colored(z_a, z_b, color);
         }
     }
 }

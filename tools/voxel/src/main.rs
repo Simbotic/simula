@@ -10,7 +10,7 @@ use bevy::{
 };
 
 use simula_camera::orbitcam::*;
-use simula_viz::{axes, line, voxel};
+use simula_viz::{axes, lines, voxel};
 
 fn main() {
     App::new()
@@ -29,8 +29,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(WireframePlugin)
         .add_plugin(OrbitCameraPlugin)
-        .add_plugin(line::LinesPlugin)
-        .insert_resource(line::Lines {
+        .add_plugin(lines::LinesPlugin)
+        .insert_resource(lines::Lines {
             depth_test: true,
             ..Default::default()
         })

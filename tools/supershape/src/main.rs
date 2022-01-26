@@ -9,7 +9,7 @@ use bevy::{
 };
 
 use simula_camera::orbitcam::*;
-use simula_viz::{axes, grid, line, voxel};
+use simula_viz::{axes, grid, lines, voxel};
 
 fn main() {
     App::new()
@@ -28,8 +28,8 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
         .add_plugin(OrbitCameraPlugin)
-        .add_plugin(line::LinesPlugin)
-        .insert_resource(line::Lines {
+        .add_plugin(lines::LinesPlugin)
+        .insert_resource(lines::Lines {
             depth_test: true,
             ..Default::default()
         })

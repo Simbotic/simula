@@ -4,17 +4,19 @@ layout(location = 0) in vec3 Vertex_Position;
 layout(location = 0) out vec4 v_Color;
 
 layout(set = 0, binding = 0) uniform CameraViewProj { mat4 ViewProj; };
-layout(set = 1, binding = 0) uniform LineShader_num_lines { int NumLines; };
-layout(set = 1, binding = 1) readonly buffer LineShader_points { vec4[] Points; };
-layout(set = 1, binding = 2) readonly buffer LineShader_colors { vec4[] Colors; };
+layout(set = 1, binding = 0) uniform LineMaterial_num_lines { int NumLines; };
+layout(set = 1, binding = 1) readonly buffer LineMaterial_points { vec4[] Points; };
+layout(set = 1, binding = 2) readonly buffer LineMaterial_colors { vec4[] Colors; };
 
 const uint VERTICES_PER_LINE = 4;
 
 void main() {
     int num_nodes = NumLines * 2;
 
+    uint vidx = gl_VertexIndex;
+
     // 0-1, then 2-3, then 4-5.
-    uint idx = (gl_VertexIndex / 2) * 2;
+    uint idx = (vidx / 2) * 2;
     uint next_idx = idx + 1;
 
     // Vertex is not part of a line.  We can skip drawing any of these.

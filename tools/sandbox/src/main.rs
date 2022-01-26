@@ -1,13 +1,17 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    render::wireframe::{Wireframe, WireframeConfig, WireframePlugin},
-    wgpu::{WgpuFeature, WgpuFeatures, WgpuOptions},
+    // render::wireframe::{Wireframe, WireframeConfig, WireframePlugin},
+    // wgpu::{WgpuFeature, WgpuFeatures, WgpuOptions},
+};
+use rand::{
+    distributions::{Distribution, Uniform},
+    Rng,
 };
 use simula_camera::flycam::*;
-use simula_viz::{axes, line};
+use simula_viz::lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin};
 
-mod sandbox;
+// mod sandbox;
 
 fn main() {
     App::new()
@@ -19,43 +23,40 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(Msaa { samples: 4 })
-        .insert_resource(WgpuOptions {
-            features: WgpuFeatures {
-                // The Wireframe requires NonFillPolygonMode feature
-                features: vec![WgpuFeature::NonFillPolygonMode],
-            },
-            ..Default::default()
-        })
         .insert_resource(ClearColor(Color::rgb(0.15, 0.15, 0.17)))
         .add_plugins(DefaultPlugins)
-        .add_plugin(WireframePlugin)
+        // .add_plugin(WireframePlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .insert_resource(BevyCounter { count: 0 })
         .add_plugin(FlyCameraPlugin)
-        .add_plugin(line::LinesPlugin)
-        .insert_resource(line::Lines {
-            depth_test: true,
-            ..Default::default()
-        })
+        .add_plugin(LinesPlugin)
+        // .insert_resource(Lines::default())
+        // .insert_resource(line::Lines {
+        //     depth_test: true,
+        //     ..Default::default()
+        // })
         .add_startup_system(setup)
         .add_system(counter_system)
-        .add_system(line_system)
-        .add_system(axes::system)
-        .insert_resource(sandbox::World::new())
-        .add_startup_system(sandbox::setup)
+        .add_system(line_test)
+        // .add_system(axes::system)
+        // .insert_resource(sandbox::World::new())
+        // .add_startup_system(sandbox::setup)
         .run();
 }
 
 fn setup(
     mut commands: Commands,
-    mut wireframe_config: ResMut<WireframeConfig>,
+    // mut wireframe_config: ResMut<WireframeConfig>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    wireframe_config.global = false;
+    // wireframe_config.global = false;
 
     // tch::maybe_init_cuda();
+
+    commands.spawn_bundle(LinesBundle::default());
+    // commands.spawn_bundle(LinesBundle::default());
 
     // plane
     commands.spawn_bundle(PbrBundle {
@@ -82,11 +83,30 @@ fn setup(
     //     },
     //     ..Default::default()
     // });
-    commands.spawn_bundle((
-        DirectionalLight::new(Color::rgb(1.0, 1.0, 1.0), 5000., Vec3::new(0., -1., 0.)),
-        Transform::from_xyz(0.0, -100.0, -1.0),
-        GlobalTransform::identity(),
+
+    // Transform::from_xyz(0.0, -100.0, -1.0),
+    // GlobalTransform::identity(),
+
+    commands.spawn().insert_bundle((
+        meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        Transform::from_xyz(0.0, 0.5, 0.0),
+        GlobalTransform::default(),
+        LinesMaterial,
+        Visibility::default(),
+        ComputedVisibility::default(),
     ));
+
+    let theta = std::f32::consts::FRAC_PI_4;
+    let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
+    commands.spawn_bundle(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            color: Color::rgb(1.0, 1.0, 1.0),
+            illuminance: 5000.,
+            ..Default::default()
+        },
+        transform: Transform::from_matrix(light_transform),
+        ..Default::default()
+    });
 
     // camera
     commands
@@ -151,15 +171,15 @@ fn setup(
         ..Default::default()
     });
 
-    commands
-        .spawn_bundle((
-            Transform::from_xyz(0.0, -100.0, -1.0),
-            GlobalTransform::identity(),
-        ))
-        // .with_children(|parent| {
-        //     parent.spawn_scene(asset_server.load("models/DesertV2/desert.gltf#Scene0"));
-        // })
-        .insert(Wireframe);
+    // commands
+    //     .spawn_bundle((
+    //         Transform::from_xyz(0.0, -100.0, -1.0),
+    //         GlobalTransform::identity(),
+    //     ))
+    //     // .with_children(|parent| {
+    //     //     parent.spawn_scene(asset_server.load("models/DesertV2/desert.gltf#Scene0"));
+    //     // })
+    //     .insert(Wireframe);
 }
 
 struct BevyCounter {
@@ -181,9 +201,23 @@ fn counter_system(
     };
 }
 
-fn line_system(mut lines: ResMut<line::Lines>) {
-    let start = Vec3::splat(-1.0);
-    let end = Vec3::splat(1.0);
-    let duration = 0.0; // Duration of 0 will show the line for 1 frame.
-    lines.line(start, end, duration);
+fn line_test(mut lines: Query<&mut Lines, With<LinesMaterial>>) {
+    let mut rng = rand::thread_rng();
+    let die = Uniform::from(1f32..10f32);
+
+    for mut lines in lines.iter_mut() {
+        for _ in 0..100 {
+            let start = Vec3::new(
+                -die.sample(&mut rng),
+                -die.sample(&mut rng),
+                -die.sample(&mut rng),
+            );
+            let end = Vec3::new(
+                die.sample(&mut rng),
+                die.sample(&mut rng),
+                die.sample(&mut rng),
+            );
+            lines.line(start, end);
+        }
+    }
 }

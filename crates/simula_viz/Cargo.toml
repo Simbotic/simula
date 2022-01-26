@@ -1,11 +1,10 @@
 [package]
 name = "simula_viz"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "51a5070cd2d3d7262616b2efc8a6cd3b1991d7e6", features = ["dynamic"] }
+bevy = { git = "https://github.com/bevyengine/bevy.git", version = "0.6", features = ["dynamic"] }
 
 [lib]
 path = "lib.rs"
-# name = "simula_camera"

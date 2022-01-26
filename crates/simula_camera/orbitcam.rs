@@ -40,6 +40,7 @@ pub enum CameraEvents {
     Zoom(f32),
 }
 
+#[derive(Component)]
 pub struct OrbitCamera {
     pub x: f32,
     pub y: f32,
