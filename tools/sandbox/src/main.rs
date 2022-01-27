@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -87,14 +89,14 @@ fn setup(
     // Transform::from_xyz(0.0, -100.0, -1.0),
     // GlobalTransform::identity(),
 
-    commands.spawn().insert_bundle((
-        meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        Transform::from_xyz(0.0, 0.5, 0.0),
-        GlobalTransform::default(),
-        LinesMaterial,
-        Visibility::default(),
-        ComputedVisibility::default(),
-    ));
+    // commands.spawn().insert_bundle((
+    //     meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+    //     Transform::from_xyz(0.0, 0.5, 0.0),
+    //     GlobalTransform::default(),
+    //     LinesMaterial,
+    //     Visibility::default(),
+    //     ComputedVisibility::default(),
+    // ));
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
@@ -203,10 +205,10 @@ fn counter_system(
 
 fn line_test(mut lines: Query<&mut Lines, With<LinesMaterial>>) {
     let mut rng = rand::thread_rng();
-    let die = Uniform::from(1f32..10f32);
+    let die = Uniform::from(0f32..1f32);
 
     for mut lines in lines.iter_mut() {
-        for _ in 0..100 {
+        for _ in 0..20 {
             let start = Vec3::new(
                 -die.sample(&mut rng),
                 -die.sample(&mut rng),
@@ -217,7 +219,33 @@ fn line_test(mut lines: Query<&mut Lines, With<LinesMaterial>>) {
                 die.sample(&mut rng),
                 die.sample(&mut rng),
             );
-            lines.line(start, end);
+
+            let color = Color::Hsla {
+                hue: die.sample(&mut rng) * 360.0,
+                lightness: 0.5,
+                saturation: 1.0,
+                alpha: 1.0,
+            };
+            lines.line_colored(start, end, color);
         }
+
+        lines.line_gradient(
+            Vec3::new(-10.0, 0.0, 0.0),
+            Vec3::new(10.0, 0.0, 0.0),
+            Color::DARK_GRAY,
+            Color::RED,
+        );
+        lines.line_gradient(
+            Vec3::new(0.0, -10.0, 0.0),
+            Vec3::new(0.0, 10.0, 0.0),
+            Color::DARK_GRAY,
+            Color::GREEN,
+        );
+        lines.line_gradient(
+            Vec3::new(0.0, 0.0, -10.0),
+            Vec3::new(0.0, 0.0, 10.0),
+            Color::DARK_GRAY,
+            Color::BLUE,
+        );
     }
 }

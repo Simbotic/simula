@@ -31,7 +31,7 @@ struct VertexOutput {
 [[stage(vertex)]]
 fn vertex(vertex: Vertex) -> VertexOutput {
     // let world_position = mesh.model * vec4<f32>(vertex.position, 1.0);
-    let world_position = vertex.position;
+    let world_position = vec4<f32>(vertex.position.xyz, 1.0);
 
     var out: VertexOutput;
     out.clip_position = view.view_proj * world_position;
@@ -67,22 +67,28 @@ var<uniform> time: Time;
 //     );
 // }
 
+// [[stage(fragment)]]
+// fn fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
+//     // let speed = 2.0;
+//     // let t_1 = sin(time.time_since_startup * speed) * 0.5 + 0.5;
+//     // let t_2 = cos(time.time_since_startup * speed);
+
+//     // let distance_to_center = distance(in.uv, vec2<f32>(0.5)) * 1.4;
+
+//     // // blending is done in a perceptual color space: https://bottosson.github.io/posts/oklab/
+//     // let red = vec3<f32>(0.627955, 0.224863, 0.125846);
+//     // let green = vec3<f32>(0.86644, -0.233887, 0.179498);
+//     // let blue = vec3<f32>(0.701674, 0.274566, -0.169156);
+//     // let white = vec3<f32>(1.0, 0.0, 0.0);
+//     // let mixed = mix(mix(red, blue, t_1), mix(green, white, t_2), distance_to_center);
+
+//     // return vec4<f32>(oklab_to_linear_srgb(mixed), 1.0);
+//     return vec4<f32>(in.color.rgb, 1.0);
+//     // return vec4<f32>(1.0, 0.0, 1.0, 1.0);
+// }
+
 [[stage(fragment)]]
 fn fragment(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    // let speed = 2.0;
-    // let t_1 = sin(time.time_since_startup * speed) * 0.5 + 0.5;
-    // let t_2 = cos(time.time_since_startup * speed);
-
-    // let distance_to_center = distance(in.uv, vec2<f32>(0.5)) * 1.4;
-
-    // // blending is done in a perceptual color space: https://bottosson.github.io/posts/oklab/
-    // let red = vec3<f32>(0.627955, 0.224863, 0.125846);
-    // let green = vec3<f32>(0.86644, -0.233887, 0.179498);
-    // let blue = vec3<f32>(0.701674, 0.274566, -0.169156);
-    // let white = vec3<f32>(1.0, 0.0, 0.0);
-    // let mixed = mix(mix(red, blue, t_1), mix(green, white, t_2), distance_to_center);
-
-    // return vec4<f32>(oklab_to_linear_srgb(mixed), 1.0);
     // return in.color;
-    return vec4<f32>(1.0, 0.0, 1.0, 1.0);
+    return vec4<f32>(in.color.rgb, 1.0);
 }
