@@ -1,4 +1,4 @@
-use super::lines;
+use super::lines::{Lines, LinesMaterial};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -20,6 +20,8 @@ impl Default for Axes {
 pub struct AxesBundle {
     pub axes: Axes,
     pub visibility: Visibility,
+    pub lines: Lines,
+    pub material: LinesMaterial,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
 }
@@ -29,14 +31,16 @@ impl Default for AxesBundle {
         AxesBundle {
             axes: Default::default(),
             visibility: Visibility { is_visible: true },
+            lines: Default::default(),
+            material: Default::default(),
             transform: Default::default(),
             global_transform: Default::default(),
         }
     }
 }
 
-pub fn system(mut lines: ResMut<lines::Lines>, query: Query<(&Axes, &GlobalTransform, &Visibility)>) {
-    for (axes, transform, visibility) in query.iter() {
+pub fn system(mut query: Query<(&mut Lines, &Axes, &GlobalTransform, &Visibility), With<LinesMaterial>>) {
+    for (mut lines, axes, transform, visibility) in query.iter_mut() {
         if visibility.is_visible {
             let f_start = transform.translation + transform.forward() * axes.inner_offset;
             let r_start = transform.translation + transform.right() * axes.inner_offset;

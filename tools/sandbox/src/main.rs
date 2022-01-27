@@ -3,15 +3,13 @@ use std::f32::consts::PI;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    // render::wireframe::{Wireframe, WireframeConfig, WireframePlugin},
-    // wgpu::{WgpuFeature, WgpuFeatures, WgpuOptions},
 };
 use rand::{
     distributions::{Distribution, Uniform},
     Rng,
 };
 use simula_camera::flycam::*;
-use simula_viz::lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin};
+use simula_viz::{axes, grid, lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin}};
 
 // mod sandbox;
 
@@ -25,22 +23,18 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(Msaa { samples: 4 })
-        .insert_resource(ClearColor(Color::rgb(0.15, 0.15, 0.17)))
+        // .insert_resource(ClearColor(Color::rgb(0.15, 0.15, 0.17)))
+        .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
-        // .add_plugin(WireframePlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .insert_resource(BevyCounter { count: 0 })
         .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
-        // .insert_resource(Lines::default())
-        // .insert_resource(line::Lines {
-        //     depth_test: true,
-        //     ..Default::default()
-        // })
         .add_startup_system(setup)
+        .add_system(axes::system)
+        .add_system(grid::system)
         .add_system(counter_system)
         .add_system(line_test)
-        // .add_system(axes::system)
         // .insert_resource(sandbox::World::new())
         // .add_startup_system(sandbox::setup)
         .run();
@@ -62,41 +56,40 @@ fn setup(
 
     // plane
     commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
+        mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
         material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        transform: Transform::from_xyz(2.0, 0.0, 2.0),
         ..Default::default()
     });
+
     // cube
-    // commands.spawn_bundle(PbrBundle {
-    //     mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-    //     material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-    //     transform: Transform::from_xyz(0.0, 0.5, 0.0),
-    //     ..Default::default()
-    // });
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        transform: Transform::from_xyz(-2.0, 0.0, -2.0),
+        ..Default::default()
+    });
 
-    // lights
-    // commands.spawn_bundle(PointLightBundle {
-    //     transform: Transform::from_xyz(400.0, 5000.0, 400.0),
-    //     point_light: PointLight {
-    //         intensity: 50000.,
-    //         color: Color::rgb(0.0, 0.0, 1.0),
-    //         range: 100000.,
-    //         ..Default::default()
-    //     },
-    //     ..Default::default()
-    // });
+    // grid
+    commands.spawn_bundle(grid::GridBundle {
+        grid: grid::Grid {
+            size: 10,
+            divisions: 10,
+            ..Default::default()
+        },
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+        ..Default::default()
+    });
 
-    // Transform::from_xyz(0.0, -100.0, -1.0),
-    // GlobalTransform::identity(),
-
-    // commands.spawn().insert_bundle((
-    //     meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-    //     Transform::from_xyz(0.0, 0.5, 0.0),
-    //     GlobalTransform::default(),
-    //     LinesMaterial,
-    //     Visibility::default(),
-    //     ComputedVisibility::default(),
-    // ));
+    // axes
+    commands.spawn_bundle(axes::AxesBundle {
+        axes: axes::Axes {
+            size: 1.,
+            inner_offset: 2.,
+        },
+        transform: Transform::from_xyz(0.0, 0.01, 0.0),
+        ..Default::default()
+    });
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
@@ -172,16 +165,6 @@ fn setup(
         },
         ..Default::default()
     });
-
-    // commands
-    //     .spawn_bundle((
-    //         Transform::from_xyz(0.0, -100.0, -1.0),
-    //         GlobalTransform::identity(),
-    //     ))
-    //     // .with_children(|parent| {
-    //     //     parent.spawn_scene(asset_server.load("models/DesertV2/desert.gltf#Scene0"));
-    //     // })
-    //     .insert(Wireframe);
 }
 
 struct BevyCounter {
@@ -228,24 +211,5 @@ fn line_test(mut lines: Query<&mut Lines, With<LinesMaterial>>) {
             };
             lines.line_colored(start, end, color);
         }
-
-        lines.line_gradient(
-            Vec3::new(-10.0, 0.0, 0.0),
-            Vec3::new(10.0, 0.0, 0.0),
-            Color::DARK_GRAY,
-            Color::RED,
-        );
-        lines.line_gradient(
-            Vec3::new(0.0, -10.0, 0.0),
-            Vec3::new(0.0, 10.0, 0.0),
-            Color::DARK_GRAY,
-            Color::GREEN,
-        );
-        lines.line_gradient(
-            Vec3::new(0.0, 0.0, -10.0),
-            Vec3::new(0.0, 0.0, 10.0),
-            Color::DARK_GRAY,
-            Color::BLUE,
-        );
     }
 }
