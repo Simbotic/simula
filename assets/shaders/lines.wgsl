@@ -19,7 +19,7 @@ struct Model {
 var<uniform> view: View;
 
 struct Vertex {
-    [[location(0)]] position: vec4<f32>;
+    [[location(0)]] position: vec3<f32>;
     [[location(1)]] color: vec4<f32>;
 };
 
@@ -33,7 +33,7 @@ var<uniform> model: Model;
 
 [[stage(vertex)]]
 fn vertex(vertex: Vertex) -> VertexOutput {
-    let world_position = model.model * vertex.position;
+    let world_position = model.model * vec4<f32>(vertex.position, 1.0);
     var out: VertexOutput;
     out.clip_position = view.view_proj * world_position;
     out.color = vertex.color;

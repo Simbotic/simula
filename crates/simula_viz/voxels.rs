@@ -7,7 +7,7 @@ use bevy::{
     pbr::MeshPipelineKey,
     prelude::*,
     render::{
-        mesh::{Mesh, Indices},
+        mesh::{Indices, Mesh},
         primitives::Aabb,
         render_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin},
         render_phase::{
@@ -55,7 +55,7 @@ impl Default for Voxel {
 impl From<Voxel> for Mesh {
     fn from(voxel: Voxel) -> Self {
         let voxel_box: Box = voxel.into();
-        let raw_mesh: RawMesh = voxel_box.into();
+        let raw_mesh: VoxelsMesh = voxel_box.into();
         raw_mesh.into()
     }
 }
@@ -108,25 +108,36 @@ impl From<Voxel> for Box {
 }
 
 #[derive(Default)]
-pub struct RawMesh {
+pub struct VoxelsMesh {
     positions: Vec<[f32; 3]>,
     normals: Vec<[f32; 3]>,
     colors: Vec<[f32; 4]>,
     indices: Vec<u32>,
 }
 
-impl RawMesh {
-    pub fn extend(&mut self, other: RawMesh) {
-        let offset = self.positions.len() as u32;
-        self.positions.extend(other.positions);
-        self.normals.extend(other.normals);
-        self.colors.extend(other.colors);
-        self.indices
-            .extend(other.indices.into_iter().map(|i| i + offset));
+impl From<VoxelsMesh> for Mesh {
+    fn from(voxel_mesh: VoxelsMesh) -> Self {
+        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, voxel_mesh.positions);
+        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, voxel_mesh.normals);
+        mesh.set_attribute(Mesh::ATTRIBUTE_COLOR, voxel_mesh.colors);
+        mesh.set_indices(Some(Indices::U32(voxel_mesh.indices)));
+        mesh
     }
 }
 
-impl From<Box> for RawMesh {
+impl VoxelsMesh {
+    pub fn extend(&mut self, other: &VoxelsMesh) {
+        let offset = self.positions.len() as u32;
+        self.positions.extend(&other.positions);
+        self.normals.extend(&other.normals);
+        self.colors.extend(&other.colors);
+        self.indices
+            .extend(other.indices.iter().map(|i| i + offset));
+    }
+}
+
+impl From<Box> for VoxelsMesh {
     fn from(sp: Box) -> Self {
         #[rustfmt::skip]
         let vertices = &[
@@ -181,7 +192,7 @@ impl From<Box> for RawMesh {
             20, 21, 22, 22, 23, 20, // bottom
         ];
 
-        RawMesh {
+        VoxelsMesh {
             positions,
             normals,
             colors,
@@ -190,74 +201,26 @@ impl From<Box> for RawMesh {
     }
 }
 
-// impl mikktspace::Geometry for RodMesh {
-//     fn num_faces(&self) -> usize {
-//         self.tris.len() / 3
-//     }
-
-//     fn num_vertices_of_face(&self, _face: usize) -> usize {
-//         3
-//     }
-
-//     fn position(&self, face: usize, vert: usize) -> [f32; 3] {
-//         let idx = self.tris[face * 3 + vert] as usize;
-//         self.vs[idx]
-//     }
-
-//     fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
-//         let idx = self.tris[face * 3 + vert] as usize;
-//         self.vns[idx]
-//     }
-
-//     fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
-//         let idx = self.tris[face * 3 + vert] as usize;
-//         self.vts[idx]
-//     }
-
-//     fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
-//         let idx = self.tris[face * 3 + vert] as usize;
-//         self.vxs[idx] = tangent;
-//     }
-// }
-
-impl From<Voxel> for RawMesh {
+impl From<Voxel> for VoxelsMesh {
     fn from(voxel: Voxel) -> Self {
         let bx: Box = voxel.into();
         bx.into()
     }
 }
 
-impl From<RawMesh> for Mesh {
-    fn from(raw_mesh: RawMesh) -> Self {
-        let mut uvs: Vec<[f32; 2]> = vec![];
-        uvs.resize(raw_mesh.positions.len(), [0.0, 0.0]); 
-        let mut tangents: Vec<[f32; 4]> = vec![];
-        tangents.resize(raw_mesh.positions.len(), [0.0, 0.0, 0.0, 0.0]);
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, raw_mesh.positions);
-        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, raw_mesh.normals);
-        mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-        mesh.set_attribute(Mesh::ATTRIBUTE_TANGENT, tangents);
-        mesh.set_attribute(Mesh::ATTRIBUTE_COLOR, raw_mesh.colors);
-        mesh.set_indices(Some(Indices::U32(raw_mesh.indices)));
+fn merge(voxels: &Vec<Voxel>) -> VoxelsMesh {
+    let mut mesh = VoxelsMesh::default();
+    voxels.into_iter().fold(&mut mesh, |mesh, voxel| {
+        let voxel_mesh: VoxelsMesh = (*voxel).into();
+        mesh.extend(&voxel_mesh);
         mesh
-    }
-}
-
-pub fn merge(voxels: Vec<Voxel>) -> Mesh {
-    let mut raw_mesh = RawMesh::default();
-    voxels.into_iter().fold(&mut raw_mesh, |raw_mesh, voxel| {
-        let voxel_mesh: RawMesh = voxel.into();
-        raw_mesh.extend(voxel_mesh);
-        raw_mesh
     });
-    raw_mesh.into()
+    mesh
 }
-
 
 #[derive(Component, Clone)]
 pub struct Voxels {
-    pub voxels: Vec<Line>,
+    pub voxels: Vec<Voxel>,
 }
 
 impl Default for Voxels {
@@ -305,7 +268,7 @@ impl Plugin for VoxelsPlugin {
         app.sub_app_mut(RenderApp)
             .add_render_command::<Opaque3d, DrawVoxelsCustom>()
             .init_resource::<VoxelsPipeline>()
-            .init_resource::<SpecializedPipevoxels<VoxelsPipeline>>()
+            .init_resource::<SpecializedPipelines<VoxelsPipeline>>()
             .add_system_to_stage(RenderStage::Extract, extract_voxels)
             .add_system_to_stage(RenderStage::Prepare, prepare_voxels)
             .add_system_to_stage(RenderStage::Queue, queue_model_bind_group)
@@ -318,9 +281,9 @@ fn queue_voxels(
     opaque_3d_draw_functions: Res<DrawFunctions<Opaque3d>>,
     voxels_pipeline: Res<VoxelsPipeline>,
     msaa: Res<Msaa>,
-    mut pipevoxels: ResMut<SpecializedPipevoxels<VoxelsPipeline>>,
+    mut pipelines: ResMut<SpecializedPipelines<VoxelsPipeline>>,
     mut pipeline_cache: ResMut<RenderPipelineCache>,
-    material_voxels: Query<(Entity, &ModelUniform), (With<Voxels>, With<VoxelsMaterial>)>,
+    material_voxels: Query<(Entity, &ModelUniform), (With<ExtractedVoxels>, With<VoxelsMaterial>)>,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Opaque3d>)>,
 ) {
     let draw_voxels = opaque_3d_draw_functions
@@ -329,15 +292,15 @@ fn queue_voxels(
         .unwrap();
 
     let key = MeshPipelineKey::from_msaa_samples(msaa.samples)
-        | MeshPipelineKey::from_primitive_topology(PrimitiveTopology::LineList);
-    let pipeline = pipevoxels.specialize(&mut pipeline_cache, &voxels_pipeline, key);
+        | MeshPipelineKey::from_primitive_topology(PrimitiveTopology::TriangleList);
+    let pipeline = pipelines.specialize(&mut pipeline_cache, &voxels_pipeline, key);
 
     for (view, mut opaque_phase) in views.iter_mut() {
-        trace!("queue_voxels: views.iter_mut()");
+        trace!("queue_lines: views.iter_mut()");
         let view_matrix = view.transform.compute_matrix();
         let view_row_2 = view_matrix.row(2);
         for (entity, model_uniform) in material_voxels.iter() {
-            trace!("queue_voxels: material_voxels.iter()");
+            trace!("queue_lines: material_voxels.iter()");
             opaque_phase.add(Opaque3d {
                 entity,
                 pipeline,
@@ -350,9 +313,7 @@ fn queue_voxels(
 
 #[derive(Component)]
 struct ExtractedVoxels {
-    num_voxels: usize,
-    points: Vec<[f32; 4]>,
-    colors: Vec<[f32; 4]>,
+    voxel_mesh: VoxelsMesh,
 }
 
 fn extract_voxels(
@@ -364,42 +325,23 @@ fn extract_voxels(
     >,
 ) {
     let mut values = Vec::with_capacity(*previous_len);
-    for (entity, mut voxels, transform, visibility) in voxels.iter_mut() {
+    for (entity, voxels, transform, visibility) in voxels.iter_mut() {
         if !visibility.is_visible {
             continue;
         }
 
-        let mut points = vec![];
-        let mut colors = vec![];
-
-        let mut i = 0;
         let num_voxels = voxels.voxels.len();
 
         trace!("num_voxels {}", num_voxels);
-
-        points.resize(num_voxels * 2, [0f32; 4]);
-        colors.resize(num_voxels * 2, [0f32; 4]);
-
-        for line in voxels.voxels.iter() {
-            points[i] = line.start.extend(1.0).into();
-            points[i + 1] = line.end.extend(1.0).into();
-            colors[i] = line.color[0].as_rgba_f32().into();
-            colors[i + 1] = line.color[1].as_rgba_f32().into();
-            i += 2;
-        }
-        voxels.voxels = vec![];
 
         let transform_matrix = transform.compute_matrix();
 
         values.push((
             entity,
             (
-                voxels.clone(),
                 VoxelsMaterial,
                 ExtractedVoxels {
-                    num_voxels,
-                    points,
-                    colors,
+                    voxel_mesh: merge(&voxels.voxels),
                 },
                 ModelUniform {
                     transform: transform_matrix,
@@ -417,8 +359,10 @@ fn extract_voxels(
 
 #[derive(Component)]
 struct VoxelsMeta {
-    num_voxels: usize,
-    points_buffer: Buffer,
+    num_indices: usize,
+    index_buffer: Buffer,
+    positions_buffer: Buffer,
+    normals_buffer: Buffer,
     colors_buffer: Buffer,
     bind_group: BindGroup,
 }
@@ -431,8 +375,38 @@ fn prepare_voxels(
     voxels: Query<(Entity, &mut ExtractedVoxels), With<VoxelsMaterial>>,
 ) {
     for (entity, extracted_voxels) in voxels.iter() {
-        let points: Vec<u8> = extracted_voxels
-            .points
+        let indices: Vec<u8> = extracted_voxels
+            .voxel_mesh
+            .indices
+            .iter()
+            .flat_map(|scalar| {
+                scalar
+                    .as_std140()
+                    .as_bytes()
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<u8>>()
+            })
+            .collect();
+
+        let positions: Vec<u8> = extracted_voxels
+            .voxel_mesh
+            .positions
+            .iter()
+            .flatten()
+            .flat_map(|scalar| {
+                scalar
+                    .as_std140()
+                    .as_bytes()
+                    .iter()
+                    .cloned()
+                    .collect::<Vec<u8>>()
+            })
+            .collect();
+
+        let normals: Vec<u8> = extracted_voxels
+            .voxel_mesh
+            .normals
             .iter()
             .flatten()
             .flat_map(|scalar| {
@@ -446,6 +420,7 @@ fn prepare_voxels(
             .collect();
 
         let colors: Vec<u8> = extracted_voxels
+            .voxel_mesh
             .colors
             .iter()
             .flatten()
@@ -459,16 +434,31 @@ fn prepare_voxels(
             })
             .collect();
 
-        trace!("points.len() {}", points.len());
+        trace!("positions.len() {}", positions.len());
+        trace!("normals.len() {}", normals.len());
         trace!("colors.len() {}", colors.len());
 
-        if points.len() == 0 {
+        if positions.len() == 0 {
             continue;
         }
 
-        let points_buffer = render_device.create_buffer(&BufferDescriptor {
-            label: Some("voxels_points_buffer"),
-            size: points.len() as u64,
+        let index_buffer = render_device.create_buffer(&BufferDescriptor {
+            label: Some("voxels_index_buffer"),
+            size: indices.len() as u64,
+            usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let positions_buffer = render_device.create_buffer(&BufferDescriptor {
+            label: Some("voxels_positions_buffer"),
+            size: positions.len() as u64,
+            usage: BufferUsages::VERTEX | BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let normals_buffer = render_device.create_buffer(&BufferDescriptor {
+            label: Some("voxels_normals_buffer"),
+            size: normals.len() as u64,
             usage: BufferUsages::VERTEX | BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -480,7 +470,9 @@ fn prepare_voxels(
             mapped_at_creation: false,
         });
 
-        render_queue.write_buffer(&points_buffer, 0, bevy::core::cast_slice(&points));
+        render_queue.write_buffer(&index_buffer, 0, bevy::core::cast_slice(&indices));
+        render_queue.write_buffer(&positions_buffer, 0, bevy::core::cast_slice(&positions));
+        render_queue.write_buffer(&normals_buffer, 0, bevy::core::cast_slice(&normals));
         render_queue.write_buffer(&colors_buffer, 0, bevy::core::cast_slice(&colors));
 
         let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
@@ -489,18 +481,24 @@ fn prepare_voxels(
             entries: &[
                 BindGroupEntry {
                     binding: 0,
-                    resource: points_buffer.as_entire_binding(),
+                    resource: positions_buffer.as_entire_binding(),
                 },
                 BindGroupEntry {
                     binding: 1,
+                    resource: normals_buffer.as_entire_binding(),
+                },
+                BindGroupEntry {
+                    binding: 2,
                     resource: colors_buffer.as_entire_binding(),
                 },
             ],
         });
 
         let voxels_meta = VoxelsMeta {
-            num_voxels: extracted_voxels.num_voxels,
-            points_buffer,
+            num_indices: extracted_voxels.voxel_mesh.indices.len(),
+            index_buffer,
+            positions_buffer,
+            normals_buffer,
             colors_buffer,
             bind_group,
         };
@@ -563,6 +561,16 @@ impl FromWorld for VoxelsPipeline {
                         },
                         count: None,
                     },
+                    BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: ShaderStages::VERTEX,
+                        ty: BindingType::Buffer {
+                            ty: BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: BufferSize::new(0),
+                        },
+                        count: None,
+                    },
                 ],
             });
 
@@ -602,12 +610,21 @@ impl SpecializedPipeline for VoxelsPipeline {
                 shader_defs: shader_defs.clone(),
                 buffers: vec![
                     VertexBufferLayout {
-                        array_stride: 16,
+                        array_stride: 12,
                         step_mode: VertexStepMode::Vertex,
                         attributes: vec![VertexAttribute {
-                            format: VertexFormat::Float32x4,
+                            format: VertexFormat::Float32x3,
                             offset: 0,
                             shader_location: 0,
+                        }],
+                    },
+                    VertexBufferLayout {
+                        array_stride: 12,
+                        step_mode: VertexStepMode::Vertex,
+                        attributes: vec![VertexAttribute {
+                            format: VertexFormat::Float32x3,
+                            offset: 0,
+                            shader_location: 1,
                         }],
                     },
                     VertexBufferLayout {
@@ -616,7 +633,7 @@ impl SpecializedPipeline for VoxelsPipeline {
                         attributes: vec![VertexAttribute {
                             format: VertexFormat::Float32x4,
                             offset: 0,
-                            shader_location: 1,
+                            shader_location: 2,
                         }],
                     },
                 ],
@@ -819,9 +836,11 @@ impl EntityRenderCommand for DrawVoxels {
     ) -> RenderCommandResult {
         if let Ok(voxels) = voxels.get(item) {
             trace!("DrawVoxels: EntityRenderCommand");
-            pass.set_vertex_buffer(0, voxels.points_buffer.slice(..));
-            pass.set_vertex_buffer(1, voxels.colors_buffer.slice(..));
-            pass.draw(0..(voxels.num_voxels as u32 * 2), 0..1);
+            pass.set_index_buffer(voxels.index_buffer.slice(..), 0, IndexFormat::Uint32);
+            pass.set_vertex_buffer(0, voxels.positions_buffer.slice(..));
+            pass.set_vertex_buffer(1, voxels.normals_buffer.slice(..));
+            pass.set_vertex_buffer(2, voxels.colors_buffer.slice(..));
+            pass.draw_indexed(0..(voxels.num_indices as u32), 0, 0..1);
         }
         RenderCommandResult::Success
     }

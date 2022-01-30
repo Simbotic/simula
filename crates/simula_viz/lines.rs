@@ -128,7 +128,7 @@ fn queue_lines(
     msaa: Res<Msaa>,
     mut pipelines: ResMut<SpecializedPipelines<LinesPipeline>>,
     mut pipeline_cache: ResMut<RenderPipelineCache>,
-    material_lines: Query<(Entity, &ModelUniform), (With<Lines>, With<LinesMaterial>)>,
+    material_lines: Query<(Entity, &ModelUniform), (With<ExtractedLines>, With<LinesMaterial>)>,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Opaque3d>)>,
 ) {
     let draw_lines = opaque_3d_draw_functions
@@ -159,7 +159,7 @@ fn queue_lines(
 #[derive(Component)]
 struct ExtractedLines {
     num_lines: usize,
-    points: Vec<[f32; 4]>,
+    points: Vec<[f32; 3]>,
     colors: Vec<[f32; 4]>,
 }
 
@@ -185,12 +185,12 @@ fn extract_lines(
 
         trace!("num_lines {}", num_lines);
 
-        points.resize(num_lines * 2, [0f32; 4]);
+        points.resize(num_lines * 2, [0f32; 3]);
         colors.resize(num_lines * 2, [0f32; 4]);
 
         for line in lines.lines.iter() {
-            points[i] = line.start.extend(1.0).into();
-            points[i + 1] = line.end.extend(1.0).into();
+            points[i] = line.start.into();
+            points[i + 1] = line.end.into();
             colors[i] = line.color[0].as_rgba_f32().into();
             colors[i + 1] = line.color[1].as_rgba_f32().into();
             i += 2;
@@ -202,7 +202,7 @@ fn extract_lines(
         values.push((
             entity,
             (
-                lines.clone(),
+                // lines.clone(),
                 LinesMaterial,
                 ExtractedLines {
                     num_lines,
@@ -410,10 +410,10 @@ impl SpecializedPipeline for LinesPipeline {
                 shader_defs: shader_defs.clone(),
                 buffers: vec![
                     VertexBufferLayout {
-                        array_stride: 16,
+                        array_stride: 12,
                         step_mode: VertexStepMode::Vertex,
                         attributes: vec![VertexAttribute {
-                            format: VertexFormat::Float32x4,
+                            format: VertexFormat::Float32x3,
                             offset: 0,
                             shader_location: 0,
                         }],

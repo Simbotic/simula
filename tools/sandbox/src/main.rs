@@ -5,8 +5,10 @@ use bevy::{
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
 use simula_viz::{
-    axes, grid,
-    lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin},
+    axes,
+    grid,
+    lines::{Lines, LinesPlugin},
+    voxels::{Voxel, Voxels, VoxelsBundle, VoxelsPlugin},
     // voxel::{self, VoxelMaterial},
 };
 
@@ -28,7 +30,7 @@ fn main() {
         .insert_resource(BevyCounter { count: 0 })
         .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
-        // .add_plugin(MaterialPlugin::<VoxelMaterial>::default())
+        .add_plugin(VoxelsPlugin)
         .add_startup_system(setup)
         .add_system(axes::system)
         .add_system(grid::system)
@@ -42,11 +44,8 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    // mut voxel_materials: ResMut<Assets<VoxelMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn_bundle(LinesBundle::default());
-
     // plane
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
@@ -64,25 +63,25 @@ fn setup(
     });
 
     // grid
-    // commands.spawn_bundle(grid::GridBundle {
-    //     grid: grid::Grid {
-    //         size: 10,
-    //         divisions: 10,
-    //         ..Default::default()
-    //     },
-    //     transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-    //     ..Default::default()
-    // });
+    commands.spawn_bundle(grid::GridBundle {
+        grid: grid::Grid {
+            size: 10,
+            divisions: 10,
+            ..Default::default()
+        },
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+        ..Default::default()
+    });
 
     // axes
-    // commands.spawn_bundle(axes::AxesBundle {
-    //     axes: axes::Axes {
-    //         size: 1.,
-    //         inner_offset: 5.,
-    //     },
-    //     transform: Transform::from_xyz(0.0, 0.01, 0.0),
-    //     ..Default::default()
-    // });
+    commands.spawn_bundle(axes::AxesBundle {
+        axes: axes::Axes {
+            size: 1.,
+            inner_offset: 5.,
+        },
+        transform: Transform::from_xyz(0.0, 0.01, 0.0),
+        ..Default::default()
+    });
 
     // x - axis
     commands
@@ -128,15 +127,6 @@ fn setup(
             axis: Vec3::new(0.0, 0.0, 1.0),
             angle: 1.0,
         });
-
-    // commands.spawn_bundle(axes::AxesBundle {
-    //     axes: axes::Axes {
-    //         size: 1.,
-    //         inner_offset: 0.,
-    //     },
-    //     transform: Transform::from_xyz(0.0, 2.0, 0.0),
-    //     ..Default::default()
-    // });
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
@@ -215,23 +205,28 @@ fn setup(
 
     // voxels
 
-    // let voxels: Vec<voxel::Voxel> = vec![
-    //     voxel::Voxel {
-    //         position: Vec3::new(10., 0., 0.),
-    //         size: 1.,
-    //         color: Color::RED,
-    //     },
-    //     voxel::Voxel {
-    //         position: Vec3::new(0., 10., 0.),
-    //         size: 1.,
-    //         color: Color::GREEN,
-    //     },
-    //     voxel::Voxel {
-    //         position: Vec3::new(0., 0., -10.),
-    //         size: 1.,
-    //         color: Color::BLUE,
-    //     },
-    // ];
+    let voxels: Vec<Voxel> = vec![
+        Voxel {
+            position: Vec3::new(6., 0., 0.),
+            size: 1.,
+            color: Color::RED,
+        },
+        Voxel {
+            position: Vec3::new(0., 6., 0.),
+            size: 1.,
+            color: Color::GREEN,
+        },
+        Voxel {
+            position: Vec3::new(0., 0., 6.),
+            size: 1.,
+            color: Color::BLUE,
+        },
+    ];
+
+    commands.spawn_bundle(VoxelsBundle {
+        voxels: Voxels { voxels },
+        ..Default::default()
+    });
 
     let rod_mesh = simula_viz::rod::Rod {
         ..Default::default()
@@ -240,32 +235,13 @@ fn setup(
 
     commands.spawn().insert_bundle(PbrBundle {
         mesh: meshes.add(rod_mesh.mesh),
-        material: materials.add(StandardMaterial{
+        material: materials.add(StandardMaterial {
             base_color: Color::PINK,
             ..Default::default()
         }),
         transform: Transform::from_xyz(5.0, 0.0, -5.0),
         ..Default::default()
     });
-
-    // commands.spawn().insert_bundle(MaterialMeshBundle {
-    //     mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-    //     material: voxel_materials.add(VoxelMaterial {
-    //         color: Color::OLIVE,
-    //     }),
-    //     transform: Transform::from_xyz(2.0, 0.0, -2.0),
-    //     ..Default::default()
-    // });
-
-    // let lattice = voxel::merge(voxels.clone());
-    // commands.spawn().insert_bundle(MaterialMeshBundle {
-    //     mesh: meshes.add(lattice),
-    //     material: voxel_materials.add(VoxelMaterial {
-    //         color: Color::OLIVE,
-    //     }),
-    //     transform: Transform::from_xyz(-2.0, 0.0, -3.0),
-    //     ..Default::default()
-    // });
 }
 
 struct BevyCounter {
@@ -302,7 +278,7 @@ fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform)>) {
     }
 }
 
-fn line_test(mut lines: Query<&mut Lines, With<LinesMaterial>>) {
+fn line_test(mut lines: Query<&mut Lines>) {
     let mut rng = rand::thread_rng();
     let die = Uniform::from(0f32..1f32);
 
