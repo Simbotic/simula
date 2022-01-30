@@ -7,6 +7,8 @@ use bevy::{
     pbr::MeshPipelineKey,
     prelude::*,
     render::{
+        primitives::Aabb,
+        render_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin},
         render_phase::{
             AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
             SetItemPipeline, TrackedRenderPass,
@@ -72,12 +74,32 @@ impl Lines {
     }
 }
 
-#[derive(Bundle, Default)]
+#[derive(Bundle)]
 pub struct LinesBundle {
     pub lines: Lines,
     pub material: LinesMaterial,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
+    pub visibility: Visibility,
+    pub computed_visibility: ComputedVisibility,
+    pub aabb: Aabb,
+}
+
+impl Default for LinesBundle {
+    fn default() -> Self {
+        LinesBundle {
+            lines: Lines::default(),
+            material: LinesMaterial::default(),
+            transform: Transform::default(),
+            global_transform: GlobalTransform::default(),
+            visibility: Visibility::default(),
+            computed_visibility: ComputedVisibility::default(),
+            aabb: Aabb {
+                center: Vec3::ZERO,
+                half_extents: Vec3::ONE,
+            },
+        }
+    }
 }
 
 #[derive(Component, Default)]
@@ -87,56 +109,26 @@ pub struct LinesPlugin;
 
 impl Plugin for LinesPlugin {
     fn build(&self, app: &mut App) {
-        let render_device = app.world.get_resource::<RenderDevice>().unwrap();
-
-        let time_buffer = render_device.create_buffer(&BufferDescriptor {
-            label: Some("lines_time_uniform_buffer"),
-            size: std::mem::size_of::<f32>() as u64,
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
+        app.add_plugin(UniformComponentPlugin::<ModelUniform>::default());
         app.sub_app_mut(RenderApp)
-            .insert_resource(TimeMeta {
-                buffer: time_buffer,
-                bind_group: None,
-            })
             .add_render_command::<Opaque3d, DrawLinesCustom>()
             .init_resource::<LinesPipeline>()
             .init_resource::<SpecializedPipelines<LinesPipeline>>()
-            .add_system_to_stage(RenderStage::Extract, extract_time)
-            .add_system_to_stage(RenderStage::Extract, extract_lines_material)
             .add_system_to_stage(RenderStage::Extract, extract_lines)
-            .add_system_to_stage(RenderStage::Prepare, prepare_time)
             .add_system_to_stage(RenderStage::Prepare, prepare_lines)
+            .add_system_to_stage(RenderStage::Queue, queue_model_bind_group)
             .add_system_to_stage(RenderStage::Queue, queue_lines)
-            .add_system_to_stage(RenderStage::Queue, queue_time_bind_group)
             .add_system_to_stage(RenderStage::Queue, queue_view_bind_groups);
     }
 }
 
-// extract the `LinesMaterial` component into the render world
-fn extract_lines_material(
-    mut previous_len: Local<usize>,
-    mut commands: Commands,
-    query: Query<(Entity, &Lines, &GlobalTransform), With<LinesMaterial>>,
-) {
-    let mut values = Vec::with_capacity(*previous_len);
-    for (entity, lines, transform) in query.iter() {
-        values.push((entity, (LinesMaterial, lines.clone(), transform.clone())));
-    }
-    *previous_len = values.len();
-    commands.insert_or_spawn_batch(values);
-}
-
-// add each entity with a mesh and a `LinesMaterial` to every view's `Opaque3d` render phase using the `LinesPipeline`
 fn queue_lines(
     opaque_3d_draw_functions: Res<DrawFunctions<Opaque3d>>,
     lines_pipeline: Res<LinesPipeline>,
     msaa: Res<Msaa>,
     mut pipelines: ResMut<SpecializedPipelines<LinesPipeline>>,
     mut pipeline_cache: ResMut<RenderPipelineCache>,
-    material_lines: Query<(Entity, &GlobalTransform), With<LinesMaterial>>,
+    material_lines: Query<(Entity, &ModelUniform), (With<Lines>, With<LinesMaterial>)>,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Opaque3d>)>,
 ) {
     let draw_lines = opaque_3d_draw_functions
@@ -152,64 +144,16 @@ fn queue_lines(
         trace!("queue_lines: views.iter_mut()");
         let view_matrix = view.transform.compute_matrix();
         let view_row_2 = view_matrix.row(2);
-        for (entity, transform) in material_lines.iter() {
+        for (entity, model_uniform) in material_lines.iter() {
             trace!("queue_lines: material_lines.iter()");
-
             opaque_phase.add(Opaque3d {
                 entity,
                 pipeline,
                 draw_function: draw_lines,
-                distance: view_row_2.dot(transform.compute_matrix().col(3)),
+                distance: view_row_2.dot(model_uniform.transform.col(3)),
             });
         }
     }
-}
-
-#[derive(Default)]
-struct ExtractedTime {
-    seconds_since_startup: f32,
-}
-
-// extract the passed time into a resource in the render world
-fn extract_time(mut commands: Commands, time: Res<Time>) {
-    commands.insert_resource(ExtractedTime {
-        seconds_since_startup: time.seconds_since_startup() as f32,
-    });
-}
-
-struct TimeMeta {
-    buffer: Buffer,
-    bind_group: Option<BindGroup>,
-}
-
-// write the extracted time into the corresponding uniform buffer
-fn prepare_time(
-    time: Res<ExtractedTime>,
-    time_meta: ResMut<TimeMeta>,
-    render_queue: Res<RenderQueue>,
-) {
-    render_queue.write_buffer(
-        &time_meta.buffer,
-        0,
-        bevy::core::cast_slice(&[time.seconds_since_startup]),
-    );
-}
-
-// create a bind group for the time uniform buffer
-fn queue_time_bind_group(
-    render_device: Res<RenderDevice>,
-    mut time_meta: ResMut<TimeMeta>,
-    pipeline: Res<LinesPipeline>,
-) {
-    let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-        label: Some("lines_time_bind_group"),
-        layout: &pipeline.time_bind_group_layout,
-        entries: &[BindGroupEntry {
-            binding: 0,
-            resource: time_meta.buffer.as_entire_binding(),
-        }],
-    });
-    time_meta.bind_group = Some(bind_group);
 }
 
 #[derive(Component)]
@@ -219,14 +163,20 @@ struct ExtractedLines {
     colors: Vec<[f32; 4]>,
 }
 
-// extract the lines into a resource in the render world
 fn extract_lines(
     mut previous_len: Local<usize>,
     mut commands: Commands,
-    mut lines: Query<(Entity, &mut Lines), With<LinesMaterial>>,
+    mut lines: Query<
+        (Entity, &mut Lines, &GlobalTransform, &ComputedVisibility),
+        With<LinesMaterial>,
+    >,
 ) {
     let mut values = Vec::with_capacity(*previous_len);
-    for (entity, mut lines) in lines.iter_mut() {
+    for (entity, mut lines, transform, visibility) in lines.iter_mut() {
+        if !visibility.is_visible {
+            continue;
+        }
+
         let mut points = vec![];
         let mut colors = vec![];
 
@@ -247,14 +197,22 @@ fn extract_lines(
         }
         lines.lines = vec![];
 
+        let transform_matrix = transform.compute_matrix();
+
         values.push((
             entity,
             (
+                lines.clone(),
                 LinesMaterial,
                 ExtractedLines {
                     num_lines,
                     points,
                     colors,
+                },
+                ModelUniform {
+                    transform: transform_matrix,
+                    inverse_transpose_model: transform_matrix.inverse().transpose(),
+                    flags: 0,
                 },
             ),
         ));
@@ -363,7 +321,7 @@ pub struct LinesPipeline {
     shader: Handle<Shader>,
     view_bind_group_layout: BindGroupLayout,
     line_bind_group_layout: BindGroupLayout,
-    time_bind_group_layout: BindGroupLayout,
+    model_bind_group_layout: BindGroupLayout,
 }
 
 impl FromWorld for LinesPipeline {
@@ -416,26 +374,25 @@ impl FromWorld for LinesPipeline {
                 ],
             });
 
-        let time_bind_group_layout =
-            render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-                label: Some("lines_time_bind_group_layout"),
-                entries: &[BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Buffer {
-                        ty: BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: BufferSize::new(std::mem::size_of::<f32>() as u64),
-                    },
-                    count: None,
-                }],
-            });
+        let model_bind_group_layout = render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+            label: Some("lines_model_bind_group_layout"),
+            entries: &[BindGroupLayoutEntry {
+                binding: 0,
+                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+                ty: BindingType::Buffer {
+                    ty: BufferBindingType::Uniform,
+                    has_dynamic_offset: true,
+                    min_binding_size: BufferSize::new(ModelUniform::std140_size_static() as u64),
+                },
+                count: None,
+            }],
+        });
 
         LinesPipeline {
             shader,
             view_bind_group_layout,
             line_bind_group_layout,
-            time_bind_group_layout,
+            model_bind_group_layout,
         }
     }
 }
@@ -485,7 +442,7 @@ impl SpecializedPipeline for LinesPipeline {
             layout: Some(vec![
                 self.view_bind_group_layout.clone(),
                 self.line_bind_group_layout.clone(),
-                self.time_bind_group_layout.clone(),
+                self.model_bind_group_layout.clone(),
             ]),
             primitive: PrimitiveState {
                 front_face: FrontFace::Ccw,
@@ -526,9 +483,41 @@ type DrawLinesCustom = (
     SetItemPipeline,
     SetLinesViewBindGroup<0>,
     SetLinesBindGroup<1>,
-    SetTimeBindGroup<2>,
+    SetLinesModelBindGroup<2>,
     DrawLines,
 );
+
+#[derive(Component, AsStd140, Clone)]
+pub struct ModelUniform {
+    pub transform: Mat4,
+    pub inverse_transpose_model: Mat4,
+    pub flags: u32,
+}
+
+pub struct ModelBindGroup {
+    pub value: BindGroup,
+}
+
+pub fn queue_model_bind_group(
+    mut commands: Commands,
+    lines_pipeline: Res<LinesPipeline>,
+    render_device: Res<RenderDevice>,
+    lines_uniforms: Res<ComponentUniforms<ModelUniform>>,
+) {
+    if let Some(binding) = lines_uniforms.uniforms().binding() {
+        trace!("lines_model_bind_group");
+        commands.insert_resource(ModelBindGroup {
+            value: render_device.create_bind_group(&BindGroupDescriptor {
+                entries: &[BindGroupEntry {
+                    binding: 0,
+                    resource: binding,
+                }],
+                label: Some("lines_model_bind_group"),
+                layout: &lines_pipeline.model_bind_group_layout,
+            }),
+        });
+    }
+}
 
 #[derive(Component)]
 pub struct LinesViewBindGroup {
@@ -600,21 +589,27 @@ impl<const I: usize> EntityRenderCommand for SetLinesBindGroup<I> {
     }
 }
 
-struct SetTimeBindGroup<const I: usize>;
-impl<const I: usize> EntityRenderCommand for SetTimeBindGroup<I> {
-    type Param = SRes<TimeMeta>;
-
+pub struct SetLinesModelBindGroup<const I: usize>;
+impl<const I: usize> EntityRenderCommand for SetLinesModelBindGroup<I> {
+    type Param = (
+        SRes<ModelBindGroup>,
+        SQuery<Read<DynamicUniformIndex<ModelUniform>>>,
+    );
+    #[inline]
     fn render<'w>(
         _view: Entity,
-        _item: Entity,
-        time_meta: SystemParamItem<'w, '_, Self::Param>,
+        item: Entity,
+        (model_bind_group, model_query): SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Some(time_bind_group) = time_meta.into_inner().bind_group.as_ref() {
-            trace!("SetLinesTimeBindGroup: EntityRenderCommand");
-            pass.set_bind_group(I, time_bind_group, &[]);
+        if let Ok(model_index) = model_query.get(item) {
+            trace!("SetLinesModelBindGroup: EntityRenderCommand");
+            pass.set_bind_group(
+                I,
+                &model_bind_group.into_inner().value,
+                &[model_index.index()],
+            );
         }
-
         RenderCommandResult::Success
     }
 }
@@ -636,7 +631,6 @@ impl EntityRenderCommand for DrawLines {
             pass.set_vertex_buffer(1, lines.colors_buffer.slice(..));
             pass.draw(0..(lines.num_lines as u32 * 2), 0..1);
         }
-
         RenderCommandResult::Success
     }
 }

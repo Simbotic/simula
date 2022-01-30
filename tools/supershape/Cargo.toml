@@ -1,9 +1,0 @@
-[package]
-name = "supershape"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", version = "0.6", features = ["dynamic"] }
-simula_camera = { path = "../../crates/simula_camera" }
-simula_viz = { path = "../../crates/simula_viz" }

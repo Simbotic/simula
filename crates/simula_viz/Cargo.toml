@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy.git", version = "0.6", features = ["dynamic"] }
+mikktspace = "0.2.0"
+simula_core = { path = "../../crates/simula_core" }
 
 [lib]
 path = "lib.rs"
