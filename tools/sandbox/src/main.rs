@@ -5,21 +5,17 @@ use bevy::{
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
 use simula_viz::{
-    axes,
-    grid,
+    axes, grid,
     lines::{Lines, LinesPlugin},
     voxels::{Voxel, Voxels, VoxelsBundle, VoxelsPlugin},
-    // voxel::{self, VoxelMaterial},
 };
-
-// mod sandbox;
 
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
             title: "[Simbotic] Simula - Sandbox".to_string(),
-            width: 800.,
-            height: 600.,
+            width: 940.,
+            height: 528.,
             vsync: false,
             ..Default::default()
         })
@@ -27,14 +23,13 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .insert_resource(BevyCounter { count: 0 })
         .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(VoxelsPlugin)
         .add_startup_system(setup)
         .add_system(axes::system)
         .add_system(grid::system)
-        .add_system(counter_system)
+        .add_system(debug_info)
         .add_system(line_test)
         .add_system(rotate_system)
         .run();
@@ -155,40 +150,14 @@ fn setup(
 
     commands.spawn_bundle(TextBundle {
         text: Text {
-            sections: vec![
-                TextSection {
-                    value: "Agent Count: ".to_string(),
-                    style: TextStyle {
-                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                        font_size: 12.0,
-                        color: Color::rgb(0.0, 1.0, 0.0),
-                    },
+            sections: vec![TextSection {
+                value: "\nFPS: ".to_string(),
+                style: TextStyle {
+                    font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                    font_size: 12.0,
+                    color: Color::rgb(0.0, 1.0, 0.0),
                 },
-                TextSection {
-                    value: "".to_string(),
-                    style: TextStyle {
-                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                        font_size: 12.0,
-                        color: Color::rgb(0.0, 1.0, 1.0),
-                    },
-                },
-                TextSection {
-                    value: "\nAverage FPS: ".to_string(),
-                    style: TextStyle {
-                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                        font_size: 12.0,
-                        color: Color::rgb(0.0, 1.0, 0.0),
-                    },
-                },
-                TextSection {
-                    value: "".to_string(),
-                    style: TextStyle {
-                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                        font_size: 12.0,
-                        color: Color::rgb(0.0, 1.0, 1.0),
-                    },
-                },
-            ],
+            }],
             ..Default::default()
         },
         style: Style {
@@ -208,25 +177,30 @@ fn setup(
     let voxels: Vec<Voxel> = vec![
         Voxel {
             position: Vec3::new(6., 0., 0.),
-            size: 1.,
+            size: 0.5,
             color: Color::RED,
         },
         Voxel {
             position: Vec3::new(0., 6., 0.),
-            size: 1.,
+            size: 0.5,
             color: Color::GREEN,
         },
         Voxel {
             position: Vec3::new(0., 0., 6.),
-            size: 1.,
-            color: Color::BLUE,
+            size: 0.5,
+            color: Color::rgba(0.0, 0.0, 1.0, 0.2),
         },
     ];
 
-    commands.spawn_bundle(VoxelsBundle {
-        voxels: Voxels { voxels },
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(VoxelsBundle {
+            voxels: Voxels { voxels },
+            ..Default::default()
+        })
+        .insert(Rotate {
+            axis: Vec3::new(0.0, 1.0, 0.0),
+            angle: 1.0,
+        });
 
     let rod_mesh = simula_viz::rod::Rod {
         ..Default::default()
@@ -244,20 +218,11 @@ fn setup(
     });
 }
 
-struct BevyCounter {
-    pub count: u128,
-}
-
-fn counter_system(
-    diagnostics: Res<Diagnostics>,
-    counter: Res<BevyCounter>,
-    mut query: Query<&mut Text>,
-) {
+fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
             for mut text in query.iter_mut() {
-                text.sections[1].value = format!("{}", counter.count);
-                text.sections[3].value = format!("{:.2}", average);
+                text.sections[0].value = format!("{:.2}", average);
             }
         }
     };
