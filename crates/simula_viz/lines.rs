@@ -24,11 +24,12 @@ use bevy::{
     },
 };
 
-#[derive(Clone)]
+#[derive(Clone, Reflect, Default)]
 pub struct Line {
     start: Vec3,
     end: Vec3,
-    color: [Color; 2],
+    start_color: Color,
+    end_color: Color,
 }
 
 impl Line {
@@ -36,7 +37,8 @@ impl Line {
         Self {
             start,
             end,
-            color: [start_color, end_color],
+            start_color,
+            end_color,
         }
     }
 }
@@ -44,8 +46,10 @@ impl Line {
 pub const MAX_LINES: usize = 128000;
 pub const MAX_POINTS: usize = MAX_LINES * 2;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Reflect)]
+#[reflect(Component)]
 pub struct Lines {
+    #[reflect(ignore)]
     pub lines: Vec<Line>,
 }
 
@@ -102,15 +106,17 @@ impl Default for LinesBundle {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Reflect)]
+#[reflect(Component)]
 pub struct LinesMaterial;
 
 pub struct LinesPlugin;
 
 impl Plugin for LinesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(UniformComponentPlugin::<ModelUniform>::default());
-        app.sub_app_mut(RenderApp)
+        app.register_type::<Lines>()
+            .add_plugin(UniformComponentPlugin::<ModelUniform>::default())
+            .sub_app_mut(RenderApp)
             .add_render_command::<Opaque3d, DrawLinesCustom>()
             .init_resource::<LinesPipeline>()
             .init_resource::<SpecializedPipelines<LinesPipeline>>()
@@ -191,8 +197,8 @@ fn extract_lines(
         for line in lines.lines.iter() {
             points[i] = line.start.into();
             points[i + 1] = line.end.into();
-            colors[i] = line.color[0].as_rgba_f32().into();
-            colors[i + 1] = line.color[1].as_rgba_f32().into();
+            colors[i] = line.start_color.as_rgba_f32().into();
+            colors[i + 1] = line.end_color.as_rgba_f32().into();
             i += 2;
         }
         lines.lines = vec![];

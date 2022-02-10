@@ -4,7 +4,8 @@ use bevy::{
     render::view::{ComputedVisibility, Visibility},
 };
 
-#[derive(Component)]
+#[derive(Reflect, Component)]
+#[reflect(Component)]
 pub struct Axes {
     pub size: f32,
     pub inner_offset: f32,
@@ -44,7 +45,7 @@ impl Default for AxesBundle {
     }
 }
 
-pub fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<LinesMaterial>>) {
+fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<LinesMaterial>>) {
     let transform = Transform::default();
     for (mut lines, axes, visibility) in query.iter_mut() {
         if visibility.is_visible {
@@ -58,5 +59,13 @@ pub fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<LinesMater
             lines.line_colored(r_start, r_end, Color::RED);
             lines.line_colored(u_start, u_end, Color::GREEN);
         }
+    }
+}
+
+pub struct AxesPlugin;
+
+impl Plugin for AxesPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<Axes>().add_system(system);
     }
 }

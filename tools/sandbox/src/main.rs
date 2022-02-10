@@ -2,10 +2,12 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
+use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
 use simula_viz::{
-    axes, grid,
+    axes::{Axes, AxesBundle, AxesPlugin},
+    grid::{Grid, GridBundle, GridPlugin},
     lines::{Lines, LinesPlugin},
     voxels::{Voxel, Voxels, VoxelsBundle, VoxelsPlugin},
 };
@@ -22,13 +24,14 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
+        .add_plugin(AxesPlugin)
+        .add_plugin(GridPlugin)
         .add_plugin(VoxelsPlugin)
         .add_startup_system(setup)
-        .add_system(axes::system)
-        .add_system(grid::system)
         .add_system(debug_info)
         .add_system(line_test)
         .add_system(rotate_system)
@@ -58,8 +61,8 @@ fn setup(
     });
 
     // grid
-    commands.spawn_bundle(grid::GridBundle {
-        grid: grid::Grid {
+    commands.spawn_bundle(GridBundle {
+        grid: Grid {
             size: 10,
             divisions: 10,
             ..Default::default()
@@ -69,8 +72,8 @@ fn setup(
     });
 
     // axes
-    commands.spawn_bundle(axes::AxesBundle {
-        axes: axes::Axes {
+    commands.spawn_bundle(AxesBundle {
+        axes: Axes {
             size: 1.,
             inner_offset: 5.,
         },
@@ -80,8 +83,8 @@ fn setup(
 
     // x - axis
     commands
-        .spawn_bundle(axes::AxesBundle {
-            axes: axes::Axes {
+        .spawn_bundle(AxesBundle {
+            axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
             },
@@ -95,8 +98,8 @@ fn setup(
 
     // y - axis
     commands
-        .spawn_bundle(axes::AxesBundle {
-            axes: axes::Axes {
+        .spawn_bundle(AxesBundle {
+            axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
             },
@@ -110,8 +113,8 @@ fn setup(
 
     // z - axis
     commands
-        .spawn_bundle(axes::AxesBundle {
-            axes: axes::Axes {
+        .spawn_bundle(AxesBundle {
+            axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
             },

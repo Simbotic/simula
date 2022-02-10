@@ -4,7 +4,8 @@ use bevy::{
     render::view::{ComputedVisibility, Visibility},
 };
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Grid {
     pub size: u32,
     pub divisions: u32,
@@ -46,7 +47,7 @@ impl Default for GridBundle {
     }
 }
 
-pub fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<LinesMaterial>>) {
+fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<LinesMaterial>>) {
     for (mut lines, grid, visibility) in query.iter_mut() {
         if visibility.is_visible {
             let center = grid.divisions / 2;
@@ -55,6 +56,10 @@ pub fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<LinesMater
 
             let i = 0..=grid.divisions;
             let k = -half_size..=half_size;
+
+            if step == 0 {
+                continue;
+            }
 
             for (i, k) in i.zip(k.step_by(step as usize)) {
                 let mut color = grid.color;
@@ -71,5 +76,13 @@ pub fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<LinesMater
                 lines.line_colored(z_a, z_b, color);
             }
         }
+    }
+}
+
+pub struct GridPlugin;
+
+impl Plugin for GridPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<Grid>().add_system(system);
     }
 }

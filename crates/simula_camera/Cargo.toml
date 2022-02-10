@@ -8,4 +8,3 @@ bevy = { version = "0.6" }
 
 [lib]
 path = "lib.rs"
-# name = "simula_camera"
