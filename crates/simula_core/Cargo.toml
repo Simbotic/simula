@@ -8,5 +8,6 @@ bevy = { version = "0.6" }
 serde = { version = "1.0", features = ["derive"] }
 enum-iterator = "0.7.0"
 enum-display-derive = "0.1.1"
+glam = "0.20.2"
 
 [dev-dependencies]

@@ -5,6 +5,7 @@ use bevy::{
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
+use simula_core::signal;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -48,7 +49,7 @@ fn setup(
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
         material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-        transform: Transform::from_xyz(2.0, 0.0, 2.0),
+        transform: Transform::from_xyz(2.0, 0.01, 2.0),
         ..Default::default()
     });
 
@@ -88,7 +89,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            transform: Transform::from_xyz(2.0, 0.0, 0.0),
+            transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..Default::default()
         })
         .insert(Rotate {
@@ -103,7 +104,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            transform: Transform::from_xyz(0.0, 2.0, 0.0),
+            transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..Default::default()
         })
         .insert(Rotate {
@@ -118,7 +119,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            transform: Transform::from_xyz(0.0, 0.0, 2.0),
+            transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..Default::default()
         })
         .insert(Rotate {
@@ -189,7 +190,7 @@ fn setup(
             color: Color::GREEN,
         },
         Voxel {
-            position: Vec3::new(0., 0., 6.),
+            position: Vec3::new(0., 0., -6.),
             size: 0.5,
             color: Color::rgba(0.0, 0.0, 1.0, 0.2),
         },
@@ -219,6 +220,18 @@ fn setup(
         transform: Transform::from_xyz(5.0, 0.0, -5.0),
         ..Default::default()
     });
+
+    commands.spawn_scene(asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"));
+
+    commands
+        .spawn()
+        .insert_bundle((
+            Transform::from_xyz(-2.5, 0.0, 2.5),
+            GlobalTransform::default(),
+        ))
+        .with_children(|parent| {
+            parent.spawn_scene(asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"));
+        });
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

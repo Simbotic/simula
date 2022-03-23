@@ -2929,6 +2929,7 @@ dependencies = [
  "bevy",
  "enum-display-derive",
  "enum-iterator",
+ "glam",
  "serde",
 ]
 
