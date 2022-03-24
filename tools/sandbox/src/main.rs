@@ -5,7 +5,7 @@ use bevy::{
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
-use simula_core::signal::{self, Signal};
+use simula_core::signal;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -15,8 +15,8 @@ use simula_viz::{
 
 fn main() {
     App::new()
-        .register_type::<Signal>()
-        .register_type::<signal::Function>()
+        .register_type::<signal::generator::Generator>()
+        .register_type::<signal::generator::Function>()
         .insert_resource(WindowDescriptor {
             title: "[Simbotic] Simula - Sandbox".to_string(),
             width: 940.,
@@ -250,8 +250,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 3.0, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::Sine,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::Sine,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -265,8 +265,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.8, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::Square,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::Square,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -280,8 +280,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.6, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::Triangle,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::Triangle,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -295,8 +295,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.4, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::Sawtooth,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::Sawtooth,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -310,8 +310,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.2, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::Pulse,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::Pulse,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -325,8 +325,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.0, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::WhiteNoise,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::WhiteNoise,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -340,8 +340,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 1.8, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::GaussNoise,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::GaussNoise,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -355,8 +355,8 @@ fn setup(
             transform: Transform::from_xyz(0.0, 1.6, 0.0),
             ..Default::default()
         })
-        .insert(Signal {
-            func: signal::Function::DigitalNoise,
+        .insert(signal::generator::Generator {
+            func: signal::generator::Function::DigitalNoise,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
@@ -421,7 +421,7 @@ struct SignalLine {
     points: Vec<Vec3>,
 }
 
-fn line_signal(time: Res<Time>, mut signals: Query<(&mut Signal, &mut SignalLine, &mut Lines)>) {
+fn line_signal(time: Res<Time>, mut signals: Query<(&mut signal::generator::Generator, &mut SignalLine, &mut Lines)>) {
     let mut hue = 0.0;
     let hue_dt = 360.0 / signals.iter().count() as f32;
     for (mut signal, mut signal_line, mut lines) in signals.iter_mut() {
@@ -431,7 +431,7 @@ fn line_signal(time: Res<Time>, mut signals: Query<(&mut Signal, &mut SignalLine
         }
 
         signal_line.points[num_points - 1].y =
-            signal::sample(&mut signal, time.time_since_startup());
+            signal::generator::sample(&mut signal, time.time_since_startup());
 
         let color = Color::Hsla {
             hue,

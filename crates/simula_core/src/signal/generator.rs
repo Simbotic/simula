@@ -24,7 +24,7 @@ type Sample = f32;
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
-pub struct Signal {
+pub struct Generator {
     pub func: Function,
     pub frequency: Sample,
     pub phase: Sample,
@@ -36,10 +36,10 @@ pub struct Signal {
     pub rng: Prng,
 }
 
-impl Default for Signal {
+impl Default for Generator {
     fn default() -> Self {
         let seed = rand::random();
-        Signal {
+        Generator {
             func: Function::default(),
             frequency: Sample::default(),
             phase: Sample::default(),
@@ -52,7 +52,7 @@ impl Default for Signal {
     }
 }
 
-pub fn sample(signal: &mut Signal, time: Duration) -> Sample {
+pub fn sample(signal: &mut Generator, time: Duration) -> Sample {
     let time = signal.frequency * time.as_secs_f32() + signal.phase;
     let sample = match signal.func {
         Function::Sine => (2.0 * PI * time).sin(),
