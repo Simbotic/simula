@@ -5,16 +5,18 @@ use bevy::{
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
-use simula_core::signal;
+use simula_core::signal::{self, Signal};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{Lines, LinesPlugin},
+    lines::{Lines, LinesBundle, LinesPlugin},
     voxels::{Voxel, Voxels, VoxelsBundle, VoxelsPlugin},
 };
 
 fn main() {
     App::new()
+        .register_type::<Signal>()
+        .register_type::<signal::Function>()
         .insert_resource(WindowDescriptor {
             title: "[Simbotic] Simula - Sandbox".to_string(),
             width: 940.,
@@ -35,6 +37,7 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
+        .add_system(line_signal)
         .add_system(rotate_system)
         .run();
 }
@@ -95,7 +98,8 @@ fn setup(
         .insert(Rotate {
             axis: Vec3::new(1.0, 0.0, 0.0),
             angle: 1.0,
-        });
+        })
+        .insert(RandomLines);
 
     // y - axis
     commands
@@ -110,7 +114,8 @@ fn setup(
         .insert(Rotate {
             axis: Vec3::new(0.0, 1.0, 0.0),
             angle: 1.0,
-        });
+        })
+        .insert(RandomLines);
 
     // z - axis
     commands
@@ -125,7 +130,8 @@ fn setup(
         .insert(Rotate {
             axis: Vec3::new(0.0, 0.0, 1.0),
             angle: 1.0,
-        });
+        })
+        .insert(RandomLines);
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
@@ -232,6 +238,132 @@ fn setup(
         .with_children(|parent| {
             parent.spawn_scene(asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"));
         });
+
+    // signals
+
+    let points: Vec<Vec3> = (-100i32..=100)
+        .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
+        .collect();
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 3.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::Sine,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 2.8, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::Square,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 2.6, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::Triangle,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 2.4, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::Sawtooth,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 2.2, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::Pulse,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 2.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::WhiteNoise,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 1.8, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::GaussNoise,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 1.6, 0.0),
+            ..Default::default()
+        })
+        .insert(Signal {
+            func: signal::Function::DigitalNoise,
+            amplitude: 0.1,
+            frequency: 3.0,
+            ..Default::default()
+        })
+        .insert(SignalLine {
+            points: points.clone(),
+        });
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
@@ -243,6 +375,9 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
         }
     };
 }
+
+#[derive(Component)]
+struct RandomLines;
 
 #[derive(Component)]
 struct Rotate {
@@ -259,7 +394,7 @@ fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform)>) {
     }
 }
 
-fn line_test(mut lines: Query<&mut Lines>) {
+fn line_test(mut lines: Query<&mut Lines, With<RandomLines>>) {
     let mut rng = rand::thread_rng();
     let die = Uniform::from(0f32..1f32);
 
@@ -278,5 +413,39 @@ fn line_test(mut lines: Query<&mut Lines>) {
             };
             lines.line_colored(start, end, color);
         }
+    }
+}
+
+#[derive(Component)]
+struct SignalLine {
+    points: Vec<Vec3>,
+}
+
+fn line_signal(time: Res<Time>, mut signals: Query<(&mut Signal, &mut SignalLine, &mut Lines)>) {
+    let mut hue = 0.0;
+    let hue_dt = 360.0 / signals.iter().count() as f32;
+    for (mut signal, mut signal_line, mut lines) in signals.iter_mut() {
+        let num_points = signal_line.points.len();
+        for i in 0..(num_points - 1) {
+            signal_line.points[i].y = signal_line.points[i + 1].y;
+        }
+
+        signal_line.points[num_points - 1].y =
+            signal::sample(&mut signal, time.time_since_startup());
+
+        let color = Color::Hsla {
+            hue,
+            lightness: 0.5,
+            saturation: 1.0,
+            alpha: 1.0,
+        };
+
+        for i in 0..(num_points - 1) {
+            let start = signal_line.points[i];
+            let end = signal_line.points[i + 1];
+            lines.line_colored(start, end, color);
+        }
+
+        hue = hue + hue_dt;
     }
 }

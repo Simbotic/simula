@@ -1,95 +1,154 @@
+use crate::prng::*;
 use bevy::prelude::*;
-use std::ops::{Add, Mul, Sub};
-use glam::Vec3;
+use std::{f32::consts::PI, time::Duration};
 
+#[derive(Reflect, Clone)]
 pub enum Function {
-    Line,
-    // Sine,
+    Sine,
+    Square,
+    Triangle,
+    Sawtooth,
+    Pulse,
+    WhiteNoise,
+    GaussNoise,
+    DigitalNoise,
 }
 
-pub enum Op {
-    Add,
+impl Default for Function {
+    fn default() -> Self {
+        Function::Sine
+    }
 }
 
-pub struct Sampler<Sample>
-where
-    Sample: Add + Sub + Mul,
-{
+type Sample = f32;
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
+pub struct Signal {
     pub func: Function,
     pub frequency: Sample,
     pub phase: Sample,
     pub amplitude: Sample,
     pub offset: Sample,
+    pub invert: bool,
+    pub seed: Sample,
+    #[reflect(ignore)]
+    pub rng: Prng,
 }
 
-pub fn sample<Sample>(sampler: &Sampler<Sample>, time: Sample) -> Sample
-where
-    Sample: Copy + Add + Sub + Mul + Mul<Output = Sample> + ,
-    <Sample as Mul>::Output: Add<Output=Sample>
-{
-    let time = sampler.frequency * time + sampler.phase;
-    let sample = match sampler.func {
-        Function::Line => time,
-        // Function::Sine => time.sin(),
+impl Default for Signal {
+    fn default() -> Self {
+        let seed = rand::random();
+        Signal {
+            func: Function::default(),
+            frequency: Sample::default(),
+            phase: Sample::default(),
+            amplitude: Sample::default(),
+            offset: Sample::default(),
+            invert: bool::default(),
+            seed,
+            rng: Prng::new(seed as u64),
+        }
+    }
+}
+
+pub fn sample(signal: &mut Signal, time: Duration) -> Sample {
+    let time = signal.frequency * time.as_secs_f32() + signal.phase;
+    let sample = match signal.func {
+        Function::Sine => (2.0 * PI * time).sin(),
+        Function::Square => (2.0 * PI * time).sin().signum(),
+        Function::Triangle => 1.0 - 4.0 * ((time - 0.25).round() - (time - 0.25)).abs(),
+        Function::Sawtooth => 2.0 * (time - (time + 0.5).floor()),
+        Function::Pulse => {
+            if (2.0 * PI * time).sin().abs() < 1.0 - 10e-3 {
+                0.0
+            } else {
+                1.0
+            }
+        }
+        Function::WhiteNoise => signal.rng.rand_float() * 2.0 - 1.0,
+        Function::GaussNoise => norm_inv(signal.rng.rand_float(), 0.0, 0.4),
+        Function::DigitalNoise => signal.rng.rand_float().round(),
     };
-    sample * sampler.amplitude + sampler.offset
+    let invert = if signal.invert { -1.0 } else { 1.0 };
+    invert * sample * signal.amplitude + signal.offset
 }
 
-#[test]
-fn signal_f32() {
-    let a = Vec3::new(0f32, 1f32, 2f32);
-    let b = Vec3::new(0f32, 1f32, 2f32);
-    let c = a + b;
-    assert_eq!(c, Vec3::new(0f32, 2f32, 4f32));
+//
+// Lower tail quantile for standard normal distribution function.
+//
+// This function returns an approximation of the inverse cumulative
+// standard normal distribution function.  I.e., given P, it returns
+// an approximation to the X satisfying P = Pr{Z <= X} where Z is a
+// random variable from the standard normal distribution.
+//
+// The algorithm uses a minimax approximation by rational functions
+// and the result has a relative error whose absolute value is less
+// than 1.15e-9.
+//
+// Author:      Peter J. Acklam
+// E-mail:      pjacklam@gmail.com
+// WWW URL:     https://github.com/pjacklam
+
+// An algorithm with a relative error less than 1.15*10-9 in the entire region.
+
+fn norm_sinv(p: Sample) -> Sample {
+    // Coefficients in rational approximations
+    let a = [
+        -39.696830f32,
+        220.946098f32,
+        -275.928510f32,
+        138.357751f32,
+        -30.664798f32,
+        2.506628f32,
+    ];
+
+    let b = [
+        -54.476098f32,
+        161.585836f32,
+        -155.698979f32,
+        66.801311f32,
+        -13.280681f32,
+    ];
+
+    let c = [
+        -0.007784894002f32,
+        -0.32239645f32,
+        -2.400758f32,
+        -2.549732f32,
+        4.374664f32,
+        2.938163f32,
+    ];
+
+    let d = [0.007784695709f32, 0.32246712f32, 2.445134f32, 3.754408f32];
+
+    // Define break-points.
+    let plow = 0.02425f32;
+    let phigh = 1.0 - plow;
+
+    // Rational approximation for lower region:
+    if p < plow {
+        let q = (-2.0 * p.ln()).sqrt();
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
+            / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
+    }
+
+    // Rational approximation for upper region:
+    if phigh < p {
+        let q = (-2.0 * (1.0 - p).ln()).sqrt();
+        return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
+            / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0);
+    }
+
+    // Rational approximation for central region:
+    {
+        let q = p - 0.5;
+        let r = q * q;
+        return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q
+            / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1.0);
+    }
 }
 
-// module Signal
-
-// open System
-
-// type Function =
-//     | Line
-//     | Sine
-//     | Square
-//     | Triangle
-//     | Sawtooth
-//     | Pulse
-//     | Floor
-
-// type Op =
-//     | Sample of (float -> float)
-//     | Add of Op * Op
-//     | Multiply of Op * Op
-//     | Compose of Op * Op
-//     | Op of Op
-
-// type Sampler =
-//     {
-//     func : Function
-//     freq : float
-//     phase : float
-//     amp : float
-//     offset : float
-//     }
-
-// let signal sampler =
-//     Sample (fun time ->
-//         let time = sampler.freq * time + sampler.phase
-//         let sample =
-//             match sampler.func with
-//             | Line -> time
-//             | Sine -> Math.Sin time
-//             | Square -> float (Math.Sign (Math.Sin (2.0 * Math.PI * time)))
-//             | Triangle -> 1.0 - 4.0 * Math.Abs (Math.Round (time - 0.25) - (time - 0.25))
-//             | Sawtooth -> 2.0 * (time - Math.Floor (time + 0.5))
-//             | Pulse -> if Math.Abs (Math.Sin (2.0 * Math.PI * time)) < 1.0 - 10E-3 then 0.0 else 1.0
-//             | Floor -> Math.Floor time
-//         sample * sampler.amp + sampler.offset)
-
-// let rec sample op time =
-//     match op with
-//     | Add (lhs , rhs) -> (sample lhs time) + (sample rhs time)
-//     | Multiply (lhs, rhs) -> (sample lhs time) * (sample rhs time)
-//     | Compose (lhs, rhs) -> (sample lhs << sample rhs) time
-//     | Sample func -> func time
-//     | Op op -> sample op time
+fn norm_inv(probability: Sample, mean: Sample, standard_deviation: Sample) -> Sample {
+    norm_sinv(probability) * standard_deviation + mean
+}
