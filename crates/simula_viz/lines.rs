@@ -180,6 +180,7 @@ fn extract_lines(
     let mut values = Vec::with_capacity(*previous_len);
     for (entity, mut lines, transform, visibility) in lines.iter_mut() {
         if !visibility.is_visible {
+            lines.lines.clear();
             continue;
         }
 
@@ -201,7 +202,7 @@ fn extract_lines(
             colors[i + 1] = line.end_color.as_rgba_f32().into();
             i += 2;
         }
-        lines.lines = vec![];
+        lines.lines.clear();
 
         let transform_matrix = transform.compute_matrix();
 
