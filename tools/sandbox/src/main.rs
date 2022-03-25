@@ -15,8 +15,9 @@ use simula_viz::{
 
 fn main() {
     App::new()
-        .register_type::<signal::generator::Generator>()
-        .register_type::<signal::generator::Function>()
+        .register_type::<signal::Generator>()
+        .register_type::<signal::Function>()
+        .register_type::<signal::Controller<f32>>()
         .insert_resource(WindowDescriptor {
             title: "[Simbotic] Simula - Sandbox".to_string(),
             width: 940.,
@@ -37,7 +38,8 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
-        .add_system(line_signal)
+        .add_system(line_signal_generator)
+        .add_system(line_signal_control)
         .add_system(rotate_system)
         .run();
 }
@@ -239,7 +241,7 @@ fn setup(
             parent.spawn_scene(asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"));
         });
 
-    // signals
+    // generator signals
 
     let points: Vec<Vec3> = (-100i32..=100)
         .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
@@ -250,13 +252,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 3.0, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::Sine,
+        .insert(signal::Generator {
+            func: signal::Function::Sine,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -265,13 +267,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.8, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::Square,
+        .insert(signal::Generator {
+            func: signal::Function::Square,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -280,13 +282,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.6, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::Triangle,
+        .insert(signal::Generator {
+            func: signal::Function::Triangle,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -295,13 +297,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.4, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::Sawtooth,
+        .insert(signal::Generator {
+            func: signal::Function::Sawtooth,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -310,13 +312,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.2, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::Pulse,
+        .insert(signal::Generator {
+            func: signal::Function::Pulse,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -325,13 +327,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 2.0, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::WhiteNoise,
+        .insert(signal::Generator {
+            func: signal::Function::WhiteNoise,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -340,13 +342,13 @@ fn setup(
             transform: Transform::from_xyz(0.0, 1.8, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::GaussNoise,
+        .insert(signal::Generator {
+            func: signal::Function::GaussNoise,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
             points: points.clone(),
         });
 
@@ -355,13 +357,39 @@ fn setup(
             transform: Transform::from_xyz(0.0, 1.6, 0.0),
             ..Default::default()
         })
-        .insert(signal::generator::Generator {
-            func: signal::generator::Function::DigitalNoise,
+        .insert(signal::Generator {
+            func: signal::Function::DigitalNoise,
             amplitude: 0.1,
             frequency: 3.0,
             ..Default::default()
         })
-        .insert(SignalLine {
+        .insert(SignalGeneratorLine {
+            points: points.clone(),
+        });
+
+    // control signals
+
+    commands
+        .spawn_bundle(LinesBundle {
+            transform: Transform::from_xyz(0.0, 4.0, 0.0),
+            ..Default::default()
+        })
+        .insert(signal::Generator {
+            func: signal::Function::Pulse,
+            amplitude: 1.0,
+            frequency: 1.0,
+            ..Default::default()
+        })
+        .insert(SignalGeneratorLine {
+            points: points.clone(),
+        })
+        .insert(signal::Controller::<f32> {
+            kp: 0.1,
+            ki: 0.0,
+            kd: 0.0,
+            ..Default::default()
+        })
+        .insert(SignalControlLine {
             points: points.clone(),
         });
 }
@@ -417,21 +445,23 @@ fn line_test(mut lines: Query<&mut Lines, With<RandomLines>>) {
 }
 
 #[derive(Component)]
-struct SignalLine {
+struct SignalGeneratorLine {
     points: Vec<Vec3>,
 }
 
-fn line_signal(time: Res<Time>, mut signals: Query<(&mut signal::generator::Generator, &mut SignalLine, &mut Lines)>) {
+fn line_signal_generator(
+    time: Res<Time>,
+    mut signals: Query<(&mut signal::Generator, &mut SignalGeneratorLine, &mut Lines)>,
+) {
     let mut hue = 0.0;
     let hue_dt = 360.0 / signals.iter().count() as f32;
-    for (mut signal, mut signal_line, mut lines) in signals.iter_mut() {
+    for (mut generator, mut signal_line, mut lines) in signals.iter_mut() {
         let num_points = signal_line.points.len();
         for i in 0..(num_points - 1) {
             signal_line.points[i].y = signal_line.points[i + 1].y;
         }
 
-        signal_line.points[num_points - 1].y =
-            signal::generator::sample(&mut signal, time.time_since_startup());
+        signal_line.points[num_points - 1].y = generator.sample(time.time_since_startup());
 
         let color = Color::Hsla {
             hue,
@@ -443,6 +473,52 @@ fn line_signal(time: Res<Time>, mut signals: Query<(&mut signal::generator::Gene
         for i in 0..(num_points - 1) {
             let start = signal_line.points[i];
             let end = signal_line.points[i + 1];
+            lines.line_colored(start, end, color);
+        }
+
+        hue = hue + hue_dt;
+    }
+}
+
+#[derive(Component)]
+struct SignalControlLine {
+    points: Vec<Vec3>,
+}
+
+fn line_signal_control(
+    time: Res<Time>,
+    mut signals: Query<(
+        &mut signal::Controller<f32>,
+        &SignalGeneratorLine,
+        &mut SignalControlLine,
+        &mut Lines,
+    )>,
+) {
+    let mut hue = 100.0;
+    let hue_dt = 360.0 / signals.iter().count() as f32;
+    for (mut controller, signal_line, mut control_line, mut lines) in signals.iter_mut() {
+        let num_points = control_line.points.len();
+        for i in 0..(num_points - 1) {
+            control_line.points[i].y = control_line.points[i + 1].y;
+        }
+
+        let control = controller.control(
+            signal_line.points[num_points - 1].y,
+            control_line.points[num_points - 1].y,
+            time.delta(),
+        );
+        control_line.points[num_points - 1].y = control_line.points[num_points - 1].y + control;
+
+        let color = Color::Hsla {
+            hue,
+            lightness: 0.5,
+            saturation: 1.0,
+            alpha: 1.0,
+        };
+
+        for i in 0..(num_points - 1) {
+            let start = control_line.points[i];
+            let end = control_line.points[i + 1];
             lines.line_colored(start, end, color);
         }
 

@@ -52,26 +52,28 @@ impl Default for Generator {
     }
 }
 
-pub fn sample(signal: &mut Generator, time: Duration) -> Sample {
-    let time = signal.frequency * time.as_secs_f32() + signal.phase;
-    let sample = match signal.func {
-        Function::Sine => (2.0 * PI * time).sin(),
-        Function::Square => (2.0 * PI * time).sin().signum(),
-        Function::Triangle => 1.0 - 4.0 * ((time - 0.25).round() - (time - 0.25)).abs(),
-        Function::Sawtooth => 2.0 * (time - (time + 0.5).floor()),
-        Function::Pulse => {
-            if (2.0 * PI * time).sin().abs() < 1.0 - 10e-3 {
-                0.0
-            } else {
-                1.0
+impl Generator {
+    pub fn sample(&mut self, time: Duration) -> Sample {
+        let time = self.frequency * time.as_secs_f32() + self.phase;
+        let sample = match self.func {
+            Function::Sine => (2.0 * PI * time).sin(),
+            Function::Square => (2.0 * PI * time).sin().signum(),
+            Function::Triangle => 1.0 - 4.0 * ((time - 0.25).round() - (time - 0.25)).abs(),
+            Function::Sawtooth => 2.0 * (time - (time + 0.5).floor()),
+            Function::Pulse => {
+                if (2.0 * PI * time).sin().abs() < 1.0 - 10e-3 {
+                    0.0
+                } else {
+                    1.0
+                }
             }
-        }
-        Function::WhiteNoise => signal.rng.rand_float() * 2.0 - 1.0,
-        Function::GaussNoise => norm_inv(signal.rng.rand_float(), 0.0, 0.4),
-        Function::DigitalNoise => signal.rng.rand_float().round(),
-    };
-    let invert = if signal.invert { -1.0 } else { 1.0 };
-    invert * sample * signal.amplitude + signal.offset
+            Function::WhiteNoise => self.rng.rand_float() * 2.0 - 1.0,
+            Function::GaussNoise => norm_inv(self.rng.rand_float(), 0.0, 0.4),
+            Function::DigitalNoise => self.rng.rand_float().round(),
+        };
+        let invert = if self.invert { -1.0 } else { 1.0 };
+        invert * sample * self.amplitude + self.offset
+    }
 }
 
 //

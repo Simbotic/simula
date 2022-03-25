@@ -1,2 +1,5 @@
+pub mod controller;
 pub mod generator;
-pub mod control;
+
+pub use controller::Controller;
+pub use generator::{Function, Generator};
