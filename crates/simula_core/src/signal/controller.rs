@@ -3,7 +3,7 @@ use std::time::Duration;
 
 #[derive(Reflect, Component, Default)]
 #[reflect(Component)]
-pub struct Controller<Sample: Default + Reflect + PartialEq> {
+pub struct SignalController<Sample: Default + Reflect + PartialEq> {
     /// proportional gain
     pub kp: Sample,
     /// integral gain
@@ -22,7 +22,7 @@ pub struct Controller<Sample: Default + Reflect + PartialEq> {
     pub pv: Sample,
 }
 
-impl<Sample> Controller<Sample>
+impl<Sample> SignalController<Sample>
 where
     Sample: Copy
         + Default
@@ -73,8 +73,8 @@ impl AsSample<Vec3> for Vec3 {
 #[test]
 fn test_types_compile() {
     let dt: Duration = Duration::from_millis(16000);
-    let mut s_f32 = Controller::<f32>::default();
-    let mut s_vec3 = Controller::<Vec3>::default();
+    let mut s_f32 = SignalController::<f32>::default();
+    let mut s_vec3 = SignalController::<Vec3>::default();
     let _c = s_f32.control(0.0, 0.0, dt);
     let _c = s_vec3.control(Vec3::ZERO, Vec3::ZERO, dt);
 }

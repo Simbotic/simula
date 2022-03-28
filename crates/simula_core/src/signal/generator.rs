@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use std::{f32::consts::PI, time::Duration};
 
 #[derive(Reflect, Clone)]
-pub enum Function {
+pub enum SignalFunction {
     Sine,
     Square,
     Triangle,
@@ -14,9 +14,9 @@ pub enum Function {
     DigitalNoise,
 }
 
-impl Default for Function {
+impl Default for SignalFunction {
     fn default() -> Self {
-        Function::Sine
+        SignalFunction::Sine
     }
 }
 
@@ -24,8 +24,8 @@ type Sample = f32;
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
-pub struct Generator {
-    pub func: Function,
+pub struct SignalGenerator {
+    pub func: SignalFunction,
     pub frequency: Sample,
     pub phase: Sample,
     pub amplitude: Sample,
@@ -36,11 +36,11 @@ pub struct Generator {
     pub rng: Prng,
 }
 
-impl Default for Generator {
+impl Default for SignalGenerator {
     fn default() -> Self {
         let seed = rand::random();
-        Generator {
-            func: Function::default(),
+        SignalGenerator {
+            func: SignalFunction::default(),
             frequency: Sample::default(),
             phase: Sample::default(),
             amplitude: Sample::default(),
@@ -52,24 +52,24 @@ impl Default for Generator {
     }
 }
 
-impl Generator {
+impl SignalGenerator {
     pub fn sample(&mut self, time: Duration) -> Sample {
         let time = self.frequency * time.as_secs_f32() + self.phase;
         let sample = match self.func {
-            Function::Sine => (2.0 * PI * time).sin(),
-            Function::Square => (2.0 * PI * time).sin().signum(),
-            Function::Triangle => 1.0 - 4.0 * ((time - 0.25).round() - (time - 0.25)).abs(),
-            Function::Sawtooth => 2.0 * (time - (time + 0.5).floor()),
-            Function::Pulse => {
+            SignalFunction::Sine => (2.0 * PI * time).sin(),
+            SignalFunction::Square => (2.0 * PI * time).sin().signum(),
+            SignalFunction::Triangle => 1.0 - 4.0 * ((time - 0.25).round() - (time - 0.25)).abs(),
+            SignalFunction::Sawtooth => 2.0 * (time - (time + 0.5).floor()),
+            SignalFunction::Pulse => {
                 if (2.0 * PI * time).sin().abs() < 1.0 - 10e-3 {
                     0.0
                 } else {
                     1.0
                 }
             }
-            Function::WhiteNoise => self.rng.rand_float() * 2.0 - 1.0,
-            Function::GaussNoise => norm_inv(self.rng.rand_float(), 0.0, 0.4),
-            Function::DigitalNoise => self.rng.rand_float().round(),
+            SignalFunction::WhiteNoise => self.rng.rand_float() * 2.0 - 1.0,
+            SignalFunction::GaussNoise => norm_inv(self.rng.rand_float(), 0.0, 0.4),
+            SignalFunction::DigitalNoise => self.rng.rand_float().round(),
         };
         let invert = if self.invert { -1.0 } else { 1.0 };
         invert * sample * self.amplitude + self.offset

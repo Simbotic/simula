@@ -2936,6 +2936,7 @@ dependencies = [
  "enum-display-derive",
  "enum-iterator",
  "oorandom",
+ "petgraph",
  "rand 0.8.5",
  "serde",
 ]
