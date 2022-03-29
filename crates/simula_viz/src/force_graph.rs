@@ -24,6 +24,7 @@ impl<UserNodeData: Default + Reflect + PartialEq, UserEdgeData: Default + Reflec
             node_speed: Vec3::new(100.0, 0.0, 100.0),
             damping_factor: 0.95,
             iterations: 3,
+            ..Default::default()
         };
 
         ForceGraph {

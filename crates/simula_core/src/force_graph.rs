@@ -108,6 +108,7 @@ pub struct SimulationParameters {
     pub node_speed: Vec3,
     pub damping_factor: f32,
     pub iterations: usize,
+    pub max_dt: f32,
 }
 
 impl Default for SimulationParameters {
@@ -119,6 +120,7 @@ impl Default for SimulationParameters {
             node_speed: Vec3::splat(500.0),
             damping_factor: 0.95,
             iterations: 10,
+            max_dt: 0.03,
         }
     }
 }
@@ -248,7 +250,11 @@ impl<UserNodeData, UserEdgeData> ForceGraph<UserNodeData, UserEdgeData> {
             return;
         }
 
-        let dt = dt.as_secs_f32() / self.parameters.iterations as f32;
+        let dt = dt.as_secs_f32().min(self.parameters.max_dt);
+        let dt = dt / self.parameters.iterations as f32;
+        if !(dt > 0.0) {
+            return;
+        }
 
         for _ in 0..self.parameters.iterations {
             for (n1_idx_i, n1_idx) in self.node_indices.iter().enumerate() {
