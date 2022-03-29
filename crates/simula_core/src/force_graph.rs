@@ -68,22 +68,46 @@
 
 use bevy::prelude::*;
 use petgraph::{
-    stable_graph::{NodeIndex, StableUnGraph},
+    stable_graph::StableUnGraph,
     visit::{EdgeRef, IntoEdgeReferences},
 };
-use std::collections::BTreeSet;
+use std::{
+    collections::BTreeSet,
+    ops::{Deref, DerefMut},
+    time::Duration,
+};
 
-pub type DefaultNodeIdx = NodeIndex<petgraph::stable_graph::DefaultIx>;
+#[derive(PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
+pub struct NodeIndex(pub petgraph::stable_graph::NodeIndex<petgraph::stable_graph::DefaultIx>);
+
+impl Deref for NodeIndex {
+    type Target = petgraph::stable_graph::NodeIndex<petgraph::stable_graph::DefaultIx>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for NodeIndex {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Default for NodeIndex {
+    fn default() -> Self {
+        NodeIndex(Default::default())
+    }
+}
 
 /// Parameters to control the simulation of the force graph.
-#[derive(Reflect, Component, Clone, Debug)]
-#[reflect(Component)]
+#[derive(Reflect, Clone, Debug)]
 pub struct SimulationParameters {
     pub force_charge: f32,
     pub force_spring: f32,
     pub force_max: f32,
-    pub node_speed: f32,
+    pub node_speed: Vec3,
     pub damping_factor: f32,
+    pub iterations: usize,
 }
 
 impl Default for SimulationParameters {
@@ -92,8 +116,9 @@ impl Default for SimulationParameters {
             force_charge: 12000.0,
             force_spring: 0.3,
             force_max: 280.0,
-            node_speed: 7000.0,
+            node_speed: Vec3::splat(500.0),
             damping_factor: 0.95,
+            iterations: 10,
         }
     }
 }
@@ -152,7 +177,7 @@ where
 pub struct ForceGraph<UserNodeData = (), UserEdgeData = ()> {
     pub parameters: SimulationParameters,
     graph: StableUnGraph<Node<UserNodeData>, EdgeData<UserEdgeData>>,
-    node_indices: BTreeSet<DefaultNodeIdx>,
+    node_indices: BTreeSet<NodeIndex>,
 }
 
 impl<UserNodeData, UserEdgeData> ForceGraph<UserNodeData, UserEdgeData> {
@@ -184,32 +209,28 @@ impl<UserNodeData, UserEdgeData> ForceGraph<UserNodeData, UserEdgeData> {
     }
 
     /// Adds a new node and returns an index that can be used to reference the node.
-    pub fn add_node(&mut self, node_data: NodeData<UserNodeData>) -> DefaultNodeIdx {
-        let idx = self.graph.add_node(Node {
+    pub fn add_node(&mut self, node_data: NodeData<UserNodeData>) -> NodeIndex {
+        let inner_idx = self.graph.add_node(Node {
             data: node_data,
             index: Default::default(),
             velocity: Vec3::ZERO,
             accel: Vec3::ZERO,
         });
-        self.graph[idx].index = idx;
+        let idx = NodeIndex(inner_idx);
+        self.graph[inner_idx].index = idx;
         self.node_indices.insert(idx);
         idx
     }
 
     /// Removes a node by index.
-    pub fn remove_node(&mut self, idx: DefaultNodeIdx) {
-        self.graph.remove_node(idx);
+    pub fn remove_node(&mut self, idx: NodeIndex) {
+        self.graph.remove_node(*idx);
         self.node_indices.remove(&idx);
     }
 
     /// Adds or updates an edge connecting two nodes by index.
-    pub fn add_edge(
-        &mut self,
-        n1_idx: DefaultNodeIdx,
-        n2_idx: DefaultNodeIdx,
-        edge: EdgeData<UserEdgeData>,
-    ) {
-        self.graph.update_edge(n1_idx, n2_idx, edge);
+    pub fn add_edge(&mut self, n1_idx: NodeIndex, n2_idx: NodeIndex, edge: EdgeData<UserEdgeData>) {
+        self.graph.update_edge(*n1_idx, *n2_idx, edge);
     }
 
     /// Removes all nodes from the force graph.
@@ -222,33 +243,37 @@ impl<UserNodeData, UserEdgeData> ForceGraph<UserNodeData, UserEdgeData> {
     ///
     /// The number of seconds that have elapsed since the previous update must be calculated and
     /// provided by the user as `dt`.
-    pub fn update(&mut self, dt: f32) {
+    pub fn update(&mut self, dt: Duration) {
         if self.graph.node_count() == 0 {
             return;
         }
 
-        for (n1_idx_i, n1_idx) in self.node_indices.iter().enumerate() {
-            let mut edges = self.graph.neighbors(*n1_idx).detach();
-            while let Some(n2_idx) = edges.next_node(&self.graph) {
-                let (n1, n2) = self.graph.index_twice_mut(*n1_idx, n2_idx);
-                let f = attract_nodes(n1, n2, &self.parameters);
-                n1.apply_force(f, dt, &self.parameters);
-            }
+        let dt = dt.as_secs_f32() / self.parameters.iterations as f32;
 
-            for n2_idx in self.node_indices.iter().skip(n1_idx_i + 1) {
-                let (n1, n2) = self.graph.index_twice_mut(*n1_idx, *n2_idx);
-                let f = repel_nodes(n1, n2, &self.parameters);
-                if !n1.data.is_anchor {
+        for _ in 0..self.parameters.iterations {
+            for (n1_idx_i, n1_idx) in self.node_indices.iter().enumerate() {
+                let mut edges = self.graph.neighbors(**n1_idx).detach();
+                while let Some(n2_idx) = edges.next_node(&self.graph) {
+                    let (n1, n2) = self.graph.index_twice_mut(**n1_idx, n2_idx);
+                    let f = attract_nodes(n1, n2, &self.parameters);
                     n1.apply_force(f, dt, &self.parameters);
                 }
-                if !n2.data.is_anchor {
-                    n2.apply_force(-f, dt, &self.parameters);
-                }
-            }
 
-            let n1 = &mut self.graph[*n1_idx];
-            if !n1.data.is_anchor {
-                n1.update(dt, &self.parameters);
+                for n2_idx in self.node_indices.iter().skip(n1_idx_i + 1) {
+                    let (n1, n2) = self.graph.index_twice_mut(**n1_idx, **n2_idx);
+                    let f = repel_nodes(n1, n2, &self.parameters);
+                    if !n1.data.is_anchor {
+                        n1.apply_force(f, dt, &self.parameters);
+                    }
+                    if !n2.data.is_anchor {
+                        n2.apply_force(-f, dt, &self.parameters);
+                    }
+                }
+
+                let n1 = &mut self.graph[**n1_idx];
+                if !n1.data.is_anchor {
+                    n1.update(dt, &self.parameters);
+                }
             }
         }
     }
@@ -287,7 +312,7 @@ impl<UserNodeData, UserEdgeData> ForceGraph<UserNodeData, UserEdgeData> {
 pub struct Node<UserNodeData = ()> {
     /// The node data provided by the user.
     pub data: NodeData<UserNodeData>,
-    index: DefaultNodeIdx,
+    index: NodeIndex,
     velocity: Vec3,
     accel: Vec3,
 }
@@ -304,7 +329,7 @@ impl<UserNodeData> Node<UserNodeData> {
     }
 
     /// The index used to reference the node in the [ForceGraph].
-    pub fn index(&self) -> DefaultNodeIdx {
+    pub fn index(&self) -> NodeIndex {
         self.index
     }
 
@@ -315,12 +340,8 @@ impl<UserNodeData> Node<UserNodeData> {
     }
 
     fn update(&mut self, dt: f32, parameters: &SimulationParameters) {
-        self.velocity.x = (self.velocity.x + self.accel.x * dt * parameters.node_speed)
-            * parameters.damping_factor;
-        self.velocity.y = (self.velocity.y + self.accel.y * dt * parameters.node_speed)
-            * parameters.damping_factor;
-        self.velocity.z = (self.velocity.z + self.accel.z * dt * parameters.node_speed)
-            * parameters.damping_factor;
+        self.velocity =
+            (self.velocity + self.accel * dt * parameters.node_speed) * parameters.damping_factor;
         self.data.position.x += self.velocity.x * dt;
         self.data.position.y += self.velocity.y * dt;
         self.data.position.z += self.velocity.z * dt;

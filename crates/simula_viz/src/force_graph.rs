@@ -1,13 +1,7 @@
-use crate::{
-    axes::{Axes, AxesBundle, AxesPlugin},
-    grid::{Grid, GridBundle, GridPlugin},
-    lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin},
-    voxels::{Voxel, Voxels, VoxelsBundle, VoxelsPlugin},
-};
+use crate::lines::{Lines, LinesMaterial};
 use bevy::prelude::*;
-use simula_core::{force_graph, signal};
+use simula_core::force_graph;
 
-// #[derive(Component, Clone, Default)]
 #[derive(Reflect, Component)]
 #[reflect(Component)]
 pub struct ForceGraph<
@@ -24,11 +18,12 @@ impl<UserNodeData: Default + Reflect + PartialEq, UserEdgeData: Default + Reflec
 {
     fn default() -> Self {
         let parameters = force_graph::SimulationParameters {
-            force_charge: 1.2,
-            force_spring: 0.0003,
-            force_max: 0.0280,
-            node_speed: 0.0, //0.7,
+            force_charge: 1200.0,
+            force_spring: 1000.0,
+            force_max: 2000.0,
+            node_speed: Vec3::new(100.0, 0.0, 100.0),
             damping_factor: 0.95,
+            iterations: 3,
         };
 
         ForceGraph {
@@ -38,7 +33,7 @@ impl<UserNodeData: Default + Reflect + PartialEq, UserEdgeData: Default + Reflec
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct ForceGraphBundle<
     UserNodeData: Default + Reflect + PartialEq,
     UserEdgeData: Default + Reflect + PartialEq,

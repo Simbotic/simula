@@ -6,11 +6,12 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_camera::flycam::*;
 use simula_core::{
-    force_graph::*,
+    force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
+    force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{Lines, LinesBundle, LinesPlugin},
     signal::{
@@ -24,6 +25,9 @@ fn main() {
         .register_type::<SignalGenerator>()
         .register_type::<SignalFunction>()
         .register_type::<SignalController<f32>>()
+        .register_type::<ForceGraph<SandboxNodeData, SandboxEdgeData>>()
+        .register_type::<SimulationParameters>()
+        .register_type::<SandboxNode>()
         .insert_resource(WindowDescriptor {
             title: "[Simbotic] Simula - Sandbox".to_string(),
             width: 940.,
@@ -47,6 +51,7 @@ fn main() {
         .add_system(signal_generator_lines)
         .add_system(signal_control_lines)
         .add_system(rotate_system)
+        .add_system(force_graph_test)
         .run();
 }
 
@@ -398,6 +403,84 @@ fn setup(
         .insert(SignalControlLine {
             points: points.clone(),
         });
+
+    // force graph
+
+    let mut graph_bundle = ForceGraphBundle::<SandboxNodeData, SandboxEdgeData> {
+        transform: Transform::from_xyz(0.0, 3.5, 0.0),
+        ..Default::default()
+    };
+    let graph = &mut graph_bundle.graph.graph;
+
+    commands
+        .spawn()
+        .insert(SandboxGraph)
+        .with_children(|parent| {
+            let root_index = graph.add_node(NodeData::<SandboxNodeData> {
+                is_anchor: true,
+                ..Default::default()
+            });
+
+            parent
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::UVSphere {
+                        radius: 0.1,
+                        ..Default::default()
+                    })),
+                    material: materials.add(Color::GOLD.into()),
+                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                    ..Default::default()
+                })
+                .insert(SandboxNode {
+                    node_index: root_index,
+                });
+
+            for _ in 0..10 {
+                let node_index = graph.add_node(NodeData::<SandboxNodeData> {
+                    position: Vec3::new(rand::random(), rand::random(), rand::random()) * 0.01,
+                    mass: 1.0,
+                    ..Default::default()
+                });
+
+                graph.add_edge(root_index, node_index, Default::default());
+
+                parent
+                    .spawn_bundle(PbrBundle {
+                        mesh: meshes.add(Mesh::from(shape::UVSphere {
+                            radius: 0.1,
+                            ..Default::default()
+                        })),
+                        material: materials.add(Color::ALICE_BLUE.into()),
+                        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                        ..Default::default()
+                    })
+                    .insert(SandboxNode { node_index });
+
+                let parent_index = node_index;
+                for _ in 0..3 {
+                    let node_index = graph.add_node(NodeData::<SandboxNodeData> {
+                        position: Vec3::new(rand::random(), rand::random(), rand::random()) * 0.01,
+                        mass: 1.0,
+                        ..Default::default()
+                    });
+
+                    graph.add_edge(parent_index, node_index, Default::default());
+
+                    parent
+                        .spawn_bundle(PbrBundle {
+                            mesh: meshes.add(Mesh::from(shape::UVSphere {
+                                radius: 0.1,
+                                ..Default::default()
+                            })),
+                            material: materials.add(Color::ALICE_BLUE.into()),
+                            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                            ..Default::default()
+                        })
+                        .insert(SandboxNode { node_index });
+                }
+            }
+        })
+        .insert_bundle(graph_bundle);
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
@@ -450,13 +533,48 @@ fn line_test(mut lines: Query<&mut Lines, With<RandomLines>>) {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Reflect, Component, Default, Clone, PartialEq)]
+#[reflect(Component)]
+pub struct SandboxNode {
+    #[reflect(ignore)]
+    node_index: NodeIndex,
+}
+
+#[derive(Reflect, Component, Default, Clone, PartialEq)]
+#[reflect(Component)]
 pub struct SandboxNodeData;
 
-#[derive(Clone, Default)]
+#[derive(Reflect, Component, Default, Clone, PartialEq)]
+#[reflect(Component)]
 pub struct SandboxEdgeData;
 
-#[derive(Component)]
-pub struct SandboxGraph {
-    pub graph: ForceGraph<SandboxNodeData, SandboxEdgeData>,
+#[derive(Reflect, Component, Default, Clone, PartialEq)]
+#[reflect(Component)]
+pub struct SandboxGraph;
+
+fn force_graph_test(
+    time: Res<Time>,
+    mut graphs: Query<
+        (
+            &mut ForceGraph<SandboxNodeData, SandboxEdgeData>,
+            &Children,
+            &mut Lines,
+        ),
+        With<SandboxGraph>,
+    >,
+    mut nodes: Query<(&mut Transform, &SandboxNode)>,
+) {
+    for (mut graph, children, mut lines) in graphs.iter_mut() {
+        graph.graph.parameters = graph.parameters.clone();
+        graph.graph.update(time.delta());
+        graph.graph.visit_edges(|a, b, _| {
+            lines.line_colored(a.position(), b.position(), Color::DARK_GRAY);
+        });
+        for child in children.iter() {
+            if let Ok((mut transform, node)) = nodes.get_mut(*child) {
+                let node = &graph.graph.get_graph()[*node.node_index];
+                transform.translation = node.position();
+            }
+        }
+    }
 }
