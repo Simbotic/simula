@@ -3,7 +3,7 @@ use std::time::Duration;
 
 #[derive(Reflect, Component, Default)]
 #[reflect(Component)]
-pub struct SignalController<Sample: Default + Reflect + PartialEq> {
+pub struct SignalController<Sample: Default + Reflect + PartialEq + Clone> {
     /// proportional gain
     pub kp: Sample,
     /// integral gain
