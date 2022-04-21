@@ -32,7 +32,6 @@ fn main() {
             title: "[Simbotic] Simula - Sandbox".to_string(),
             width: 940.,
             height: 528.,
-            vsync: false,
             ..Default::default()
         })
         .insert_resource(Msaa { samples: 4 })

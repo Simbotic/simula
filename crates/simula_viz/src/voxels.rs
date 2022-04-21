@@ -7,8 +7,9 @@ use bevy::{
     pbr::MeshPipelineKey,
     prelude::*,
     render::{
-        mesh::{Indices, Mesh},
+        mesh::{Indices, Mesh, MeshVertexBufferLayout},
         primitives::Aabb,
+        render_asset::RenderAssets,
         render_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin},
         render_phase::{
             AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
@@ -16,7 +17,7 @@ use bevy::{
         },
         render_resource::{
             std140::{AsStd140, Std140},
-            *,
+            *, {Shader, SpecializedMeshPipelines},
         },
         renderer::{RenderDevice, RenderQueue},
         texture::BevyDefault,
@@ -118,9 +119,9 @@ pub struct VoxelsMesh {
 impl From<VoxelsMesh> for Mesh {
     fn from(voxel_mesh: VoxelsMesh) -> Self {
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, voxel_mesh.positions);
-        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, voxel_mesh.normals);
-        mesh.set_attribute(Mesh::ATTRIBUTE_COLOR, voxel_mesh.colors);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, voxel_mesh.positions);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, voxel_mesh.normals);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, voxel_mesh.colors);
         mesh.set_indices(Some(Indices::U32(voxel_mesh.indices)));
         mesh
     }
@@ -250,8 +251,8 @@ impl Default for VoxelsBundle {
             visibility: Visibility::default(),
             computed_visibility: ComputedVisibility::default(),
             aabb: Aabb {
-                center: Vec3::ZERO,
-                half_extents: Vec3::ONE,
+                center: Vec3::ZERO.into(),
+                half_extents: Vec3::ONE.into(),
             },
         }
     }
@@ -268,7 +269,7 @@ impl Plugin for VoxelsPlugin {
         app.sub_app_mut(RenderApp)
             .add_render_command::<Opaque3d, DrawVoxelsCustom>()
             .init_resource::<VoxelsPipeline>()
-            .init_resource::<SpecializedPipelines<VoxelsPipeline>>()
+            .init_resource::<SpecializedMeshPipelines<VoxelsPipeline>>()
             .add_system_to_stage(RenderStage::Extract, extract_voxels)
             .add_system_to_stage(RenderStage::Prepare, prepare_voxels)
             .add_system_to_stage(RenderStage::Queue, queue_model_bind_group)
@@ -281,9 +282,13 @@ fn queue_voxels(
     opaque_3d_draw_functions: Res<DrawFunctions<Opaque3d>>,
     voxels_pipeline: Res<VoxelsPipeline>,
     msaa: Res<Msaa>,
-    mut pipelines: ResMut<SpecializedPipelines<VoxelsPipeline>>,
-    mut pipeline_cache: ResMut<RenderPipelineCache>,
-    material_voxels: Query<(Entity, &ModelUniform), (With<ExtractedVoxels>, With<VoxelsMaterial>)>,
+    mut pipelines: ResMut<SpecializedMeshPipelines<VoxelsPipeline>>,
+    mut pipeline_cache: ResMut<PipelineCache>,
+    render_meshes: Res<RenderAssets<Mesh>>,
+    material_voxels: Query<
+        (Entity, &ModelUniform, &Handle<Mesh>),
+        (With<ExtractedVoxels>, With<VoxelsMaterial>),
+    >,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Opaque3d>)>,
 ) {
     let draw_voxels = opaque_3d_draw_functions
@@ -293,20 +298,25 @@ fn queue_voxels(
 
     let key = MeshPipelineKey::from_msaa_samples(msaa.samples)
         | MeshPipelineKey::from_primitive_topology(PrimitiveTopology::TriangleList);
-    let pipeline = pipelines.specialize(&mut pipeline_cache, &voxels_pipeline, key);
 
     for (view, mut opaque_phase) in views.iter_mut() {
         trace!("queue_lines: views.iter_mut()");
         let view_matrix = view.transform.compute_matrix();
         let view_row_2 = view_matrix.row(2);
-        for (entity, model_uniform) in material_voxels.iter() {
+        for (entity, model_uniform, mesh_handle) in material_voxels.iter() {
             trace!("queue_lines: material_voxels.iter()");
-            opaque_phase.add(Opaque3d {
-                entity,
-                pipeline,
-                draw_function: draw_voxels,
-                distance: view_row_2.dot(model_uniform.transform.col(3)),
-            });
+
+            if let Some(mesh) = render_meshes.get(mesh_handle) {
+                let pipeline = pipelines
+                    .specialize(&mut pipeline_cache, &voxels_pipeline, key, &mesh.layout)
+                    .unwrap();
+                opaque_phase.add(Opaque3d {
+                    entity,
+                    pipeline,
+                    draw_function: draw_voxels,
+                    distance: view_row_2.dot(model_uniform.transform.col(3)),
+                });
+            }
         }
     }
 }
@@ -597,13 +607,17 @@ impl FromWorld for VoxelsPipeline {
     }
 }
 
-impl SpecializedPipeline for VoxelsPipeline {
+impl SpecializedMeshPipeline for VoxelsPipeline {
     type Key = MeshPipelineKey;
 
-    fn specialize(&self, key: Self::Key) -> RenderPipelineDescriptor {
+    fn specialize(
+        &self,
+        key: Self::Key,
+        layout: &MeshVertexBufferLayout,
+    ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         let shader_defs = Vec::new();
 
-        RenderPipelineDescriptor {
+        Ok(RenderPipelineDescriptor {
             vertex: VertexState {
                 shader: self.shader.clone(),
                 entry_point: "vertex".into(),
@@ -684,7 +698,7 @@ impl SpecializedPipeline for VoxelsPipeline {
                 alpha_to_coverage_enabled: false,
             },
             label: Some("voxels_pipeline".into()),
-        }
+        })
     }
 }
 
@@ -770,7 +784,7 @@ impl<const I: usize> EntityRenderCommand for SetVoxelsViewBindGroup<I> {
         view_query: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Ok((view_uniform, voxels_view_bind_group)) = view_query.get(view) {
+        if let Ok((view_uniform, voxels_view_bind_group)) = view_query.get_inner(view) {
             trace!("SetVoxelsViewBindGroup: EntityRenderCommand");
             pass.set_bind_group(I, &voxels_view_bind_group.value, &[view_uniform.offset]);
         }
@@ -789,7 +803,7 @@ impl<const I: usize> EntityRenderCommand for SetVoxelsBindGroup<I> {
         voxels_meta: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Ok(voxels_meta) = voxels_meta.get(item) {
+        if let Ok(voxels_meta) = voxels_meta.get_inner(item) {
             trace!("SetVoxelsBindGroup: EntityRenderCommand");
             pass.set_bind_group(I, &voxels_meta.bind_group, &[]);
         }
@@ -834,7 +848,7 @@ impl EntityRenderCommand for DrawVoxels {
         voxels: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Ok(voxels) = voxels.get(item) {
+        if let Ok(voxels) = voxels.get_inner(item) {
             trace!("DrawVoxels: EntityRenderCommand");
             pass.set_index_buffer(voxels.index_buffer.slice(..), 0, IndexFormat::Uint32);
             pass.set_vertex_buffer(0, voxels.positions_buffer.slice(..));

@@ -419,9 +419,9 @@ impl From<Rod> for RodMesh {
         assert_eq!(tris.len(), fs_len);
 
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vs.clone());
-        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vns.clone());
-        mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, vts.clone());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vs.clone());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vns.clone());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vts.clone());
         mesh.set_indices(Some(Indices::U32(tris.clone())));
 
         let mut vxs = vec![];
@@ -438,7 +438,7 @@ impl From<Rod> for RodMesh {
         };
         mikktspace::generate_tangents(&mut rod);
         rod.mesh
-            .set_attribute(Mesh::ATTRIBUTE_TANGENT, rod.vxs.clone());
+            .insert_attribute(Mesh::ATTRIBUTE_TANGENT, rod.vxs.clone());
         rod
     }
 }

@@ -23,7 +23,7 @@
 //! fn main() {
 //!	  App::build()
 //!     .add_plugins(DefaultPlugins)
-//!     .add_startup_system(setup.system())
+//!     .add_startup_system(setup)
 //!     .add_plugin(FlyCameraPlugin)
 //!     .run();
 //! }
@@ -250,7 +250,7 @@ pub struct FlyCameraPlugin;
 
 impl Plugin for FlyCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(camera_movement_system.system())
-            .add_system(mouse_motion_system.system());
+        app.add_system(camera_movement_system)
+            .add_system(mouse_motion_system);
     }
 }

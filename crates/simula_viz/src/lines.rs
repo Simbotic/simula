@@ -7,7 +7,9 @@ use bevy::{
     pbr::MeshPipelineKey,
     prelude::*,
     render::{
+        mesh::{Mesh, MeshVertexBufferLayout},
         primitives::Aabb,
+        render_asset::RenderAssets,
         render_component::{ComponentUniforms, DynamicUniformIndex, UniformComponentPlugin},
         render_phase::{
             AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
@@ -15,7 +17,7 @@ use bevy::{
         },
         render_resource::{
             std140::{AsStd140, Std140},
-            *,
+            *, {Shader, SpecializedMeshPipelines},
         },
         renderer::{RenderDevice, RenderQueue},
         texture::BevyDefault,
@@ -99,8 +101,8 @@ impl Default for LinesBundle {
             visibility: Visibility::default(),
             computed_visibility: ComputedVisibility::default(),
             aabb: Aabb {
-                center: Vec3::ZERO,
-                half_extents: Vec3::ONE,
+                center: Vec3::ZERO.into(),
+                half_extents: Vec3::ONE.into(),
             },
         }
     }
@@ -119,7 +121,7 @@ impl Plugin for LinesPlugin {
             .sub_app_mut(RenderApp)
             .add_render_command::<Opaque3d, DrawLinesCustom>()
             .init_resource::<LinesPipeline>()
-            .init_resource::<SpecializedPipelines<LinesPipeline>>()
+            .init_resource::<SpecializedMeshPipelines<LinesPipeline>>()
             .add_system_to_stage(RenderStage::Extract, extract_lines)
             .add_system_to_stage(RenderStage::Prepare, prepare_lines)
             .add_system_to_stage(RenderStage::Queue, queue_model_bind_group)
@@ -132,9 +134,13 @@ fn queue_lines(
     opaque_3d_draw_functions: Res<DrawFunctions<Opaque3d>>,
     lines_pipeline: Res<LinesPipeline>,
     msaa: Res<Msaa>,
-    mut pipelines: ResMut<SpecializedPipelines<LinesPipeline>>,
-    mut pipeline_cache: ResMut<RenderPipelineCache>,
-    material_lines: Query<(Entity, &ModelUniform), (With<ExtractedLines>, With<LinesMaterial>)>,
+    mut pipelines: ResMut<SpecializedMeshPipelines<LinesPipeline>>,
+    mut pipeline_cache: ResMut<PipelineCache>,
+    render_meshes: Res<RenderAssets<Mesh>>,
+    material_lines: Query<
+        (Entity, &ModelUniform, &Handle<Mesh>),
+        (With<ExtractedLines>, With<LinesMaterial>),
+    >,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Opaque3d>)>,
 ) {
     let draw_lines = opaque_3d_draw_functions
@@ -144,20 +150,25 @@ fn queue_lines(
 
     let key = MeshPipelineKey::from_msaa_samples(msaa.samples)
         | MeshPipelineKey::from_primitive_topology(PrimitiveTopology::LineList);
-    let pipeline = pipelines.specialize(&mut pipeline_cache, &lines_pipeline, key);
 
     for (view, mut opaque_phase) in views.iter_mut() {
         trace!("queue_lines: views.iter_mut()");
         let view_matrix = view.transform.compute_matrix();
         let view_row_2 = view_matrix.row(2);
-        for (entity, model_uniform) in material_lines.iter() {
+        for (entity, model_uniform, mesh_handle) in material_lines.iter() {
             trace!("queue_lines: material_lines.iter()");
-            opaque_phase.add(Opaque3d {
-                entity,
-                pipeline,
-                draw_function: draw_lines,
-                distance: view_row_2.dot(model_uniform.transform.col(3)),
-            });
+
+            if let Some(mesh) = render_meshes.get(mesh_handle) {
+                let pipeline = pipelines
+                    .specialize(&mut pipeline_cache, &lines_pipeline, key, &mesh.layout)
+                    .unwrap();
+                opaque_phase.add(Opaque3d {
+                    entity,
+                    pipeline,
+                    draw_function: draw_lines,
+                    distance: view_row_2.dot(model_uniform.transform.col(3)),
+                });
+            }
         }
     }
 }
@@ -404,13 +415,17 @@ impl FromWorld for LinesPipeline {
     }
 }
 
-impl SpecializedPipeline for LinesPipeline {
+impl SpecializedMeshPipeline for LinesPipeline {
     type Key = MeshPipelineKey;
 
-    fn specialize(&self, key: Self::Key) -> RenderPipelineDescriptor {
+    fn specialize(
+        &self,
+        key: Self::Key,
+        layout: &MeshVertexBufferLayout,
+    ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         let shader_defs = Vec::new();
 
-        RenderPipelineDescriptor {
+        Ok(RenderPipelineDescriptor {
             vertex: VertexState {
                 shader: self.shader.clone(),
                 entry_point: "vertex".into(),
@@ -482,7 +497,7 @@ impl SpecializedPipeline for LinesPipeline {
                 alpha_to_coverage_enabled: false,
             },
             label: Some("lines_pipeline".into()),
-        }
+        })
     }
 }
 
@@ -568,7 +583,7 @@ impl<const I: usize> EntityRenderCommand for SetLinesViewBindGroup<I> {
         view_query: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Ok((view_uniform, lines_view_bind_group)) = view_query.get(view) {
+        if let Ok((view_uniform, lines_view_bind_group)) = view_query.get_inner(view) {
             trace!("SetLinesViewBindGroup: EntityRenderCommand");
             pass.set_bind_group(I, &lines_view_bind_group.value, &[view_uniform.offset]);
         }
@@ -587,7 +602,7 @@ impl<const I: usize> EntityRenderCommand for SetLinesBindGroup<I> {
         lines_meta: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Ok(lines_meta) = lines_meta.get(item) {
+        if let Ok(lines_meta) = lines_meta.get_inner(item) {
             trace!("SetLinesBindGroup: EntityRenderCommand");
             pass.set_bind_group(I, &lines_meta.bind_group, &[]);
         }
@@ -632,8 +647,10 @@ impl EntityRenderCommand for DrawLines {
         lines: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Ok(lines) = lines.get(item) {
+        if let Ok(lines) = lines.get_inner(item) {
             trace!("DrawLines: EntityRenderCommand");
+            // let points_buffer = lines.points_buffer.clone();
+            // let colors_buffer = lines.colors_buffer.clone();
             pass.set_vertex_buffer(0, lines.points_buffer.slice(..));
             pass.set_vertex_buffer(1, lines.colors_buffer.slice(..));
             pass.draw(0..(lines.num_lines as u32 * 2), 0..1);
