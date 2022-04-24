@@ -24,7 +24,8 @@ impl Default for Axes {
 pub struct AxesBundle {
     pub axes: Axes,
     pub lines: Lines,
-    pub material: LinesMaterial,
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -36,6 +37,7 @@ impl Default for AxesBundle {
         AxesBundle {
             axes: Default::default(),
             lines: Default::default(),
+            mesh: Default::default(),
             material: Default::default(),
             transform: Default::default(),
             global_transform: Default::default(),
@@ -45,7 +47,7 @@ impl Default for AxesBundle {
     }
 }
 
-fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<LinesMaterial>>) {
+fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<Handle<LinesMaterial>>>) {
     let transform = Transform::default();
     for (mut lines, axes, visibility) in query.iter_mut() {
         if visibility.is_visible {

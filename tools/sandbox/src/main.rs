@@ -1,6 +1,7 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
+    render::render_resource::PrimitiveTopology,
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
@@ -13,11 +14,11 @@ use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{Lines, LinesBundle, LinesPlugin},
+    lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin},
     signal::{
         signal_control_lines, signal_generator_lines, SignalControlLine, SignalGeneratorLine,
     },
-    voxels::{Voxel, Voxels, VoxelsBundle, VoxelsPlugin},
+    voxels::{Voxel, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
 
 fn main() {
@@ -57,13 +58,15 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut shape_materials: ResMut<Assets<StandardMaterial>>,
+    mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
+    mut lines_materials: ResMut<Assets<LinesMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     // plane
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        material: shape_materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
         transform: Transform::from_xyz(2.0, 0.01, 2.0),
         ..Default::default()
     });
@@ -71,7 +74,7 @@ fn setup(
     // cube
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        material: shape_materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
         transform: Transform::from_xyz(-2.0, 0.0, -2.0),
         ..Default::default()
     });
@@ -81,8 +84,12 @@ fn setup(
         grid: Grid {
             size: 10,
             divisions: 10,
+            start_color: Color::BLUE,
+            end_color: Color::RED,
             ..Default::default()
         },
+        mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+        material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
         ..Default::default()
     });
@@ -93,6 +100,8 @@ fn setup(
             size: 1.,
             inner_offset: 5.,
         },
+        mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+        material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_xyz(0.0, 0.01, 0.0),
         ..Default::default()
     });
@@ -104,6 +113,8 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..Default::default()
         })
@@ -120,6 +131,8 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..Default::default()
         })
@@ -136,6 +149,8 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..Default::default()
         })
@@ -217,6 +232,8 @@ fn setup(
     commands
         .spawn_bundle(VoxelsBundle {
             voxels: Voxels { voxels },
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::TriangleList)),
+            material: voxels_materials.add(VoxelsMaterial {}),
             ..Default::default()
         })
         .insert(Rotate {
@@ -231,7 +248,7 @@ fn setup(
 
     commands.spawn().insert_bundle(PbrBundle {
         mesh: meshes.add(rod_mesh.mesh),
-        material: materials.add(StandardMaterial {
+        material: shape_materials.add(StandardMaterial {
             base_color: Color::PINK,
             ..Default::default()
         }),
@@ -259,6 +276,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 3.0, 0.0),
             ..Default::default()
         })
@@ -274,6 +293,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.8, 0.0),
             ..Default::default()
         })
@@ -289,6 +310,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.6, 0.0),
             ..Default::default()
         })
@@ -304,6 +327,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.4, 0.0),
             ..Default::default()
         })
@@ -319,6 +344,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.2, 0.0),
             ..Default::default()
         })
@@ -334,6 +361,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.0, 0.0),
             ..Default::default()
         })
@@ -349,6 +378,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 1.8, 0.0),
             ..Default::default()
         })
@@ -364,6 +395,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 1.6, 0.0),
             ..Default::default()
         })
@@ -381,6 +414,8 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 4.0, 0.0),
             ..Default::default()
         })
@@ -406,6 +441,8 @@ fn setup(
     // force graph
 
     let mut graph_bundle = ForceGraphBundle::<SandboxNodeData, SandboxEdgeData> {
+        mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+        material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_xyz(0.0, 3.5, 0.0),
         ..Default::default()
     };
@@ -426,7 +463,7 @@ fn setup(
                         radius: 0.1,
                         ..Default::default()
                     })),
-                    material: materials.add(Color::GOLD.into()),
+                    material: shape_materials.add(Color::GOLD.into()),
                     transform: Transform::from_xyz(0.0, 0.5, 0.0),
                     ..Default::default()
                 })
@@ -449,7 +486,7 @@ fn setup(
                             radius: 0.1,
                             ..Default::default()
                         })),
-                        material: materials.add(Color::ALICE_BLUE.into()),
+                        material: shape_materials.add(Color::ALICE_BLUE.into()),
                         transform: Transform::from_xyz(0.0, 0.5, 0.0),
                         ..Default::default()
                     })
@@ -471,7 +508,7 @@ fn setup(
                                 radius: 0.1,
                                 ..Default::default()
                             })),
-                            material: materials.add(Color::ALICE_BLUE.into()),
+                            material: shape_materials.add(Color::ALICE_BLUE.into()),
                             transform: Transform::from_xyz(0.0, 0.5, 0.0),
                             ..Default::default()
                         })
@@ -567,7 +604,7 @@ fn force_graph_test(
         graph.graph.parameters = graph.parameters.clone();
         graph.graph.update(time.delta());
         graph.graph.visit_edges(|a, b, _| {
-            lines.line_colored(a.position(), b.position(), Color::DARK_GRAY);
+            lines.line_gradient(a.position(), b.position(), Color::RED, Color::BLUE);
         });
         for child in children.iter() {
             if let Ok((mut transform, node)) = nodes.get_mut(*child) {

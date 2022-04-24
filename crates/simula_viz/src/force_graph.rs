@@ -41,7 +41,8 @@ pub struct ForceGraphBundle<
 > {
     pub graph: ForceGraph<UserNodeData, UserEdgeData>,
     pub lines: Lines,
-    pub material: LinesMaterial,
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,

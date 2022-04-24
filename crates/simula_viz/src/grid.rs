@@ -9,7 +9,8 @@ use bevy::{
 pub struct Grid {
     pub size: u32,
     pub divisions: u32,
-    pub color: Color,
+    pub start_color: Color,
+    pub end_color: Color,
 }
 
 impl Default for Grid {
@@ -17,7 +18,8 @@ impl Default for Grid {
         Grid {
             size: 10,
             divisions: 10,
-            color: Color::rgb(0.025, 0.02, 0.03),
+            start_color: Color::rgb(0.025, 0.02, 0.03),
+            end_color: Color::rgb(0.025, 0.02, 0.03),
         }
     }
 }
@@ -26,7 +28,8 @@ impl Default for Grid {
 pub struct GridBundle {
     pub grid: Grid,
     pub lines: Lines,
-    pub material: LinesMaterial,
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -38,6 +41,7 @@ impl Default for GridBundle {
         GridBundle {
             grid: Default::default(),
             lines: Default::default(),
+            mesh: Default::default(),
             material: Default::default(),
             transform: Default::default(),
             global_transform: Default::default(),
@@ -47,7 +51,7 @@ impl Default for GridBundle {
     }
 }
 
-fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<LinesMaterial>>) {
+fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {
     for (mut lines, grid, visibility) in query.iter_mut() {
         if visibility.is_visible {
             let center = grid.divisions / 2;
@@ -62,18 +66,18 @@ fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<LinesMaterial>
             }
 
             for (i, k) in i.zip(k.step_by(step as usize)) {
-                let mut color = grid.color;
+                let mut start_color = grid.start_color;
                 if i == center {
-                    color = color + color * 0.3;
+                    start_color = start_color + start_color * 0.3;
                 }
 
                 let x_a = Vec3::new(-half_size as f32, 0., k as f32);
                 let x_b = Vec3::new(half_size as f32, 0., k as f32);
-                lines.line_colored(x_a, x_b, color);
+                lines.line_gradient(x_a, x_b, start_color, grid.end_color);
 
                 let z_a = Vec3::new(k as f32, 0., -half_size as f32);
                 let z_b = Vec3::new(k as f32, 0., half_size as f32);
-                lines.line_colored(z_a, z_b, color);
+                lines.line_gradient(z_a, z_b, start_color, grid.end_color);
             }
         }
     }
