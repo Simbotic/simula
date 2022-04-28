@@ -5,7 +5,7 @@ use bevy::{
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
-use simula_camera::flycam::*;
+use simula_camera::orbitcam::*;
 use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
@@ -40,7 +40,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(FlyCameraPlugin)
+        .add_plugin(OrbitCameraPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
@@ -175,11 +175,11 @@ fn setup(
     // camera
     commands
         .spawn_bundle(PerspectiveCameraBundle {
-            transform: Transform::from_xyz(0.0, 1.5, 8.0),
             ..Default::default()
         })
-        .insert(FlyCamera {
-            sensitivity: 100.,
+        .insert(OrbitCamera {
+            center: Vec3::new(0.0, 1.0, 0.0),
+            distance: 10.0,
             ..Default::default()
         });
 
@@ -215,17 +215,17 @@ fn setup(
         Voxel {
             position: Vec3::new(6., 0., 0.),
             size: 0.5,
-            color: Color::RED,
+            color: *Color::RED.clone().set_a(0.1),
         },
         Voxel {
             position: Vec3::new(0., 6., 0.),
             size: 0.5,
-            color: Color::GREEN,
+            color: *Color::GREEN.clone().set_a(0.1),
         },
         Voxel {
             position: Vec3::new(0., 0., -6.),
             size: 0.5,
-            color: Color::rgba(0.0, 0.0, 1.0, 0.2),
+            color: *Color::BLUE.clone().set_a(0.1),
         },
     ];
 
