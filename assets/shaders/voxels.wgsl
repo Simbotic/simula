@@ -23,14 +23,9 @@ struct VertexOutput {
 [[stage(vertex)]]
 fn vertex(vertex: Vertex) -> VertexOutput {
     let world_position = mesh.model * vec4<f32>(vertex.position, 1.0);
+    let world_normal = (mesh.inverse_transpose_model * vec4<f32>(vertex.normal, 0.0)).xyz;
     var out: VertexOutput;
     out.clip_position = view.view_proj * world_position;
-
-    let world_normal = mat3x3<f32>(
-        mesh.inverse_transpose_model[0].xyz,
-        mesh.inverse_transpose_model[1].xyz,
-        mesh.inverse_transpose_model[2].xyz
-    ) * vertex.normal;
 
     var color = vec4<f32>((vec4<u32>(vertex.color) >> vec4<u32>(0u, 8u, 16u, 24u)) & vec4<u32>(255u)) / 255.0;
     color = vec4<f32>(color.rgb * (dot(world_normal, normalize(vec3<f32>(0.2, 1.0, 0.1))) * 0.25 + 0.75), color.a);
