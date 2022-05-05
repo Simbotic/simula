@@ -64,47 +64,55 @@ fn setup(
     asset_server: Res<AssetServer>,
 ) {
     // plane
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-        material: shape_materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-        transform: Transform::from_xyz(2.0, 0.01, 2.0),
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            material: shape_materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            transform: Transform::from_xyz(2.0, 0.01, 2.0),
+            ..Default::default()
+        })
+        .insert(Name::new("Shape: Plane"));
 
     // cube
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: shape_materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(-2.0, 0.0, -2.0),
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: shape_materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(-2.0, 0.0, -2.0),
+            ..Default::default()
+        })
+        .insert(Name::new("Shape: Cube"));
 
     // grid
-    commands.spawn_bundle(GridBundle {
-        grid: Grid {
-            size: 10,
-            divisions: 10,
-            start_color: Color::BLUE,
-            end_color: Color::RED,
+    commands
+        .spawn_bundle(GridBundle {
+            grid: Grid {
+                size: 10,
+                divisions: 10,
+                start_color: Color::BLUE,
+                end_color: Color::RED,
+                ..Default::default()
+            },
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
-        },
-        mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
-        material: lines_materials.add(LinesMaterial {}),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-        ..Default::default()
-    });
+        })
+        .insert(Name::new("Grid"));
 
     // axes
-    commands.spawn_bundle(AxesBundle {
-        axes: Axes {
-            size: 1.,
-            inner_offset: 5.,
-        },
-        mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
-        material: lines_materials.add(LinesMaterial {}),
-        transform: Transform::from_xyz(0.0, 0.01, 0.0),
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(AxesBundle {
+            axes: Axes {
+                size: 1.,
+                inner_offset: 5.,
+            },
+            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            material: lines_materials.add(LinesMaterial {}),
+            transform: Transform::from_xyz(0.0, 0.01, 0.0),
+            ..Default::default()
+        })
+        .insert(Name::new("Axes: World"));
 
     // x - axis
     commands
@@ -118,6 +126,7 @@ fn setup(
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..Default::default()
         })
+        .insert(Name::new("Axis: X"))
         .insert(Rotate {
             axis: Vec3::new(1.0, 0.0, 0.0),
             angle: 1.0,
@@ -136,6 +145,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..Default::default()
         })
+        .insert(Name::new("Axis: Y"))
         .insert(Rotate {
             axis: Vec3::new(0.0, 1.0, 0.0),
             angle: 1.0,
@@ -154,6 +164,7 @@ fn setup(
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..Default::default()
         })
+        .insert(Name::new("Axis: Z"))
         .insert(Rotate {
             axis: Vec3::new(0.0, 0.0, 1.0),
             angle: 1.0,
@@ -236,6 +247,7 @@ fn setup(
             material: voxels_materials.add(VoxelsMaterial {}),
             ..Default::default()
         })
+        .insert(Name::new("Voxels"))
         .insert(Rotate {
             axis: Vec3::new(0.0, 1.0, 0.0),
             angle: 1.0,
@@ -246,17 +258,27 @@ fn setup(
     };
     let rod_mesh = simula_viz::rod::RodMesh::from(rod_mesh);
 
-    commands.spawn().insert_bundle(PbrBundle {
-        mesh: meshes.add(rod_mesh.mesh),
-        material: shape_materials.add(StandardMaterial {
-            base_color: Color::PINK,
+    commands
+        .spawn()
+        .insert_bundle(PbrBundle {
+            mesh: meshes.add(rod_mesh.mesh),
+            material: shape_materials.add(StandardMaterial {
+                base_color: Color::PINK,
+                ..Default::default()
+            }),
+            transform: Transform::from_xyz(5.0, 0.0, -5.0),
             ..Default::default()
-        }),
-        transform: Transform::from_xyz(5.0, 0.0, -5.0),
-        ..Default::default()
-    });
+        })
+        .insert(Name::new("Shape: Rod"));
 
-    commands.spawn_scene(asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"));
+    commands
+        .spawn()
+        .insert_bundle((Transform::default(), GlobalTransform::default()))
+        .insert(Name::new("Metric: Plane"))
+        .with_children(|parent| {
+            parent
+                .spawn_scene(asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"));
+        });
 
     commands
         .spawn()
@@ -264,6 +286,7 @@ fn setup(
             Transform::from_xyz(-2.5, 0.0, 2.5),
             GlobalTransform::default(),
         ))
+        .insert(Name::new("Metric: Box"))
         .with_children(|parent| {
             parent.spawn_scene(asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"));
         });
@@ -289,7 +312,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: Sine"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -306,7 +330,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Sgnal: Square"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -323,7 +348,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: Triangle"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -340,7 +366,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: Sawtooth"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -357,7 +384,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: Pulse"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -374,7 +402,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: WhiteNoise"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -391,7 +420,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: GaussNoise"));
 
     commands
         .spawn_bundle(LinesBundle {
@@ -408,7 +438,8 @@ fn setup(
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: DigitalNoise"));
 
     // control signals
 
@@ -436,7 +467,8 @@ fn setup(
         })
         .insert(SignalControlLine {
             points: points.clone(),
-        });
+        })
+        .insert(Name::new("Signal: Controller"));
 
     // force graph
 
@@ -450,6 +482,7 @@ fn setup(
 
     commands
         .spawn()
+        .insert(Name::new("Force-directed Graph"))
         .insert(SandboxGraph)
         .with_children(|parent| {
             let root_index = graph.add_node(NodeData::<SandboxNodeData> {
