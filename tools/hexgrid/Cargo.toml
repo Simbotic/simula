@@ -1,0 +1,11 @@
+[package]
+name = "hexgrid"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.7" }
+simula_hexgrid = { path = "../../crates/simula_hexgrid" }
+rand = "0.8.4"
+bevy-inspector-egui = "0.10"
+rand_chacha = "0.3.1"

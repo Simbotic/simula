@@ -1,0 +1,21 @@
+[package]
+name = "simula_hexgrid"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.7", features = [
+	"render",
+	"bevy_winit",
+	"ktx2", 
+	"zstd", 
+	"zlib", 
+	"basis-universal"
+] }
+bevy_egui = "0.13"
+bytemuck = "1.7"
+rand = "0.8.4"
+rand_chacha = "0.3.1"
+
+[lib]
+path = "src/lib.rs"
