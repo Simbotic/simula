@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.7" }
 mikktspace = "0.2"
+bytemuck = "1.7"
 simula_core = { path = "../../crates/simula_core" }
 
 [lib]

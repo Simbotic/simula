@@ -3106,6 +3106,7 @@ name = "simula_viz"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bytemuck",
  "mikktspace",
  "simula_core",
 ]

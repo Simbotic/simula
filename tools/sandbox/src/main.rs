@@ -1,7 +1,7 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    render::render_resource::PrimitiveTopology,
+    render::{render_resource::PrimitiveTopology, view::NoFrustumCulling},
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
@@ -15,6 +15,7 @@ use simula_viz::{
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin},
+    pointcloud::{PointData, Pointcloud, PointcloudPlugin},
     signal::{
         signal_control_lines, signal_generator_lines, SignalControlLine, SignalGeneratorLine,
     },
@@ -45,6 +46,7 @@ fn main() {
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(VoxelsPlugin)
+        .add_plugin(PointcloudPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -550,6 +552,26 @@ fn setup(
             }
         })
         .insert_bundle(graph_bundle);
+
+    // Pointcloud
+    commands.spawn().insert_bundle((
+        meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
+        Transform::from_xyz(0.0, -8.0, 10.0),
+        GlobalTransform::default(),
+        Pointcloud(
+            (1..=10)
+                .flat_map(|x| (1..=10).map(move |y| (x as f32 / 10.0, y as f32 / 10.0)))
+                .map(|(x, y)| PointData {
+                    position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
+                    scale: 1.0,
+                    color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_f32(),
+                })
+                .collect(),
+        ),
+        Visibility::default(),
+        ComputedVisibility::default(),
+        NoFrustumCulling,
+    ));
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
