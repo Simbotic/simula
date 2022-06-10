@@ -66,22 +66,6 @@ pub fn worldmap_setup(
         .insert(WorldMapObject)
         .insert(HexagonTiles);
 
-    let worldmap_plane_material = StandardMaterial {
-        emissive_texture: Some(assets.load("textures/worldmap_sal.basis")),
-        emissive: Color::WHITE,
-        ..Default::default()
-    };
-
-    commands
-        .spawn()
-        .insert_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 5000.0 })),
-            material: materials.add(worldmap_plane_material),
-            transform: Transform::from_xyz(-800.0, 0.0, 800.0),
-            ..Default::default()
-        })
-        .insert(WorldMapObject);
-
     // camera
     commands
         .spawn_bundle(PerspectiveCameraBundle {
