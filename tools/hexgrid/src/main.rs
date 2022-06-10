@@ -4,10 +4,10 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::{SeedableRng, Rng};
 use simula_hexgrid::{
-    worldmap::*,
-    mapcam::*,
+    worldmap::*
 };
 use rand_chacha::ChaCha8Rng;
+use simula_camera::orbitcam::*;
 
 
 fn main() {
@@ -22,17 +22,15 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(WorldmapPlugin)
-        .add_startup_system(worldmap_setup)
+        .add_plugin(HexgridPlugin)
+        .add_startup_system(hexgrid_setup)
         .add_startup_system(hexagon_builder)
         .run();
 }
 
-pub fn worldmap_setup(
+pub fn hexgrid_setup(
     mut commands: Commands,
-    assets: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands
         .spawn()
@@ -63,7 +61,7 @@ pub fn worldmap_setup(
             ComputedVisibility::default(),
             NoFrustumCulling,
         ))
-        .insert(WorldMapObject)
+        .insert(HexGridObject)
         .insert(HexagonTiles);
 
     // camera
@@ -77,7 +75,7 @@ pub fn worldmap_setup(
             center: Vec3::ZERO,
             ..Default::default()
         })
-        .insert(WorldMapObject);
+        .insert(HexGridObject);
 }
 
 pub fn hexagon_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {

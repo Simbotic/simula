@@ -1848,6 +1848,7 @@ dependencies = [
  "bevy-inspector-egui",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
+ "simula_camera",
  "simula_hexgrid",
 ]
 
@@ -3179,6 +3180,7 @@ dependencies = [
  "bytemuck",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
+ "simula_camera",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
-use crate::mapcam::*;
 use crate::pathfinding::*;
+use simula_camera::orbitcam::*;
 use bevy::{
     core_pipeline::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
@@ -27,7 +27,7 @@ use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
 #[derive(Component)]
-pub struct WorldMapObject;
+pub struct HexGridObject;
 
 #[derive(Component)]
 pub struct TempHexTiles;
@@ -128,7 +128,7 @@ impl Default for ShortestPathBuilder {
     }
 }
 
-pub fn worldmap_viewer(
+pub fn hexgrid_viewer(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut shortest_path: ResMut<ShortestPathBuilder>,
@@ -203,7 +203,7 @@ pub fn worldmap_viewer(
                     ComputedVisibility::default(),
                     NoFrustumCulling,
                 ))
-                .insert(WorldMapObject)
+                .insert(HexGridObject)
                 .insert(TempHexTiles);
 
             despawn_tile_event.send(DespawnTileEvent);
@@ -211,7 +211,7 @@ pub fn worldmap_viewer(
     }
 }
 
-pub fn worldmap_rebuilder(
+pub fn hexgrid_rebuilder(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut shortest_path: ResMut<ShortestPathBuilder>,
@@ -262,7 +262,7 @@ pub fn worldmap_rebuilder(
                     NoFrustumCulling,
                 ))
                 .insert(TempHexTiles)
-                .insert(WorldMapObject);
+                .insert(HexGridObject);
 
             despawn_tile_event.send(DespawnTileEvent);
         }
@@ -352,15 +352,15 @@ impl ExtractComponent for InstanceMaterialData {
     }
 }
 
-pub struct WorldmapMaterialPlugin;
+pub struct HexgridMaterialPlugin;
 
-impl Plugin for WorldmapMaterialPlugin {
+impl Plugin for HexgridMaterialPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(ExtractComponentPlugin::<InstanceMaterialData>::default());
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
-            .init_resource::<WorldmapPipeline>()
-            .init_resource::<SpecializedMeshPipelines<WorldmapPipeline>>()
+            .init_resource::<HexgridPipeline>()
+            .init_resource::<SpecializedMeshPipelines<HexgridPipeline>>()
             .add_system_to_stage(RenderStage::Queue, queue_custom)
             .add_system_to_stage(RenderStage::Prepare, prepare_instance_buffers);
     }
@@ -377,9 +377,9 @@ pub struct InstanceData {
 #[allow(clippy::too_many_arguments)]
 fn queue_custom(
     transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
-    custom_pipeline: Res<WorldmapPipeline>,
+    custom_pipeline: Res<HexgridPipeline>,
     msaa: Res<Msaa>,
-    mut pipelines: ResMut<SpecializedMeshPipelines<WorldmapPipeline>>,
+    mut pipelines: ResMut<SpecializedMeshPipelines<HexgridPipeline>>,
     mut pipeline_cache: ResMut<PipelineCache>,
     meshes: Res<RenderAssets<Mesh>>,
     material_meshes: Query<
@@ -440,28 +440,28 @@ fn prepare_instance_buffers(
     }
 }
 
-pub struct WorldmapPipeline {
+pub struct HexgridPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
 }
 
-impl FromWorld for WorldmapPipeline {
+impl FromWorld for HexgridPipeline {
     fn from_world(world: &mut World) -> Self {
         let world = world.cell();
         let asset_server = world.get_resource::<AssetServer>().unwrap();
         asset_server.watch_for_changes().unwrap();
-        let shader = asset_server.load("shaders/worldmap.wgsl");
+        let shader = asset_server.load("shaders/hexgrid.wgsl");
 
         let mesh_pipeline = world.get_resource::<MeshPipeline>().unwrap();
 
-        WorldmapPipeline {
+        HexgridPipeline {
             shader,
             mesh_pipeline: mesh_pipeline.clone(),
         }
     }
 }
 
-impl SpecializedMeshPipeline for WorldmapPipeline {
+impl SpecializedMeshPipeline for HexgridPipeline {
     type Key = MeshPipelineKey;
 
     fn specialize(
@@ -557,8 +557,6 @@ pub fn ui_system_pathfinding_window(
     if node_start_end.queue_end != end_node {
         if node_start_end.destination_reached == false {
             calculate_path_event.send(CalculatePathEvent);
-            //println!("node_start_end.queue_end: {:?}", node_start_end.queue_end);
-            //println!("end_node {:?}", end_node);
         }
     } else {
         node_start_end.destination_reached = true;
@@ -913,12 +911,12 @@ pub fn hexagon_pathfinder(
     }
 }
 
-pub struct WorldmapPlugin;
+pub struct HexgridPlugin;
 
-impl Plugin for WorldmapPlugin {
+impl Plugin for HexgridPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(OrbitCameraPlugin)
-            .add_plugin(WorldmapMaterialPlugin)
+            .add_plugin(HexgridMaterialPlugin)
             .add_event::<DespawnTileEvent>()
             .add_event::<CalculatePathEvent>()
             .add_event::<RenderPathEvent>()
@@ -956,7 +954,7 @@ impl Plugin for WorldmapPlugin {
             .add_system(ui_render_next_tiles)
             .add_system(select_tile)
             .add_system(hexagon_pathfinder)
-            .add_system(worldmap_viewer)
-            .add_system(worldmap_rebuilder);
+            .add_system(hexgrid_viewer)
+            .add_system(hexgrid_rebuilder);
     }
 }
