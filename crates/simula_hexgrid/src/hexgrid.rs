@@ -23,8 +23,7 @@ use bevy::{
 use bevy_egui::*;
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
-use rand::Rng;
-use rand_chacha::ChaCha8Rng;
+use simula_core::prng::*;
 
 #[derive(Component)]
 pub struct HexGridObject;
@@ -292,7 +291,7 @@ pub fn select_tile(
                     let mut hash = DefaultHasher::new();
                     vec.hash(&mut hash);
                     let complexity_seed = hash.finish();
-                    let l = ChaCha8Rng::seed_from_u64(complexity_seed).gen_range(0.0..20.0);
+                    let l = Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
                     let mut s = 0.95;
 
                     //lowers saturation of out of bound tiles

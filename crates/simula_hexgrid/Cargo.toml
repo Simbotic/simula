@@ -13,10 +13,10 @@ bevy = { version = "0.7", features = [
 	"basis-universal"
 ] }
 simula_camera = { path = "../../crates/simula_camera" }
+simula_core = { path = "../../crates/simula_core" }
 bevy_egui = "0.13"
 bytemuck = "1.7"
 rand = "0.8.4"
-rand_chacha = "0.3.1"
 
 [lib]
 path = "src/lib.rs"
