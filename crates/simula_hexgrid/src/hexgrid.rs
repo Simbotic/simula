@@ -26,7 +26,7 @@ use rand::prelude::*;
 use simula_core::prng::*;
 
 #[derive(Component)]
-pub struct HexGridObject;
+pub struct HexgridObject;
 
 #[derive(Component)]
 pub struct TempHexTiles;
@@ -181,13 +181,13 @@ pub fn hexgrid_viewer(
                     })),
                     Transform::from_xyz(10.0, 0.0, -10.0),
                     GlobalTransform::default(),
-                    InstanceMaterialData(
+                    HexgridData(
                         (shortest_path.render_min_column..shortest_path.render_max_column)
                             .flat_map(|x| {
                                 (shortest_path.render_min_row..shortest_path.render_max_row)
                                     .map(move |z| (x as f32 / 10.0, z as f32 / 10.0))
                             })
-                            .map(|(x, z)| InstanceData {
+                            .map(|(x, z)| HexData {
                                 position: Vec3::new(
                                     x * -10.0 + 2.0,
                                     0.0,
@@ -202,7 +202,7 @@ pub fn hexgrid_viewer(
                     ComputedVisibility::default(),
                     NoFrustumCulling,
                 ))
-                .insert(HexGridObject)
+                .insert(HexgridObject)
                 .insert(TempHexTiles);
 
             despawn_tile_event.send(DespawnTileEvent);
@@ -239,13 +239,13 @@ pub fn hexgrid_rebuilder(
                     })),
                     Transform::from_xyz(10.0, 0.0, -10.0),
                     GlobalTransform::default(),
-                    InstanceMaterialData(
+                    HexgridData(
                         (shortest_path.render_min_column..shortest_path.render_max_column)
                             .flat_map(|x| {
                                 (shortest_path.render_min_row..shortest_path.render_max_row)
                                     .map(move |z| (x as f32 / 10.0, z as f32 / 10.0))
                             })
-                            .map(|(x, z)| InstanceData {
+                            .map(|(x, z)| HexData {
                                 position: Vec3::new(
                                     x * -10.0 + 2.0,
                                     0.0,
@@ -261,7 +261,7 @@ pub fn hexgrid_rebuilder(
                     NoFrustumCulling,
                 ))
                 .insert(TempHexTiles)
-                .insert(HexGridObject);
+                .insert(HexgridObject);
 
             despawn_tile_event.send(DespawnTileEvent);
         }
@@ -269,7 +269,7 @@ pub fn hexgrid_rebuilder(
 }
 
 pub fn select_tile(
-    mut maps: Query<&mut InstanceMaterialData>,
+    mut maps: Query<&mut HexgridData>,
     shortest_path: ResMut<ShortestPathBuilder>,
     mut despawn_tile_event: EventReader<DespawnTileEvent>,
     mut tile_visibility: Query<&mut Visibility, With<TempHexTiles>>,
@@ -341,13 +341,13 @@ pub fn select_tile(
 }
 
 #[derive(Component, Deref)]
-pub struct InstanceMaterialData(pub Vec<InstanceData>);
-impl ExtractComponent for InstanceMaterialData {
-    type Query = &'static InstanceMaterialData;
+pub struct HexgridData(pub Vec<HexData>);
+impl ExtractComponent for HexgridData {
+    type Query = &'static HexgridData;
     type Filter = ();
 
     fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Self {
-        InstanceMaterialData(item.0.clone())
+        HexgridData(item.0.clone())
     }
 }
 
@@ -355,7 +355,7 @@ pub struct HexgridMaterialPlugin;
 
 impl Plugin for HexgridMaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractComponentPlugin::<InstanceMaterialData>::default());
+        app.add_plugin(ExtractComponentPlugin::<HexgridData>::default());
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<HexgridPipeline>()
@@ -367,7 +367,7 @@ impl Plugin for HexgridMaterialPlugin {
 
 #[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
-pub struct InstanceData {
+pub struct HexData {
     pub position: Vec3,
     pub scale: f32,
     pub color: u32,
@@ -383,7 +383,7 @@ fn queue_custom(
     meshes: Res<RenderAssets<Mesh>>,
     material_meshes: Query<
         (Entity, &MeshUniform, &Handle<Mesh>),
-        (With<Handle<Mesh>>, With<InstanceMaterialData>),
+        (With<Handle<Mesh>>, With<HexgridData>),
     >,
     mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
 ) {
@@ -423,7 +423,7 @@ pub struct InstanceBuffer {
 
 fn prepare_instance_buffers(
     mut commands: Commands,
-    query: Query<(Entity, &InstanceMaterialData)>,
+    query: Query<(Entity, &HexgridData)>,
     render_device: Res<RenderDevice>,
 ) {
     for (entity, instance_data) in query.iter() {
@@ -471,7 +471,7 @@ impl SpecializedMeshPipeline for HexgridPipeline {
         let mut descriptor = self.mesh_pipeline.specialize(key, layout)?;
         descriptor.vertex.shader = self.shader.clone();
         descriptor.vertex.buffers.push(VertexBufferLayout {
-            array_stride: std::mem::size_of::<InstanceData>() as u64,
+            array_stride: std::mem::size_of::<HexData>() as u64,
             step_mode: VertexStepMode::Instance,
             attributes: vec![
                 VertexAttribute {

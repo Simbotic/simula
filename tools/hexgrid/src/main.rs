@@ -24,7 +24,7 @@ fn main() {
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(HexgridPlugin)
         .add_startup_system(hexgrid_setup)
-        .add_startup_system(hexagon_builder)
+        .add_startup_system(hexgrid_builder)
         .run();
 }
 
@@ -43,10 +43,10 @@ pub fn hexgrid_setup(
             })),
             Transform::from_xyz(10.0, 0.0, -10.0),
             GlobalTransform::default(),
-            InstanceMaterialData(
+            HexgridData(
                 (-51..77)
                     .flat_map(|x| (-51..77).map(move |z| (x as f32 / 10.0, z as f32 / 10.0)))
-                    .map(|(x, z)| InstanceData {
+                    .map(|(x, z)| HexData {
                         position: Vec3::new(
                             x * -10.0 + 2.0,
                             0.0,
@@ -61,7 +61,7 @@ pub fn hexgrid_setup(
             ComputedVisibility::default(),
             NoFrustumCulling,
         ))
-        .insert(HexGridObject)
+        .insert(HexgridObject)
         .insert(HexagonTiles);
 
     // camera
@@ -75,10 +75,10 @@ pub fn hexgrid_setup(
             center: Vec3::ZERO,
             ..Default::default()
         })
-        .insert(HexGridObject);
+        .insert(HexgridObject);
 }
 
-pub fn hexagon_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
+pub fn hexgrid_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
     shortest_path.counter_one = 0;
 
     // Loop while `counter` is less than 2048
