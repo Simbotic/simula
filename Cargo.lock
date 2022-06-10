@@ -1848,6 +1848,7 @@ dependencies = [
  "bevy-inspector-egui",
  "rand 0.8.5",
  "simula_camera",
+ "simula_core",
  "simula_hexgrid",
 ]
 

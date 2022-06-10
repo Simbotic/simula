@@ -7,5 +7,6 @@ edition = "2021"
 bevy = { version = "0.7" }
 simula_hexgrid = { path = "../../crates/simula_hexgrid" }
 simula_camera = { path = "../../crates/simula_camera" }
+simula_core = { path = "../../crates/simula_core" }
 rand = "0.8.4"
 bevy-inspector-egui = "0.10"

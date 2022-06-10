@@ -2,11 +2,11 @@ use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
 
 use bevy::{prelude::*, render::view::NoFrustumCulling};
 use bevy_inspector_egui::WorldInspectorPlugin;
-use rand::{SeedableRng, Rng};
 use simula_hexgrid::{
     hexgrid::*
 };
 use simula_camera::orbitcam::*;
+use simula_core::prng::*;
 
 
 fn main() {
@@ -93,8 +93,7 @@ pub fn hexgrid_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
             let mut hash = DefaultHasher::new();
             vec.hash(&mut hash);
             let complexity_seed = hash.finish();
-            shortest_path.random_complexity =
-                ChaCha8Rng::seed_from_u64(complexity_seed).gen_range(0.0..20.0);
+            shortest_path.random_complexity = Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
             let l = shortest_path.random_complexity;
 
             //create nodes
