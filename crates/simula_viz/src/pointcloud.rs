@@ -20,7 +20,7 @@ use bevy::{
 };
 use bytemuck::{Pod, Zeroable};
 
-#[derive(Component, Deref)]
+#[derive(Component, Default, Debug, Deref)]
 pub struct Pointcloud(pub Vec<PointData>);
 impl ExtractComponent for Pointcloud {
     type Query = &'static Pointcloud;
@@ -45,7 +45,7 @@ impl Plugin for PointcloudPlugin {
     }
 }
 
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Default, Debug)]
 #[repr(C)]
 pub struct PointData {
     pub position: Vec3,
