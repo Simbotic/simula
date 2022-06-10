@@ -6,7 +6,6 @@ use rand::{SeedableRng, Rng};
 use simula_hexgrid::{
     hexgrid::*
 };
-use rand_chacha::ChaCha8Rng;
 use simula_camera::orbitcam::*;
 
 

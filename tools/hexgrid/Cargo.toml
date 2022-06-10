@@ -9,4 +9,3 @@ simula_hexgrid = { path = "../../crates/simula_hexgrid" }
 simula_camera = { path = "../../crates/simula_camera" }
 rand = "0.8.4"
 bevy-inspector-egui = "0.10"
-rand_chacha = "0.3.1"
