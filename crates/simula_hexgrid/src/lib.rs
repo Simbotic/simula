@@ -1,3 +1,3 @@
-pub mod worldmap;
+pub mod hexgrid;
 pub mod pathfinding;
 

@@ -4,7 +4,7 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::{SeedableRng, Rng};
 use simula_hexgrid::{
-    worldmap::*
+    hexgrid::*
 };
 use rand_chacha::ChaCha8Rng;
 use simula_camera::orbitcam::*;
