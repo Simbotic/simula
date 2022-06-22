@@ -10,3 +10,5 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 rand = "0.8.4"
 bevy-inspector-egui = "0.10"
+
+fj = { git = "https://github.com/hannobraun/Fornjot.git", rev = "ad7e8082949cb4907d7429b29af2df43b34b0c09" }

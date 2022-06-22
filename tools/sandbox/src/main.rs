@@ -593,6 +593,8 @@ struct Rotate {
     angle: f32,
 }
 
+mod model;
+
 fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform)>) {
     for (rotate, mut transform) in query.iter_mut() {
         transform.rotate(Quat::from_axis_angle(
