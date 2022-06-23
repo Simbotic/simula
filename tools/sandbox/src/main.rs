@@ -5,6 +5,7 @@ use bevy::{
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
+use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
 use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
@@ -65,6 +66,17 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
+    // CAD shape
+    let shape = shapes::star(5, Color::BLUE);
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(shape.to_mesh()),
+            material: shape_materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
+            transform: Transform::from_xyz(0.0, -10.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Name::new("Shape: Star"));
+
     // plane
     commands
         .spawn_bundle(PbrBundle {
@@ -592,8 +604,6 @@ struct Rotate {
     axis: Vec3,
     angle: f32,
 }
-
-mod model;
 
 fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform)>) {
     for (rotate, mut transform) in query.iter_mut() {
