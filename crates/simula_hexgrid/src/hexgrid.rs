@@ -1,5 +1,4 @@
 use crate::pathfinding::*;
-use simula_camera::orbitcam::*;
 use bevy::{
     core_pipeline::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
@@ -23,7 +22,13 @@ use bevy::{
 use bevy_egui::*;
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
+use simula_camera::orbitcam::*;
 use simula_core::prng::*;
+use std::hash::Hash;
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::Hasher,
+};
 
 #[derive(Component)]
 pub struct HexgridObject;
@@ -34,12 +39,6 @@ pub struct TempHexTiles;
 #[derive(Component)]
 pub struct HexagonTiles;
 
-use std::hash::Hash;
-use std::{
-    collections::{hash_map::DefaultHasher, HashMap},
-    hash::Hasher,
-};
-
 pub struct DespawnTileEvent;
 pub struct CalculatePathEvent;
 
@@ -47,7 +46,7 @@ pub struct RenderPathEvent {
     value: RenderAction,
 }
 
-enum RenderAction {
+pub enum RenderAction {
     RenderUp,
     RenderDown,
     RenderLeft,
@@ -617,12 +616,15 @@ fn pathfinding_window(
                 });
                 ui.horizontal(|ui| {
                     ui.label("Shortest Path: ");
-                    if node_start_end.destination_reached == true {
+                    if node_start_end.destination_reached == true
+                        && node_start_end.queue_end == (node_start_end.endx, node_start_end.endy)
+                    {
                         ui.add(
                             egui::Label::new(format!("{:?}", shortest_path.shortest_highlight))
                                 .wrap(true),
                         );
-                    } else {
+                    }
+                    if node_start_end.destination_reached == false {
                         ui.add(egui::Label::new(format!("Finding Path...")));
                     }
                 });
@@ -906,7 +908,7 @@ pub fn hexagon_pathfinder(
         best_path.push(end_node);
         let best = best_path;
 
-        shortest_path.shortest_highlight = best.clone(); 
+        shortest_path.shortest_highlight = best.clone();
     }
 }
 
