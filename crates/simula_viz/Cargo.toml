@@ -7,7 +7,7 @@ edition = "2021"
 bevy = { version = "0.7" }
 mikktspace = "0.2"
 bytemuck = "1.7"
-simula_core = { path = "../../crates/simula_core" }
+simula_core = { path = "../crates/simula_core" }
 
 [lib]
 path = "src/lib.rs"
