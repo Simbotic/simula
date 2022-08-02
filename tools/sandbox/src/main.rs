@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
     render::{render_resource::PrimitiveTopology, view::NoFrustumCulling},
 };
-use bevy_inspector_egui::WorldInspectorPlugin;
+//use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
@@ -40,7 +40,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
-        .add_plugin(WorldInspectorPlugin::new())
+        //.add_plugin(WorldInspectorPlugin::new())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
         .add_plugin(LinesPlugin)
@@ -199,7 +199,7 @@ fn setup(
 
     // camera
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             ..Default::default()
         })
         .insert(OrbitCamera {
@@ -208,7 +208,7 @@ fn setup(
             ..Default::default()
         });
 
-    commands.spawn_bundle(UiCameraBundle::default());
+    //commands.spawn_bundle(Camera3dBundle::default());
 
     commands.spawn_bundle(TextBundle {
         text: Text {
@@ -224,7 +224,7 @@ fn setup(
         },
         style: Style {
             position_type: PositionType::Absolute,
-            position: Rect {
+            position: UiRect {
                 top: Val::Px(5.0),
                 left: Val::Px(5.0),
                 ..Default::default()
@@ -258,7 +258,7 @@ fn setup(
         .spawn_bundle(VoxelsBundle {
             voxels: Voxels { voxels },
             mesh: meshes.add(Mesh::new(PrimitiveTopology::TriangleList)),
-            material: voxels_materials.add(VoxelsMaterial {}),
+            material: voxels_materials.add(VoxelsMaterial{}),
             ..Default::default()
         })
         .insert(Name::new("Voxels"))
@@ -290,8 +290,10 @@ fn setup(
         .insert_bundle((Transform::default(), GlobalTransform::default()))
         .insert(Name::new("Metric: Plane"))
         .with_children(|parent| {
-            parent
-                .spawn_scene(asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"));
+            parent.spawn_bundle(SceneBundle {
+                scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
+                ..default()
+            });
         });
 
     commands
@@ -302,7 +304,10 @@ fn setup(
         ))
         .insert(Name::new("Metric: Box"))
         .with_children(|parent| {
-            parent.spawn_scene(asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"));
+            parent.spawn_bundle(SceneBundle {
+                scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
+                ..default()
+            });
         });
 
     // generator signals

@@ -89,9 +89,10 @@ impl Default for LinesBundle {
     }
 }
 
-#[derive(Debug, Clone, TypeUuid)]
-#[uuid = "6bb686a6-c2dc-11ec-89a7-02a179e5df2c"]
-pub struct LinesMaterial;
+#[derive(AsBindGroup, Debug, Clone, TypeUuid)]
+#[uuid = "f690fdae-d598-45ab-8225-97e2a3f056e0"]
+pub struct LinesMaterial{
+}
 
 pub struct LinesPlugin;
 
@@ -110,7 +111,7 @@ fn generate_lines(
     >,
 ) {
     for (_entity, mut lines, visibility, mesh_handle) in lines.iter_mut() {
-        if !visibility.is_visible {
+        if !visibility.is_visible() {
             lines.lines.clear();
             continue;
         }
@@ -139,7 +140,7 @@ fn generate_lines(
             mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
             mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
             mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-            mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
+            //mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
         }
 
         lines.lines.clear();
@@ -175,35 +176,38 @@ impl RenderAsset for LinesMaterial {
 }
 
 impl Material for LinesMaterial {
-    fn vertex_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-        Some(asset_server.load("shaders/lines.wgsl"))
+    fn fragment_shader() -> ShaderRef {
+        "shaders/lines.wgsl".into()
     }
+    // fn vertex_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
+    //     Some(asset_server.load("shaders/lines.wgsl"))
+    // }
 
-    fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-        Some(asset_server.load("shaders/lines.wgsl"))
-    }
+    // fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
+    //     Some(asset_server.load("shaders/lines.wgsl"))
+    // }
 
-    fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
-        &render_asset.bind_group
-    }
+    // fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
+    //     &render_asset.bind_group
+    // }
 
-    fn bind_group_layout(render_device: &RenderDevice) -> BindGroupLayout {
-        render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("lines_bind_group_layout"),
-            entries: &[],
-        })
-    }
+    // fn bind_group_layout(render_device: &RenderDevice) -> BindGroupLayout {
+    //     render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+    //         label: Some("lines_bind_group_layout"),
+    //         entries: &[],
+    //     })
+    // }
 
-    fn specialize(
-        _pipeline: &MaterialPipeline<Self>,
-        descriptor: &mut RenderPipelineDescriptor,
-        layout: &MeshVertexBufferLayout,
-    ) -> Result<(), SpecializedMeshPipelineError> {
-        let vertex_layout = layout.get_layout(&[
-            Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
-            Mesh::ATTRIBUTE_COLOR.at_shader_location(1),
-        ])?;
-        descriptor.vertex.buffers = vec![vertex_layout];
-        Ok(())
-    }
+    // fn specialize(
+    //     _pipeline: &MaterialPipeline<Self>,
+    //     descriptor: &mut RenderPipelineDescriptor,
+    //     layout: &MeshVertexBufferLayout,
+    // ) -> Result<(), SpecializedMeshPipelineError> {
+    //     let vertex_layout = layout.get_layout(&[
+    //         Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+    //         Mesh::ATTRIBUTE_COLOR.at_shader_location(1),
+    //     ])?;
+    //     descriptor.vertex.buffers = vec![vertex_layout];
+    //     Ok(())
+    // }
 }

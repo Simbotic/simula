@@ -120,7 +120,7 @@ impl VoxelsMesh {
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions.clone());
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals.clone());
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; count]);
-        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, self.colors.clone());
+        //mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, self.colors.clone());
         mesh.set_indices(Some(Indices::U32(self.indices.clone())));
     }
 
@@ -251,9 +251,9 @@ impl Default for VoxelsBundle {
     }
 }
 
-#[derive(Debug, Clone, TypeUuid)]
+#[derive(AsBindGroup, Debug, Clone, TypeUuid)]
 #[uuid = "9c3b191e-c141-11ec-bf25-02a179e5df2c"]
-pub struct VoxelsMaterial;
+pub struct VoxelsMaterial{}
 
 #[derive(Clone)]
 pub struct GpuVoxelsMaterial {
@@ -277,7 +277,7 @@ fn generate_voxels(
     >,
 ) {
     for (_entity, voxels, visibility, mesh_handle) in voxels.iter_mut() {
-        if !visibility.is_visible {
+        if !visibility.is_visible() {
             continue;
         }
         let voxel_mesh = merge(&voxels.voxels);
@@ -311,37 +311,41 @@ impl RenderAsset for VoxelsMaterial {
 }
 
 impl Material for VoxelsMaterial {
-    fn vertex_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-        Some(asset_server.load("shaders/voxels.wgsl"))
+    fn fragment_shader() -> ShaderRef {
+        "shaders/voxels.wgsl".into()
     }
 
-    fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-        Some(asset_server.load("shaders/voxels.wgsl"))
-    }
+    // fn vertex_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
+    //     Some(asset_server.load("shaders/voxels.wgsl"))
+    // }
 
-    fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
-        &render_asset.bind_group
-    }
+    // fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
+    //     Some(asset_server.load("shaders/voxels.wgsl"))
+    // }
 
-    fn bind_group_layout(render_device: &RenderDevice) -> BindGroupLayout {
-        render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("voxels_bind_group_layout"),
-            entries: &[],
-        })
-    }
+    // fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
+    //     &render_asset.bind_group
+    // }
 
-    fn specialize(
-        _pipeline: &MaterialPipeline<Self>,
-        descriptor: &mut RenderPipelineDescriptor,
-        layout: &MeshVertexBufferLayout,
-    ) -> Result<(), SpecializedMeshPipelineError> {
-        let vertex_layout = layout.get_layout(&[
-            Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
-            Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
-            Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
-            Mesh::ATTRIBUTE_COLOR.at_shader_location(3),
-        ])?;
-        descriptor.vertex.buffers = vec![vertex_layout];
-        Ok(())
-    }
+    // fn bind_group_layout(render_device: &RenderDevice) -> BindGroupLayout {
+    //     render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
+    //         label: Some("voxels_bind_group_layout"),
+    //         entries: &[],
+    //     })
+    // }
+
+    // fn specialize(
+    //     _pipeline: &MaterialPipeline<Self>,
+    //     descriptor: &mut RenderPipelineDescriptor,
+    //     layout: &MeshVertexBufferLayout,
+    // ) -> Result<(), SpecializedMeshPipelineError> {
+    //     let vertex_layout = layout.get_layout(&[
+    //         Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+    //         Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
+    //         Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
+    //         Mesh::ATTRIBUTE_COLOR.at_shader_location(3),
+    //     ])?;
+    //     descriptor.vertex.buffers = vec![vertex_layout];
+    //     Ok(())
+    // }
 }

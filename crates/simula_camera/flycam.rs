@@ -33,7 +33,7 @@
 use bevy::{
     input::{
         mouse::{MouseButtonInput, MouseMotion},
-        ElementState,
+        ButtonState,
     },
     prelude::*,
 };
@@ -192,9 +192,9 @@ fn mouse_motion_system(
 
     for event in mouse_button_input_events.iter() {
         if event.button == MouseButton::Right {
-            if event.state == ElementState::Pressed {
+            if event.state == ButtonState::Pressed {
                 look_enabled = Some(true);
-            } else if event.state == ElementState::Released {
+            } else if event.state == ButtonState::Released {
                 look_enabled = Some(false);
             }
         }
