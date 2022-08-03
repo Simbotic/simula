@@ -66,6 +66,13 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
+
+    let mut mesh: Mesh = Mesh::new(PrimitiveTopology::LineList);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION,Vec::<[f32; 3]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL,Vec::<[f32; 3]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0,Vec::<[f32; 2]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR,Vec::<[f32; 4]>::new());
+
     // CAD shape
     let shape = shapes::star(5, Color::BLUE);
     commands
@@ -107,7 +114,8 @@ fn setup(
                 end_color: Color::RED,
                 ..Default::default()
             },
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            //mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
@@ -121,7 +129,7 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..Default::default()
@@ -135,7 +143,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..Default::default()
@@ -154,7 +162,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..Default::default()
@@ -173,7 +181,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..Default::default()
@@ -254,10 +262,17 @@ fn setup(
         },
     ];
 
+    let mut voxel_mesh: Mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION,Vec::<[f32; 3]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL,Vec::<[f32; 3]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0,Vec::<[f32; 2]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR,Vec::<[f32; 4]>::new());
+
     commands
         .spawn_bundle(VoxelsBundle {
             voxels: Voxels { voxels },
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::TriangleList)),
+            //mesh: meshes.add(Mesh::new(PrimitiveTopology::TriangleList)),
+            mesh: meshes.add(voxel_mesh),
             material: voxels_materials.add(VoxelsMaterial{}),
             ..Default::default()
         })
@@ -335,7 +350,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 3.0, 0.0),
             ..Default::default()
@@ -353,7 +368,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.8, 0.0),
             ..Default::default()
@@ -371,7 +386,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.6, 0.0),
             ..Default::default()
@@ -389,7 +404,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.4, 0.0),
             ..Default::default()
@@ -407,7 +422,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.2, 0.0),
             ..Default::default()
@@ -425,7 +440,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.0, 0.0),
             ..Default::default()
@@ -443,7 +458,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 1.8, 0.0),
             ..Default::default()
@@ -461,7 +476,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 1.6, 0.0),
             ..Default::default()
@@ -481,7 +496,7 @@ fn setup(
 
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+            mesh: meshes.add(mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 4.0, 0.0),
             ..Default::default()
@@ -509,7 +524,7 @@ fn setup(
     // force graph
 
     let mut graph_bundle = ForceGraphBundle::<SandboxNodeData, SandboxEdgeData> {
-        mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
+        mesh: meshes.add(mesh.clone()),
         material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_xyz(0.0, 3.5, 0.0),
         ..Default::default()
