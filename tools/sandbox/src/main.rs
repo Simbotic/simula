@@ -285,30 +285,47 @@ fn setup(
         })
         .insert(Name::new("Shape: Rod"));
 
-    commands
-        .spawn()
-        .insert_bundle((Transform::default(), GlobalTransform::default()))
-        .insert(Name::new("Metric: Plane"))
-        .with_children(|parent| {
-            parent.spawn_bundle(SceneBundle {
-                scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
-                ..default()
-            });
-        });
+    // commands
+    //     .spawn()
+    //     .insert_bundle((Transform::default(), GlobalTransform::default()))
+    //     .insert(Name::new("Metric: Plane"))
+    //     .with_children(|parent| {
+    //         parent.spawn_bundle(SceneBundle {
+    //             scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
+    //             ..default()
+    //         });
+    //     });
 
     commands
-        .spawn()
-        .insert_bundle((
-            Transform::from_xyz(-2.5, 0.0, 2.5),
-            GlobalTransform::default(),
-        ))
-        .insert(Name::new("Metric: Box"))
-        .with_children(|parent| {
-            parent.spawn_bundle(SceneBundle {
-                scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
+        .spawn_bundle(SceneBundle {
+                scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
                 ..default()
-            });
-        });
+            })
+        .insert(Name::new("Metric: Plane"));
+
+    // commands
+    //     .spawn()
+    //     .insert_bundle((
+    //         Transform::from_xyz(-2.5, 0.0, 2.5),
+    //         GlobalTransform::default(),
+    //     ))
+    //     .insert(Name::new("Metric: Box"))
+    //     .with_children(|parent| {
+    //         parent.spawn_bundle(SceneBundle {
+    //             scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
+    //             ..default()
+    //         });
+    //     });
+
+    commands        
+        .spawn_bundle(SceneBundle {
+                scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
+                transform: Transform::from_xyz(-2.5, 0.0, 2.5),
+                ..default()
+            })
+        .insert(Name::new("Metric: Box"));
+        
+        
 
     // generator signals
 

@@ -1,7 +1,8 @@
 #import bevy_pbr::mesh_view_bindings
 #import bevy_pbr::mesh_types
 
-@group(1), @binding(0)
+
+@group(1) @binding(0)
 var<uniform> mesh: Mesh;
 
 struct Vertex {
@@ -14,8 +15,8 @@ struct Vertex {
 };
 
 struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>;
-    @location(0) color: vec4<f32>;
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) color: vec4<f32>,
 };
 
 @vertex

@@ -1,6 +1,6 @@
 use bevy::{
     ecs::system::{lifetimeless::SRes, SystemParamItem},
-    pbr::MaterialPipeline,
+    pbr::{MaterialPipeline, MaterialPipelineKey},
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -97,7 +97,7 @@ impl From<Voxel> for Box {
 pub struct VoxelsMesh {
     positions: Vec<[f32; 3]>,
     normals: Vec<[f32; 3]>,
-    colors: Vec<u32>,
+    colors: Vec<[f32; 4]>,
     indices: Vec<u32>,
 }
 
@@ -120,7 +120,7 @@ impl VoxelsMesh {
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions.clone());
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals.clone());
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vec![[0.0, 0.0]; count]);
-        //mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, self.colors.clone());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, self.colors.clone());
         mesh.set_indices(Some(Indices::U32(self.indices.clone())));
     }
 
@@ -139,35 +139,35 @@ impl From<Box> for VoxelsMesh {
         #[rustfmt::skip]
         let vertices = &[
             // front
-            ([sp.min_x, sp.min_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.min_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.max_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.max_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_u32()),
+            ([sp.min_x, sp.min_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.min_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.max_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.max_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
             // back
-            ([sp.min_x, sp.max_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.max_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.min_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.min_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_u32()),
+            ([sp.min_x, sp.max_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.max_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.min_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.min_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
             // right
-            ([sp.max_x, sp.min_y, sp.min_z], [1.0, 0., 0.],  sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.max_y, sp.min_z], [1.0, 0., 0.],  sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.max_y, sp.max_z], [1.0, 0., 0.],  sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.min_y, sp.max_z], [1.0, 0., 0.],  sp.color.as_rgba_u32()),
+            ([sp.max_x, sp.min_y, sp.min_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.max_y, sp.min_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.max_y, sp.max_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.min_y, sp.max_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
             // left
-            ([sp.min_x, sp.min_y, sp.max_z], [-1.0, 0., 0.], sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.max_y, sp.max_z], [-1.0, 0., 0.], sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.max_y, sp.min_z], [-1.0, 0., 0.], sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.min_y, sp.min_z], [-1.0, 0., 0.], sp.color.as_rgba_u32()),
+            ([sp.min_x, sp.min_y, sp.max_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.max_y, sp.max_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.max_y, sp.min_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.min_y, sp.min_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
             // up
-            ([sp.max_x, sp.max_y, sp.min_z], [0., 1.0, 0.],  sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.max_y, sp.min_z], [0., 1.0, 0.],  sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.max_y, sp.max_z], [0., 1.0, 0.],  sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.max_y, sp.max_z], [0., 1.0, 0.],  sp.color.as_rgba_u32()),
+            ([sp.max_x, sp.max_y, sp.min_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.max_y, sp.min_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.max_y, sp.max_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.max_y, sp.max_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
             // bottom
-            ([sp.max_x, sp.min_y, sp.max_z], [0., -1.0, 0.], sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.min_y, sp.max_z], [0., -1.0, 0.], sp.color.as_rgba_u32()),
-            ([sp.min_x, sp.min_y, sp.min_z], [0., -1.0, 0.], sp.color.as_rgba_u32()),
-            ([sp.max_x, sp.min_y, sp.min_z], [0., -1.0, 0.], sp.color.as_rgba_u32()),
+            ([sp.max_x, sp.min_y, sp.max_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.min_y, sp.max_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min_x, sp.min_y, sp.min_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.max_x, sp.min_y, sp.min_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
         ];
 
         let mut positions = Vec::with_capacity(24);
@@ -311,17 +311,13 @@ impl RenderAsset for VoxelsMaterial {
 }
 
 impl Material for VoxelsMaterial {
-    fn fragment_shader() -> ShaderRef {
+    fn vertex_shader() -> ShaderRef {
         "shaders/voxels.wgsl".into()
     }
 
-    // fn vertex_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-    //     Some(asset_server.load("shaders/voxels.wgsl"))
-    // }
-
-    // fn fragment_shader(asset_server: &AssetServer) -> Option<Handle<Shader>> {
-    //     Some(asset_server.load("shaders/voxels.wgsl"))
-    // }
+    fn fragment_shader() -> ShaderRef {
+        "shaders/voxels.wgsl".into()
+    }
 
     // fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
     //     &render_asset.bind_group
@@ -334,18 +330,19 @@ impl Material for VoxelsMaterial {
     //     })
     // }
 
-    // fn specialize(
-    //     _pipeline: &MaterialPipeline<Self>,
-    //     descriptor: &mut RenderPipelineDescriptor,
-    //     layout: &MeshVertexBufferLayout,
-    // ) -> Result<(), SpecializedMeshPipelineError> {
-    //     let vertex_layout = layout.get_layout(&[
-    //         Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
-    //         Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
-    //         Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
-    //         Mesh::ATTRIBUTE_COLOR.at_shader_location(3),
-    //     ])?;
-    //     descriptor.vertex.buffers = vec![vertex_layout];
-    //     Ok(())
-    // }
+    fn specialize(
+        _pipeline: &MaterialPipeline<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        layout: &MeshVertexBufferLayout,
+        _key: MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        let vertex_layout = layout.get_layout(&[
+            Mesh::ATTRIBUTE_POSITION.at_shader_location(0),
+            Mesh::ATTRIBUTE_NORMAL.at_shader_location(1),
+            Mesh::ATTRIBUTE_UV_0.at_shader_location(2),
+            Mesh::ATTRIBUTE_COLOR.at_shader_location(3),
+        ])?;
+        descriptor.vertex.buffers = vec![vertex_layout];
+        Ok(())
+    }
 }
