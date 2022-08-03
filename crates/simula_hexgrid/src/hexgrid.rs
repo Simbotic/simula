@@ -19,7 +19,7 @@ use bevy::{
         RenderApp, RenderStage, extract_component::{ExtractComponent, ExtractComponentPlugin},
     }, core_pipeline::core_3d::Transparent3d,
 };
-use bevy_egui::*;
+use bevy_inspector_egui::{*, bevy_egui::EguiContext};
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
 use simula_camera::orbitcam::*;

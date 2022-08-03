@@ -6,7 +6,7 @@ use bevy::{
     render::{
         mesh::{Indices, Mesh, MeshVertexBufferLayout},
         render_asset::{PrepareAssetError, RenderAsset},
-        render_resource::{Shader, *},
+        render_resource::{*},
         renderer::RenderDevice,
     },
 };

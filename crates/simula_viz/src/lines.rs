@@ -4,11 +4,11 @@ use bevy::{
     prelude::*,
     reflect::TypeUuid,
     render::{
-        mesh::{Mesh, MeshVertexBufferLayout, MeshVertexAttribute},
+        mesh::{Mesh, MeshVertexBufferLayout},
         render_asset::{PrepareAssetError, RenderAsset},
         render_resource::{
             AsBindGroup, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
-            VertexFormat, Shader, *
+            *
         },
         renderer::RenderDevice,
     },

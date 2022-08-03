@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
     render::{render_resource::PrimitiveTopology, view::NoFrustumCulling},
 };
-//use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
@@ -40,7 +40,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
-        //.add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
         .add_plugin(LinesPlugin)

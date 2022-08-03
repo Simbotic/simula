@@ -4,11 +4,10 @@ use std::{
 };
 
 use bevy::{prelude::*, render::view::NoFrustumCulling};
-//use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
 use simula_hexgrid::hexgrid::*;
-use bevy_egui::{egui, EguiContext, EguiPlugin};
 
 fn main() {
     App::new()
@@ -21,8 +20,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
-        //.add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(HexgridPlugin)
         .add_startup_system(hexgrid_setup)
         .add_startup_system(hexgrid_builder)
