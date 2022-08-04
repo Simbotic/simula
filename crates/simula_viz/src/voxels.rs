@@ -1,14 +1,10 @@
 use bevy::{
-    ecs::system::{lifetimeless::SRes, SystemParamItem},
     pbr::{MaterialPipeline, MaterialPipelineKey},
     prelude::*,
     reflect::TypeUuid,
     render::{
         mesh::{Indices, Mesh, MeshVertexBufferLayout},
-        render_asset::{PrepareAssetError, RenderAsset},
-        render_resource::{*},
-        renderer::RenderDevice,
-    },
+        render_resource::{*},    },
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -255,11 +251,6 @@ impl Default for VoxelsBundle {
 #[uuid = "9c3b191e-c141-11ec-bf25-02a179e5df2c"]
 pub struct VoxelsMaterial{}
 
-#[derive(Clone)]
-pub struct GpuVoxelsMaterial {
-    bind_group: BindGroup,
-}
-
 pub struct VoxelsPlugin;
 
 impl Plugin for VoxelsPlugin {
@@ -287,29 +278,6 @@ fn generate_voxels(
     }
 }
 
-impl RenderAsset for VoxelsMaterial {
-    type ExtractedAsset = VoxelsMaterial;
-    type PreparedAsset = GpuVoxelsMaterial;
-    type Param = (SRes<RenderDevice>, SRes<MaterialPipeline<Self>>);
-
-    fn extract_asset(&self) -> Self::ExtractedAsset {
-        self.clone()
-    }
-
-    fn prepare_asset(
-        _extracted_asset: Self::ExtractedAsset,
-        (render_device, material_pipeline): &mut SystemParamItem<Self::Param>,
-    ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
-        let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-            entries: &[],
-            label: None,
-            layout: &material_pipeline.material_layout,
-        });
-
-        Ok(GpuVoxelsMaterial { bind_group })
-    }
-}
-
 impl Material for VoxelsMaterial {
     fn vertex_shader() -> ShaderRef {
         "shaders/voxels.wgsl".into()
@@ -318,17 +286,6 @@ impl Material for VoxelsMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/voxels.wgsl".into()
     }
-
-    // fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
-    //     &render_asset.bind_group
-    // }
-
-    // fn bind_group_layout(render_device: &RenderDevice) -> BindGroupLayout {
-    //     render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-    //         label: Some("voxels_bind_group_layout"),
-    //         entries: &[],
-    //     })
-    // }
 
     fn specialize(
         _pipeline: &MaterialPipeline<Self>,

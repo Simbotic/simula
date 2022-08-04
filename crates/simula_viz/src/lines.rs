@@ -1,16 +1,12 @@
 use bevy::{
-    ecs::system::{lifetimeless::SRes, SystemParamItem},
     pbr::{MaterialPipeline, MaterialPipelineKey},
     prelude::*,
     reflect::TypeUuid,
     render::{
         mesh::{Mesh, MeshVertexBufferLayout},
-        render_asset::{PrepareAssetError, RenderAsset},
         render_resource::{
             AsBindGroup, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
-            *
         },
-        renderer::RenderDevice,
     },
 };
 
@@ -149,34 +145,6 @@ fn generate_lines(
     }
 }
 
-#[derive(Clone)]
-pub struct GpuLinesMaterial {
-    bind_group: BindGroup,
-}
-
-impl RenderAsset for LinesMaterial {
-    type ExtractedAsset = LinesMaterial;
-    type PreparedAsset = GpuLinesMaterial;
-    type Param = (SRes<RenderDevice>, SRes<MaterialPipeline<Self>>);
-
-    fn extract_asset(&self) -> Self::ExtractedAsset {
-        self.clone()
-    }
-
-    fn prepare_asset(
-        _extracted_asset: Self::ExtractedAsset,
-        (render_device, material_pipeline): &mut SystemParamItem<Self::Param>,
-    ) -> Result<Self::PreparedAsset, PrepareAssetError<Self::ExtractedAsset>> {
-        let bind_group = render_device.create_bind_group(&BindGroupDescriptor {
-            entries: &[],
-            label: None,
-            layout: &material_pipeline.material_layout,
-        });
-
-        Ok(GpuLinesMaterial { bind_group })
-    }
-}
-
 impl Material for LinesMaterial {
     fn vertex_shader() -> ShaderRef {
         "shaders/lines.wgsl".into()
@@ -185,17 +153,6 @@ impl Material for LinesMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/lines.wgsl".into()
     }
-
-    // fn bind_group(render_asset: &<Self as RenderAsset>::PreparedAsset) -> &BindGroup {
-    //     &render_asset.bind_group
-    // }
-
-    // fn bind_group_layout(render_device: &RenderDevice) -> BindGroupLayout {
-    //     render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-    //         label: Some("lines_bind_group_layout"),
-    //         entries: &[],
-    //     })
-    // }
 
     fn specialize(
         _pipeline: &MaterialPipeline<Self>,

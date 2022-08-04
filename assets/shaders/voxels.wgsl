@@ -30,8 +30,8 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.clip_position = view.view_proj * world_position;
 
     //var color = vec4<f32>((vec4<u32>(vertex.color) >> vec4<u32>(0u, 8u, 16u, 24u)) & vec4<u32>(255u)) / 255.0;
-    //var color = vec4<f32>(color.rgb * (dot(world_normal, normalize(vec3<f32>(0.2, 1.0, 0.1))) * 0.25 + 0.75), color.a);
-    out.color = vertex.color;
+    var color = vec4<f32>(vertex.color.rgb * (dot(world_normal, normalize(vec3<f32>(0.2, 1.0, 0.1))) * 0.25 + 0.75), vertex.color.a);
+    out.color = color;
 
     return out;
 }
@@ -57,11 +57,11 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
         array<f32, 4>(16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0)
     );
 
-//    let xy = vec4<u32>(in.frag_coord % 4.0);
-//    let alpha = in.color.a - threshold[xy.x][xy.y];
-//	if (alpha < 0.0) {
-//		discard;
-//	}
+   let xy = vec4<u32>(in.frag_coord % 4.0);
+   let alpha = in.color.a - threshold[xy.x][xy.y];
+	if (alpha < -1.0) {
+		discard;
+	}
 
     return vec4<f32>(in.color.rgb, 1.0);
 }
