@@ -1,24 +1,24 @@
-#import bevy_pbr::mesh_view_bind_group
-#import bevy_pbr::mesh_struct
+#import bevy_pbr::mesh_view_bindings
+#import bevy_pbr::mesh_types
 
-[[group(1), binding(0)]]
+@group(1) @binding(0)
 var<uniform> mesh: Mesh;
 
 struct Vertex {
-    [[location(0)]] position: vec3<f32>;
-    [[location(1)]] normal: vec3<f32>;
-    [[location(2)]] uv: vec2<f32>;
+    @location(0) position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) uv: vec2<f32>,
 
-    [[location(3)]] i_pos_scale: vec4<f32>;
-    [[location(4)]] i_color: u32;
+    @location(3) i_pos_scale: vec4<f32>,
+    @location(4) i_color: u32,
 };
 
 struct VertexOutput {
-    [[builtin(position)]] clip_position: vec4<f32>;
-    [[location(0)]] color: vec4<f32>;
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) color: vec4<f32>,
 };
 
-[[stage(vertex)]]
+@vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     let position = vertex.position * vertex.i_pos_scale.w + vertex.i_pos_scale.xyz;
     let world_position = mesh.model * vec4<f32>(position, 1.0);
@@ -34,13 +34,13 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 }
 
 struct FragmentInput {
-    [[builtin(front_facing)]] is_front: bool;
-    [[builtin(position)]] frag_coord: vec4<f32>;
-    [[location(0)]] color: vec4<f32>;
+    @builtin(front_facing) is_front: bool,
+    @builtin(position) frag_coord: vec4<f32>,
+    @location(0) color: vec4<f32>,
 };
 
-[[stage(fragment)]]
-fn fragment(in: FragmentInput) -> [[location(0)]] vec4<f32> {
+@fragment
+fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
     if (!in.is_front) {
 		discard;
 	}
@@ -52,9 +52,9 @@ fn fragment(in: FragmentInput) -> [[location(0)]] vec4<f32> {
         array<f32, 4>(16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0)
     );
 
-    let xy = vec2<u32>(in.frag_coord % 4.0);
+    let xy = vec4<u32>(in.frag_coord % 4.0);
     let alpha = in.color.a - threshold[xy.x][xy.y];
-	if (alpha < 0.0) {
+	if (alpha < -1.0) {
 		discard;
 	}
 

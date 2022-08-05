@@ -1,12 +1,14 @@
 //! Ease functions.
 
+use bevy::prelude::Reflect;
 use enum_iterator::IntoEnumIterator;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
-use bevy::prelude::Reflect;
 
 #[allow(missing_docs)]
-#[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, IntoEnumIterator, Display)]
+#[derive(
+    Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, IntoEnumIterator, Display,
+)]
 pub enum EaseFunction {
     NoneInOut,
 

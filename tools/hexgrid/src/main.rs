@@ -1,13 +1,13 @@
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
 use bevy::{prelude::*, render::view::NoFrustumCulling};
 use bevy_inspector_egui::WorldInspectorPlugin;
-use simula_hexgrid::{
-    hexgrid::*
-};
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
-
+use simula_hexgrid::hexgrid::*;
 
 fn main() {
     App::new()
@@ -27,10 +27,7 @@ fn main() {
         .run();
 }
 
-pub fn hexgrid_setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
+pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     commands
         .spawn()
         .insert_bundle((
@@ -65,7 +62,7 @@ pub fn hexgrid_setup(
 
     // camera
     commands
-        .spawn_bundle(PerspectiveCameraBundle {
+        .spawn_bundle(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
@@ -93,7 +90,8 @@ pub fn hexgrid_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
             let mut hash = DefaultHasher::new();
             vec.hash(&mut hash);
             let complexity_seed = hash.finish();
-            shortest_path.random_complexity = Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
+            shortest_path.random_complexity =
+                Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
             let l = shortest_path.random_complexity;
 
             //create nodes
