@@ -5,8 +5,6 @@
 // [[group(1), binding(0)]]
 // var<uniform> material: VoxelsMaterial;
 
-//struct VoxelsMaterial {};
-
 @group(2) @binding(0)
 var<uniform> mesh: Mesh;
 
@@ -29,7 +27,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = view.view_proj * world_position;
 
-    //var color = vec4<f32>((vec4<u32>(vertex.color) >> vec4<u32>(0u, 8u, 16u, 24u)) & vec4<u32>(255u)) / 255.0;
     var color = vec4<f32>(vertex.color.rgb * (dot(world_normal, normalize(vec3<f32>(0.2, 1.0, 0.1))) * 0.25 + 0.75), vertex.color.a);
     out.color = color;
 

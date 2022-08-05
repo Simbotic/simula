@@ -24,7 +24,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let world_position = mesh.model * vec4<f32>(vertex.position, 1.0);
     out.clip_position = view.view_proj * world_position;
 
-    //let color = vec4<f32>((vec4<u32>(vertex.color) >> vec4<u32>(0u, 8u, 16u, 24u)) & vec4<u32>(255u)) / 255.0;
     let color = vertex.color;
     out.color = color;
 
