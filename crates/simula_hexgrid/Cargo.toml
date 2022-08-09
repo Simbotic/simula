@@ -10,7 +10,6 @@ bevy = { version = "0.7", features = [
 	"ktx2", 
 	"zstd", 
 	"zlib", 
-	"basis-universal"
 ] }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_core = { path = "../../crates/simula_core" }
