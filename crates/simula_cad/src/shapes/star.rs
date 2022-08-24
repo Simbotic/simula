@@ -1,10 +1,9 @@
 use crate::shapes::ShapeMesh;
 use bevy::{prelude::*, render::render_resource::PrimitiveTopology};
-use fj::Angle;
 use std::f64::consts::PI;
 
 pub struct Star {
-    shape: fj::Shape3d,
+    sweep: fj::Sweep,
 }
 
 pub fn star(num_points: u64, color: Color) -> Star {
@@ -17,7 +16,7 @@ pub fn star(num_points: u64, color: Color) -> Star {
     // gives us the angle and radius for each vertex.
     let num_vertices = num_points * 2;
     let vertex_iter = (0..num_vertices).map(|i| {
-        let angle = Angle::from_rad(2. * PI / num_vertices as f64 * i as f64);
+        let angle = fj::Angle::from_rad(2. * PI / num_vertices as f64 * i as f64);
         let radius = if i % 2 == 0 { r1 } else { r2 };
         (angle, radius)
     });
@@ -43,15 +42,15 @@ pub fn star(num_points: u64, color: Color) -> Star {
 
     let footprint = fj::Difference2d::from_shapes([outer.into(), inner.into()]);
 
-    let star = fj::Sweep::from_path(footprint.into(), [0., 0., -h]);
+    let star = fj::Sweep::from_path(footprint.into(), [0., 0., h]);
 
-    Star { shape: star.into() }
+    Star { sweep: star.into() }
 }
 
 impl ShapeMesh for Star {
     fn to_mesh(&self) -> Mesh {
         let shape_processor = fj_operations::shape_processor::ShapeProcessor { tolerance: None };
-        let shape: fj::Shape = self.shape.clone().into();
+        let shape: fj::Shape = self.sweep.clone().into();
         let processed_shape = shape_processor.process(&shape).unwrap();
 
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
@@ -59,7 +58,7 @@ impl ShapeMesh for Star {
         let points = processed_shape
             .mesh
             .triangles()
-            .map(|triangle| triangle.points)
+            .map(|triangle| triangle.inner.points())
             .collect::<Vec<_>>();
 
         let positions: Vec<[f32; 3]> = points
