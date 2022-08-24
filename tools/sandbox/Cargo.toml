@@ -11,8 +11,3 @@ simula_viz = { path = "../../crates/simula_viz" }
 simula_cad = { path = "../../crates/simula_cad" }
 rand = "0.8.5"
 bevy-inspector-egui = "0.12.0"
-
-fj = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
-fj-math = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
-fj-operations = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
-fj-interop = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
