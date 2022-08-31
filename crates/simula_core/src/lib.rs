@@ -6,3 +6,4 @@ pub mod force_graph;
 pub mod lerp;
 pub mod prng;
 pub mod signal;
+pub mod ray;
