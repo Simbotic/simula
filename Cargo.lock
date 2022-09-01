@@ -3335,10 +3335,6 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
- "fj",
- "fj-interop",
- "fj-math",
- "fj-operations",
  "rand 0.8.5",
  "simula_cad",
  "simula_camera",
@@ -3463,6 +3459,10 @@ dependencies = [
  "simula_camera",
  "simula_core",
 ]
+
+[[package]]
+name = "simula_net"
+version = "0.1.0"
 
 [[package]]
 name = "simula_octree"

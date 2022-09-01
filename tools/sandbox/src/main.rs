@@ -5,6 +5,7 @@ use bevy::{
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use rand::distributions::{Distribution, Uniform};
+#[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
 use simula_core::{
@@ -66,23 +67,25 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-
     let mut mesh: Mesh = Mesh::new(PrimitiveTopology::LineList);
-    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION,Vec::<[f32; 3]>::new());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL,Vec::<[f32; 3]>::new());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0,Vec::<[f32; 2]>::new());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR,Vec::<[f32; 4]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
+    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
 
-    // CAD shape
-    let shape = shapes::star(5, Color::BLUE);
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(shape.to_mesh()),
-            material: shape_materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
-            transform: Transform::from_xyz(0.0, -10.0, 0.0),
-            ..Default::default()
-        })
-        .insert(Name::new("Shape: Star"));
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        // CAD shape
+        let shape = shapes::star(5, Color::BLUE);
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: meshes.add(shape.to_mesh()),
+                material: shape_materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
+                transform: Transform::from_xyz(0.0, -10.0, 0.0),
+                ..Default::default()
+            })
+            .insert(Name::new("Shape: Star"));
+    }
 
     // plane
     commands
@@ -263,17 +266,17 @@ fn setup(
     ];
 
     let mut voxel_mesh: Mesh = Mesh::new(PrimitiveTopology::TriangleList);
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION,Vec::<[f32; 3]>::new());
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL,Vec::<[f32; 3]>::new());
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0,Vec::<[f32; 2]>::new());
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR,Vec::<[f32; 4]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
+    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
 
     commands
         .spawn_bundle(VoxelsBundle {
             voxels: Voxels { voxels },
             //mesh: meshes.add(Mesh::new(PrimitiveTopology::TriangleList)),
             mesh: meshes.add(voxel_mesh),
-            material: voxels_materials.add(VoxelsMaterial{}),
+            material: voxels_materials.add(VoxelsMaterial {}),
             ..Default::default()
         })
         .insert(Name::new("Voxels"))
@@ -313,9 +316,9 @@ fn setup(
 
     commands
         .spawn_bundle(SceneBundle {
-                scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
-                ..default()
-            })
+            scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
+            ..default()
+        })
         .insert(Name::new("Metric: Plane"));
 
     // commands
@@ -332,15 +335,13 @@ fn setup(
     //         });
     //     });
 
-    commands        
+    commands
         .spawn_bundle(SceneBundle {
-                scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
-                transform: Transform::from_xyz(-2.5, 0.0, 2.5),
-                ..default()
-            })
+            scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
+            transform: Transform::from_xyz(-2.5, 0.0, 2.5),
+            ..default()
+        })
         .insert(Name::new("Metric: Box"));
-        
-        
 
     // generator signals
 
