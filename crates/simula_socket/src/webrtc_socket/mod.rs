@@ -142,8 +142,8 @@ impl WebRtcSocket {
         ids
     }
 
-    pub fn connected_peers(&self) -> Vec<PeerId> {
-        self.peers.clone() // TODO: could probably be an iterator or reference instead?
+    pub fn connected_peers(&self) -> &Vec<PeerId> {
+        &self.peers
     }
 
     pub fn receive(&mut self) -> Vec<(PeerId, Packet)> {
