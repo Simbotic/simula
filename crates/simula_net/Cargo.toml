@@ -1,0 +1,8 @@
+[package]
+name = "simula_net"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.8", default-features = false }
+matchbox_socket = { git = "https://github.com/johanhelsing/matchbox.git", rev = "af6b9020d1ff37524ad8acbb72f2a22d617f77bf" }

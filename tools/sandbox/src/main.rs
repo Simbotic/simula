@@ -12,6 +12,7 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
+use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     force_graph::{ForceGraph, ForceGraphBundle},
@@ -25,6 +26,9 @@ use simula_viz::{
 };
 
 fn main() {
+    #[cfg(target_arch = "wasm32")]
+    console_error_panic_hook::set_once();
+
     App::new()
         .register_type::<SignalGenerator>()
         .register_type::<SignalFunction>()
@@ -41,6 +45,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins)
+        .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
