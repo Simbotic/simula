@@ -1,5 +1,5 @@
 use bevy::{prelude::*, tasks::IoTaskPool};
-use matchbox_socket::WebRtcSocket;
+use simula_socket::WebRtcSocket;
 
 pub struct NetPlugin;
 
@@ -14,7 +14,7 @@ fn setup(mut commands: Commands) {
     let room_host: String = "ws://127.0.0.1:3536".into();
 
     let room_url = format!("{}/{}", room_host, room_id);
-    info!("connecting to matchbox server: {:?}", room_url);
+    info!("Connecting to Simula server: {:?}", room_url);
     let (socket, message_loop) = WebRtcSocket::new(room_url);
 
     // The message loop needs to be awaited, or nothing will happen.
