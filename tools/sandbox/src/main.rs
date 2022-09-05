@@ -12,7 +12,7 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
-use simula_input::InputControlPlugin;
+use simula_input::{Action, InputControlPlugin};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -25,6 +25,8 @@ use simula_viz::{
     },
     voxels::{Voxel, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
+
+struct NopEvent(pub Action);
 
 fn main() {
     App::new()
@@ -53,6 +55,7 @@ fn main() {
         .add_plugin(GridPlugin)
         .add_plugin(VoxelsPlugin)
         .add_plugin(PointcloudPlugin)
+        // .add_event(NopEvent(Action::default()))
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)

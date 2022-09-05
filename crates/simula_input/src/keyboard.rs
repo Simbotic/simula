@@ -1,0 +1,43 @@
+use crate::ActionInputState;
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InputKeyboard {
+    pub key_code: KeyCode,
+    pub shift: bool,
+    pub ctrl: bool,
+    pub alt: bool,
+}
+
+impl InputKeyboard {
+    fn is_modified(&self, input: &Res<Input<KeyCode>>) -> bool {
+        let mut is_modified = true;
+        if self.shift {
+            is_modified = is_modified && input.any_pressed([KeyCode::LShift, KeyCode::RShift]);
+        }
+        if self.ctrl {
+            is_modified = is_modified && input.any_pressed([KeyCode::LControl, KeyCode::RControl]);
+        }
+        if self.alt {
+            is_modified = is_modified && input.any_pressed([KeyCode::LAlt, KeyCode::RAlt]);
+        }
+        is_modified
+    }
+}
+
+impl ActionInputState for InputKeyboard {
+    type InputType = KeyCode;
+
+    fn pressed(&self, input: Res<Input<KeyCode>>) -> bool {
+        self.is_modified(&input) && input.pressed(self.key_code)
+    }
+
+    fn just_pressed(&self, input: Res<Input<KeyCode>>) -> bool {
+        self.is_modified(&input) && input.just_pressed(self.key_code)
+    }
+
+    fn just_released(&self, input: Res<Input<KeyCode>>) -> bool {
+        self.is_modified(&input) && input.just_released(self.key_code)
+    }
+}
