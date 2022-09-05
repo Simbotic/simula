@@ -10,10 +10,10 @@ pub mod mouse;
 
 trait ActionInputState {
     type InputType: Send + Sync + Hash + Eq + 'static;
-    fn state(&self, input: Res<Input<Self::InputType>>) -> ActionState;
+    fn state(&self, input: &Res<Input<Self::InputType>>) -> ActionState;
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ActionState {
     Idle,
     Begin,
@@ -21,100 +21,66 @@ pub enum ActionState {
     End,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-enum ActionInput {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ActionInput {
     Keyboard(InputKeyboard),
     Mouse(InputMouse),
     KeyboardMouse(InputKeyboard, InputMouse),
 }
-
-// fn to_action_state<T>(action_input: ActionInput, input: Res<Input<T>>) -> ActionState
-// where
-//     T: Send + Sync + Hash + Eq + 'static,
-// {
-//     match action_input {
-//         ActionInput::Keyboard(action) => action.state(input),
-//     }
-// }
-
-// struct ActionMap {
-//     name: String,
-//     help: String,
-//     input: ActionInput,
-// }
-
-// #[derive(Debug, Default)]
-// pub struct Action {
-//     pub pressed: bool,
-//     pub on_begin: bool,
-//     pub on_end: bool,
-// }
-// add_action::<>
-
-// trait InputMap {
-//     fn add_action(name: T, input: ActionInput) {}
-// }
-
-// use proc_macro::TokenStream;
-
-// #[proc_macro_derive(MyMacroHere)]
-// pub fn my_macro_here_derive(input: TokenStream) -> TokenStream {
-//     let expanded = quote! {
-//         // ...
-//     };
-//     TokenStream::from(expanded)
-// }
 
 trait Action {
     fn state(&self) -> ActionState;
     // fn send(world: &mut World, input: ActionInput);
 }
 
-#[derive(Deref, SystemLabel)]
+#[derive(SystemLabel)]
 #[system_label(ignore_fields)]
 pub struct CookieClick {
-    state: ActionState,
+    pub state: ActionState,
+    pub inputs: Vec<ActionInput>,
+}
+
+impl Default for CookieClick {
+    fn default() -> Self {
+        Self {
+            state: ActionState::Idle,
+            inputs: vec![],
+        }
+    }
 }
 
 impl CookieClick {
-    fn action_setup(app: &mut App) {
+    fn action_setup(app: &mut App, inputs: &[ActionInput]) {
+        let res = Self {
+            state: ActionState::Idle,
+            inputs: inputs.to_vec(),
+        };
+        app.insert_resource(res);
         app.add_event::<Self>();
         app.add_system_to_stage(CoreStage::PreUpdate, Self::run);
     }
 
     fn run(
-        mouse_button: Res<Input<MouseButton>>,
-        keyboard: Res<Input<KeyCode>>,
+        action: Res<Self>,
         mut event: EventWriter<Self>,
+        keyboard: Res<Input<KeyCode>>,
+        mouse_button: Res<Input<MouseButton>>,
     ) {
-        if mouse_button.just_pressed(MouseButton::Left) {
-            println!("Left");
-            event.send(CookieClick {
-                state: ActionState::Begin,
-            });
-        }
-        if mouse_button.just_released(MouseButton::Left) {
-            println!("Left");
-            event.send(CookieClick {
-                state: ActionState::End,
-            });
+        for input in &action.inputs {
+            let state = match input {
+                ActionInput::Keyboard(input) => input.state(&keyboard),
+                ActionInput::Mouse(input) => input.state(&mouse_button),
+                _ => panic!("NOOOOOOO"),
+            };
+            if state != ActionState::Idle {
+                event.send(CookieClick {
+                    state,
+                    inputs: vec![],
+                });
+            }
         }
     }
 }
-
-impl Action for CookieClick {
-    fn state(&self) -> ActionState {
-        self.state
-    }
-}
-
-fn add_action<T: Action>(app: &mut App, input: ActionInput) {
-    app.add_event::<CookieClick>();
-}
-
-// struct InputMaps {
-//     input_maps: Vec<>,
-// }
 
 pub struct InputControlPlugin;
 
@@ -122,12 +88,12 @@ impl Plugin for InputControlPlugin {
     fn build(&self, app: &mut App) {
         // let mut list: Vec<Box<dyn InputActionType<InputType = dyn Eq + Hash>>> = vec![];
 
-        let kb = keyboard::InputKeyboard {
+        let kb = ActionInput::Keyboard(InputKeyboard {
             key_code: KeyCode::A,
             shift: false,
             ctrl: false,
             alt: false,
-        };
+        });
 
         let mut maps = vec![];
         maps.push(());
@@ -146,7 +112,7 @@ impl Plugin for InputControlPlugin {
             .add_startup_system(setup)
             .add_system(run);
 
-        CookieClick::action_setup(app);
+        CookieClick::action_setup(app, &[kb]);
     }
 }
 
