@@ -3,7 +3,7 @@ use simula_socket::WebRtcSocket;
 
 #[derive(Default, Reflect, Component)]
 #[reflect(Component)]
-pub struct Peer {
+pub struct NetPeer {
     pub id: String,
 }
 
@@ -11,7 +11,7 @@ pub struct NetPlugin;
 
 impl Plugin for NetPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Peer>()
+        app.register_type::<NetPeer>()
             .add_startup_system(setup)
             .add_system(run);
     }
@@ -36,7 +36,7 @@ fn setup(mut commands: Commands) {
 fn run(
     mut commands: Commands,
     mut socket: ResMut<Option<WebRtcSocket>>,
-    peers: Query<(Entity, &Peer)>,
+    peers: Query<(Entity, &NetPeer)>,
 ) {
     let socket = socket.as_mut();
     if let Some(socket) = socket {
@@ -51,6 +51,7 @@ fn run(
         // TODO: in a quick test it didnt work
         for (entity, peer) in &peers {
             if !net_peers.contains(&peer.id) {
+                warn!("SHOULD REMOVE peer");
                 commands.entity(entity).despawn_recursive();
             }
         }
@@ -64,7 +65,7 @@ fn run(
             {
                 commands
                     .spawn()
-                    .insert(Peer {
+                    .insert(NetPeer {
                         id: net_peer.clone(),
                     })
                     .insert(Name::new(format!(
