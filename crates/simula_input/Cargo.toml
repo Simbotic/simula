@@ -10,3 +10,6 @@ simula_core = { path = "../../crates/simula_core" }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
+
+# [lib]
+# proc-macro = true

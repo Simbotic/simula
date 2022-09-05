@@ -1,6 +1,6 @@
-use crate::ActionInputState;
+use crate::{ActionInputState, ActionState};
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InputMouse {
@@ -10,15 +10,15 @@ pub struct InputMouse {
 impl ActionInputState for InputMouse {
     type InputType = MouseButton;
 
-    fn pressed(&self, input: Res<Input<MouseButton>>) -> bool {
-        input.pressed(self.button)
-    }
-
-    fn just_pressed(&self, input: Res<Input<MouseButton>>) -> bool {
-        input.just_pressed(self.button)
-    }
-
-    fn just_released(&self, input: Res<Input<MouseButton>>) -> bool {
-        input.just_released(self.button)
+    fn state(&self, input: Res<Input<Self::InputType>>) -> ActionState {
+        if input.pressed(self.button) {
+            ActionState::InProgress
+        } else if input.just_pressed(self.button) {
+            ActionState::Begin
+        } else if input.just_released(self.button) {
+            ActionState::End
+        } else {
+            ActionState::Idle
+        }
     }
 }

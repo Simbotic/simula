@@ -1,4 +1,4 @@
-use crate::ActionInputState;
+use crate::{ActionInputState, ActionState};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -29,15 +29,15 @@ impl InputKeyboard {
 impl ActionInputState for InputKeyboard {
     type InputType = KeyCode;
 
-    fn pressed(&self, input: Res<Input<KeyCode>>) -> bool {
-        self.is_modified(&input) && input.pressed(self.key_code)
-    }
-
-    fn just_pressed(&self, input: Res<Input<KeyCode>>) -> bool {
-        self.is_modified(&input) && input.just_pressed(self.key_code)
-    }
-
-    fn just_released(&self, input: Res<Input<KeyCode>>) -> bool {
-        self.is_modified(&input) && input.just_released(self.key_code)
+    fn state(&self, input: Res<Input<Self::InputType>>) -> ActionState {
+        if self.is_modified(&input) && input.pressed(self.key_code) {
+            ActionState::InProgress
+        } else if self.is_modified(&input) && input.just_pressed(self.key_code) {
+            ActionState::Begin
+        } else if self.is_modified(&input) && input.just_released(self.key_code) {
+            ActionState::End
+        } else {
+            ActionState::Idle
+        }
     }
 }

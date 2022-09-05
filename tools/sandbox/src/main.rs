@@ -12,7 +12,7 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
-use simula_input::{Action, InputControlPlugin};
+use simula_input::{InputControlPlugin};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -26,7 +26,7 @@ use simula_viz::{
     voxels::{Voxel, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
 
-struct NopEvent(pub Action);
+
 
 fn main() {
     App::new()
