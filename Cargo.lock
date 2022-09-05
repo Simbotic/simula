@@ -4900,11 +4900,11 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
- "console_error_panic_hook",
  "rand 0.8.5",
  "simula_cad",
  "simula_camera",
  "simula_core",
+ "simula_input",
  "simula_net",
  "simula_viz",
 ]
@@ -5163,6 +5163,23 @@ dependencies = [
  "bytemuck",
  "rand 0.8.5",
  "simula_camera",
+ "simula_core",
+]
+
+[[package]]
+name = "simula_input"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "simula_core",
+]
+
+[[package]]
+name = "simula_interaction"
+version = "0.1.0"
+dependencies = [
+ "bevy",
  "simula_core",
 ]
 

@@ -9,10 +9,10 @@ simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
+simula_input = { path = "../../crates/simula_input" }
 
 rand = "0.8.5"
-bevy-inspector-egui = "0.12.0"
-console_error_panic_hook = "0.1"
+bevy-inspector-egui = "0.12.1"
 
 # while we wait for WASM support
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
