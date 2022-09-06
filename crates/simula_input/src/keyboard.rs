@@ -1,4 +1,4 @@
-use crate::{ActionInputState, ActionState};
+use crate::action::{ActionInputState, ActionState};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -8,6 +8,17 @@ pub struct InputKeyboard {
     pub shift: bool,
     pub ctrl: bool,
     pub alt: bool,
+}
+
+impl Default for InputKeyboard {
+    fn default() -> Self {
+        Self {
+            key_code: KeyCode::Escape,
+            shift: false,
+            ctrl: false,
+            alt: false,
+        }
+    }
 }
 
 impl InputKeyboard {

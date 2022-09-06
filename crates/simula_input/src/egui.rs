@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 pub use bevy_egui::{EguiContext, EguiSystem};
 
-// Check if Egui is blocking input
 #[derive(Default)]
 pub struct EguiBlockInputState {
     wants_keyboard_input: bool,
