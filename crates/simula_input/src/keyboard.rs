@@ -2,7 +2,7 @@ use crate::action::{ActionInputState, ActionState};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct InputKeyboard {
     pub key_code: KeyCode,
     pub shift: bool,
@@ -22,7 +22,7 @@ impl Default for InputKeyboard {
 }
 
 impl InputKeyboard {
-    fn is_modified(&self, input: &Res<Input<KeyCode>>) -> bool {
+    fn is_modified(&self, input: &Input<KeyCode>) -> bool {
         let mut is_modified = true;
         if self.shift {
             is_modified = is_modified && input.any_pressed([KeyCode::LShift, KeyCode::RShift]);
@@ -40,15 +40,57 @@ impl InputKeyboard {
 impl ActionInputState for InputKeyboard {
     type InputType = KeyCode;
 
-    fn state(&self, input: &Res<Input<Self::InputType>>) -> ActionState {
-        if self.is_modified(&input) && input.just_pressed(self.key_code) {
-            ActionState::Begin
-        } else if self.is_modified(&input) && input.just_released(self.key_code) {
-            ActionState::End
-        } else if self.is_modified(&input) && input.pressed(self.key_code) {
-            ActionState::InProgress
+    fn state(&self, prev_state: ActionState, input: &mut Input<Self::InputType>) -> ActionState {
+
+        // if input.clear_just_pressed(self.button) {
+        //     if prev_state == ActionState::Idle {
+        //         ActionState::Begin
+        //     } else {
+        //         panic!("Invalid state");
+        //     }
+        // } else {
+        //     if prev_state == ActionState::Begin {
+        //         ActionState::InProgress
+        //     } else if prev_state == ActionState::InProgress {
+        //         if input.pressed(self.button) {
+        //             ActionState::InProgress
+        //         } else {
+        //             ActionState::End
+        //         }
+        //     } else {
+        //         ActionState::Idle
+        //     }
+        // }
+
+        if self.is_modified(&input) && input.clear_just_pressed(self.key_code) {
+            if prev_state == ActionState::Idle {
+                ActionState::Begin
+            } else {
+                panic!("Invalid state");
+            }
         } else {
-            ActionState::Idle
+            if prev_state == ActionState::Begin {
+                ActionState::InProgress
+            } else if prev_state == ActionState::InProgress {
+                if self.is_modified(&input) && input.pressed(self.key_code) {
+                    ActionState::InProgress
+                } else {
+                    ActionState::End
+                }
+            } else {
+                ActionState::Idle
+            }
         }
+
+
+        // if self.is_modified(&input) && input.just_pressed(self.key_code) {
+        //     ActionState::Begin
+        // } else if self.is_modified(&input) && input.just_released(self.key_code) {
+        //     ActionState::End
+        // } else if self.is_modified(&input) && input.pressed(self.key_code) {
+        //     ActionState::InProgress
+        // } else {
+        //     ActionState::Idle
+        // }
     }
 }

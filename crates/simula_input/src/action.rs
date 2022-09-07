@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 pub(crate) trait ActionInputState {
     type InputType: Send + Sync + Hash + Eq + 'static;
-    fn state(&self, input: &Res<Input<Self::InputType>>) -> ActionState;
+    fn state(&self, prev_state: ActionState, input: &mut Input<Self::InputType>) -> ActionState;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -37,15 +37,16 @@ impl ActionInput {
 
     pub fn state(
         &self,
-        keyboard: &Res<Input<KeyCode>>,
-        mouse_button: &Res<Input<MouseButton>>,
+        prev_state: ActionState,
+        keyboard: &mut Input<KeyCode>,
+        mouse_button: &mut Input<MouseButton>,
     ) -> ActionState {
         match self {
-            ActionInput::Keyboard(input) => input.state(keyboard),
-            ActionInput::MouseButton(input) => input.state(mouse_button),
+            ActionInput::Keyboard(input) => input.state(prev_state, keyboard),
+            ActionInput::MouseButton(input) => input.state(prev_state, mouse_button),
             ActionInput::KeyboardMouseButton(input_keyboard, input_mouse) => {
-                let keyboard_state = input_keyboard.state(keyboard);
-                let mouse_button_state = input_mouse.state(mouse_button);
+                let keyboard_state = input_keyboard.state(prev_state, keyboard);
+                let mouse_button_state = input_mouse.state(prev_state, mouse_button);
                 if keyboard_state == ActionState::Begin
                     && mouse_button_state == ActionState::InProgress
                 {
@@ -72,54 +73,73 @@ impl ActionInput {
     }
 }
 
-#[derive(SystemLabel)]
-#[system_label(ignore_fields)]
 pub struct Action<T>
 where
-    T: Send + Sync + 'static,
+    T: Struct + Default + SystemLabel + core::fmt::Debug,
 {
     pub state: ActionState,
+    pub label: T,
     inputs: Vec<ActionInput>,
-    _phantom: std::marker::PhantomData<T>,
+    active_input: Option<u8>,
 }
 
 impl<T> Action<T>
 where
-    T: Send + Sync + 'static,
+    T: Struct + Default + SystemLabel + core::fmt::Debug,
 {
-    pub fn add(app: &mut App, inputs: &[ActionInput]) {
+    pub fn add(app: &mut App, inputs: &[ActionInput], after: impl SystemLabel) {
         let res = Self {
             state: ActionState::Idle,
+            label: T::default(),
             inputs: inputs.to_vec(),
-            _phantom: std::marker::PhantomData::default(),
+            active_input: None,
         };
         app.insert_resource(res);
         app.add_event::<Self>();
-        app.add_system_to_stage(CoreStage::PreUpdate, Self::run);
+        app.add_system_to_stage(
+            CoreStage::PreUpdate,
+            Self::run.label(T::default()).after(after),
+        );
     }
 
     fn run(
+        mut frame: Local<usize>,
         mut action: ResMut<Self>,
         mut event: EventWriter<Self>,
-        keyboard: Res<Input<KeyCode>>,
-        mouse_button: Res<Input<MouseButton>>,
+        mut keyboard: ResMut<Input<KeyCode>>,
+        mut mouse_button: ResMut<Input<MouseButton>>,
     ) {
-        action.state = ActionState::Idle;
-        let mut next_state = None;
-        for input in &action.inputs {
-            let state = input.state(&keyboard, &mouse_button);
-            if state != ActionState::Idle {
-                next_state = Some(state);
+        *frame += 1;
+        let mut valid_state = None;
+        let prev_state = action.state;
+        let action = &mut *action;
+
+        for (idx, input) in action.inputs.iter_mut().enumerate() {
+            if action.active_input.is_some() && action.active_input != Some(idx as u8) {
+                continue;
+            }
+            let next_state = input.state(prev_state, &mut keyboard, &mut mouse_button);
+            if next_state != ActionState::Idle {
+                valid_state = Some(next_state);
+                info!(
+                    "Frame:{} Action [{:#?}] {:?} -> {:?}  Input: {:?}",
+                    *frame, action.label, action.state, valid_state, input
+                );
+                action.active_input = Some(idx as u8);
+                action.state = next_state;
+                event.send(Self {
+                    state: next_state,
+                    label: T::default(),
+                    inputs: vec![],
+                    active_input: None,
+                });
                 break;
             }
         }
-        if let Some(next_state) = next_state {
-            action.state = next_state;
-            event.send(Self {
-                state: next_state,
-                inputs: vec![],
-                _phantom: std::marker::PhantomData::default(),
-            });
+
+        if valid_state.is_none() {
+            action.state = ActionState::Idle;
+            action.active_input = None;
         }
     }
 }
