@@ -1,0 +1,5 @@
+RonDiagnostics (
+    power_preference: HighPerformance,
+    priority: Functionality,
+    limits: Default
+)

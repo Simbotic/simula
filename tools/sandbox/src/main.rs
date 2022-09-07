@@ -8,6 +8,7 @@ use rand::distributions::{Distribution, Uniform};
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
+use simula_console::diagnostics::SimulaDiagnosticsPlugin;
 use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
@@ -47,13 +48,13 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(VoxelsPlugin)
         .add_plugin(PointcloudPlugin)
+        .add_plugin(SimulaDiagnosticsPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
