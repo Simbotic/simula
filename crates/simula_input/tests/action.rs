@@ -1,48 +1,106 @@
-use bevy::input::{mouse::MouseButtonInput, InputSystem};
 use bevy::prelude::*;
 use simula_input::{
     action::{Action, ActionInput, ActionState},
+    input_channel_begin, input_channel_end,
     keyboard::InputKeyboard,
     mouse::InputMouseButton,
+    InputChannel, InputChannelBegin, InputChannelEnd,
 };
 
-#[derive(Reflect, SystemLabel, Default, Debug)]
+#[derive(Reflect, SystemLabel, Default, Debug, Hash)]
 struct MonkeyHack;
-#[derive(Reflect, SystemLabel, Default, Debug)]
+#[derive(Reflect, SystemLabel, Default, Debug, Hash)]
 struct MonkeyPush;
-#[derive(Reflect, SystemLabel, Default, Debug)]
+#[derive(Reflect, SystemLabel, Default, Debug, Hash)]
 struct MonkeyJump;
 
+// Create a mock app to test the input system
+fn mock_app() -> App {
+    let mut app = App::new();
+
+    // Uncomment for logging during manual vscode tests
+    // app.add_plugin(bevy::log::LogPlugin::default());
+
+    app.add_system(run);
+
+    //
+    app.add_system_to_stage(
+        CoreStage::PreUpdate,
+        input_channel_begin.label(InputChannelBegin),
+    )
+    .add_system_to_stage(
+        CoreStage::PostUpdate,
+        input_channel_end.label(InputChannelEnd),
+    )
+    .add_system_to_stage(
+        CoreStage::PostUpdate,
+        cleanup.label("test_cleanup").after(input_channel_end),
+    );
+
+    // Add keyboard and mouse input
+    let keyboard_input = Input::<KeyCode>::default();
+    app.insert_resource(keyboard_input);
+    let mouse_button_input = Input::<MouseButton>::default();
+    app.insert_resource(mouse_button_input);
+
+    // Add input channels
+    app.insert_resource(InputChannel {
+        input: Input::<MouseButton>::default(),
+        owner: None,
+    });
+    app.insert_resource(InputChannel {
+        input: Input::<KeyCode>::default(),
+        owner: None,
+    });
+
+    app
+}
+
+// Cleanup inputs after test
+fn cleanup(mut key_code: ResMut<Input<KeyCode>>, mut mouse_button: ResMut<Input<MouseButton>>) {
+    key_code.clear();
+    mouse_button.clear();
+}
+
+// Get the input resource for Input<KeyCode>>
+fn keyboard_input<'a>(app: &'a mut App) -> Mut<'a, Input<KeyCode>> {
+    app.world.resource_mut::<Input<KeyCode>>()
+}
+
+// Get the input resource for Input<MouseButton>>
+fn mouse_button_input<'a>(app: &'a mut App) -> Mut<'a, Input<MouseButton>> {
+    app.world.resource_mut::<Input<MouseButton>>()
+}
+
+// Get the action resource for Action<MonkeyHack>
+fn monkey_hack_action<'a>(app: &'a mut App) -> Mut<'a, Action<MonkeyHack>> {
+    app.world.resource_mut::<Action<MonkeyHack>>()
+}
+
+// Get the action resource for Action<MonkeyPush>
+fn monkey_push_action<'a>(app: &'a mut App) -> Mut<'a, Action<MonkeyPush>> {
+    app.world.resource_mut::<Action<MonkeyPush>>()
+}
+
+//
+fn monkey_jump_action<'a>(app: &'a mut App) -> Mut<'a, Action<MonkeyJump>> {
+    app.world.resource_mut::<Action<MonkeyJump>>()
+}
+
+// Subscribe to the action resources for Action<...>
 fn run(
-    mut monkey_hack_events: EventReader<Action<MonkeyHack>>,
-    mut monkey_push_events: EventReader<Action<MonkeyPush>>,
-    mut monkey_jump_events: EventReader<Action<MonkeyJump>>,
+    mut _monkey_hack_events: EventReader<Action<MonkeyHack>>,
+    mut _monkey_push_events: EventReader<Action<MonkeyPush>>,
+    mut _monkey_jump_events: EventReader<Action<MonkeyJump>>,
 ) {
-    for evt in monkey_hack_events.iter() {
-        println!("monkey_hack_event {:?}", evt.state);
-    }
-    for evt in monkey_push_events.iter() {
-        println!("monkey_push_event {:?}", evt.state);
-    }
-    for evt in monkey_jump_events.iter() {
-        println!("monkey_jump_event {:?}", evt.state);
-    }
 }
 
 #[test]
-fn monkey_hack_action() {
-    let mut app = App::new();
+fn monkey_hack_action_basic() {
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    keyboard_input.press(KeyCode::Space);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
-
-    Action::<MonkeyJump>::add(&mut app, &[], InputSystem);
-    Action::<MonkeyPush>::add(&mut app, &[], InputSystem);
+    Action::<MonkeyJump>::add(&mut app, &[], InputChannelBegin);
+    Action::<MonkeyPush>::add(&mut app, &[], MonkeyJump);
 
     Action::<MonkeyHack>::add(
         &mut app,
@@ -50,34 +108,44 @@ fn monkey_hack_action() {
         MonkeyPush,
     );
 
-    app.add_system(run);
+    keyboard_input(&mut app).press(KeyCode::Space);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Begin);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Begin);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
 
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
+    app.update();
 
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Idle);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::InProgress);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
+
+    mouse_button_input(&mut app).release(MouseButton::Left);
+    app.update();
+
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::End);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
+
+    app.update();
+
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
 }
 
 #[test]
 fn monkey_push_shadow_action() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    keyboard_input.press(KeyCode::A);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Right);
-    app.insert_resource(mouse_button_input);
+    keyboard_input(&mut app).press(KeyCode::A);
+    mouse_button_input(&mut app).press(MouseButton::Right);
 
     // MonkeyJump - should never be triggered, since it has no inputs
-    Action::<MonkeyJump>::add(&mut app, &[], InputSystem);
+    Action::<MonkeyJump>::add(&mut app, &[], InputChannelBegin);
 
     // MonkeyPush - triggered by MouseButton::Right
     Action::<MonkeyPush>::add(
@@ -93,31 +161,19 @@ fn monkey_push_shadow_action() {
         MonkeyPush,
     );
 
-    app.add_system(run);
-
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Idle);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Begin);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Idle);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Begin);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
 }
 
 #[test]
 fn monkey_jump_action_many_inputs() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    keyboard_input.press(KeyCode::LControl);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
+    keyboard_input(&mut app).press(KeyCode::LControl);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     Action::<MonkeyJump>::add(
         &mut app,
@@ -125,48 +181,34 @@ fn monkey_jump_action_many_inputs() {
             ActionInput::with_mouse_button(MouseButton::Right),
             ActionInput::with_mouse_button(MouseButton::Left),
         ],
-        InputSystem,
+        InputChannelBegin,
     );
 
     Action::<MonkeyHack>::add(&mut app, &[], MonkeyJump);
     Action::<MonkeyPush>::add(&mut app, &[], MonkeyHack);
 
-    app.add_system(run);
+    app.update();
+
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Begin);
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Idle);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Begin);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::InProgress);
 
     app.update();
 
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::InProgress);
-
-    app.update();
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::InProgress);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::InProgress);
 }
 
 #[test]
 fn monkey_modified_action_shadow() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    keyboard_input.press(KeyCode::LControl);
-    keyboard_input.press(KeyCode::Space);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
+    keyboard_input(&mut app).press(KeyCode::LControl);
+    keyboard_input(&mut app).press(KeyCode::Space);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     Action::<MonkeyJump>::add(
         &mut app,
@@ -175,7 +217,7 @@ fn monkey_modified_action_shadow() {
             ctrl: true,
             ..Default::default()
         })],
-        InputSystem,
+        InputChannelBegin,
     );
 
     // MonkeyHack - should not work if modifier from MonkeyJump is pressed
@@ -194,28 +236,17 @@ fn monkey_modified_action_shadow() {
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Idle);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Begin);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Begin);
 }
 
 #[test]
 fn monkey_modified_action_no_shadow() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    // keyboard_input.press(KeyCode::LControl);
-    keyboard_input.press(KeyCode::Space);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
+    keyboard_input(&mut app).press(KeyCode::Space);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     Action::<MonkeyJump>::add(
         &mut app,
@@ -224,7 +255,7 @@ fn monkey_modified_action_no_shadow() {
             ctrl: true,
             ..Default::default()
         })],
-        InputSystem,
+        InputChannelBegin,
     );
 
     // MonkeyHack - should work if modifier from MonkeyJump is not pressed
@@ -243,27 +274,17 @@ fn monkey_modified_action_no_shadow() {
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Begin);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Idle);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Begin);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
 }
 
 #[test]
 fn monkey_action_keyboard_mouse() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    keyboard_input.press(KeyCode::LControl);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
+    keyboard_input(&mut app).press(KeyCode::LControl);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     Action::<MonkeyJump>::add(
         &mut app,
@@ -276,7 +297,7 @@ fn monkey_action_keyboard_mouse() {
                 button: MouseButton::Left,
             },
         )],
-        InputSystem,
+        InputChannelBegin,
     );
 
     Action::<MonkeyHack>::add(&mut app, &[], MonkeyJump);
@@ -286,27 +307,17 @@ fn monkey_action_keyboard_mouse() {
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Idle);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Begin);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Begin);
 }
 
 #[test]
 fn monkey_modified_action_keyboard_mouse_shadow() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let mut keyboard_input = Input::<KeyCode>::default();
-    keyboard_input.press(KeyCode::LControl);
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
+    keyboard_input(&mut app).press(KeyCode::LControl);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     Action::<MonkeyJump>::add(
         &mut app,
@@ -319,7 +330,7 @@ fn monkey_modified_action_keyboard_mouse_shadow() {
                 button: MouseButton::Left,
             },
         )],
-        InputSystem,
+        InputChannelBegin,
     );
 
     // MonkeyHack - should not work if modifier from MonkeyJump is pressed
@@ -337,26 +348,16 @@ fn monkey_modified_action_keyboard_mouse_shadow() {
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Idle);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Begin);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Begin);
 }
 
 #[test]
 fn monkey_modified_action_keyboard_mouse_no_shadow() {
-    let mut app = App::new();
+    let mut app = mock_app();
 
-    let keyboard_input = Input::<KeyCode>::default();
-    app.insert_resource(keyboard_input);
-
-    let mut mouse_button_input = Input::<MouseButton>::default();
-    mouse_button_input.press(MouseButton::Left);
-    app.insert_resource(mouse_button_input);
+    mouse_button_input(&mut app).press(MouseButton::Left);
 
     Action::<MonkeyJump>::add(
         &mut app,
@@ -369,7 +370,7 @@ fn monkey_modified_action_keyboard_mouse_no_shadow() {
                 button: MouseButton::Left,
             },
         )],
-        InputSystem,
+        InputChannelBegin,
     );
 
     // MonkeyHack - should work if modifier from MonkeyJump is not pressed
@@ -387,12 +388,7 @@ fn monkey_modified_action_keyboard_mouse_no_shadow() {
 
     app.update();
 
-    let monkey_hack_action = app.world.resource::<Action<MonkeyHack>>();
-    assert_eq!(monkey_hack_action.state, ActionState::Begin);
-
-    let monkey_push_action = app.world.resource::<Action<MonkeyPush>>();
-    assert_eq!(monkey_push_action.state, ActionState::Idle);
-
-    let monkey_jump_action = app.world.resource::<Action<MonkeyJump>>();
-    assert_eq!(monkey_jump_action.state, ActionState::Idle);
+    assert_eq!(monkey_hack_action(&mut app).state, ActionState::Begin);
+    assert_eq!(monkey_push_action(&mut app).state, ActionState::Idle);
+    assert_eq!(monkey_jump_action(&mut app).state, ActionState::Idle);
 }

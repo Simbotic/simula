@@ -1,8 +1,11 @@
-use crate::action::{ActionInputState, ActionState};
+use crate::{
+    action::{ActionInputState, ActionState},
+    InputChannel,
+};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash)]
 pub struct InputMouseButton {
     pub button: MouseButton,
 }
@@ -10,35 +13,15 @@ pub struct InputMouseButton {
 impl ActionInputState for InputMouseButton {
     type InputType = MouseButton;
 
-    fn state(&self, prev_state: ActionState, input: &mut Input<Self::InputType>) -> ActionState {
-        if input.clear_just_pressed(self.button) {
-            if prev_state == ActionState::Idle {
-                ActionState::Begin
-            } else {
-                panic!("Invalid state");
-            }
+    fn state(&self, input_channel: &mut InputChannel<Self::InputType>) -> ActionState {
+        if input_channel.input.just_pressed(self.button) {
+            ActionState::Begin
+        } else if input_channel.input.just_released(self.button) {
+            ActionState::End
+        } else if input_channel.input.pressed(self.button) {
+            ActionState::InProgress
         } else {
-            if prev_state == ActionState::Begin {
-                ActionState::InProgress
-            } else if prev_state == ActionState::InProgress {
-                if input.pressed(self.button) {
-                    ActionState::InProgress
-                } else {
-                    ActionState::End
-                }
-            } else {
-                ActionState::Idle
-            }
+            ActionState::Idle
         }
-
-        // if input.just_pressed(self.button) {
-        //     ActionState::Begin
-        // } else if input.just_released(self.button) {
-        //     ActionState::End
-        // } else if input.pressed(self.button) {
-        //     ActionState::InProgress
-        // } else {
-        //     ActionState::Idle
-        // }
     }
 }

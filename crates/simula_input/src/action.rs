@@ -1,11 +1,12 @@
-use crate::{keyboard::InputKeyboard, mouse::InputMouseButton};
+use crate::{keyboard::InputKeyboard, mouse::InputMouseButton, InputChannel};
 use bevy::prelude::*;
+use bevy_egui::egui::util::hash;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 
 pub(crate) trait ActionInputState {
-    type InputType: Send + Sync + Hash + Eq + 'static;
-    fn state(&self, prev_state: ActionState, input: &mut Input<Self::InputType>) -> ActionState;
+    type InputType: Send + Sync + std::hash::Hash + Eq + 'static;
+    fn state(&self, input_channel: &mut InputChannel<Self::InputType>) -> ActionState;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -16,7 +17,7 @@ pub enum ActionState {
     End,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash)]
 pub enum ActionInput {
     Keyboard(InputKeyboard),
     MouseButton(InputMouseButton),
@@ -37,23 +38,57 @@ impl ActionInput {
 
     pub fn state(
         &self,
-        prev_state: ActionState,
-        keyboard: &mut Input<KeyCode>,
-        mouse_button: &mut Input<MouseButton>,
-    ) -> ActionState {
-        match self {
-            ActionInput::Keyboard(input) => input.state(prev_state, keyboard),
-            ActionInput::MouseButton(input) => input.state(prev_state, mouse_button),
-            ActionInput::KeyboardMouseButton(input_keyboard, input_mouse) => {
-                let keyboard_state = input_keyboard.state(prev_state, keyboard);
-                let mouse_button_state = input_mouse.state(prev_state, mouse_button);
-                if keyboard_state == ActionState::Begin
-                    && mouse_button_state == ActionState::InProgress
-                {
-                    ActionState::Begin
-                } else if keyboard_state == ActionState::InProgress
+        action_input_id: u64,
+        keyboard: &mut InputChannel<KeyCode>,
+        mouse_button: &mut InputChannel<MouseButton>,
+    ) -> Option<ActionState> {
+        let state = match self {
+            ActionInput::Keyboard(keyboard_input) => {
+                if let Some(owner) = keyboard.owner {
+                    if owner != action_input_id {
+                        return None;
+                    }
+                }
+                let state = keyboard_input.state(keyboard);
+                if state == ActionState::Begin {
+                    keyboard.owner = Some(action_input_id);
+                } else if state == ActionState::Idle {
+                    keyboard.owner = None;
+                }
+                state
+            }
+            ActionInput::MouseButton(mouse_button_input) => {
+                if let Some(owner) = mouse_button.owner {
+                    if owner != action_input_id {
+                        return None;
+                    }
+                }
+                let state = mouse_button_input.state(mouse_button);
+                if state == ActionState::Begin {
+                    mouse_button.owner = Some(action_input_id);
+                } else if state == ActionState::Idle {
+                    mouse_button.owner = None;
+                }
+                state
+            }
+            ActionInput::KeyboardMouseButton(keyboard_input, mouse_button_input) => {
+                if let Some(owner) = mouse_button.owner {
+                    if owner != action_input_id {
+                        return None;
+                    }
+                }
+                if keyboard.owner.is_some() {
+                    return None;
+                }
+
+                let keyboard_state = keyboard_input.state(keyboard);
+                let mouse_button_state = mouse_button_input.state(mouse_button);
+
+                if (keyboard_state == ActionState::Begin
+                    || keyboard_state == ActionState::InProgress)
                     && mouse_button_state == ActionState::Begin
                 {
+                    mouse_button.owner = Some(action_input_id);
                     ActionState::Begin
                 } else if (keyboard_state == ActionState::End
                     && mouse_button_state == ActionState::InProgress)
@@ -66,33 +101,33 @@ impl ActionInput {
                 {
                     ActionState::InProgress
                 } else {
+                    mouse_button.owner = None;
                     ActionState::Idle
                 }
             }
-        }
+        };
+        Some(state)
     }
 }
 
 pub struct Action<T>
 where
-    T: Struct + Default + SystemLabel + core::fmt::Debug,
+    T: Struct + Default + SystemLabel + core::fmt::Debug + Hash,
 {
     pub state: ActionState,
     pub label: T,
     inputs: Vec<ActionInput>,
-    active_input: Option<u8>,
 }
 
 impl<T> Action<T>
 where
-    T: Struct + Default + SystemLabel + core::fmt::Debug,
+    T: Struct + Default + SystemLabel + core::fmt::Debug + Hash,
 {
     pub fn add(app: &mut App, inputs: &[ActionInput], after: impl SystemLabel) {
         let res = Self {
             state: ActionState::Idle,
             label: T::default(),
             inputs: inputs.to_vec(),
-            active_input: None,
         };
         app.insert_resource(res);
         app.add_event::<Self>();
@@ -106,40 +141,30 @@ where
         mut frame: Local<usize>,
         mut action: ResMut<Self>,
         mut event: EventWriter<Self>,
-        mut keyboard: ResMut<Input<KeyCode>>,
-        mut mouse_button: ResMut<Input<MouseButton>>,
+        mut keyboard: ResMut<InputChannel<KeyCode>>,
+        mut mouse_button: ResMut<InputChannel<MouseButton>>,
     ) {
-        *frame += 1;
-        let mut valid_state = None;
-        let prev_state = action.state;
         let action = &mut *action;
+        let prev_state = action.state;
 
-        for (idx, input) in action.inputs.iter_mut().enumerate() {
-            if action.active_input.is_some() && action.active_input != Some(idx as u8) {
-                continue;
-            }
-            let next_state = input.state(prev_state, &mut keyboard, &mut mouse_button);
-            if next_state != ActionState::Idle {
-                valid_state = Some(next_state);
-                info!(
-                    "Frame:{} Action [{:#?}] {:?} -> {:?}  Input: {:?}",
-                    *frame, action.label, action.state, valid_state, input
-                );
-                action.active_input = Some(idx as u8);
-                action.state = next_state;
-                event.send(Self {
-                    state: next_state,
-                    label: T::default(),
-                    inputs: vec![],
-                    active_input: None,
-                });
-                break;
+        for input in action.inputs.iter_mut() {
+            let action_input_id = hash((SystemLabel::type_id(&action.label), &input));
+            if let Some(state) = input.state(action_input_id, &mut keyboard, &mut mouse_button) {
+                action.state = state;
+                if state != ActionState::Idle {
+                    info!(
+                        "Frame:{} Action [{:#?}] {:?} -> {:?}  Input: {:?} Id: {:x}",
+                        *frame, action.label, prev_state, state, input, action_input_id
+                    );
+                    event.send(Self {
+                        state,
+                        label: T::default(),
+                        inputs: vec![],
+                    });
+                }
             }
         }
 
-        if valid_state.is_none() {
-            action.state = ActionState::Idle;
-            action.active_input = None;
-        }
+        *frame += 1;
     }
 }
