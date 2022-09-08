@@ -1,7 +1,5 @@
 use anyhow::Result;
-use bevy::render::{
-    once_cell,
-};
+use bevy::render::once_cell;
 
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
@@ -66,84 +64,91 @@ impl Default for DiagnosticParameters {
         DiagnosticParameters { framerate: 0.0 }
     }
 }
+pub struct WindowAnchor {
+    pub anchor_align: egui::Align2,
+    pub anchor_offset: egui::Vec2,
+}
 
 pub fn ui_system_diagnostics(
     mut ctx: ResMut<EguiContext>,
     diag_parameters: ResMut<DiagnosticParameters>,
     wgpu_parameters: ResMut<WgpuAdapterInfo>,
     render_device: ResMut<RenderDevice>,
+    diagnostics_settings: Res<SimulaDiagnosticsSettings>,
 ) {
-    egui::Window::new("Diagnostics")
-        .collapsible(true)
-        .vscroll(true)
+    let mut windows = egui::Window::new("Diagnostics")
+        .collapsible(diagnostics_settings.collapsible)
+        .vscroll(diagnostics_settings.vscroll)
         .drag_bounds(egui::Rect::EVERYTHING)
-        .resizable(true)
-        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-20.0, 400.0))
-        .auto_sized()
-        .show(ctx.ctx_mut(), |ui| {
-            ui.group(|ui| {
-                ui.label("Nvidia Memory Info: ");
-                ui.add(
-                    egui::Label::new(format!(
-                        "Used: {:?} MB",
-                        memory_info().unwrap().used / 1000000
-                    ))
-                    .wrap(true),
-                );
-                ui.add(
-                    egui::Label::new(format!(
-                        "Free: {:?} MB",
-                        memory_info().unwrap().free / 1000000
-                    ))
-                    .wrap(true),
-                );
-                ui.add(
-                    egui::Label::new(format!(
-                        "Total: {:?} MB",
-                        memory_info().unwrap().total / 1000000
-                    ))
-                    .wrap(true),
-                );
+        .resizable(diagnostics_settings.resizable)
+        .auto_sized();
+
+    if let Some(anchor) = &diagnostics_settings.anchor {
+        windows = windows.anchor(anchor.anchor_align, anchor.anchor_offset);
+    }
+
+    windows.show(ctx.ctx_mut(), |ui| {
+        ui.group(|ui| {
+            ui.label("Nvidia Memory Info: ");
+            ui.add(
+                egui::Label::new(format!(
+                    "Used: {:?} MB",
+                    memory_info().unwrap().used / 1000000
+                ))
+                .wrap(true),
+            );
+            ui.add(
+                egui::Label::new(format!(
+                    "Free: {:?} MB",
+                    memory_info().unwrap().free / 1000000
+                ))
+                .wrap(true),
+            );
+            ui.add(
+                egui::Label::new(format!(
+                    "Total: {:?} MB",
+                    memory_info().unwrap().total / 1000000
+                ))
+                .wrap(true),
+            );
+        });
+        ui.horizontal(|ui| {
+            ui.label("Framerate: ");
+            ui.add(egui::Label::new(format!("{:.05}", diag_parameters.framerate)).wrap(true));
+        });
+        ui.collapsing("WGPU Info", |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Name: ");
+                ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.name)).wrap(true));
             });
             ui.horizontal(|ui| {
-                ui.label("Framerate: ");
-                ui.add(egui::Label::new(format!("{:.05}", diag_parameters.framerate)).wrap(true));
+                ui.label("Vendor: ");
+                ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.vendor)).wrap(true));
             });
-            ui.collapsing("WGPU Info", |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Name: ");
-                    ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.name)).wrap(true));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Vendor: ");
-                    ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.vendor)).wrap(true));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Device: ");
-                    ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.device)).wrap(true));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Device Type: ");
-                    ui.add(
-                        egui::Label::new(format!("{:?}", wgpu_parameters.device_type)).wrap(true),
-                    );
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Backend: ");
-                    ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.backend)).wrap(true));
-                });
+            ui.horizontal(|ui| {
+                ui.label("Device: ");
+                ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.device)).wrap(true));
             });
-            ui.collapsing("Render Device", |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Features: ");
-                    ui.add(egui::Label::new(format!("{:?}", render_device.features())).wrap(true));
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Limits: ");
-                    ui.add(egui::Label::new(format!("{:?}", render_device.limits())).wrap(true));
-                });
+            ui.horizontal(|ui| {
+                ui.label("Device Type: ");
+                ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.device_type)).wrap(true));
+            });
+            ui.horizontal(|ui| {
+                ui.label("Backend: ");
+                ui.add(egui::Label::new(format!("{:?}", wgpu_parameters.backend)).wrap(true));
             });
         });
+        ui.collapsing("Render Device", |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Features: ");
+                ui.add(egui::Label::new(format!("{:?}", render_device.features())).wrap(true));
+            });
+            ui.horizontal(|ui| {
+                ui.label("Limits: ");
+                ui.add(egui::Label::new(format!("{:?}", render_device.limits())).wrap(true));
+            });
+        });
+    });
 }
 
 fn memory_info() -> Result<MemoryInfo> {
@@ -162,12 +167,23 @@ pub fn framerate_update_system(
         }
     }
 }
+pub struct SimulaDiagnosticsSettings {
+    pub config_path: String,
+    pub collapsible: bool,
+    pub vscroll: bool,
+    pub resizable: bool,
+    pub anchor: Option<WindowAnchor>,
+}
 
-pub struct DiagnosticsConfigPath(pub String);
-
-impl Default for DiagnosticsConfigPath {
+impl Default for SimulaDiagnosticsSettings {
     fn default() -> Self {
-        DiagnosticsConfigPath("data/settings.diagnostics.ron".to_string())
+        SimulaDiagnosticsSettings {
+            config_path: "data/settings.diagnostics.ron".to_string(),
+            collapsible: true,
+            vscroll: true,
+            resizable: true,
+            anchor: None,
+        }
     }
 }
 
@@ -176,7 +192,7 @@ pub struct SimulaDiagnosticsPlugin;
 impl Plugin for SimulaDiagnosticsPlugin {
     fn build(&self, app: &mut App) {
         app.world
-            .get_resource_or_insert_with(DiagnosticsConfigPath::default);
+            .get_resource_or_insert_with(SimulaDiagnosticsSettings::default);
 
         app.add_plugin(FrameTimeDiagnosticsPlugin::default())
             .insert_resource(DiagnosticParameters { framerate: 0.00 })

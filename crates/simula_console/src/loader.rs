@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 use crate::diagnostics::{
     DiagnosticLimits, DiagnosticPowerPreference, DiagnosticWgpuSettingsPriority,
-    DiagnosticsConfigPath,
+    SimulaDiagnosticsSettings,
 };
 
 #[derive(Debug, Deserialize, TypeUuid, PartialEq)]
@@ -46,13 +46,13 @@ impl AssetLoader for DiagnosticsAssetLoader {
 }
 
 pub fn load_diagnostics_config(
-    config_path: Res<DiagnosticsConfigPath>,
+    diagnostics_settings: Res<SimulaDiagnosticsSettings>,
     mut collider_state: ResMut<DiagnosticsState>,
     asset_server: Res<AssetServer>,
 ) {
     collider_state
         .handle
-        .push(asset_server.load_untyped(&config_path.0.clone()));
+        .push(asset_server.load_untyped(&diagnostics_settings.config_path.clone()));
 }
 
 pub struct DiagnosticsLoaderPlugin;
