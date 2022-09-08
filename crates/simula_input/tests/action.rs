@@ -19,7 +19,7 @@ fn mock_app() -> App {
     let mut app = App::new();
 
     // Uncomment for logging during manual vscode tests
-    // app.add_plugin(bevy::log::LogPlugin::default());
+    app.add_plugin(bevy::log::LogPlugin::default());
 
     app.add_system(run);
 

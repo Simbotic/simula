@@ -148,7 +148,7 @@ where
         let prev_state = action.state;
 
         for input in action.inputs.iter_mut() {
-            let action_input_id = hash((SystemLabel::type_id(&action.label), &input));
+            let action_input_id = hash((std::any::TypeId::of::<T>(), &input));
             if let Some(state) = input.state(action_input_id, &mut keyboard, &mut mouse_button) {
                 action.state = state;
                 if state != ActionState::Idle {

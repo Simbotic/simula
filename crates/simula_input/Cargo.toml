@@ -8,7 +8,7 @@ bevy = { version = "0.8", features = ["serialize"] }
 bevy_egui = "0.15.1"
 simula_core = { path = "../../crates/simula_core" }
 serde = { version = "1.0", features = ["derive"] }
+bevy-inspector-egui = "0.12.1"
 
 [dev-dependencies]
-# env_logger = "0.7.1"
-# test-env-log = "0.2.8"
+

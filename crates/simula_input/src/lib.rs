@@ -1,11 +1,14 @@
 pub use action::{Action, ActionInput};
+use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::{input::InputSystem, prelude::*};
+use bevy_inspector_egui::{Inspectable, InspectorPlugin};
 pub use keyboard::InputKeyboard;
 pub use mouse::InputMouseButton;
 use std::hash::Hash;
 
-pub mod action;
 mod egui;
+
+pub mod action;
 pub mod keyboard;
 pub mod mouse;
 
@@ -30,6 +33,39 @@ where
     pub owner: Option<u64>,
 }
 
+pub struct MouseMotionEx(MouseMotion);
+
+impl Hash for MouseMotionEx {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::any::TypeId::of::<MouseMotion>().hash(state);
+    }
+}
+
+impl PartialEq for MouseMotionEx {
+    fn eq(&self, other: &Self) -> bool {
+        std::any::TypeId::of::<MouseMotion>() == std::any::TypeId::of::<MouseMotion>()
+    }
+}
+
+impl Eq for MouseMotionEx {}
+
+pub struct MouseWheelEx(MouseWheel);
+
+impl Hash for MouseWheelEx {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::any::TypeId::of::<MouseWheel>().hash(state);
+    }
+}
+
+impl PartialEq for MouseWheelEx {
+    fn eq(&self, other: &Self) -> bool {
+        std::any::TypeId::of::<MouseWheel>() == std::any::TypeId::of::<MouseWheel>()
+    }
+}
+
+impl Eq for MouseWheelEx {}
+
+
 impl Plugin for InputControlPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<egui::EguiBlockInputState>()
@@ -47,7 +83,10 @@ impl Plugin for InputControlPlugin {
                     .label(InputChannelBegin)
                     .after(InputSystem),
             )
-            .add_system_to_stage(CoreStage::PostUpdate, input_channel_end.label(InputChannelEnd));
+            .add_system_to_stage(
+                CoreStage::PostUpdate,
+                input_channel_end.label(InputChannelEnd),
+            );
         // .add_startup_system(setup)
         // .add_system(run);
 
@@ -57,9 +96,27 @@ impl Plugin for InputControlPlugin {
         });
 
         app.insert_resource(InputChannel {
+            input: Input::<MouseMotionEx>::default(),
+            owner: None,
+        });
+
+        app.insert_resource(InputChannel {
+            input: Input::<MouseWheelEx>::default(),
+            owner: None,
+        });
+
+        // app.insert_resource(InputChannel {
+        //     input: Input::<MouseWheelEx>::default(),
+        //     owner: None,
+        // });
+
+        app.insert_resource(InputChannel {
             input: Input::<KeyCode>::default(),
             owner: None,
         });
+
+        // app.add_plugin(InspectorPlugin::<InputChannel<MouseButton>>::new());
+        // app.add_plugin(InspectorPlugin::<InputChannel<KeyCode>>::new());
 
         // Action::<CookieClick>::add(
         //     app,
@@ -82,8 +139,7 @@ impl Plugin for InputControlPlugin {
 
         Action::<CookieClick>::add(
             app,
-            &[
-                ActionInput::KeyboardMouseButton(
+            &[ActionInput::KeyboardMouseButton(
                 InputKeyboard {
                     key_code: KeyCode::LControl,
                     ..Default::default()
@@ -91,8 +147,7 @@ impl Plugin for InputControlPlugin {
                 InputMouseButton {
                     button: MouseButton::Left,
                 },
-            )
-            ],
+            )],
             InputChannelBegin,
         );
 
@@ -115,12 +170,13 @@ impl Plugin for InputControlPlugin {
         //     })],
         //     InputChannelBegin,
         // );
-
     }
 }
 
 pub fn input_channel_begin(
     mut input_channel_mouse_button: ResMut<InputChannel<MouseButton>>,
+    mut input_channet_mouse_motion: ResMut<InputChannel<MouseMotionEx>>,
+    mut input_channet_mouse_wheel: ResMut<InputChannel<MouseWheelEx>>,
     mut input_channel_keycode: ResMut<InputChannel<KeyCode>>,
     input_mouse_button: ResMut<Input<MouseButton>>,
     input_keycode: ResMut<Input<KeyCode>>,

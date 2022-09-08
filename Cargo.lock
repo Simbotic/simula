@@ -5172,6 +5172,7 @@ name = "simula_input"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-inspector-egui",
  "bevy_egui",
  "serde",
  "simula_core",
