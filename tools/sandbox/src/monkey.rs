@@ -8,7 +8,7 @@ pub struct MonkeyPlugin;
 impl Plugin for MonkeyPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(monkey_setup)
-            .add_system(action_map::<MonkeyDo>)
+            .add_system(action_map::<MonkeyDo, MonkeyActor>)
             .add_system(monkey_play);
     }
 }

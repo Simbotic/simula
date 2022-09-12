@@ -147,13 +147,14 @@ impl<T> Default for ActionMap<T> {
     }
 }
 
-pub fn action_map<T>(
+pub fn action_map<T, W>(
     keyboard_actions: Query<&Action<KeyCode>, With<MainActionInput>>,
     mouse_button_actions: Query<&Action<MouseButton>, With<MainActionInput>>,
-    mut actions: Query<&mut Action<T>>,
-    action_maps: Query<&ActionMap<T>>,
+    mut actions: Query<&mut Action<T>, With<W>>,
+    action_maps: Query<&ActionMap<T>, With<W>>,
 ) where
     T: Debug + Send + Sync + Hash + Eq + Copy + Clone + 'static,
+    W: Component,
 {
     let keyboard_action = keyboard_actions.single();
     let mouse_button_action = mouse_button_actions.single();
@@ -177,16 +178,13 @@ pub fn action_map<T>(
             is_modified = is_modified && !keyboard_action.on(KeyCode::LAlt);
         }
 
+        // Handle on_enter
         if is_modified {
             match action_map.button {
                 ActionMapButton::Keyboard(key_code) => {
                     if keyboard_action.on_enter(key_code) {
                         if !action.on(action_map.action) {
                             action.enter(action_map.action);
-                        }
-                    } else if keyboard_action.on_exit(key_code) {
-                        if action.on(action_map.action) {
-                            action.exit(action_map.action);
                         }
                     }
                 }
@@ -195,10 +193,24 @@ pub fn action_map<T>(
                         if !action.on(action_map.action) {
                             action.enter(action_map.action);
                         }
-                    } else if mouse_button_action.on_exit(mouse_button) {
-                        if action.on(action_map.action) {
-                            action.exit(action_map.action);
-                        }
+                    }
+                }
+            }
+        }
+
+        // Handle on_exit
+        match action_map.button {
+            ActionMapButton::Keyboard(key_code) => {
+                if keyboard_action.on_exit(key_code) {
+                    if action.on(action_map.action) {
+                        action.exit(action_map.action);
+                    }
+                }
+            }
+            ActionMapButton::MouseButton(mouse_button) => {
+                if mouse_button_action.on_exit(mouse_button) {
+                    if action.on(action_map.action) {
+                        action.exit(action_map.action);
                     }
                 }
             }

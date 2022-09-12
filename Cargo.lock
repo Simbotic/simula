@@ -5201,14 +5201,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simula_interaction"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "simula_core",
-]
-
-[[package]]
 name = "simula_net"
 version = "0.1.0"
 dependencies = [
