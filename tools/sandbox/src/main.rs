@@ -12,7 +12,7 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
-use simula_input::{InputControlPlugin};
+use simula_action::{ActionPlugin};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -26,6 +26,7 @@ use simula_viz::{
     voxels::{Voxel, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
 
+mod monkey;
 
 
 fn main() {
@@ -47,7 +48,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(InputControlPlugin)
+        .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
         .add_plugin(LinesPlugin)
@@ -55,6 +56,7 @@ fn main() {
         .add_plugin(GridPlugin)
         .add_plugin(VoxelsPlugin)
         .add_plugin(PointcloudPlugin)
+        .add_plugin(monkey::MonkeyPlugin)
         // .add_event(NopEvent(Action::default()))
         .add_startup_system(setup)
         .add_system(debug_info)

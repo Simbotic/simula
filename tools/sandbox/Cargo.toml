@@ -9,7 +9,7 @@ simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
-simula_input = { path = "../../crates/simula_input" }
+simula_action = { path = "../../crates/simula_action" }
 
 rand = "0.8.5"
 bevy-inspector-egui = "0.12.1"
