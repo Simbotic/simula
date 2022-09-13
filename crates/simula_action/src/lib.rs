@@ -50,7 +50,8 @@ fn setup(mut commands: Commands) {
         .insert(MainActionInput)
         .insert(Action::<KeyCode>::default())
         .insert(Action::<MouseButton>::default())
-        .insert(ActionAxis::<MouseAxis>::default());
+        .insert(ActionAxis::<MouseAxis>::default())
+        .insert(Name::new("Main: Action Input"));
 }
 
 pub fn print_all_actions(

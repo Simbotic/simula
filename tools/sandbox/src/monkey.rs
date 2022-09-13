@@ -116,7 +116,8 @@ fn monkey_setup(mut commands: Commands) {
         .insert(Action::<MonkeyDo>::default())
         .insert(ActionAxis::<MonkeyMove>::default())
         .insert(action_map)
-        .insert(axis_map);
+        .insert(axis_map)
+        .insert(Name::new("Actor: Monkey"));
 }
 
 fn monkey_play(
