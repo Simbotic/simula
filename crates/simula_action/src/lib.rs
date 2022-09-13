@@ -1,5 +1,7 @@
 pub use action::Action;
+pub use axis::ActionAxis;
 use bevy::input::{
+    gamepad::{Gamepad, GamepadAxis, GamepadButton},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     ButtonState,
@@ -10,6 +12,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 pub mod action;
+pub mod axis;
 
 #[derive(Component)]
 pub struct MainActionInput;
@@ -31,6 +34,12 @@ impl Plugin for ActionPlugin {
                 .after(EguiSystem::ProcessInput)
                 .before(EguiSystem::BeginFrame),
         )
+        .add_system_to_stage(
+            CoreStage::PreUpdate,
+            mouse_axis_system
+                .after(EguiSystem::ProcessInput)
+                .before(EguiSystem::BeginFrame),
+        )
         .add_startup_system(setup);
     }
 }
@@ -40,17 +49,22 @@ fn setup(mut commands: Commands) {
         .spawn()
         .insert(MainActionInput)
         .insert(Action::<KeyCode>::default())
-        .insert(Action::<MouseButton>::default());
+        .insert(Action::<MouseButton>::default())
+        .insert(ActionAxis::<MouseAxis>::default());
 }
 
-pub fn print_keyboard_mouse_button_actions(
+pub fn print_all_actions(
     keyboard_actions: Query<&Action<KeyCode>>,
     mouse_button_actions: Query<&Action<MouseButton>>,
+    mouse_axis_actions: Query<&ActionAxis<MouseAxis>>,
 ) {
     for action in keyboard_actions.iter() {
         println!("{:?}", action);
     }
     for action in mouse_button_actions.iter() {
+        println!("{:?}", action);
+    }
+    for action in mouse_axis_actions.iter() {
         println!("{:?}", action);
     }
 }
@@ -111,10 +125,38 @@ pub fn mouse_button_action_system(
     }
 }
 
+pub fn mouse_axis_system(
+    mut egui_context: ResMut<EguiContext>,
+    mut mouse_motion_input_events: EventReader<MouseMotion>,
+    mut mouse_wheel_input_events: EventReader<MouseWheel>,
+    mut mouse_axis_actions: Query<&mut ActionAxis<MouseAxis>>,
+) {
+    if egui_context.ctx_mut().wants_pointer_input() {
+        return;
+    }
+    for mut action_axis in mouse_axis_actions.iter_mut() {
+        action_axis.set(MouseAxis::X, 0.);
+        action_axis.set(MouseAxis::Y, 0.);
+    }
+    for event in mouse_motion_input_events.iter() {
+        for mut action_axis in mouse_axis_actions.iter_mut() {
+            action_axis.set(MouseAxis::X, event.delta.x);
+            action_axis.set(MouseAxis::Y, event.delta.y);
+        }
+    }
+
+    for event in mouse_wheel_input_events.iter() {
+        for mut action_axis in mouse_axis_actions.iter_mut() {
+            action_axis.set(MouseAxis::Z, event.y);
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ActionMapButton {
     Keyboard(KeyCode),
     MouseButton(MouseButton),
+    Gamepad(Gamepad, GamepadButton),
 }
 
 impl Into<ActionMapButton> for KeyCode {
@@ -195,6 +237,7 @@ pub fn action_map<T, W>(
                         }
                     }
                 }
+                _ => panic!("Not implemented"),
             }
         }
 
@@ -214,6 +257,80 @@ pub fn action_map<T, W>(
                     }
                 }
             }
+            _ => panic!("Not implemented"),
+        }
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Copy, Clone)]
+pub enum MouseAxis {
+    X,
+    Y,
+    Z,
+}
+
+#[derive(Debug)]
+pub enum AxisMapSource {
+    Keyboard {
+        positive: KeyCode,
+        negative: KeyCode,
+    },
+    MouseAxis(MouseAxis),
+    GamepadAxis(Gamepad, GamepadAxis),
+}
+
+impl Into<AxisMapSource> for MouseAxis {
+    fn into(self) -> AxisMapSource {
+        AxisMapSource::MouseAxis(self)
+    }
+}
+
+#[derive(Debug)]
+pub struct AxisMapInput<T> {
+    pub axis: T,
+    pub source: AxisMapSource,
+}
+
+#[derive(Debug, Deref, DerefMut, Component)]
+pub struct AxisMap<T>(Vec<AxisMapInput<T>>);
+
+impl<T> Default for AxisMap<T> {
+    fn default() -> Self {
+        Self(Vec::default())
+    }
+}
+
+pub fn axis_map<T, W>(
+    keyboard_actions: Query<&Action<KeyCode>, With<MainActionInput>>,
+    mouse_axis_actions: Query<&ActionAxis<MouseAxis>, With<MainActionInput>>,
+    mut axes: Query<&mut ActionAxis<T>, With<W>>,
+    axis_maps: Query<&AxisMap<T>, With<W>>,
+) where
+    T: Debug + Send + Sync + Hash + Eq + Copy + Clone + 'static,
+    W: Component,
+{
+    let keyboard_action = keyboard_actions.single();
+    let mouse_axis_action = mouse_axis_actions.single();
+    let mut axis = axes.single_mut();
+
+    for axis_map in axis_maps.single().iter() {
+        match axis_map.source {
+            AxisMapSource::Keyboard { positive, negative } => {
+                let mut value = 0.0;
+                if keyboard_action.on(positive) {
+                    value += 1.0;
+                }
+                if keyboard_action.on(negative) {
+                    value -= 1.0;
+                }
+                axis.set(axis_map.axis, value);
+            }
+            AxisMapSource::MouseAxis(mouse_axis) => {
+                if let Some(value) = mouse_axis_action.get(mouse_axis) {
+                    axis.set(axis_map.axis, value);
+                }
+            }
+            _ => panic!("Not implemented"),
         }
     }
 }
