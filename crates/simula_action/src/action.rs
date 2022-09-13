@@ -4,6 +4,8 @@ use std::hash::Hash;
 
 #[derive(Debug, Clone, Component)]
 pub struct Action<T: Eq + Hash> {
+    /// The name of the action.
+    name: &'static str,
     /// A collection of every action that is currently on.
     on: HashSet<T>,
     /// A collection of every action that has just been entered.
@@ -15,6 +17,7 @@ pub struct Action<T: Eq + Hash> {
 impl<T: Eq + Hash> Default for Action<T> {
     fn default() -> Self {
         Self {
+            name: std::any::type_name::<T>(),
             on: Default::default(),
             on_enter: Default::default(),
             on_exit: Default::default(),
@@ -26,6 +29,11 @@ impl<T> Action<T>
 where
     T: Copy + Eq + Hash,
 {
+    /// Returns the name of the action.
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+
     /// Registers an on_enter for the given `action`.
     pub fn enter(&mut self, action: T) {
         // Returns `true` if the `action` wasn't on.

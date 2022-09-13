@@ -7,6 +7,8 @@ use std::hash::Hash;
 /// The values are stored as `f32`s, which range from [`ActionAxis::MIN`] to [`ActionAxis::MAX`], inclusive.
 #[derive(Debug, Clone, Component)]
 pub struct ActionAxis<T> {
+    /// The name of the axis.
+    name: &'static str,
     /// The position data of the input devices.
     axis: HashMap<T, f32>,
 }
@@ -17,6 +19,7 @@ where
 {
     fn default() -> Self {
         ActionAxis {
+            name: std::any::type_name::<T>(),
             axis: HashMap::default(),
         }
     }
@@ -31,6 +34,11 @@ where
 
     /// The largest possible axis value.
     pub const MAX: f32 = 1.0;
+
+    /// The name of the axis.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 
     /// Sets the position data of the `input_device` to `position_data`.
     ///
