@@ -126,6 +126,6 @@ fn monkey_play(
 ) {
     let mut action = actions.single_mut();
     let axis = axes.single_mut();
-    println!("{:?} {:?}", action, axis);
+    debug!("{:?} {:?}", action, axis);
     action.clear();
 }
