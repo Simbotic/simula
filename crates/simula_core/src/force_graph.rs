@@ -340,58 +340,39 @@ impl<UserNodeData> Node<UserNodeData> {
     }
 
     fn apply_force(&mut self, force: Vec3, dt: f32, parameters: &SimulationParameters) {
-        self.accel.x += force.x.max(-parameters.force_max).min(parameters.force_max) * dt;
-        self.accel.y += force.y.max(-parameters.force_max).min(parameters.force_max) * dt;
-        self.accel.z += force.z.max(-parameters.force_max).min(parameters.force_max) * dt;
+        self.accel += force
+            .max(Vec3::splat(-parameters.force_max))
+            .min(Vec3::splat(parameters.force_max))
+            * dt;
     }
 
     fn update(&mut self, dt: f32, parameters: &SimulationParameters) {
         self.velocity =
             (self.velocity + self.accel * dt * parameters.node_speed) * parameters.damping_factor;
-        self.data.position.x += self.velocity.x * dt;
-        self.data.position.y += self.velocity.y * dt;
-        self.data.position.z += self.velocity.z * dt;
-        self.accel.x = 0.0;
-        self.accel.y = 0.0;
-        self.accel.z = 0.0;
+        self.data.position += self.velocity * dt;
+        self.accel = Vec3::ZERO;
     }
 }
 
 fn attract_nodes<D>(n1: &Node<D>, n2: &Node<D>, parameters: &SimulationParameters) -> Vec3 {
-    let mut dx = n2.data.position.x - n1.data.position.x;
-    let mut dy = n2.data.position.y - n1.data.position.y;
-    let mut dz = n2.data.position.z - n1.data.position.z;
-
-    let distance = if dx == 0.0 && dy == 0.0 && dz == 0.0 {
-        1.0
-    } else {
-        (dx * dx + dy * dy + dz * dz).sqrt()
-    };
-
-    dx /= distance;
-    dy /= distance;
-    dz /= distance;
-
+    let mut d = n2.data.position - n1.data.position;
+    let distance = d.length();
+    if distance.abs() < f32::EPSILON {
+        return Vec3::ONE;
+    }
+    d /= distance;
     let strength = 1.0 * parameters.force_spring * distance * 0.5;
-    Vec3::new(dx * strength, dy * strength, dz * strength)
+    d * strength
 }
 
 fn repel_nodes<D>(n1: &Node<D>, n2: &Node<D>, parameters: &SimulationParameters) -> Vec3 {
-    let mut dx = n2.data.position.x - n1.data.position.x;
-    let mut dy = n2.data.position.y - n1.data.position.y;
-    let mut dz = n2.data.position.z - n1.data.position.z;
-
-    let distance = if dx == 0.0 && dy == 0.0 && dz == 0.0 {
-        1.0
-    } else {
-        (dx * dx + dy * dy + dz * dz).sqrt()
-    };
-
-    dx /= distance;
-    dy /= distance;
-    dz /= distance;
-
+    let mut d = n2.data.position - n1.data.position;
+    let distance = d.length();
+    if distance.abs() < f32::EPSILON {
+        return Vec3::ONE;
+    }
+    d /= distance;
     let distance_sqrd = distance * distance;
     let strength = -parameters.force_charge * ((n1.data.mass * n2.data.mass) / distance_sqrd);
-    Vec3::new(dx * strength, dy * strength, dz * strength)
+    d * strength
 }
