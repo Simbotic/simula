@@ -6,6 +6,11 @@ use bevy::{
     render::{camera::Camera, primitives::Aabb},
 };
 
+pub struct RayHit {
+    pub near: f32,
+    pub far: f32,
+}
+
 /// A 3D ray, with an origin and direction. The direction is guaranteed to be normalized.
 #[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub struct Ray3d {
@@ -90,7 +95,7 @@ impl Ray3d {
     }
 
     /// Checks if the ray intersects with an AABB of a mesh.
-    pub fn intersects_aabb(&self, aabb: &Aabb, model_to_world: &Mat4) -> Option<[f32; 2]> {
+    pub fn intersects_aabb(&self, aabb: &Aabb, model_to_world: &Mat4) -> Option<RayHit> {
         // Transform the ray to model space
         let world_to_model = model_to_world.inverse();
         let ray_dir: Vec3A = world_to_model.transform_vector3(self.direction()).into();
@@ -127,6 +132,9 @@ impl Ray3d {
         if t_max.z < hit_far {
             hit_far = t_max.z;
         }
-        Some([hit_near, hit_far])
+        Some(RayHit {
+            near: hit_near,
+            far: hit_far,
+        })
     }
 }
