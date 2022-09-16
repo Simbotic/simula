@@ -1,9 +1,13 @@
 use crate::prng::*;
 use bevy::prelude::*;
 use std::{f32::consts::PI, time::Duration};
+use enum_iterator::IntoEnumIterator;
+// use enum_display_derive::Display;
+use std::fmt::Display;
 
-#[derive(Reflect, Clone)]
+#[derive(Reflect, Clone, IntoEnumIterator, Display)]
 pub enum SignalFunction {
+    Identity,
     Sine,
     Square,
     Triangle,
@@ -16,7 +20,7 @@ pub enum SignalFunction {
 
 impl Default for SignalFunction {
     fn default() -> Self {
-        SignalFunction::Sine
+        SignalFunction::Identity
     }
 }
 
@@ -56,6 +60,7 @@ impl SignalGenerator {
     pub fn sample(&mut self, time: Duration) -> Sample {
         let time = self.frequency * time.as_secs_f32() + self.phase;
         let sample = match self.func {
+            SignalFunction::Identity => time,
             SignalFunction::Sine => (2.0 * PI * time).sin(),
             SignalFunction::Square => (2.0 * PI * time).sin().signum(),
             SignalFunction::Triangle => 1.0 - 4.0 * ((time - 0.25).round() - (time - 0.25)).abs(),

@@ -1,10 +1,13 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    render::{render_resource::PrimitiveTopology, view::NoFrustumCulling},
+    render::view::NoFrustumCulling,
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
+use enum_iterator::IntoEnumIterator;
+use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
+use simula_action::ActionPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
@@ -12,22 +15,20 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
-use simula_action::{ActionPlugin};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{Lines, LinesBundle, LinesMaterial, LinesPlugin},
+    lines::{LineMesh, Lines, LinesBundle, LinesMaterial, LinesPlugin},
     pointcloud::{PointData, Pointcloud, PointcloudPlugin},
     signal::{
         signal_control_lines, signal_generator_lines, SignalControlLine, SignalGeneratorLine,
     },
-    voxels::{Voxel, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
+    voxel::{Voxel, VoxelMesh, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
 
 mod monkey;
-
 
 fn main() {
     App::new()
@@ -56,7 +57,7 @@ fn main() {
         .add_plugin(GridPlugin)
         .add_plugin(VoxelsPlugin)
         .add_plugin(PointcloudPlugin)
-        .add_plugin(monkey::MonkeyPlugin)
+        .add_plugin(MonkeyPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -73,14 +74,10 @@ fn setup(
     mut shape_materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    line_mesh: Res<LineMesh>,
+    voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    let mut mesh: Mesh = Mesh::new(PrimitiveTopology::LineList);
-    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
-    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
-
     #[cfg(not(target_arch = "wasm32"))]
     {
         // CAD shape
@@ -125,8 +122,7 @@ fn setup(
                 end_color: Color::RED,
                 ..Default::default()
             },
-            //mesh: meshes.add(Mesh::new(PrimitiveTopology::LineList)),
-            mesh: meshes.add(mesh.clone()),
+            mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
@@ -140,7 +136,7 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(mesh.clone()),
+            mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..Default::default()
@@ -154,7 +150,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(mesh.clone()),
+            mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..Default::default()
@@ -173,7 +169,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(mesh.clone()),
+            mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..Default::default()
@@ -192,7 +188,7 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(mesh.clone()),
+            mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..Default::default()
@@ -216,7 +212,7 @@ fn setup(
         ..Default::default()
     });
 
-    // camera
+    // orbit camera
     commands
         .spawn_bundle(Camera3dBundle {
             ..Default::default()
@@ -227,8 +223,7 @@ fn setup(
             ..Default::default()
         });
 
-    //commands.spawn_bundle(Camera3dBundle::default());
-
+    // FPS on screen
     commands.spawn_bundle(TextBundle {
         text: Text {
             sections: vec![TextSection {
@@ -254,7 +249,6 @@ fn setup(
     });
 
     // voxels
-
     let voxels: Vec<Voxel> = vec![
         Voxel {
             position: Vec3::new(6., 0., 0.),
@@ -272,18 +266,10 @@ fn setup(
             color: *Color::BLUE.clone().set_a(0.1),
         },
     ];
-
-    let mut voxel_mesh: Mesh = Mesh::new(PrimitiveTopology::TriangleList);
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
-    voxel_mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
-
     commands
         .spawn_bundle(VoxelsBundle {
             voxels: Voxels { voxels },
-            //mesh: meshes.add(Mesh::new(PrimitiveTopology::TriangleList)),
-            mesh: meshes.add(voxel_mesh),
+            mesh: meshes.add(voxel_mesh.clone()),
             material: voxels_materials.add(VoxelsMaterial {}),
             ..Default::default()
         })
@@ -293,11 +279,11 @@ fn setup(
             angle: 1.0,
         });
 
+    // rod mesh
     let rod_mesh = simula_viz::rod::Rod {
         ..Default::default()
     };
     let rod_mesh = simula_viz::rod::RodMesh::from(rod_mesh);
-
     commands
         .spawn()
         .insert_bundle(PbrBundle {
@@ -311,17 +297,7 @@ fn setup(
         })
         .insert(Name::new("Shape: Rod"));
 
-    // commands
-    //     .spawn()
-    //     .insert_bundle((Transform::default(), GlobalTransform::default()))
-    //     .insert(Name::new("Metric: Plane"))
-    //     .with_children(|parent| {
-    //         parent.spawn_bundle(SceneBundle {
-    //             scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
-    //             ..default()
-    //         });
-    //     });
-
+    // metric plane mesh
     commands
         .spawn_bundle(SceneBundle {
             scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
@@ -329,20 +305,7 @@ fn setup(
         })
         .insert(Name::new("Metric: Plane"));
 
-    // commands
-    //     .spawn()
-    //     .insert_bundle((
-    //         Transform::from_xyz(-2.5, 0.0, 2.5),
-    //         GlobalTransform::default(),
-    //     ))
-    //     .insert(Name::new("Metric: Box"))
-    //     .with_children(|parent| {
-    //         parent.spawn_bundle(SceneBundle {
-    //             scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
-    //             ..default()
-    //         });
-    //     });
-
+    // metric box mesh
     commands
         .spawn_bundle(SceneBundle {
             scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
@@ -352,160 +315,39 @@ fn setup(
         .insert(Name::new("Metric: Box"));
 
     // generator signals
-
     let points: Vec<Vec3> = (-100i32..=100)
         .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
         .collect();
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 3.0, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::Sine,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: Sine"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 2.8, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::Square,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Sgnal: Square"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 2.6, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::Triangle,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: Triangle"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 2.4, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::Sawtooth,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: Sawtooth"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 2.2, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::Pulse,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: Pulse"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 2.0, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::WhiteNoise,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: WhiteNoise"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 1.8, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::GaussNoise,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: GaussNoise"));
-
-    commands
-        .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 1.6, 0.0),
-            ..Default::default()
-        })
-        .insert(SignalGenerator {
-            func: SignalFunction::DigitalNoise,
-            amplitude: 0.1,
-            frequency: 3.0,
-            ..Default::default()
-        })
-        .insert(SignalGeneratorLine {
-            points: points.clone(),
-        })
-        .insert(Name::new("Signal: DigitalNoise"));
+    for (i, signal_func) in SignalFunction::into_enum_iter().enumerate() {
+        match signal_func {
+            SignalFunction::Identity => continue,
+            _ => {
+                let name = signal_func.to_string();
+                commands
+                    .spawn_bundle(LinesBundle {
+                        mesh: meshes.add(line_mesh.clone()),
+                        material: lines_materials.add(LinesMaterial {}),
+                        transform: Transform::from_xyz(0.0, 3.0 - (i as f32 * 0.2), 0.0),
+                        ..Default::default()
+                    })
+                    .insert(SignalGenerator {
+                        func: signal_func,
+                        amplitude: 0.1,
+                        frequency: 3.0,
+                        ..Default::default()
+                    })
+                    .insert(SignalGeneratorLine {
+                        points: points.clone(),
+                    })
+                    .insert(Name::new(name));
+            }
+        }
+    }
 
     // control signals
-
     commands
         .spawn_bundle(LinesBundle {
-            mesh: meshes.add(mesh.clone()),
+            mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 4.0, 0.0),
             ..Default::default()
@@ -531,9 +373,8 @@ fn setup(
         .insert(Name::new("Signal: Controller"));
 
     // force graph
-
     let mut graph_bundle = ForceGraphBundle::<SandboxNodeData, SandboxEdgeData> {
-        mesh: meshes.add(mesh.clone()),
+        mesh: meshes.add(line_mesh.clone()),
         material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_xyz(0.0, 3.5, 0.0),
         ..Default::default()
@@ -611,7 +452,7 @@ fn setup(
         })
         .insert_bundle(graph_bundle);
 
-    // Pointcloud
+    // pointcloud
     commands.spawn().insert_bundle((
         meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
         Transform::from_xyz(0.0, -8.0, 10.0),

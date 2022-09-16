@@ -5,7 +5,8 @@ use bevy::{
     render::{
         mesh::{Mesh, MeshVertexBufferLayout},
         render_resource::{
-            AsBindGroup, RenderPipelineDescriptor, ShaderRef, SpecializedMeshPipelineError,
+            AsBindGroup, PrimitiveTopology, RenderPipelineDescriptor, ShaderRef,
+            SpecializedMeshPipelineError,
         },
     },
 };
@@ -94,10 +95,22 @@ pub struct LinesMaterial {}
 
 pub struct LinesPlugin;
 
+#[derive(Deref)]
+pub struct LineMesh(Mesh);
+
 impl Plugin for LinesPlugin {
     fn build(&self, app: &mut App) {
+        // Add a line mesh that can be used as default by all line bundles
+        let mut mesh: Mesh = Mesh::new(PrimitiveTopology::LineList);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
+        let line_mesh = LineMesh(mesh);
+        app.insert_resource(line_mesh);
+
         app.add_system(generate_lines)
-        .add_plugin(MaterialPlugin::<LinesMaterial>::default());
+            .add_plugin(MaterialPlugin::<LinesMaterial>::default());
     }
 }
 

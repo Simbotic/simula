@@ -36,7 +36,7 @@ pub struct Rod {
 impl Default for Rod {
     fn default() -> Self {
         Rod {
-            ease_func: EaseFunction::NoneInOut,
+            ease_func: EaseFunction::Linear,
             north_radius: 0.5,
             south_radius: 0.8,
             rings: 10,

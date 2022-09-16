@@ -5,4 +5,4 @@ pub mod lines;
 pub mod pointcloud;
 pub mod rod;
 pub mod signal;
-pub mod voxels;
+pub mod voxel;

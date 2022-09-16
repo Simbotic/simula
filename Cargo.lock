@@ -4912,6 +4912,8 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "enum-display-derive",
+ "enum-iterator",
  "rand 0.8.5",
  "simula_action",
  "simula_cad",

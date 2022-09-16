@@ -4,7 +4,11 @@ use bevy::{
     reflect::TypeUuid,
     render::{
         mesh::{Indices, Mesh, MeshVertexBufferLayout},
-        render_resource::{*},    },
+        render_resource::{
+            AsBindGroup, PrimitiveTopology, RenderPipelineDescriptor, ShaderRef,
+            SpecializedMeshPipelineError,
+        },
+    },
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -44,27 +48,16 @@ impl From<Voxel> for Mesh {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Box {
-    pub min_x: f32,
-    pub max_x: f32,
-
-    pub min_y: f32,
-    pub max_y: f32,
-
-    pub min_z: f32,
-    pub max_z: f32,
-
+    pub min: Vec3,
+    pub max: Vec3,
     pub color: Color,
 }
 
 impl Box {
     pub fn new(x_length: f32, y_length: f32, z_length: f32, color: Color) -> Box {
         Box {
-            max_x: x_length / 2.0,
-            min_x: -x_length / 2.0,
-            max_y: y_length / 2.0,
-            min_y: -y_length / 2.0,
-            max_z: z_length / 2.0,
-            min_z: -z_length / 2.0,
+            min: Vec3::new(-x_length / 2.0, -y_length / 2.0, -z_length / 2.0),
+            max: Vec3::new(x_length / 2.0, y_length / 2.0, z_length / 2.0),
             color,
         }
     }
@@ -79,12 +72,8 @@ impl Default for Box {
 impl From<Voxel> for Box {
     fn from(voxel: Voxel) -> Self {
         let mut voxel_box = Box::new(voxel.size, voxel.size, voxel.size, voxel.color);
-        voxel_box.min_x += voxel.position.x;
-        voxel_box.max_x += voxel.position.x;
-        voxel_box.min_y += voxel.position.y;
-        voxel_box.max_y += voxel.position.y;
-        voxel_box.min_z += voxel.position.z;
-        voxel_box.max_z += voxel.position.z;
+        voxel_box.min += voxel.position;
+        voxel_box.max += voxel.position;
         voxel_box
     }
 }
@@ -135,35 +124,35 @@ impl From<Box> for VoxelsMesh {
         #[rustfmt::skip]
         let vertices = &[
             // front
-            ([sp.min_x, sp.min_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.min_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.max_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.max_y, sp.max_z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
             // back
-            ([sp.min_x, sp.max_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.max_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.min_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.min_y, sp.min_z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
             // right
-            ([sp.max_x, sp.min_y, sp.min_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.max_y, sp.min_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.max_y, sp.max_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.min_y, sp.max_z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.min.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.min.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.max.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.max.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
             // left
-            ([sp.min_x, sp.min_y, sp.max_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.max_y, sp.max_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.max_y, sp.min_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.min_y, sp.min_z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.max.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.max.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.min.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.min.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
             // up
-            ([sp.max_x, sp.max_y, sp.min_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.max_y, sp.min_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.max_y, sp.max_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.max_y, sp.max_z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.min.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.min.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.max.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.max.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
             // bottom
-            ([sp.max_x, sp.min_y, sp.max_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.min_y, sp.max_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min_x, sp.min_y, sp.min_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
-            ([sp.max_x, sp.min_y, sp.min_z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.max.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.max.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.min.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.min.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
         ];
 
         let mut positions = Vec::with_capacity(24);
@@ -249,12 +238,24 @@ impl Default for VoxelsBundle {
 
 #[derive(AsBindGroup, Debug, Clone, TypeUuid)]
 #[uuid = "9c3b191e-c141-11ec-bf25-02a179e5df2c"]
-pub struct VoxelsMaterial{}
+pub struct VoxelsMaterial {}
 
 pub struct VoxelsPlugin;
 
+#[derive(Deref)]
+pub struct VoxelMesh(Mesh);
+
 impl Plugin for VoxelsPlugin {
     fn build(&self, app: &mut App) {
+        // Add a voxel mesh that can be used as default by all voxels
+        let mut mesh: Mesh = Mesh::new(PrimitiveTopology::TriangleList);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
+        let voxel_mesh = VoxelMesh(mesh);
+        app.insert_resource(voxel_mesh);
+
         app.add_plugin(MaterialPlugin::<VoxelsMaterial>::default())
             .add_system(generate_voxels);
     }

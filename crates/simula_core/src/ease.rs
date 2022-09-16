@@ -10,7 +10,7 @@ use std::fmt::Display;
     Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, IntoEnumIterator, Display,
 )]
 pub enum EaseFunction {
-    NoneInOut,
+    Linear,
 
     QuadraticIn,
     QuadraticOut,
@@ -55,7 +55,7 @@ pub enum EaseFunction {
 
 impl Default for EaseFunction {
     fn default() -> Self {
-        EaseFunction::NoneInOut
+        EaseFunction::Linear
     }
 }
 
@@ -64,7 +64,7 @@ pub trait Ease {
     /// Calculate the eased value, normalized
     fn calc(self, f: EaseFunction) -> Self;
 
-    fn none_in_out(self) -> Self;
+    fn linear(self) -> Self;
 
     fn quadratic_in(self) -> Self;
     fn quadratic_out(self) -> Self;
@@ -123,7 +123,7 @@ macro_rules! impl_ease_trait_for {
         impl Ease for $T {
             fn calc(self, f: EaseFunction) -> Self {
                 match f {
-                    EaseFunction::NoneInOut => self.none_in_out(),
+                    EaseFunction::Linear => self.linear(),
 
                     EaseFunction::QuadraticIn => self.quadratic_in(),
                     EaseFunction::QuadraticOut => self.quadratic_out(),
@@ -167,7 +167,7 @@ macro_rules! impl_ease_trait_for {
                 }
             }
 
-            fn none_in_out(self) -> Self {
+            fn linear(self) -> Self {
                 self
             }
 
@@ -403,3 +403,124 @@ macro_rules! impl_ease_trait_for {
 
 impl_ease_trait_for!(f32);
 impl_ease_trait_for!(f64);
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_linear() {
+        assert_eq!(0.0, Ease::linear(0.0));
+        assert_eq!(0.5, Ease::linear(0.5));
+        assert_eq!(1.0, Ease::linear(1.0));
+    }
+
+    #[test]
+    fn test_quadratic_in() {
+        assert_eq!(0.0, Ease::quadratic_in(0.0));
+        assert_eq!(0.25, Ease::quadratic_in(0.5));
+        assert_eq!(1.0, Ease::quadratic_in(1.0));
+    }
+
+    #[test]
+    fn test_quadratic_out() {
+        assert_eq!(0.0, Ease::quadratic_out(0.0));
+        assert_eq!(0.75, Ease::quadratic_out(0.5));
+        assert_eq!(1.0, Ease::quadratic_out(1.0));
+    }
+
+    #[test]
+    fn test_quadratic_in_out() {
+        assert_eq!(0.0, Ease::quadratic_in_out(0.0));
+        assert_eq!(0.5, Ease::quadratic_in_out(0.5));
+        assert_eq!(1.0, Ease::quadratic_in_out(1.0));
+    }
+
+    #[test]
+    fn test_cubic_in() {
+        assert_eq!(0.0, Ease::cubic_in(0.0));
+        assert_eq!(0.125, Ease::cubic_in(0.5));
+        assert_eq!(1.0, Ease::cubic_in(1.0));
+    }
+
+    #[test]
+    fn test_cubic_out() {
+        assert_eq!(0.0, Ease::cubic_out(0.0));
+        assert_eq!(0.875, Ease::cubic_out(0.5));
+        assert_eq!(1.0, Ease::cubic_out(1.0));
+    }
+
+    #[test]
+    fn test_cubic_in_out() {
+        assert_eq!(0.0, Ease::cubic_in_out(0.0));
+        assert_eq!(0.5, Ease::cubic_in_out(0.5));
+        assert_eq!(1.0, Ease::cubic_in_out(1.0));
+    }
+
+    #[test]
+    fn test_quartic_in() {
+        assert_eq!(0.0, Ease::quartic_in(0.0));
+        assert_eq!(0.0625, Ease::quartic_in(0.5));
+        assert_eq!(1.0, Ease::quartic_in(1.0));
+    }
+
+    #[test]
+    fn test_quartic_out() {
+        assert_eq!(0.0, Ease::quartic_out(0.0));
+        assert_eq!(0.9375, Ease::quartic_out(0.5));
+        assert_eq!(1.0, Ease::quartic_out(1.0));
+    }
+
+    #[test]
+    fn test_quartic_in_out() {
+        assert_eq!(0.0, Ease::quartic_in_out(0.0));
+        assert_eq!(0.5, Ease::quartic_in_out(0.5));
+        assert_eq!(1.0, Ease::quartic_in_out(1.0));
+    }
+
+    #[test]
+    fn test_quintic_in() {
+        assert_eq!(0.0, Ease::quintic_in(0.0));
+        assert_eq!(0.03125, Ease::quintic_in(0.5));
+        assert_eq!(1.0, Ease::quintic_in(1.0));
+    }
+
+    #[test]
+    fn test_quintic_out() {
+        assert_eq!(0.0, Ease::quintic_out(0.0));
+        assert_eq!(0.96875, Ease::quintic_out(0.5));
+        assert_eq!(1.0, Ease::quintic_out(1.0));
+    }
+
+    #[test]
+    fn test_quintic_in_out() {
+        assert_eq!(0.0, Ease::quintic_in_out(0.0));
+        assert_eq!(0.5, Ease::quintic_in_out(0.5));
+        assert_eq!(1.0, Ease::quintic_in_out(1.0));
+    }
+
+    #[test]
+    fn test_sine_in() {
+        // use std::f32::consts::FRAC_2_PI;
+        println!("Ease::sine_in(0.0): {}", Ease::sine_in(0.0));
+        assert_eq!(0.0, Ease::sine_in(0.0));
+        assert_eq!(0.29289321881345254, Ease::sine_in(0.5));
+        assert_eq!(1.0, Ease::sine_in(1.0));
+    }
+
+    #[test]
+    fn test_sine_out() {
+        assert_eq!(0.0, Ease::sine_out(0.0));
+        assert_eq!(0.7071067811865475, Ease::sine_out(0.5));
+        assert_eq!(1.0, Ease::sine_out(1.0));
+    }
+
+    #[test]
+    fn test_sine_in_out() {
+        assert_eq!(0.0, Ease::sine_in_out(0.0));
+        assert_eq!(0.5, Ease::sine_in_out(0.5));
+        assert_eq!(1.0, Ease::sine_in_out(1.0));
+    }
+
+
+}
