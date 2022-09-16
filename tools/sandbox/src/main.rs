@@ -12,12 +12,14 @@ use simula_action::ActionPlugin;
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::orbitcam::*;
 use simula_core::{
+    ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
+    ease::{ease_lines, EaseLine},
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, Lines, LinesBundle, LinesMaterial, LinesPlugin},
@@ -61,6 +63,7 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
+        .add_system(ease_lines)
         .add_system(signal_generator_lines)
         .add_system(signal_control_lines)
         .add_system(rotate_system)
@@ -314,34 +317,65 @@ fn setup(
         })
         .insert(Name::new("Metric: Box"));
 
+    // ease functions
+    let points: Vec<Vec3> = (0i32..=100)
+        .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
+        .collect();
+    commands
+        .spawn()
+        .insert_bundle(SpatialBundle {
+            transform: Transform::from_xyz(7.5, -8.0, 0.0)
+                .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            for (i, ease_func) in EaseFunction::into_enum_iter().enumerate().skip(1) {
+                let i = i - 1;
+                // println!("{:2}: {:?}", i, ease_func);
+                let name = ease_func.to_string();
+                parent
+                    .spawn_bundle(LinesBundle {
+                        mesh: meshes.add(line_mesh.clone()),
+                        material: lines_materials.add(LinesMaterial {}),
+                        transform: Transform::from_xyz(
+                            ((i / 3) as f32) * 1.5,
+                            3.0 - ((i % 3) as f32),
+                            0.0,
+                        ),
+                        ..Default::default()
+                    })
+                    .insert(EaseLine {
+                        points: points.clone(),
+                        ease_func,
+                    })
+                    .insert(Name::new(name));
+            }
+        })
+        .insert(Name::new("Easings"));
+
     // generator signals
     let points: Vec<Vec3> = (-100i32..=100)
         .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
         .collect();
-    for (i, signal_func) in SignalFunction::into_enum_iter().enumerate() {
-        match signal_func {
-            SignalFunction::Identity => continue,
-            _ => {
-                let name = signal_func.to_string();
-                commands
-                    .spawn_bundle(LinesBundle {
-                        mesh: meshes.add(line_mesh.clone()),
-                        material: lines_materials.add(LinesMaterial {}),
-                        transform: Transform::from_xyz(0.0, 3.0 - (i as f32 * 0.2), 0.0),
-                        ..Default::default()
-                    })
-                    .insert(SignalGenerator {
-                        func: signal_func,
-                        amplitude: 0.1,
-                        frequency: 3.0,
-                        ..Default::default()
-                    })
-                    .insert(SignalGeneratorLine {
-                        points: points.clone(),
-                    })
-                    .insert(Name::new(name));
-            }
-        }
+    for (i, signal_func) in SignalFunction::into_enum_iter().enumerate().skip(1) {
+        let name = signal_func.to_string();
+        commands
+            .spawn_bundle(LinesBundle {
+                mesh: meshes.add(line_mesh.clone()),
+                material: lines_materials.add(LinesMaterial {}),
+                transform: Transform::from_xyz(0.0, 3.0 - (i as f32 * 0.2), 0.0),
+                ..Default::default()
+            })
+            .insert(SignalGenerator {
+                func: signal_func,
+                amplitude: 0.1,
+                frequency: 3.0,
+                ..Default::default()
+            })
+            .insert(SignalGeneratorLine {
+                points: points.clone(),
+            })
+            .insert(Name::new(name));
     }
 
     // control signals
@@ -455,7 +489,7 @@ fn setup(
     // pointcloud
     commands.spawn().insert_bundle((
         meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-        Transform::from_xyz(0.0, -8.0, 10.0),
+        Transform::from_xyz(0.0, 10.0, 10.0),
         GlobalTransform::default(),
         Pointcloud(
             (1..=10)

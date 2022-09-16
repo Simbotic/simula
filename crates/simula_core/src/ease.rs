@@ -1,5 +1,3 @@
-//! Ease functions.
-
 use bevy::prelude::Reflect;
 use enum_iterator::IntoEnumIterator;
 use serde::{Deserialize, Serialize};
@@ -254,9 +252,9 @@ macro_rules! impl_ease_trait_for {
             }
 
             fn sine_in(self) -> Self {
-                use self::$T::PI_2;
+                use std::$T::consts::PI;
                 let p = $T::clamp(self);
-                ((p - 1.0) * PI_2).sin() + 1.0
+                1.0 - (PI / 2.0 * p).cos()
             }
 
             fn sine_out(self) -> Self {
@@ -498,29 +496,4 @@ mod test {
         assert_eq!(0.5, Ease::quintic_in_out(0.5));
         assert_eq!(1.0, Ease::quintic_in_out(1.0));
     }
-
-    #[test]
-    fn test_sine_in() {
-        // use std::f32::consts::FRAC_2_PI;
-        println!("Ease::sine_in(0.0): {}", Ease::sine_in(0.0));
-        assert_eq!(0.0, Ease::sine_in(0.0));
-        assert_eq!(0.29289321881345254, Ease::sine_in(0.5));
-        assert_eq!(1.0, Ease::sine_in(1.0));
-    }
-
-    #[test]
-    fn test_sine_out() {
-        assert_eq!(0.0, Ease::sine_out(0.0));
-        assert_eq!(0.7071067811865475, Ease::sine_out(0.5));
-        assert_eq!(1.0, Ease::sine_out(1.0));
-    }
-
-    #[test]
-    fn test_sine_in_out() {
-        assert_eq!(0.0, Ease::sine_in_out(0.0));
-        assert_eq!(0.5, Ease::sine_in_out(0.5));
-        assert_eq!(1.0, Ease::sine_in_out(1.0));
-    }
-
-
 }
