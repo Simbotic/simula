@@ -1,0 +1,10 @@
+[package]
+name = "simula_video"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.8" }
+image = { version = "0.24", default-features = false, features = ["gif"] }
+
+[dev-dependencies]

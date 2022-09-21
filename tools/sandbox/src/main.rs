@@ -17,6 +17,7 @@ use simula_core::{
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
 use simula_net::NetPlugin;
+use simula_video::{GifAsset, VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
@@ -60,6 +61,7 @@ fn main() {
         .add_plugin(VoxelsPlugin)
         .add_plugin(PointcloudPlugin)
         .add_plugin(MonkeyPlugin)
+        .add_plugin(VideoPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -74,7 +76,7 @@ fn main() {
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut shape_materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     line_mesh: Res<LineMesh>,
@@ -88,7 +90,7 @@ fn setup(
         commands
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(shape.to_mesh()),
-                material: shape_materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
+                material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
                 transform: Transform::from_xyz(0.0, -10.0, 0.0),
                 ..Default::default()
             })
@@ -99,7 +101,7 @@ fn setup(
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-            material: shape_materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             transform: Transform::from_xyz(2.0, 0.01, 2.0),
             ..Default::default()
         })
@@ -109,7 +111,7 @@ fn setup(
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: shape_materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(-2.0, 0.0, -2.0),
             ..Default::default()
         })
@@ -291,7 +293,7 @@ fn setup(
         .spawn()
         .insert_bundle(PbrBundle {
             mesh: meshes.add(rod_mesh.mesh),
-            material: shape_materials.add(StandardMaterial {
+            material: materials.add(StandardMaterial {
                 base_color: Color::PINK,
                 ..Default::default()
             }),
@@ -431,7 +433,7 @@ fn setup(
                         radius: 0.1,
                         ..Default::default()
                     })),
-                    material: shape_materials.add(Color::GOLD.into()),
+                    material: materials.add(Color::GOLD.into()),
                     transform: Transform::from_xyz(0.0, 0.5, 0.0),
                     ..Default::default()
                 })
@@ -454,7 +456,7 @@ fn setup(
                             radius: 0.1,
                             ..Default::default()
                         })),
-                        material: shape_materials.add(Color::ALICE_BLUE.into()),
+                        material: materials.add(Color::ALICE_BLUE.into()),
                         transform: Transform::from_xyz(0.0, 0.5, 0.0),
                         ..Default::default()
                     })
@@ -476,7 +478,7 @@ fn setup(
                                 radius: 0.1,
                                 ..Default::default()
                             })),
-                            material: shape_materials.add(Color::ALICE_BLUE.into()),
+                            material: materials.add(Color::ALICE_BLUE.into()),
                             transform: Transform::from_xyz(0.0, 0.5, 0.0),
                             ..Default::default()
                         })
@@ -505,6 +507,31 @@ fn setup(
         ComputedVisibility::default(),
         NoFrustumCulling,
     ));
+
+    // video robot
+    let robot_material = StandardMaterial {
+        base_color: Color::rgb(1.0, 1.0, 1.0),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true,
+        ..Default::default()
+    };
+    let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            material: materials.add(robot_material),
+            transform: Transform::from_xyz(0.0, 0.5, -2.0)
+                .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+            ..Default::default()
+        })
+        .insert(VideoPlayer {
+            start_frame: 0,
+            end_frame: 80,
+            framerate: 20.0,
+            ..Default::default()
+        })
+        .insert(video_asset)
+        .insert(Name::new("Video: Robot"));
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

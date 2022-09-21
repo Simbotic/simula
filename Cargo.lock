@@ -2771,6 +2771,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gif"
+version = "0.11.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3edd93c6756b4dfaf2709eafcc345ba2636565295c198a9cfbf75fa5e3e00b06"
+dependencies = [
+ "color_quant",
+ "weezl",
+]
+
+[[package]]
 name = "gilrs"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3220,6 +3230,7 @@ dependencies = [
  "bytemuck",
  "byteorder",
  "color_quant",
+ "gif",
  "num-rational 0.4.1",
  "num-traits",
  "png 0.17.5",
@@ -4920,6 +4931,7 @@ dependencies = [
  "simula_camera",
  "simula_core",
  "simula_net",
+ "simula_video",
  "simula_viz",
 ]
 
@@ -5252,6 +5264,14 @@ dependencies = [
  "web-sys",
  "webrtc",
  "ws_stream_wasm",
+]
+
+[[package]]
+name = "simula_video"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "image 0.24.3",
 ]
 
 [[package]]
