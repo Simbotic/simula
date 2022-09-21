@@ -11,6 +11,7 @@ pub struct VideoPlayer {
     pub current_frame: usize,
     pub frame_time: f32,
     pub framerate: f32,
+    pub playing: bool,
 }
 
 pub struct VideoPlugin;
@@ -18,6 +19,7 @@ pub struct VideoPlugin;
 impl Plugin for VideoPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<VideoPlayer>()
+            .register_type::<Handle<GifAsset>>()
             .add_asset::<GifAsset>()
             .init_asset_loader::<GifAssetLoader>()
             .add_system(run)
@@ -27,15 +29,17 @@ impl Plugin for VideoPlugin {
 
 impl VideoPlayer {
     fn update(&mut self, delta_time: f32) {
-        self.frame_time += delta_time;
-        if self.current_frame < self.start_frame {
-            self.current_frame = self.start_frame;
-        }
-        if self.frame_time > 1.0 / self.framerate {
-            self.frame_time = 0.0;
-            self.current_frame += 1;
-            if self.current_frame > self.end_frame {
+        if self.playing {
+            self.frame_time += delta_time;
+            if self.current_frame < self.start_frame {
                 self.current_frame = self.start_frame;
+            }
+            if self.frame_time >= 1.0 / self.framerate {
+                self.frame_time = 0.0;
+                self.current_frame += 1;
+                if self.current_frame > self.end_frame {
+                    self.current_frame = self.start_frame;
+                }
             }
         }
     }

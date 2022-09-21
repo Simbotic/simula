@@ -11,7 +11,7 @@ use image::{codecs::gif::GifDecoder, AnimationDecoder, ImageBuffer, Rgba};
 #[derive(Debug, TypeUuid)]
 #[uuid = "ea16c586-3962-11ed-bc41-02a179e5df2c"]
 pub struct GifAsset {
-    pub path: Box<std::path::Path>,
+    pub path: String,
     pub frames: Vec<ImageBuffer<Rgba<u8>, Vec<u8>>>,
     pub images: HashMap<usize, Handle<Image>>,
 }
@@ -32,7 +32,7 @@ impl AssetLoader for GifAssetLoader {
             let frames = frames.into_iter().map(|frame| frame.into_buffer());
             let frames = frames.collect::<Vec<_>>();
             let asset = GifAsset {
-                path: load_context.path().into(),
+                path: load_context.path().display().to_string(),
                 frames,
                 images: HashMap::default(),
             };

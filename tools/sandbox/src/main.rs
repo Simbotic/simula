@@ -528,6 +528,7 @@ fn setup(
             start_frame: 0,
             end_frame: 80,
             framerate: 20.0,
+            playing: true,
             ..Default::default()
         })
         .insert(video_asset)
