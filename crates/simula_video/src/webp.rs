@@ -50,9 +50,17 @@ pub fn run(
     mut gifs: ResMut<Assets<WebPAsset>>,
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    videos: Query<(&VideoPlayer, &Handle<WebPAsset>, &Handle<StandardMaterial>)>,
+    videos: Query<(
+        &VideoPlayer,
+        &Handle<WebPAsset>,
+        &Handle<StandardMaterial>,
+        &ComputedVisibility,
+    )>,
 ) {
-    for (video, asset, material) in videos.iter() {
+    for (video, asset, material, visibility) in videos.iter() {
+        if !visibility.is_visible() {
+            continue;
+        }
         if let Some(material) = materials.get_mut(&material) {
             if let Some(gif) = gifs.get_mut(asset) {
                 if let Some(image) = gif.images.get(&video.current_frame) {
