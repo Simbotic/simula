@@ -509,7 +509,7 @@ fn setup(
     ));
 
     // video robot
-    let robot_material = StandardMaterial {
+    let video_material = StandardMaterial {
         base_color: Color::rgb(1.0, 1.0, 1.0),
         alpha_mode: AlphaMode::Blend,
         unlit: true,
@@ -519,7 +519,7 @@ fn setup(
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-            material: materials.add(robot_material),
+            material: materials.add(video_material),
             transform: Transform::from_xyz(0.0, 0.5, -2.0)
                 .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
             ..Default::default()
