@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.8" }
-image = { version = "0.24", default-features = false, features = ["gif"] }
+image = { version = "0.24", default-features = false, features = ["gif", "webp"] }
 
 [dev-dependencies]

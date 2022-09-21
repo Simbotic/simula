@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 pub use gif::{GifAsset, GifAssetLoader};
+pub use webp::{WebPAsset, WebPAssetLoader};
 
 mod gif;
+mod webp;
 
 #[derive(Default, Debug, Component, Reflect)]
 #[reflect(Component)]
@@ -19,11 +21,13 @@ pub struct VideoPlugin;
 impl Plugin for VideoPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<VideoPlayer>()
-            .register_type::<Handle<GifAsset>>()
             .add_asset::<GifAsset>()
+            .add_asset::<WebPAsset>()
             .init_asset_loader::<GifAssetLoader>()
+            .init_asset_loader::<WebPAssetLoader>()
             .add_system(run)
-            .add_system(gif::run);
+            .add_system(gif::run)
+            .add_system(webp::run);
     }
 }
 

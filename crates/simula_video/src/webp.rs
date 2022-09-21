@@ -6,32 +6,32 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
     utils::{BoxedFuture, HashMap},
 };
-use image::{codecs::gif::GifDecoder, AnimationDecoder, ImageBuffer, Rgba};
+use image::{codecs::webp::WebPDecoder, AnimationDecoder, ImageBuffer, Rgba};
 
 #[derive(Debug, TypeUuid)]
-#[uuid = "ea16c586-3962-11ed-bc41-02a179e5df2c"]
-pub struct GifAsset {
+#[uuid = "3747c102-39bd-11ed-a320-02a179e5df2c"]
+pub struct WebPAsset {
     pub path: String,
     pub frames: Vec<ImageBuffer<Rgba<u8>, Vec<u8>>>,
     pub images: HashMap<usize, Handle<Image>>,
 }
 
 #[derive(Default)]
-pub struct GifAssetLoader;
+pub struct WebPAssetLoader;
 
-impl AssetLoader for GifAssetLoader {
+impl AssetLoader for WebPAssetLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
-            let gif = GifDecoder::new(bytes)?;
+            let gif = WebPDecoder::new(bytes)?;
             let frames = gif.into_frames();
             let frames = frames.collect_frames()?;
             let frames = frames.into_iter().map(|frame| frame.into_buffer());
             let frames = frames.collect::<Vec<_>>();
-            let asset = GifAsset {
+            let asset = WebPAsset {
                 path: load_context.path().display().to_string(),
                 frames,
                 images: HashMap::default(),
@@ -42,15 +42,15 @@ impl AssetLoader for GifAssetLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        &["gif"]
+        &["webp"]
     }
 }
 
 pub fn run(
-    mut gifs: ResMut<Assets<GifAsset>>,
+    mut gifs: ResMut<Assets<WebPAsset>>,
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    videos: Query<(&VideoPlayer, &Handle<GifAsset>, &Handle<StandardMaterial>)>,
+    videos: Query<(&VideoPlayer, &Handle<WebPAsset>, &Handle<StandardMaterial>)>,
 ) {
     for (video, asset, material) in videos.iter() {
         if let Some(material) = materials.get_mut(&material) {
