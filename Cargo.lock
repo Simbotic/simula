@@ -2319,6 +2319,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "empty"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_viz",
+]
+
+[[package]]
 name = "encase"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3878,6 +3894,22 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys",
+]
+
+[[package]]
+name = "mission"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_viz",
 ]
 
 [[package]]
@@ -5448,6 +5480,10 @@ dependencies = [
  "simula_camera",
  "simula_core",
 ]
+
+[[package]]
+name = "simula_mission"
+version = "0.1.0"
 
 [[package]]
 name = "simula_net"

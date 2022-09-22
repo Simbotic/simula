@@ -1,0 +1,19 @@
+[package]
+name = "mission"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.8" }
+bevy-inspector-egui = "0.12.1"
+
+simula_core = { path = "../../crates/simula_core" }
+simula_camera = { path = "../../crates/simula_camera" }
+simula_viz = { path = "../../crates/simula_viz" }
+simula_net = { path = "../../crates/simula_net" }
+simula_action = { path = "../../crates/simula_action" }
+
+rand = "0.8.5"
+enum-iterator = "0.7.0"
+enum-display-derive = "0.1.1"
+
