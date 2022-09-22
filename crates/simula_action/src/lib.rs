@@ -133,6 +133,7 @@ pub fn mouse_axis_system(
     mut mouse_axis_actions: Query<&mut ActionAxis<MouseAxis>>,
 ) {
     if egui_context.ctx_mut().wants_pointer_input() {
+        debug!("Egui wants pointer input");
         return;
     }
     for mut action_axis in mouse_axis_actions.iter_mut() {
@@ -145,7 +146,6 @@ pub fn mouse_axis_system(
             action_axis.set(MouseAxis::Y, event.delta.y);
         }
     }
-
     for event in mouse_wheel_input_events.iter() {
         for mut action_axis in mouse_axis_actions.iter_mut() {
             action_axis.set(MouseAxis::Z, event.y);
