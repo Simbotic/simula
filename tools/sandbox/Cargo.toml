@@ -12,7 +12,7 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
-simula_video = { path = "../../crates/simula_video" }
+simula_video = { path = "../../crates/simula_video", features = ["gif"]}
 
 rand = "0.8.5"
 enum-iterator = "0.7.0"

@@ -1,8 +1,14 @@
 use bevy::prelude::*;
+#[cfg(feature = "gif")]
 pub use gif::{GifAsset, GifAssetLoader};
+#[cfg(feature = "webp")]
 pub use webp::{WebPAsset, WebPAssetLoader};
 
+#[cfg(feature = "gif")]
 mod gif;
+#[cfg(feature = "gst")]
+mod gst;
+#[cfg(feature = "webp")]
 mod webp;
 
 #[derive(Default, Debug, Component, Reflect)]
@@ -20,14 +26,20 @@ pub struct VideoPlugin;
 
 impl Plugin for VideoPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<VideoPlayer>()
-            .add_asset::<GifAsset>()
-            .add_asset::<WebPAsset>()
+        app.register_type::<VideoPlayer>().add_system(run);
+
+        #[cfg(feature = "gif")]
+        app.add_asset::<GifAsset>()
             .init_asset_loader::<GifAssetLoader>()
+            .add_system(gif::run);
+
+        #[cfg(feature = "webp")]
+        app.add_asset::<WebPAsset>()
             .init_asset_loader::<WebPAssetLoader>()
-            .add_system(run)
-            .add_system(gif::run)
             .add_system(webp::run);
+
+        #[cfg(feature = "gst")]
+        app.add_startup_system(gst::setup).add_system(gst::run);
     }
 }
 
