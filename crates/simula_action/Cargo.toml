@@ -5,10 +5,9 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.8.1", features = ["serialize"] }
-bevy_egui = "0.15.1"
+bevy_egui = "0.16.1"
 simula_core = { path = "../../crates/simula_core" }
 serde = { version = "1.0", features = ["derive"] }
-bevy-inspector-egui = "0.12.1"
 ron = "0.7.1"
 simula_action_macro = { path = "../../crates/simula_action/simula_action_macro" }
 derivative = "2.2.0"

@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
-use enum_iterator::IntoEnumIterator;
+use egui_node_graph::*;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_net::NetPlugin;
@@ -13,10 +13,12 @@ use simula_viz::{
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
 
+mod graph;
+
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
-            title: "[Simbotic] Simula - Sandbox".to_string(),
+            title: "[Simbotic] Simula - Mission".to_string(),
             width: 940.,
             height: 528.,
             ..Default::default()
@@ -34,25 +36,26 @@ fn main() {
         .add_plugin(GridPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
+        .add_system(graph::egui_update)
         .run();
 }
 
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
     // grid
+    let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
         .spawn_bundle(GridBundle {
             grid: Grid {
                 size: 10,
                 divisions: 10,
-                start_color: Color::DARK_GRAY,
-                end_color: Color::DARK_GRAY,
+                start_color: grid_color,
+                end_color: grid_color,
                 ..Default::default()
             },
             mesh: meshes.add(line_mesh.clone()),
@@ -66,8 +69,8 @@ fn setup(
     commands
         .spawn_bundle(AxesBundle {
             axes: Axes {
-                size: 1.,
-                inner_offset: 5.,
+                size: 6.,
+                inner_offset: 0.,
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
@@ -123,6 +126,11 @@ fn setup(
         },
         ..Default::default()
     });
+
+    commands
+        .spawn()
+        .insert(graph::MyEditorState(GraphEditorState::new(1.0)))
+        .insert(graph::MyGraphState::default());
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
