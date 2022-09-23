@@ -260,7 +260,7 @@ macro_rules! impl_ease_trait_for {
             fn sine_out(self) -> Self {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
-                (p * PI_2).sin()
+                (p * PI_2 / 4.0).sin()
             }
 
             fn sine_in_out(self) -> Self {
@@ -292,7 +292,7 @@ macro_rules! impl_ease_trait_for {
                 if self <= 0.0 {
                     0.0
                 } else {
-                    (2.0 as $T).powf(10.0 * (self.min(1.0) - 1.0))
+                    (2.0 as $T).powf(10.0 * self - 10.0)
                 }
             }
 
@@ -300,7 +300,7 @@ macro_rules! impl_ease_trait_for {
                 if self >= 1.0 {
                     1.0
                 } else {
-                    1.0 - (2.0 as $T).powf(-10.0 * self.max(0.0))
+                    1.0 - (2.0 as $T).powf(-10.0 * self)
                 }
             }
 
@@ -313,59 +313,75 @@ macro_rules! impl_ease_trait_for {
                 }
 
                 if self < 0.5 {
-                    0.5 * (2.0 as $T).powf((20.0 * self) - 10.0)
+                    (2.0 as $T).powf((20.0 * self) - 10.0) / 2.0
                 } else {
-                    -0.5 * (2.0 as $T).powf((-20.0 * self) + 10.0) + 1.0
+                    (2.0 - (2.0 as $T).powf((-20.0 * self) + 10.0)) / 2.0
                 }
             }
 
             fn elastic_in(self) -> Self {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
-                (13.0 * PI_2 * p).sin() * (2.0 as $T).powf(10.0 * (p - 1.0))
+                if p == 0.0 {
+                    return 0.0
+                }
+                if p == 1.0 {
+                    return 1.0
+                }
+                ((p * 10.0 - 10.75) * (PI_2 / 3.0)).sin() * - (2.0 as $T).powf(10.0 * p - 10.0)
             }
 
             fn elastic_out(self) -> Self {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
-                (-13.0 * PI_2 * (p + 1.0)).sin() * (2.0 as $T).powf(-10.0 * p) + 1.0
+                if p == 0.0 {
+                    return 0.0
+                }
+                if p == 1.0 {
+                    return 1.0
+                }
+                ((p * 10.0 - 0.75) * (PI_2 / 3.0)).sin() * (2.0 as $T).powf(-10.0 * p) + 1.0
             }
 
             fn elastic_in_out(self) -> Self {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
+                if p == 0.0 {
+                    return 0.0
+                }
+                if p == 1.0 {
+                    return 1.0
+                }
                 if p < 0.5 {
-                    0.5 * (13.0 * PI_2 * (2.0 * p)).sin()
-                        * (2.0 as $T).powf(10.0 * ((2.0 * p) - 1.0))
+                    ((20.0 * p - 11.125) * PI_2 / 4.5).sin()
+                        * - (2.0 as $T).powf(20.0 * p - 10.0)
+                        / 2.0
                 } else {
-                    0.5 * ((-13.0 * PI_2 * ((2.0 * p - 1.0) + 1.0)).sin()
-                        * (2.0 as $T).powf(-10.0 * (2.0 * p - 1.0))
-                        + 2.0)
+                    (((20.0 * p - 11.125) * PI_2 / 4.5).sin()
+                        * (2.0 as $T).powf(-20.0 * p + 10.0))
+                        / 2.0 + 1.0
                 }
             }
 
             fn back_in(self) -> Self {
-                use std::$T::consts::PI;
                 let p = $T::clamp(self);
-                p * p * p - p * (p * PI).sin()
+                (1.70158 + 1.0) * p * p * p - 1.70158 * p * p
             }
 
             fn back_out(self) -> Self {
-                use std::$T::consts::PI;
                 let p = $T::clamp(self);
-                let f = 1.0 - p;
-                1.0 - (f * f * f - f * (f * PI).sin())
+                1.0 + (1.70158 + 1.0) * ((p - 1.0) as $T).powf(3.0) + 1.70158
+                    * ((p - 1.0) as $T).powf(2.0)
             }
 
             fn back_in_out(self) -> Self {
-                use std::$T::consts::PI;
                 let p = $T::clamp(self);
                 if p < 0.5 {
-                    let f = 2.0 * p;
-                    0.5 * (f * f * f - f * (f * PI).sin())
+                    (((2.0 * p) as $T).powf(2.0) * (((1.70158 * 1.525) + 1.0) * 
+                        2.0 * p - (1.70158 * 1.525))) / 2.0
                 } else {
-                    let f = 1.0 - (2.0 * p - 1.0);
-                    0.5 * (1.0 - (f * f * f - f * (f * PI).sin())) + 0.5
+                    (((2.0 * p - 2.0) as $T).powf(2.0) * (((1.70158 * 1.525) + 1.0) *
+                        (p * 2.0 - 2.0) + (1.70158 * 1.525)) + 2.0) / 2.0
                 }
             }
 
@@ -430,7 +446,7 @@ mod test {
     #[test]
     fn test_quadratic_in_out() {
         assert_eq!(0.0, Ease::quadratic_in_out(0.0));
-        assert_eq!(0.5, Ease::quadratic_in_out(0.5));
+        assert_eq!(0.32000000000000006, Ease::quadratic_in_out(0.4));
         assert_eq!(1.0, Ease::quadratic_in_out(1.0));
     }
 
@@ -495,5 +511,74 @@ mod test {
         assert_eq!(0.0, Ease::quintic_in_out(0.0));
         assert_eq!(0.5, Ease::quintic_in_out(0.5));
         assert_eq!(1.0, Ease::quintic_in_out(1.0));
+    }
+
+    #[test]
+    fn test_elastic_in() {
+        assert_eq!(0.0, Ease::elastic_in(0.0));
+        assert_eq!(1.0, Ease::elastic_in(1.0));
+    }
+
+    #[test]
+    fn test_elastic_out() {
+        assert_eq!(0.0, Ease::elastic_out(0.0));
+        assert_eq!(1.015625, Ease::elastic_out(0.5));
+        assert_eq!(1.0, Ease::elastic_out(1.0));
+    }
+
+    #[test]
+    fn test_elastic_in_out() {
+        assert_eq!(0.0, Ease::elastic_in_out(0.0));
+        assert_eq!(-0.11746157759823855, Ease::elastic_in_out(0.4));
+        assert_eq!(1.0, Ease::elastic_in_out(1.0));
+    }
+
+    #[test]
+    fn test_expo_in() {
+        assert_eq!(0.0, Ease::exponential_in(0.0));
+        assert_eq!(0.03125, Ease::exponential_in(0.5));
+        assert_eq!(1.0, Ease::exponential_in(1.0));
+    }
+
+    #[test]
+    fn test_expo_out() {
+        assert_eq!(0.0, Ease::exponential_out(0.0));
+        assert_eq!(0.96875, Ease::exponential_out(0.5));
+        assert_eq!(1.0, Ease::exponential_out(1.0));
+    }
+
+    #[test]
+    fn test_expo_in_out() {
+        assert_eq!(0.0, Ease::exponential_in_out(0.0));
+        assert_eq!(0.875, Ease::exponential_in_out(0.6));
+        assert_eq!(1.0, Ease::exponential_in_out(1.0));
+    }
+
+    #[test]
+    fn test_back_in() {
+        assert_eq!(0.0, Ease::back_in(0.0));
+        assert_eq!(-0.08769750000000004, Ease::back_in(0.5));
+        assert_eq!(0.9999999999999998, Ease::back_in(1.0));
+    }
+
+    #[test]
+    fn test_back_out() {
+        assert_eq!(2.220446049250313e-16, Ease::back_out(0.0));
+        assert_eq!(1.0876975, Ease::back_out(0.5));
+        assert_eq!(1.0, Ease::back_out(1.0));
+    }
+
+    #[test]
+    fn test_back_in_out() {
+        assert_eq!(0.0, Ease::back_in_out(0.0));
+        assert_eq!(0.0899257920000001, Ease::back_in_out(0.4));
+        assert_eq!(1.0, Ease::back_in_out(1.0));
+    }
+
+    #[test]
+    fn test_sine_out() {
+        assert_eq!(0.0, Ease::sine_out(0.0));
+        assert_eq!(0.7071067811865475, Ease::sine_out(0.5));
+        assert_eq!(1.0, Ease::sine_out(1.0));
     }
 }
