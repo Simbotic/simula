@@ -40,7 +40,7 @@ impl Default for OrbitCamera {
             center: Vec3::ZERO,
             rotate_sensitivity: 1.0,
             pan_sensitivity: 1.0,
-            zoom_sensitivity: 0.8,
+            zoom_sensitivity: 0.98,
             enabled: true,
         }
     }
@@ -107,9 +107,8 @@ impl OrbitCameraPlugin {
                     camera.center += pan_vector;
                 }
                 // Zoom
-                let mut delta = motion.get(OrbitCameraMotion::Zoom).unwrap_or_default();
-                delta *= 0.05;
-                camera.distance += delta * camera.zoom_sensitivity;
+                let delta = motion.get(OrbitCameraMotion::Zoom).unwrap_or_default();
+                camera.distance *= camera.zoom_sensitivity.powf(delta);
             }
             mode.clear();
         }

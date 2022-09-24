@@ -3,7 +3,7 @@ pub use axis::ActionAxis;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton},
     keyboard::{KeyCode, KeyboardInput},
-    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
+    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel, MouseScrollUnit},
     ButtonState,
 };
 use bevy::{
@@ -137,6 +137,8 @@ pub fn mouse_button_action_system(
     }
 }
 
+const LINE_TO_PIXEL_RATIO: f32 = 0.1;
+
 pub fn mouse_axis_system(
     mut egui_context: ResMut<EguiContext>,
     mut mouse_motion_input_events: EventReader<MouseMotion>,
@@ -159,7 +161,11 @@ pub fn mouse_axis_system(
     }
     for event in mouse_wheel_input_events.iter() {
         for mut action_axis in mouse_axis_actions.iter_mut() {
-            action_axis.set(MouseAxis::Z, event.y);
+            let delta = event.y * match event.unit {
+                MouseScrollUnit::Line => 1.0,
+                MouseScrollUnit::Pixel => LINE_TO_PIXEL_RATIO,
+            };
+            action_axis.set(MouseAxis::Z, delta);
         }
     }
 }
