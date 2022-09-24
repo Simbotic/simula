@@ -272,7 +272,7 @@ fn pathfinding_window(
                         && node_start_end.queue_end == (node_start_end.endx, node_start_end.endy)
                     {
                         ui.add(
-                            egui::Label::new(format!("{:?}", shortest_path.shortest_highlight))
+                            egui::Label::new(format!("{:?}", node_start_end.shortest_highlight))
                                 .wrap(true),
                         );
                     }

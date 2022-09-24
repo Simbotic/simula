@@ -7,7 +7,7 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
-use simula_hexgrid::hexgrid::*;
+use simula_hexgrid::{hexgrid::*, worldmap_material::{HexgridData, HexData}};
 
 fn main() {
     App::new()
@@ -74,33 +74,35 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
         .insert(HexgridObject);
 }
 
-pub fn hexgrid_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
-    shortest_path.counter_one = 0;
+pub fn hexgrid_builder(
+    mut node_start_end: ResMut<NodeStartEnd>
+) {
+    node_start_end.counter_one = 0;
 
     // Loop while `counter` is less than 2048
-    while shortest_path.counter_one < 2048 {
-        shortest_path.counter_two = 0;
+    while node_start_end.counter_one < 2048 {
+        node_start_end.counter_two = 0;
 
-        while shortest_path.counter_two < 2048 {
-            let n = shortest_path.counter_one;
-            let m = shortest_path.counter_two;
+        while node_start_end.counter_two < 2048 {
+            let n = node_start_end.counter_one;
+            let m = node_start_end.counter_two;
 
             //hash from vec to make seed for deterministic random complexity value
             let vec = vec![n, m];
             let mut hash = DefaultHasher::new();
             vec.hash(&mut hash);
             let complexity_seed = hash.finish();
-            shortest_path.random_complexity =
+            node_start_end.random_complexity =
                 Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
-            let l = shortest_path.random_complexity;
+            let l = node_start_end.random_complexity;
 
             //create nodes
-            shortest_path.nodes.insert((n, m), l);
+            node_start_end.nodes.insert((n, m), l);
 
             //increment
-            shortest_path.counter_two += 1;
+            node_start_end.counter_two += 1;
         }
         //increment
-        shortest_path.counter_one += 1;
+        node_start_end.counter_one += 1;
     }
 }
