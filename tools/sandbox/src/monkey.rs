@@ -1,8 +1,8 @@
 use bevy::input::{keyboard::KeyCode, mouse::MouseButton};
-use bevy::prelude::*;
+use bevy::{prelude::*, reflect::FromReflect};
 use simula_action::{
-    action_map, axis_map, Action, ActionAxis, ActionMap, ActionMapInput, AxisMap, AxisMapInput,
-    AxisMapSource, MouseAxis,
+    action_map, action_axis_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
+    AxisMapInput, AxisMapSource, MouseAxis,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemLabel)]
@@ -10,37 +10,56 @@ pub struct MonkeyPlugin;
 
 impl Plugin for MonkeyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(monkey_setup)
+        app.register_type::<MonkeyActor>()
+            .register_type::<Action<MonkeyDo>>()
+            .register_type::<Action<MonkeyMove>>()
+            .register_type::<ActionMap<MonkeyDo>>()
+            .register_type::<ActionAxisMap<MonkeyMove>>()
+            .add_startup_system(monkey_setup)
             .add_system(action_map::<MonkeyDo, MonkeyActor>)
-            .add_system(axis_map::<MonkeyMove, MonkeyActor>)
+            .add_system(action_axis_map::<MonkeyMove, MonkeyActor>)
+            .add_system(action_axis_map::<MonkeyLook, MonkeyActor>)
             .add_system(monkey_play);
     }
 }
 
 // Marker for entity controlled by these actions
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct MonkeyActor;
 
 // Actions
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
 pub enum MonkeyDo {
+    #[default]
+    Idle,
     Jump,
     Push,
     Hack,
 }
 
-// Action axes
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+// Move action axes
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
 pub enum MonkeyMove {
+    #[default]
+    Idle,
     Front,
     Right,
     Strafe,
     Zoom,
 }
 
+// Look around action axes
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+pub enum MonkeyLook {
+    #[default]
+    Idle,
+    Right,
+    Up,
+}
+
 fn monkey_setup(mut commands: Commands) {
-    let mut action_map: ActionMap<MonkeyDo> = Default::default();
-    *action_map = vec![
+    let mut do_action_map: ActionMap<MonkeyDo> = Default::default();
+    *do_action_map = vec![
         ActionMapInput {
             action: MonkeyDo::Jump,
             button: MouseButton::Left.into(),
@@ -78,8 +97,8 @@ fn monkey_setup(mut commands: Commands) {
         },
     ];
 
-    let mut axis_map: AxisMap<MonkeyMove> = Default::default();
-    *axis_map = vec![
+    let mut move_axis_map: ActionAxisMap<MonkeyMove> = Default::default();
+    *move_axis_map = vec![
         // WASD
         AxisMapInput {
             axis: MonkeyMove::Front,
@@ -110,22 +129,40 @@ fn monkey_setup(mut commands: Commands) {
         },
     ];
 
+    let mut look_axis_map: ActionAxisMap<MonkeyLook> = Default::default();
+    *look_axis_map = vec![
+        // Mouse
+        AxisMapInput {
+            axis: MonkeyLook::Right,
+            source: AxisMapSource::MouseAxis(MouseAxis::X),
+        },
+        AxisMapInput {
+            axis: MonkeyLook::Up,
+            source: AxisMapSource::MouseAxis(MouseAxis::Y),
+        },
+    ];
+
     commands
         .spawn()
         .insert(MonkeyActor)
         .insert(Action::<MonkeyDo>::default())
         .insert(ActionAxis::<MonkeyMove>::default())
-        .insert(action_map)
-        .insert(axis_map)
+        .insert(ActionAxis::<MonkeyLook>::default())
+        .insert(do_action_map)
+        .insert(move_axis_map)
+        .insert(look_axis_map)
         .insert(Name::new("Actor: Monkey"));
 }
 
 fn monkey_play(
-    mut actions: Query<&mut Action<MonkeyDo>>,
-    mut axes: Query<&mut ActionAxis<MonkeyMove>>,
+    mut do_actions: Query<&mut Action<MonkeyDo>>,
+    mut move_axes: Query<&mut ActionAxis<MonkeyMove>>,
+    mut look_axes: Query<&mut ActionAxis<MonkeyLook>>,
 ) {
-    let mut action = actions.single_mut();
-    let axis = axes.single_mut();
-    debug!("{:?} {:?}", action, axis);
-    action.clear();
+    let mut do_action = do_actions.single_mut();
+    let move_axis = move_axes.single_mut();
+    let look_axis = look_axes.single_mut();
+    debug!("{:?}", do_action);
+    debug!("{:?} {:?}", move_axis, look_axis);
+    do_action.clear();
 }

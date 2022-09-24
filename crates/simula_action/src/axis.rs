@@ -1,25 +1,25 @@
-use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy::{prelude::*, reflect::FromReflect, utils::HashMap};
 use std::hash::Hash;
 
 /// Stores the position data of the input devices of type `T`.
 ///
 /// The values are stored as `f32`s, which range from [`ActionAxis::MIN`] to [`ActionAxis::MAX`], inclusive.
-#[derive(Debug, Clone, Component)]
-pub struct ActionAxis<T> {
+#[derive(Debug, Clone, Component, Reflect)]
+#[reflect(Component)]
+pub struct ActionAxis<T: Eq + Hash + Clone + Send + Sync + 'static + FromReflect> {
     /// The name of the axis.
-    name: &'static str,
+    name: String,
     /// The position data of the input devices.
     axis: HashMap<T, f32>,
 }
 
 impl<T> Default for ActionAxis<T>
 where
-    T: Copy + Eq + Hash,
+    T: Eq + Hash + Clone + Send + Sync + 'static + FromReflect,
 {
     fn default() -> Self {
         ActionAxis {
-            name: std::any::type_name::<T>(),
+            name: std::any::type_name::<T>().to_string(),
             axis: HashMap::default(),
         }
     }
@@ -27,7 +27,7 @@ where
 
 impl<T> ActionAxis<T>
 where
-    T: Copy + Eq + Hash,
+    T: Eq + Hash + Clone + Send + Sync + 'static + FromReflect,
 {
     /// The smallest possible axis value.
     pub const MIN: f32 = -1.0;
@@ -56,9 +56,15 @@ where
     pub fn get(&self, input_device: T) -> Option<f32> {
         self.axis.get(&input_device).copied()
     }
+
     /// Removes the position data of the `input_device`, returning the position data if the input device was previously set.
     pub fn remove(&mut self, input_device: T) -> Option<f32> {
         self.axis.remove(&input_device)
+    }
+    
+    /// Remove all position data.
+    pub fn clear(&mut self) {
+        self.axis.clear();
     }
 }
 
@@ -66,6 +72,11 @@ where
 mod tests {
     use super::*;
     use bevy::input::gamepad::{Gamepad, GamepadButton, GamepadButtonType};
+
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect, FromReflect)]
+    pub enum TestGamepad {
+        Gamepad(GamepadButton),
+    }
 
     #[test]
     fn test_axis_set() {
@@ -84,9 +95,11 @@ mod tests {
         ];
 
         for (value, expected) in cases {
-            let gamepad_button =
-                GamepadButton::new(Gamepad::new(1), GamepadButtonType::RightTrigger);
-            let mut axis = ActionAxis::<GamepadButton>::default();
+            let gamepad_button = TestGamepad::Gamepad(GamepadButton::new(
+                Gamepad::new(1),
+                GamepadButtonType::RightTrigger,
+            ));
+            let mut axis = ActionAxis::<TestGamepad>::default();
 
             axis.set(gamepad_button, value);
 
@@ -100,9 +113,11 @@ mod tests {
         let cases = [-1.0, -0.9, -0.1, 0.0, 0.1, 0.9, 1.0];
 
         for value in cases {
-            let gamepad_button =
-                GamepadButton::new(Gamepad::new(1), GamepadButtonType::RightTrigger);
-            let mut axis = ActionAxis::<GamepadButton>::default();
+            let gamepad_button = TestGamepad::Gamepad(GamepadButton::new(
+                Gamepad::new(1),
+                GamepadButtonType::RightTrigger,
+            ));
+            let mut axis = ActionAxis::<TestGamepad>::default();
 
             axis.set(gamepad_button, value);
             assert!(axis.get(gamepad_button).is_some());
