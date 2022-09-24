@@ -17,7 +17,13 @@ use simula_core::{
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
 use simula_net::NetPlugin;
-use simula_video::{GifAsset, VideoPlayer, VideoPlugin};
+#[cfg(feature = "gst")]
+use simula_video::create_gst;
+#[cfg(feature = "gif")]
+use simula_video::GifAsset;
+#[cfg(feature = "webp")]
+use simula_video::WebPAsset;
+use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
@@ -508,31 +514,93 @@ fn setup(
         NoFrustumCulling,
     ));
 
-    // video robot
-    let video_material = StandardMaterial {
-        base_color: Color::rgb(1.0, 1.0, 1.0),
-        alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..Default::default()
-    };
-    let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-            material: materials.add(video_material),
-            transform: Transform::from_xyz(0.0, 0.5, -2.0)
-                .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+    #[cfg(feature = "gif")]
+    {
+        // video robot
+        let video_material = StandardMaterial {
+            base_color: Color::rgb(1.0, 1.0, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            unlit: true,
             ..Default::default()
-        })
-        .insert(VideoPlayer {
-            start_frame: 0,
-            end_frame: 80,
-            framerate: 20.0,
-            playing: true,
+        };
+        let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                material: materials.add(video_material),
+                transform: Transform::from_xyz(0.0, 0.5, -2.0)
+                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+                ..Default::default()
+            })
+            .insert(VideoPlayer {
+                start_frame: 0,
+                end_frame: 80,
+                framerate: 20.0,
+                playing: true,
+                ..Default::default()
+            })
+            .insert(video_asset)
+            .insert(Name::new("Video: Robot"));
+    }
+
+    #[cfg(feature = "webp")]
+    {
+        // video robot
+        let video_material = StandardMaterial {
+            base_color: Color::rgb(1.0, 1.0, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            unlit: true,
             ..Default::default()
-        })
-        .insert(video_asset)
-        .insert(Name::new("Video: Robot"));
+        };
+        let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                material: materials.add(video_material),
+                transform: Transform::from_xyz(0.0, 0.5, -2.0)
+                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+                ..Default::default()
+            })
+            .insert(VideoPlayer {
+                start_frame: 0,
+                end_frame: 80,
+                framerate: 20.0,
+                playing: true,
+                ..Default::default()
+            })
+            .insert(video_asset)
+            .insert(Name::new("Video: Robot"));
+    }
+
+    #[cfg(feature = "gst")]
+    {
+        // video stream
+        let video_material = StandardMaterial {
+            base_color: Color::rgb(1.0, 1.0, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            unlit: true,
+            ..Default::default()
+        };
+        let gst_asset = create_gst();
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                material: materials.add(video_material),
+                transform: Transform::from_xyz(2.0, 0.5, -3.0)
+                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+                    .with_scale(Vec3::new(1.6, 1.0, 1.0)),
+                ..Default::default()
+            })
+            .insert(VideoPlayer {
+                start_frame: 0,
+                end_frame: 80,
+                framerate: 20.0,
+                playing: true,
+                ..Default::default()
+            })
+            .insert(gst_asset)
+            .insert(Name::new("Video: Gst"));
+    }
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
