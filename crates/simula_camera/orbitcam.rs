@@ -83,7 +83,6 @@ impl OrbitCameraPlugin {
     ) {
         for (mut camera, transform, _camera, mut mode, motion) in query.iter_mut() {
             if camera.enabled {
-                // println!("mode: {:?}", mode);
                 if mode.on(OrbitCameraMode::Orbit) {
                     let x = motion.get(OrbitCameraMotion::Right).unwrap_or_default();
                     let y = motion.get(OrbitCameraMotion::Up).unwrap_or_default();

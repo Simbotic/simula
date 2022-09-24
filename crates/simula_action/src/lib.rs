@@ -3,7 +3,7 @@ pub use axis::ActionAxis;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton},
     keyboard::{KeyCode, KeyboardInput},
-    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel, MouseScrollUnit},
+    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel},
     ButtonState,
 };
 use bevy::{
@@ -161,10 +161,11 @@ pub fn mouse_axis_system(
     }
     for event in mouse_wheel_input_events.iter() {
         for mut action_axis in mouse_axis_actions.iter_mut() {
-            let delta = event.y * match event.unit {
-                MouseScrollUnit::Line => 1.0,
-                MouseScrollUnit::Pixel => LINE_TO_PIXEL_RATIO,
-            };
+            let delta = event.y
+                * match event.unit {
+                    MouseScrollUnit::Line => 1.0,
+                    MouseScrollUnit::Pixel => LINE_TO_PIXEL_RATIO,
+                };
             action_axis.set(MouseAxis::Z, delta);
         }
     }
@@ -223,6 +224,9 @@ pub fn action_map<T, W>(
     let mouse_button_action = mouse_button_actions.single();
 
     for mut action in actions.iter_mut() {
+        let mut wants_on = HashSet::new();
+        let mut wants_exit = HashSet::new();
+
         for action_map in action_maps.iter() {
             for action_map_input in action_map.iter() {
                 let mut is_modified = true;
@@ -248,15 +252,21 @@ pub fn action_map<T, W>(
                         ActionMapButton::Keyboard(key_code) => {
                             if keyboard_action.on_enter(key_code) {
                                 if !action.on(action_map_input.action) {
+                                    // wants_enter += 1;
                                     action.enter(action_map_input.action);
                                 }
+                            } else if keyboard_action.on(key_code) {
+                                wants_on.insert(action_map_input.action);
                             }
                         }
                         ActionMapButton::MouseButton(mouse_button) => {
                             if mouse_button_action.on_enter(mouse_button) {
                                 if !action.on(action_map_input.action) {
+                                    // wants_enter += 1;
                                     action.enter(action_map_input.action);
                                 }
+                            } else if mouse_button_action.on(mouse_button) {
+                                wants_on.insert(action_map_input.action);
                             }
                         }
                         _ => panic!("Not implemented"),
@@ -268,19 +278,25 @@ pub fn action_map<T, W>(
                     ActionMapButton::Keyboard(key_code) => {
                         if keyboard_action.on_exit(key_code) {
                             if action.on(action_map_input.action) {
-                                action.exit(action_map_input.action);
+                                wants_exit.insert(action_map_input.action);
                             }
                         }
                     }
                     ActionMapButton::MouseButton(mouse_button) => {
                         if mouse_button_action.on_exit(mouse_button) {
                             if action.on(action_map_input.action) {
-                                action.exit(action_map_input.action);
+                                wants_exit.insert(action_map_input.action);
                             }
                         }
                     }
                     _ => panic!("Not implemented"),
                 }
+            }
+        }
+
+        for input_action in wants_exit.iter() {
+            if !wants_on.contains(input_action) {
+                action.exit(*input_action);
             }
         }
     }
