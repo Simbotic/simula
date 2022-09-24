@@ -3,6 +3,12 @@ name = "sandbox"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["gif"]
+gif = ["simula_video/gif"]
+webp = ["simula_video/webp"]
+gst = ["simula_video/gst"]
+
 [dependencies]
 bevy = { version = "0.8" }
 bevy-inspector-egui = "0.13"
@@ -12,7 +18,7 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
-simula_video = { path = "../../crates/simula_video", features = ["gif"]}
+simula_video = { path = "../../crates/simula_video" }
 
 rand = "0.8.5"
 enum-iterator = "0.7.0"

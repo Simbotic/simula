@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 #[cfg(feature = "gif")]
 pub use gif::{GifAsset, GifAssetLoader};
+#[cfg(feature = "gst")]
+pub use gst::{GstAsset, create_gst};
 #[cfg(feature = "webp")]
 pub use webp::{WebPAsset, WebPAssetLoader};
 

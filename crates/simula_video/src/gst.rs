@@ -1,22 +1,3 @@
-// This example demonstrates the use of the appsink element.
-// It operates the following pipeline:
-
-// {audiotestsrc} - {appsink}
-
-// The application specifies what format it wants to handle. This format
-// is applied by calling set_caps on the appsink. Now it's the audiotestsrc's
-// task to provide this data format. If the element connected to the appsink's
-// sink-pad were not able to provide what we ask them to, this would fail.
-// This is the format we request:
-// Audio / Signed 16bit / 1 channel / arbitrary sample rate
-
-use gst::element_error;
-use gst::prelude::*;
-use gstreamer as gst;
-use gstreamer_app as gst_app;
-use gstreamer_video as gst_video;
-
-use crate::VideoPlayer;
 use bevy::{
     asset::Error,
     prelude::*,
@@ -24,9 +5,14 @@ use bevy::{
 };
 use crossbeam_channel::{bounded, Receiver, Sender};
 use derive_more::{Display, Error};
+use gst::element_error;
+use gst::prelude::*;
+use gstreamer as gst;
+use gstreamer_app as gst_app;
+use gstreamer_video as gst_video;
 
 #[derive(Component)]
-pub struct GstHolder {
+pub struct GstAsset {
     pub process: std::thread::JoinHandle<()>,
     receiver: Receiver<Vec<u8>>,
 }
@@ -44,41 +30,12 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
-    let video_material = StandardMaterial {
-        base_color: Color::rgb(1.0, 1.0, 1.0),
-        alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..Default::default()
-    };
-    let gst_stuff = gst_main();
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-            material: materials.add(video_material),
-            transform: Transform::from_xyz(2.0, 0.5, -3.0)
-                .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)).with_scale(Vec3::new(2.0, 1.0, 1.0)),
-            ..Default::default()
-        })
-        .insert(VideoPlayer {
-            start_frame: 0,
-            end_frame: 80,
-            framerate: 20.0,
-            playing: true,
-            ..Default::default()
-        })
-        .insert(gst_stuff)
-        .insert(Name::new("Video: Gst"));
-}
+pub fn setup() {}
 
 pub fn run(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    videos: Query<(&GstHolder, &Handle<StandardMaterial>, &ComputedVisibility)>,
+    videos: Query<(&GstAsset, &Handle<StandardMaterial>, &ComputedVisibility)>,
 ) {
     for (video, material, visibility) in videos.iter() {
         if !visibility.is_visible() {
@@ -204,12 +161,12 @@ fn main_loop(pipeline: gst::Pipeline) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn gst_main() -> GstHolder {
+pub fn create_gst() -> GstAsset {
     let (sender, receiver) = bounded(1);
     let launch_handle = std::thread::spawn(move || {
         match create_pipeline(
-            "filesrc num-buffers=1000 location=assets/videos/sample-01.mkv ! decodebin ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=512,height=512 ! appsink name=simula".to_string(),
-            // "videotestsrc ! video/x-raw,width=512,height=512 ! appsink name=simula".into(),
+            // "filesrc num-buffers=1000 location=assets/videos/sample-01.mkv ! decodebin ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=512,height=512 ! appsink name=simula".to_string(),
+            "videotestsrc ! video/x-raw,width=512,height=512 ! appsink name=simula".into(),
             sender,
         )
         .and_then(main_loop)
@@ -219,7 +176,7 @@ pub fn gst_main() -> GstHolder {
         }
     });
 
-    GstHolder {
+    GstAsset {
         process: launch_handle,
         receiver,
     }
