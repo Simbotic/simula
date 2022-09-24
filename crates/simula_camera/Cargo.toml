@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.8" }
+simula_action = { path = "../../crates/simula_action" }
 
 [lib]
 path = "lib.rs"

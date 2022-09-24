@@ -5478,6 +5478,7 @@ name = "simula_camera"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "simula_action",
 ]
 
 [[package]]

@@ -2,10 +2,11 @@ use bevy::prelude::*;
 use bevy::utils::HashSet;
 use std::hash::Hash;
 
-#[derive(Debug, Clone, Component)]
-pub struct Action<T: Eq + Hash> {
+#[derive(Debug, Clone, Component, Reflect)]
+#[reflect(Component)]
+pub struct Action<T: Eq + Hash + Clone + Send + Sync + 'static> {
     /// The name of the action.
-    name: &'static str,
+    name: String,
     /// A collection of every action that is currently on.
     on: HashSet<T>,
     /// A collection of every action that has just been entered.
@@ -14,10 +15,10 @@ pub struct Action<T: Eq + Hash> {
     on_exit: HashSet<T>,
 }
 
-impl<T: Eq + Hash> Default for Action<T> {
+impl<T: Eq + Hash + Clone + Send + Sync + 'static> Default for Action<T> {
     fn default() -> Self {
         Self {
-            name: std::any::type_name::<T>(),
+            name: std::any::type_name::<T>().to_string(),
             on: Default::default(),
             on_enter: Default::default(),
             on_exit: Default::default(),
@@ -27,11 +28,11 @@ impl<T: Eq + Hash> Default for Action<T> {
 
 impl<T> Action<T>
 where
-    T: Copy + Eq + Hash,
+    T: Copy + Eq + Hash + Send + Sync + 'static,
 {
     /// Returns the name of the action.
-    pub fn name(&self) -> &'static str {
-        self.name
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Registers an on_enter for the given `action`.
