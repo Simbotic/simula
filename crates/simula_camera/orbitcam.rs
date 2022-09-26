@@ -78,10 +78,10 @@ impl OrbitCameraPlugin {
             &mut Transform,
             &mut Camera,
             &mut Action<OrbitCameraMode>,
-            &ActionAxis<OrbitCameraMotion>,
+            &mut ActionAxis<OrbitCameraMotion>,
         )>,
     ) {
-        for (mut camera, transform, _camera, mut mode, motion) in query.iter_mut() {
+        for (mut camera, transform, _camera, mut mode, mut motion) in query.iter_mut() {
             if camera.enabled {
                 if mode.on(OrbitCameraMode::Orbit) {
                     let x = motion.get(OrbitCameraMotion::Right).unwrap_or_default();
@@ -110,6 +110,7 @@ impl OrbitCameraPlugin {
                 camera.distance *= camera.zoom_sensitivity.powf(delta);
             }
             mode.clear();
+            motion.clear();
         }
     }
 }

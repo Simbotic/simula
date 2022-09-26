@@ -152,6 +152,7 @@ pub fn mouse_axis_system(
     for mut action_axis in mouse_axis_actions.iter_mut() {
         action_axis.set(MouseAxis::X, 0.);
         action_axis.set(MouseAxis::Y, 0.);
+        action_axis.set(MouseAxis::Z, 0.);
     }
     for event in mouse_motion_input_events.iter() {
         for mut action_axis in mouse_axis_actions.iter_mut() {
