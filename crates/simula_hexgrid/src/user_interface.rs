@@ -4,21 +4,21 @@ use bevy_egui::*;
 use bevy_inspector_egui::bevy_egui;
 use rand::Rng;
 
-use crate::{hexgrid::{RenderAction, RenderPathEvent, ShortestPathBuilder, NodeStartEnd, hexagon_pathfinder},
+use crate::{hexgrid::{RenderAction, RenderPathEvent, RenderTile, PathFind, hexagon_pathfinder},
             pathfinding::HexOrientation::{self}};
 
 pub fn ui_render_next_tiles(
     mut egui_ctx: ResMut<EguiContext>,
     render_path_event: EventWriter<RenderPathEvent>,
-    shortest_path: ResMut<ShortestPathBuilder>,
+    render_tile: ResMut<RenderTile>,
 ) {
-    render_next_tiles(&mut egui_ctx, render_path_event, shortest_path);
+    render_next_tiles(&mut egui_ctx, render_path_event, render_tile);
 }
 
 pub fn render_next_tiles(
     egui_ctx: &mut ResMut<EguiContext>,
     mut render_path_event: EventWriter<RenderPathEvent>,
-    mut shortest_path: ResMut<ShortestPathBuilder>,
+    mut render_tile: ResMut<RenderTile>,
 ) {
     egui::Window::new("Render Next Tiles")
         .default_width(200.0)
@@ -49,69 +49,69 @@ pub fn render_next_tiles(
             ui.horizontal(|ui| {
                 ui.label(format!(
                     "Columns: {} to {}; Rows: {} to {}",
-                    shortest_path.render_min_column,
-                    shortest_path.render_max_column,
-                    shortest_path.render_min_row,
-                    shortest_path.render_max_row
+                    render_tile.render_min_column,
+                    render_tile.render_max_column,
+                    render_tile.render_min_row,
+                    render_tile.render_max_row
                 ));
             });
             ui.horizontal(|ui| {
                 if ui.button("32").clicked() {
-                    shortest_path.render_min_row = 0;
-                    shortest_path.render_max_row = 31;
-                    shortest_path.render_min_column = 0;
-                    shortest_path.render_max_column = 31;
-                    shortest_path.render_size = 31;
+                    render_tile.render_min_row = 0;
+                    render_tile.render_max_row = 31;
+                    render_tile.render_min_column = 0;
+                    render_tile.render_max_column = 31;
+                    render_tile.render_size = 31;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
                 }
                 if ui.button("64").clicked() {
-                    shortest_path.render_min_row = 0;
-                    shortest_path.render_max_row = 63;
-                    shortest_path.render_min_column = 0;
-                    shortest_path.render_max_column = 63;
-                    shortest_path.render_size = 63;
+                    render_tile.render_min_row = 0;
+                    render_tile.render_max_row = 63;
+                    render_tile.render_min_column = 0;
+                    render_tile.render_max_column = 63;
+                    render_tile.render_size = 63;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
                 }
                 if ui.button("128").clicked() {
-                    shortest_path.render_min_row = 0;
-                    shortest_path.render_max_row = 127;
-                    shortest_path.render_min_column = 0;
-                    shortest_path.render_max_column = 127;
-                    shortest_path.render_size = 127;
+                    render_tile.render_min_row = 0;
+                    render_tile.render_max_row = 127;
+                    render_tile.render_min_column = 0;
+                    render_tile.render_max_column = 127;
+                    render_tile.render_size = 127;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
                 }
                 if ui.button("256").clicked() {
-                    shortest_path.render_min_row = 0;
-                    shortest_path.render_max_row = 255;
-                    shortest_path.render_min_column = 0;
-                    shortest_path.render_max_column = 255;
-                    shortest_path.render_size = 255;
+                    render_tile.render_min_row = 0;
+                    render_tile.render_max_row = 255;
+                    render_tile.render_min_column = 0;
+                    render_tile.render_max_column = 255;
+                    render_tile.render_size = 255;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
                 }
                 if ui.button("512").clicked() {
-                    shortest_path.render_min_row = 0;
-                    shortest_path.render_max_row = 511;
-                    shortest_path.render_min_column = 0;
-                    shortest_path.render_max_column = 511;
-                    shortest_path.render_size = 511;
+                    render_tile.render_min_row = 0;
+                    render_tile.render_max_row = 511;
+                    render_tile.render_min_column = 0;
+                    render_tile.render_max_column = 511;
+                    render_tile.render_size = 511;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
                 }
                 if ui.button("1024").clicked() {
-                    shortest_path.render_min_row = 0;
-                    shortest_path.render_max_row = 1023;
-                    shortest_path.render_min_column = 0;
-                    shortest_path.render_max_column = 1023;
-                    shortest_path.render_size = 1023;
+                    render_tile.render_min_row = 0;
+                    render_tile.render_max_row = 1023;
+                    render_tile.render_min_column = 0;
+                    render_tile.render_max_column = 1023;
+                    render_tile.render_size = 1023;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
@@ -120,29 +120,29 @@ pub fn render_next_tiles(
             ui.horizontal(|ui| {
                 ui.label("Go to tile:".to_string());
                 ui.add(
-                    egui::DragValue::new(&mut shortest_path.tile_coord_z)
+                    egui::DragValue::new(&mut render_tile.tile_coord_z)
                         .clamp_range::<i32>(0..=2048),
                 );
                 ui.add(
-                    egui::DragValue::new(&mut shortest_path.tile_coord_x)
+                    egui::DragValue::new(&mut render_tile.tile_coord_x)
                         .clamp_range::<i32>(0..=2048),
                 );
                 if ui.button("Enter").clicked() {
-                    shortest_path.render_min_row =
-                        shortest_path.tile_coord_x - shortest_path.render_size / 2;
-                    shortest_path.render_max_row =
-                        shortest_path.render_min_row + shortest_path.render_size;
-                    shortest_path.render_min_column =
-                        shortest_path.tile_coord_z - shortest_path.render_size / 2;
-                    shortest_path.render_max_column =
-                        shortest_path.render_min_column + shortest_path.render_size;
+                    render_tile.render_min_row =
+                        render_tile.tile_coord_x - render_tile.render_size / 2;
+                    render_tile.render_max_row =
+                        render_tile.render_min_row + render_tile.render_size;
+                    render_tile.render_min_column =
+                        render_tile.tile_coord_z - render_tile.render_size / 2;
+                    render_tile.render_max_column =
+                        render_tile.render_min_column + render_tile.render_size;
                     render_path_event.send(RenderPathEvent {
                         value: RenderAction::Rerender,
                     });
                 }
                 if ui.button("Random").clicked() {
-                    shortest_path.tile_coord_x = rand::thread_rng().gen_range(0..=2048) as i32;
-                    shortest_path.tile_coord_z = rand::thread_rng().gen_range(0..=2048) as i32;
+                    render_tile.tile_coord_x = rand::thread_rng().gen_range(0..=2048) as i32;
+                    render_tile.tile_coord_z = rand::thread_rng().gen_range(0..=2048) as i32;
                 }
             });
         });
@@ -150,33 +150,29 @@ pub fn render_next_tiles(
 
 pub fn ui_system_pathfinding_window(
     mut egui_ctx: ResMut<EguiContext>,
-    mut node_start_end: ResMut<NodeStartEnd>,
-    mut shortest_path: ResMut<ShortestPathBuilder>,
-    //mut calculate_path_event: EventWriter<CalculatePathEvent>,
+    mut path_find: ResMut<PathFind>,
+    mut render_tile: ResMut<RenderTile>,
 ) {
-    let end_node = (node_start_end.endx, node_start_end.endy);
+    let end_node = (path_find.endx, path_find.endy);
 
-    if node_start_end.queue_end != end_node {
-        if node_start_end.destination_reached == false {
-            hexagon_pathfinder(&mut node_start_end, &mut shortest_path);
-            //calculate_path_event.send(CalculatePathEvent);
+    if path_find.queue_end != end_node {
+        if path_find.destination_reached == false {
+            hexagon_pathfinder(&mut path_find, &mut render_tile);
         }
     } else {
-        node_start_end.destination_reached = true;
+        path_find.destination_reached = true;
     }
     pathfinding_window(
         &mut egui_ctx,
-        &mut node_start_end,
-        &mut shortest_path,
-        //calculate_path_event,
+        &mut path_find,
+        &mut render_tile,
     );
 }
 
 fn pathfinding_window(
     egui_ctx: &mut ResMut<EguiContext>,
-    node_start_end: &mut ResMut<NodeStartEnd>,
-    shortest_path: &mut ResMut<ShortestPathBuilder>,
-    //mut calculate_path_event: EventWriter<CalculatePathEvent>,
+    path_find: &mut ResMut<PathFind>,
+    render_tile: &mut ResMut<RenderTile>,
 ) {
     egui::Window::new("Pathfinding")
         .default_width(200.0)
@@ -188,95 +184,94 @@ fn pathfinding_window(
                 ui.horizontal(|ui| {
                     ui.label("Start: ");
                     ui.add(
-                        egui::DragValue::new(&mut node_start_end.startx)
+                        egui::DragValue::new(&mut path_find.startx)
                             .clamp_range::<i32>(0..=2048),
                     );
                     ui.add(
-                        egui::DragValue::new(&mut node_start_end.starty)
+                        egui::DragValue::new(&mut path_find.starty)
                             .clamp_range::<i32>(0..=2048),
                     );
                     if ui.button("Random").clicked() {
-                        node_start_end.startx = rand::thread_rng().gen_range(0..=2048) as i32;
-                        node_start_end.starty = rand::thread_rng().gen_range(0..=2048) as i32;
+                        path_find.startx = rand::thread_rng().gen_range(0..=2048) as i32;
+                        path_find.starty = rand::thread_rng().gen_range(0..=2048) as i32;
                     }
                 });
                 ui.horizontal(|ui| {
                     ui.label("End: ");
                     ui.add(
-                        egui::DragValue::new(&mut node_start_end.endx).clamp_range::<i32>(0..=2048),
+                        egui::DragValue::new(&mut path_find.endx).clamp_range::<i32>(0..=2048),
                     );
                     ui.add(
-                        egui::DragValue::new(&mut node_start_end.endy).clamp_range::<i32>(0..=2048),
+                        egui::DragValue::new(&mut path_find.endy).clamp_range::<i32>(0..=2048),
                     );
                     if ui.button("Random").clicked() {
-                        node_start_end.endx = rand::thread_rng().gen_range(0..=2048) as i32;
-                        node_start_end.endy = rand::thread_rng().gen_range(0..=2048) as i32;
+                        path_find.endx = rand::thread_rng().gen_range(0..=2048) as i32;
+                        path_find.endy = rand::thread_rng().gen_range(0..=2048) as i32;
                     }
                 });
                 ui.horizontal(|ui| {
                     egui::ComboBox::from_label("HexOrientation")
-                        .selected_text(format!("{:?}", &node_start_end.orientation))
+                        .selected_text(format!("{:?}", &path_find.orientation))
                         .show_ui(ui, |ui| {
                             if ui
                                 .selectable_value(
-                                    &mut node_start_end.orientation,
+                                    &mut path_find.orientation,
                                     HexOrientation::FlatTopOddUp,
                                     "FlatTopOddUp",
                                 )
                                 .clicked()
                             {
-                                node_start_end.orientation = HexOrientation::FlatTopOddUp;
+                                path_find.orientation = HexOrientation::FlatTopOddUp;
                             }
                             if ui
                                 .selectable_value(
-                                    &mut node_start_end.orientation,
+                                    &mut path_find.orientation,
                                     HexOrientation::FlatTopOddDown,
                                     "FlatTopOddDown",
                                 )
                                 .clicked()
                             {
-                                node_start_end.orientation = HexOrientation::FlatTopOddDown;
+                                path_find.orientation = HexOrientation::FlatTopOddDown;
                             }
                             if ui
                                 .selectable_value(
-                                    &mut node_start_end.orientation,
+                                    &mut path_find.orientation,
                                     HexOrientation::PointyTopOddRight,
                                     "PointyTopOddRight",
                                 )
                                 .clicked()
                             {
-                                node_start_end.orientation = HexOrientation::PointyTopOddRight;
+                                path_find.orientation = HexOrientation::PointyTopOddRight;
                             }
                             if ui
                                 .selectable_value(
-                                    &mut node_start_end.orientation,
+                                    &mut path_find.orientation,
                                     HexOrientation::PointyTopOddLeft,
                                     "PointyTopOddLeft",
                                 )
                                 .clicked()
                             {
-                                node_start_end.orientation = HexOrientation::PointyTopOddLeft;
+                                path_find.orientation = HexOrientation::PointyTopOddLeft;
                             }
                         });
                 });
                 ui.horizontal(|ui| {
                     if ui.button("Find Best Path").clicked() {
-                        //calculate_path_event.send(CalculatePathEvent);
-                        node_start_end.destination_reached = true;
-                        hexagon_pathfinder(node_start_end, shortest_path);
+                        path_find.destination_reached = true;
+                        hexagon_pathfinder(path_find, render_tile);
                     }
                 });
                 ui.horizontal(|ui| {
                     ui.label("Shortest Path: ");
-                    if node_start_end.destination_reached == true
-                        && node_start_end.queue_end == (node_start_end.endx, node_start_end.endy)
+                    if path_find.destination_reached == true
+                        && path_find.queue_end == (path_find.endx, path_find.endy)
                     {
                         ui.add(
-                            egui::Label::new(format!("{:?}", node_start_end.shortest_highlight))
+                            egui::Label::new(format!("{:?}", path_find.shortest_highlight))
                                 .wrap(true),
                         );
                     }
-                    if node_start_end.destination_reached == false {
+                    if path_find.destination_reached == false {
                         ui.add(egui::Label::new(format!("Finding Path...")));
                     }
                 });

@@ -44,9 +44,9 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
                     .flat_map(|x| (-51..77).map(move |z| (x as f32 / 10.0, z as f32 / 10.0)))
                     .map(|(x, z)| HexData {
                         position: Vec3::new(
-                            x * -10.0 + 2.0,
+                            x * -10.0 * 0.975,
                             0.0,
-                            z * 10.0 + (0.5 * ((x * 10.0) % 2.0)),
+                            z * 10.0 * 1.1258 + (0.5629 * ((x * 10.0) % 2.0)),
                         ),
                         scale: 1.3,
                         color: Color::hsla(238.0, 0.95, 0.59, 0.0).as_rgba_u32(),
@@ -75,34 +75,34 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
 }
 
 pub fn hexgrid_builder(
-    mut node_start_end: ResMut<NodeStartEnd>
+    mut path_find: ResMut<PathFind>
 ) {
-    node_start_end.counter_one = 0;
+    path_find.counter_one = 0;
 
     // Loop while `counter` is less than 2048
-    while node_start_end.counter_one < 2048 {
-        node_start_end.counter_two = 0;
+    while path_find.counter_one < 2048 {
+        path_find.counter_two = 0;
 
-        while node_start_end.counter_two < 2048 {
-            let n = node_start_end.counter_one;
-            let m = node_start_end.counter_two;
+        while path_find.counter_two < 2048 {
+            let n = path_find.counter_one;
+            let m = path_find.counter_two;
 
             //hash from vec to make seed for deterministic random complexity value
             let vec = vec![n, m];
             let mut hash = DefaultHasher::new();
             vec.hash(&mut hash);
             let complexity_seed = hash.finish();
-            node_start_end.random_complexity =
+            path_find.random_complexity =
                 Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
-            let l = node_start_end.random_complexity;
+            let l = path_find.random_complexity;
 
             //create nodes
-            node_start_end.nodes.insert((n, m), l);
+            path_find.nodes.insert((n, m), l);
 
             //increment
-            node_start_end.counter_two += 1;
+            path_find.counter_two += 1;
         }
         //increment
-        node_start_end.counter_one += 1;
+        path_find.counter_one += 1;
     }
 }

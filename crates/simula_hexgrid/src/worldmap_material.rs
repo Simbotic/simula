@@ -21,7 +21,7 @@ use bevy::{
 
 use bytemuck::{Pod, Zeroable};
 
-#[derive(Component, Deref)]
+#[derive(Component, Deref, Clone)]
 pub struct HexgridData(pub Vec<HexData>);
 
 impl ExtractComponent for HexgridData {

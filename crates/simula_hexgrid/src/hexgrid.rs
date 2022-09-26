@@ -35,7 +35,7 @@ pub enum RenderAction {
     Rerender,
 }
 
-pub struct NodeStartEnd {
+pub struct PathFind {
     pub startx: i32,
     pub starty: i32,
     pub endx: i32,
@@ -54,9 +54,9 @@ pub struct NodeStartEnd {
     pub orientation: HexOrientation,
 }
 
-impl Default for NodeStartEnd {
+impl Default for PathFind {
     fn default() -> Self {
-        NodeStartEnd {
+        PathFind {
             startx: 1,
             starty: 2,
             endx: 2,
@@ -77,7 +77,7 @@ impl Default for NodeStartEnd {
     }
 }
 
-pub struct ShortestPathBuilder {
+pub struct RenderTile {
     pub render_min_column: i32,
     pub render_max_column: i32,
     pub render_min_row: i32,
@@ -91,9 +91,9 @@ pub struct ShortestPathBuilder {
     pub tile_coord_z: i32,
 }
 
-impl Default for ShortestPathBuilder {
+impl Default for RenderTile {
     fn default() -> Self {
-        ShortestPathBuilder {
+        RenderTile {
             render_min_column: -51,
             render_max_column: 77,
             render_min_row: -51,
@@ -112,7 +112,7 @@ impl Default for ShortestPathBuilder {
 pub fn hexgrid_viewer(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut shortest_path: ResMut<ShortestPathBuilder>,
+    mut render_tile: ResMut<RenderTile>,
     mut render_path_event: EventReader<RenderPathEvent>,
     mut orbit_camera: Query<&mut OrbitCamera>,
     mut despawn_tile_objects: Query<Entity, (With<HexagonTiles>, Without<TempHexTiles>)>,
@@ -123,36 +123,36 @@ pub fn hexgrid_viewer(
         for event in render_path_event.iter() {
             match &event.value {
                 RenderAction::RenderUp => {
-                    if shortest_path.render_max_row < 2048 {
-                        shortest_path.render_min_row += shortest_path.render_size / 2;
-                        shortest_path.render_max_row += shortest_path.render_size / 2;
+                    if render_tile.render_max_row < 2048 {
+                        render_tile.render_min_row += render_tile.render_size / 2;
+                        render_tile.render_max_row += render_tile.render_size / 2;
                     }
                 }
                 RenderAction::RenderDown => {
-                    if shortest_path.render_min_row >= 0 {
-                        shortest_path.render_min_row -= shortest_path.render_size / 2;
-                        shortest_path.render_max_row -= shortest_path.render_size / 2;
+                    if render_tile.render_min_row >= 0 {
+                        render_tile.render_min_row -= render_tile.render_size / 2;
+                        render_tile.render_max_row -= render_tile.render_size / 2;
                     }
                 }
                 RenderAction::RenderLeft => {
-                    if shortest_path.render_min_column >= 0 {
-                        shortest_path.render_min_column -= shortest_path.render_size / 2;
-                        shortest_path.render_max_column -= shortest_path.render_size / 2;
+                    if render_tile.render_min_column >= 0 {
+                        render_tile.render_min_column -= render_tile.render_size / 2;
+                        render_tile.render_max_column -= render_tile.render_size / 2;
                     }
                 }
                 RenderAction::RenderRight => {
-                    if shortest_path.render_max_column < 2048 {
-                        shortest_path.render_min_column += shortest_path.render_size / 2;
-                        shortest_path.render_max_column += shortest_path.render_size / 2;
+                    if render_tile.render_max_column < 2048 {
+                        render_tile.render_min_column += render_tile.render_size / 2;
+                        render_tile.render_max_column += render_tile.render_size / 2;
                     }
                 }
 
                 _ => {}
             }
             orbit_camera.center.z =
-                (shortest_path.render_min_row + shortest_path.render_size * 2 / 5) as f32;
+                ((render_tile.render_min_row + render_tile.render_size * 2 / 5) as f32) * 1.1258;
             orbit_camera.center.x =
-                -(shortest_path.render_min_column + shortest_path.render_size * 2 / 5) as f32;
+                -((render_tile.render_min_column + render_tile.render_size * 2 / 5) as f32 * 0.975);
 
             commands
                 .spawn()
@@ -166,16 +166,16 @@ pub fn hexgrid_viewer(
                     Transform::from_xyz(10.0, 0.0, -10.0),
                     GlobalTransform::default(),
                     HexgridData(
-                        (shortest_path.render_min_column..shortest_path.render_max_column)
+                        (render_tile.render_min_column..render_tile.render_max_column)
                             .flat_map(|x| {
-                                (shortest_path.render_min_row..shortest_path.render_max_row)
+                                (render_tile.render_min_row..render_tile.render_max_row)
                                     .map(move |z| (x as f32 / 10.0, z as f32 / 10.0))
                             })
                             .map(|(x, z)| HexData {
                                 position: Vec3::new(
-                                    x * -10.0 + 2.0,
+                                    x * -10.0 * 0.975,
                                     0.0,
-                                    z * 10.0 + (0.5 * ((x * 10.0) % 2.0)),
+                                    z * 10.0 * 1.1258 + (0.5629 * ((x * 10.0) % 2.0)),
                                 ),
                                 scale: 1.3,
                                 color: Color::hsla(238.0, 0.95, 0.59, 0.1).as_rgba_u32(),
@@ -197,7 +197,7 @@ pub fn hexgrid_viewer(
 pub fn hexgrid_rebuilder(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut shortest_path: ResMut<ShortestPathBuilder>,
+    mut render_tile: ResMut<RenderTile>,
     mouse_button_input: Res<Input<MouseButton>>,
     orbit_camera: Query<&mut OrbitCamera>,
     mut despawn_tile_objects: Query<Entity, (With<HexagonTiles>, Without<TempHexTiles>)>,
@@ -206,13 +206,13 @@ pub fn hexgrid_rebuilder(
 ) {
     for orbit_camera in orbit_camera.iter() {
         if mouse_button_input.pressed(MouseButton::Right) {
-            shortest_path.render_min_row =
-                orbit_camera.center.z as i32 - shortest_path.render_size * 2 / 5;
-            shortest_path.render_max_row = shortest_path.render_min_row + shortest_path.render_size;
-            shortest_path.render_min_column =
-                -shortest_path.render_size * 2 / 5 - orbit_camera.center.x as i32;
-            shortest_path.render_max_column =
-                shortest_path.render_min_column + shortest_path.render_size;
+            render_tile.render_min_row =
+                (orbit_camera.center.z / 1.1258) as i32 - render_tile.render_size * 2 / 5;
+            render_tile.render_max_row = render_tile.render_min_row + render_tile.render_size;
+            render_tile.render_min_column =
+                -render_tile.render_size * 2 / 5 - (orbit_camera.center.x / 0.975) as i32;
+            render_tile.render_max_column =
+                render_tile.render_min_column + render_tile.render_size;
 
             commands
                 .spawn()
@@ -226,16 +226,16 @@ pub fn hexgrid_rebuilder(
                     Transform::from_xyz(10.0, 0.0, -10.0),
                     GlobalTransform::default(),
                     HexgridData(
-                        (shortest_path.render_min_column..shortest_path.render_max_column)
+                        (render_tile.render_min_column..render_tile.render_max_column)
                             .flat_map(|x| {
-                                (shortest_path.render_min_row..shortest_path.render_max_row)
+                                (render_tile.render_min_row..render_tile.render_max_row)
                                     .map(move |z| (x as f32 / 10.0, z as f32 / 10.0))
                             })
                             .map(|(x, z)| HexData {
                                 position: Vec3::new(
-                                    x * -10.0 + 2.0,
+                                    x * -10.0 * 0.975,
                                     0.0,
-                                    z * 10.0 + (0.5 * ((x * 10.0) % 2.0)),
+                                    z * 10.0 * 1.1258 + (0.5629 * ((x * 10.0) % 2.0)),
                                 ),
                                 scale: 1.3,
                                 color: Color::hsla(238.0, 0.95, 0.59, 0.1).as_rgba_u32(),
@@ -249,20 +249,20 @@ pub fn hexgrid_rebuilder(
                 .insert(TempHexTiles)
                 .insert(HexgridObject);
         }
-        despawn_tile(&mut commands, &mut despawn_tile_objects, &mut hex_tile_objects, &mut tile_visibility)
+        despawn_tile(&mut commands, &mut despawn_tile_objects, &mut hex_tile_objects, &mut tile_visibility);
     }
 }
 
 pub fn select_tile(
     mut maps: Query<&mut HexgridData>,
-    shortest_path: ResMut<ShortestPathBuilder>,
-    node_start_end: ResMut<NodeStartEnd>,
+    render_tile: ResMut<RenderTile>,
+    path_find: ResMut<PathFind>,
 ) {
     for mut map in maps.iter_mut() {
-        if map.len() == shortest_path.render_size as usize * shortest_path.render_size as usize {
-            (shortest_path.render_min_column..shortest_path.render_max_column)
+        if map.len() == render_tile.render_size as usize * render_tile.render_size as usize {
+            (render_tile.render_min_column..render_tile.render_max_column)
                 .flat_map(|x| {
-                    (shortest_path.render_min_row..shortest_path.render_max_row)
+                    (render_tile.render_min_row..render_tile.render_max_row)
                         .map(move |z| (x, z))
                 })
                 .enumerate()
@@ -292,13 +292,13 @@ pub fn select_tile(
                 });
 
             //highlight bestpath
-            (shortest_path.render_min_column..shortest_path.render_max_column)
+            (render_tile.render_min_column..render_tile.render_max_column)
                 .flat_map(|x| {
-                    (shortest_path.render_min_row..shortest_path.render_max_row)
+                    (render_tile.render_min_row..render_tile.render_max_row)
                         .map(move |z| (x, z))
                 })
                 .enumerate()
-                .filter(|&(_i, x)| node_start_end.shortest_highlight.contains(&x))
+                .filter(|&(_i, x)| path_find.shortest_highlight.contains(&x))
                 .for_each(|(i, _x)| {
                     map.0[i].color = Color::hsla(360.0, 1.0, 0.5, 0.1).as_rgba_u32()
                 });
@@ -327,23 +327,23 @@ pub fn despawn_tile(
 }
 
 pub fn hexagon_pathfinder(
-    node_start_end: &mut ResMut<NodeStartEnd>,
-    shortest_path: &mut ResMut<ShortestPathBuilder>,
+    path_find: &mut ResMut<PathFind>,
+    render_tile: &mut ResMut<RenderTile>,
 ) {
         // you are here
-        let start_node = (node_start_end.startx, node_start_end.starty);
+        let start_node = (path_find.startx, path_find.starty);
 
         // you want to go here
-        let end_node = (node_start_end.endx, node_start_end.endy);
+        let end_node = (path_find.endx, path_find.endy);
 
         // the hexagon arrangement you are using
-        let orientation = node_start_end.orientation.clone();
+        let orientation = path_find.orientation.clone();
 
-        if node_start_end.destination_reached == true {
-            node_start_end.nodes_weighted = HashMap::new();
+        if path_find.destination_reached == true {
+            path_find.nodes_weighted = HashMap::new();
             // calculate a weighting for each node based on its distance from the end node
-            for (k, v) in node_start_end.nodes.clone().iter() {
-                node_start_end.nodes_weighted.insert(
+            for (k, v) in path_find.nodes.clone().iter() {
+                path_find.nodes_weighted.insert(
                     k.to_owned(),
                     (
                         v.to_owned(),
@@ -351,25 +351,25 @@ pub fn hexagon_pathfinder(
                     ),
                 );
             }
-            node_start_end.start_weight = match node_start_end.nodes_weighted.get(&start_node) {
+            path_find.start_weight = match path_find.nodes_weighted.get(&start_node) {
                 Some(x) => x.1,
                 None => panic!("Unable to find node weight"),
             };
-            let start_weight = node_start_end.start_weight;
+            let start_weight = path_find.start_weight;
             // every time we process a new node we add it to a map
             // if a node has already been recorded then we replace it if it has a better a-star score (smaller number)
             // otherwise we discard it.
             // this is used to optimise the searching whereby if we find a new path to a previously
             // discovered node we can quickly decide to discard or explore the new route
-            node_start_end.node_astar_scores = HashMap::new();
+            path_find.node_astar_scores = HashMap::new();
             // add starting node a-star score to data set (starting node score is just its weight)
-            node_start_end
+            path_find
                 .node_astar_scores
                 .insert(start_node, start_weight);
 
-            node_start_end.queue_node = vec![(
+            path_find.queue_node = vec![(
                 start_node,
-                node_start_end.start_weight.clone(), // we haven't moved so starting node score is just its weight
+                path_find.start_weight.clone(), // we haven't moved so starting node score is just its weight
                 Vec::<(i32, i32)>::new(),
                 0.0,
             )];
@@ -378,19 +378,19 @@ pub fn hexagon_pathfinder(
         let mut counter = 0;
 
         // target node will eventually be shifted to first of queue so finish processing once it arrives, meaning that we know the best path
-        while node_start_end.queue_node[0].0 != end_node {
+        while path_find.queue_node[0].0 != end_node {
             counter += 1;
 
             // remove the first element ready for processing
-            let current_path = node_start_end.queue_node.swap_remove(0);
+            let current_path = path_find.queue_node.swap_remove(0);
             // expand the node in the current path
             let available_nodes = node_neighbours_offset(
                 current_path.0,
                 &orientation,
-                shortest_path.min_column,
-                shortest_path.max_column,
-                shortest_path.min_row,
-                shortest_path.max_row,
+                render_tile.min_column,
+                render_tile.max_column,
+                render_tile.min_row,
+                render_tile.max_row,
             );
 
             // process each new path
@@ -398,7 +398,7 @@ pub fn hexagon_pathfinder(
                 let previous_complexities: f32 = current_path.3; // complexity
 
                 // grab the half complexity of the currrent node
-                let current_node_complexity: f32 = (node_start_end
+                let current_node_complexity: f32 = (path_find
                     .nodes_weighted
                     .get(&current_path.0)
                     .unwrap()
@@ -407,25 +407,25 @@ pub fn hexagon_pathfinder(
 
                 // grab half the complexity of the neighbour node
                 let target_node_complexity: f32 =
-                    (node_start_end.nodes_weighted.get(n).unwrap().0) * 0.5;
+                    (path_find.nodes_weighted.get(n).unwrap().0) * 0.5;
 
                 // calculate its fields
                 let complexity =
                     previous_complexities + target_node_complexity + current_node_complexity;
-                let target_weight: f32 = node_start_end.nodes_weighted.get(n).unwrap().1;
+                let target_weight: f32 = path_find.nodes_weighted.get(n).unwrap().1;
 
                 let astar = a_star_score(complexity, target_weight);
                 let mut previous_nodes_traversed = current_path.2.clone(); // traversed nodes
                 previous_nodes_traversed.push(current_path.0);
                 //update the a-star data set
-                if node_start_end.node_astar_scores.contains_key(n) {
-                    if node_start_end.node_astar_scores.get(n) >= Some(&astar) {
+                if path_find.node_astar_scores.contains_key(n) {
+                    if path_find.node_astar_scores.get(n) >= Some(&astar) {
                         // data set contains a worse score so update the set with the better score
-                        node_start_end.node_astar_scores.insert(*n, astar);
+                        path_find.node_astar_scores.insert(*n, astar);
                         // search the queue to see if we already have a route to this node.
                         // If we do but this new path is better then replace it, otherwise discard
                         let mut new_queue_item_required_for_node = true;
-                        for mut q in node_start_end.queue_node.iter_mut() {
+                        for mut q in path_find.queue_node.iter_mut() {
                             if &q.0 == n {
                                 // if existing score is worse then replace the queue item and
                                 // don't allow a fresh queue item to be added
@@ -440,7 +440,7 @@ pub fn hexagon_pathfinder(
                         // queue doesn't contain a route to this node, as we have now found a better route
                         // update the queue with it so it can be explored
                         if new_queue_item_required_for_node {
-                            node_start_end.queue_node.push((
+                            path_find.queue_node.push((
                                 *n,
                                 astar,
                                 previous_nodes_traversed,
@@ -451,9 +451,9 @@ pub fn hexagon_pathfinder(
                 } else {
                     // no record of node and new path required in queue
                     // update the a-star score data
-                    node_start_end.node_astar_scores.insert(*n, astar);
+                    path_find.node_astar_scores.insert(*n, astar);
                     // update the queue to process through
-                    node_start_end.queue_node.push((
+                    path_find.queue_node.push((
                         *n,
                         astar,
                         previous_nodes_traversed,
@@ -463,23 +463,23 @@ pub fn hexagon_pathfinder(
             }
 
             // sort the queue by a-star sores so each loop processes the best
-            node_start_end
+            path_find
                 .queue_node
                 .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-            node_start_end.queue_end = node_start_end.queue_node[0].0.clone();
+            path_find.queue_end = path_find.queue_node[0].0.clone();
 
             if counter >= 3000 {
                 break;
             }
-            node_start_end.destination_reached = false;
+            path_find.destination_reached = false;
         }
-        let mut best_path = node_start_end.queue_node[0].2.clone();
+        let mut best_path = path_find.queue_node[0].2.clone();
         // add end node to data
         best_path.push(end_node);
         let best = best_path;
 
-        node_start_end.shortest_highlight = best.clone();
+        path_find.shortest_highlight = best.clone();
 }
 
 pub struct HexgridPlugin;
@@ -489,8 +489,8 @@ impl Plugin for HexgridPlugin {
         app.add_plugin(OrbitCameraPlugin)
             .add_plugin(HexgridMaterialPlugin)
             .add_event::<RenderPathEvent>()
-            .insert_resource(NodeStartEnd::default())
-            .insert_resource(ShortestPathBuilder::default())
+            .insert_resource(PathFind::default())
+            .insert_resource(RenderTile::default())
             .add_system(ui_system_pathfinding_window)
             .add_system(ui_render_next_tiles)
             .add_system(select_tile.after(hexgrid_viewer))
