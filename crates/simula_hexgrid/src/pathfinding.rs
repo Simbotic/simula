@@ -6,12 +6,8 @@
 // use core::panic;
 // use bevy::prelude::*;
 
-#[derive(Debug, PartialEq, Clone)]
 pub enum HexOrientation {
-	FlatTopOddUp,
-	FlatTopOddDown,
-	PointyTopOddRight,
-	PointyTopOddLeft,
+    FlatTopOddUp,
 }
 
 /// Determines a score to rank a chosen path, lower scores are better
@@ -42,24 +38,6 @@ pub fn offset_to_cubic(node_coords: (i32, i32), orientation: &HexOrientation) ->
             let y: i32 = -x - z;
             (x, y, z)
         }
-        HexOrientation::FlatTopOddDown => {
-			let x: i32 = node_coords.0;
-			let z: i32 = node_coords.1 - (node_coords.0 + (node_coords.0 & 1)) / 2;
-			let y: i32 = -x - z;
-			(x, y, z)
-		}
-		HexOrientation::PointyTopOddRight => {
-			let x: i32 = node_coords.0 - (node_coords.1 - (node_coords.1 & 1)) / 2;
-			let z: i32 = node_coords.1;
-			let y: i32 = -x - z;
-			(x, y, z)
-		}
-		HexOrientation::PointyTopOddLeft => {
-			let x: i32 = node_coords.0 - (node_coords.1 + (node_coords.1 & 1)) / 2;
-			let z: i32 = node_coords.1;
-			let y: i32 = -x - z;
-			(x, y, z)
-		}
     }
 }
 
@@ -69,233 +47,67 @@ pub fn node_distance(start: (i32, i32, i32), end: (i32, i32, i32)) -> i32 {
 }
 
 pub fn node_neighbours_offset(
-	source: (i32, i32),
-	orientation: &HexOrientation,
-	min_column: i32,
-	max_column: i32,
-	min_row: i32,
-	max_row: i32,
+    source: (i32, i32),
+    _orientation: &HexOrientation,
+    min_column: i32,
+    max_column: i32,
+    min_row: i32,
+    max_row: i32,
 ) -> Vec<(i32, i32)> {
-	let mut neighbours = Vec::new();
-	match orientation {
-		HexOrientation::FlatTopOddUp => {
-			// even column
-			if source.0 & 1 == 0 {
-				// north
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1));
-				};
-				// north-east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1));
-				};
-				// south-east
-				if source.0 + 1 < max_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 + 1, source.1 - 1));
-				};
-				// south
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1));
-				};
-				// south-west
-				if source.0 - 1 > min_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 - 1, source.1 - 1));
-				}
-				// north-west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1));
-				}
-			} else {
-				// odd column
-				// north
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1));
-				}
-				// north-east
-				if source.0 + 1 < max_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 + 1, source.1 + 1))
-				}
-				// south-east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1));
-				}
-				// south
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1));
-				}
-				// south-west
-				if source.0 - 1 < max_column {
-					neighbours.push((source.0 - 1, source.1));
-				}
-				// north-east
-				if source.0 - 1 < max_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 - 1, source.1 + 1))
-				}
-			}
-		}
-		HexOrientation::FlatTopOddDown => {
-			// even column with BitwiseAND
-			if source.0 & 1 == 0 {
-				// north
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1));
-				}
-				// north-east
-				if source.0 + 1 < max_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 + 1, source.1 + 1));
-				}
-				// south-east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1));
-				}
-				// south
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1));
-				}
-				// south-west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1));
-				}
-				// north-west
-				if source.0 - 1 > min_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 - 1, source.1 + 1));
-				}
-			} else {
-				// odd column
-				// north
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1))
-				}
-				// north-east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1))
-				}
-				// south-east
-				if source.0 + 1 < max_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 + 1, source.1 - 1))
-				}
-				// south
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1))
-				}
-				// south-west
-				if source.0 - 1 > min_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 - 1, source.1 - 1))
-				}
-				// north-west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1))
-				}
-			}
-		}
-		HexOrientation::PointyTopOddRight => {
-			// even row with BitwiseAND
-			if source.1 & 1 == 0 {
-				// north-east
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1))
-				}
-				// east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1))
-				}
-				// south-east
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1))
-				}
-				// south-west
-				if source.0 - 1 > min_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 - 1, source.1 - 1))
-				}
-				// west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1))
-				}
-				// north-west
-				if source.0 - 1 > min_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 - 1, source.1 + 1))
-				}
-			} else {
-				// north-east
-				if source.0 + 1 < max_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 + 1, source.1 + 1))
-				}
-				// east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1))
-				}
-				// south-east
-				if source.0 + 1 < max_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 + 1, source.1 - 1))
-				}
-				// south-west
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1))
-				}
-				// west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1))
-				}
-				// north-west
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1))
-				}
-			}
-		}
-		HexOrientation::PointyTopOddLeft => {
-			// even row with BitwiseAND
-			if source.1 & 1 == 0 {
-				// north-east
-				if source.0 + 1 < max_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 + 1, source.1 + 1))
-				}
-				// east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1))
-				}
-				// south-east
-				if source.0 + 1 < max_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 + 1, source.1 - 1))
-				}
-				// south-west
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1))
-				}
-				// west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1))
-				}
-				// north-west
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1))
-				}
-			} else {
-				// north-east
-				if source.1 + 1 < max_row {
-					neighbours.push((source.0, source.1 + 1))
-				}
-				// east
-				if source.0 + 1 < max_column {
-					neighbours.push((source.0 + 1, source.1))
-				}
-				// south-east
-				if source.1 - 1 > min_row {
-					neighbours.push((source.0, source.1 - 1))
-				}
-				// south-west
-				if source.0 - 1 > min_column && source.1 - 1 > min_row {
-					neighbours.push((source.0 - 1, source.1 - 1))
-				}
-				// west
-				if source.0 - 1 > min_column {
-					neighbours.push((source.0 - 1, source.1))
-				}
-				// north-west
-				if source.0 - 1 > min_column && source.1 + 1 < max_row {
-					neighbours.push((source.0 - 1, source.1 + 1))
-				}
-			}
-		}
-	}
-	neighbours
+    let mut neighbours = Vec::new();
+    // starting from north round a tile clockwise
+    // even column
+    if source.0 & 1 == 0 {
+        // north
+        if source.1 + 1 < max_row {
+            neighbours.push((source.0, source.1 + 1));
+        };
+        // north-east
+        if source.0 + 1 < max_column {
+            neighbours.push((source.0 + 1, source.1));
+        };
+        // south-east
+        if source.0 + 1 < max_column && source.1 - 1 > min_row {
+            neighbours.push((source.0 + 1, source.1 - 1));
+        };
+        // south
+        if source.1 - 1 > min_row {
+            neighbours.push((source.0, source.1 - 1));
+        };
+        // south-west
+        if source.0 - 1 > min_column && source.1 - 1 > min_row {
+            neighbours.push((source.0 - 1, source.1 - 1));
+        }
+        // north-west
+        if source.0 - 1 > min_column {
+            neighbours.push((source.0 - 1, source.1));
+        }
+    } else {
+        // odd column
+        // north
+        if source.1 + 1 < max_row {
+            neighbours.push((source.0, source.1 + 1));
+        }
+        // north-east
+        if source.0 + 1 < max_column && source.1 + 1 < max_row {
+            neighbours.push((source.0 + 1, source.1 + 1))
+        }
+        // south-east
+        if source.0 + 1 < max_column {
+            neighbours.push((source.0 + 1, source.1));
+        }
+        // south
+        if source.1 - 1 > min_row {
+            neighbours.push((source.0, source.1 - 1));
+        }
+        // south-west
+        if source.0 - 1 < max_column {
+            neighbours.push((source.0 - 1, source.1));
+        }
+        // north-east
+        if source.0 - 1 < max_column && source.1 + 1 < max_row {
+            neighbours.push((source.0 - 1, source.1 + 1))
+        }
+    }
+    neighbours
 }
