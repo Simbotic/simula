@@ -5,10 +5,23 @@ So much of AI is about compressing reality to a small vector space, like a video
 
 ![Simula splash](docs/splash.png)
 
+![Simula splash gif](docs/Simula__main.gif)
 
+### Easings Function
 
+![Easings Function](docs/easings_function.png)
 
+### Signal Generators
 
+![Signal Generators](docs/signal_generators.png)
+
+### Control Signals
+
+![Control Signals](docs/control_signals.png)
+
+### Force Graph Function
+
+![Force Graph Function](docs/force_graph_function.png)
 
 ## GStreamer
 
