@@ -8,6 +8,7 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
 use simula_hexgrid::{hexgrid::*, worldmap_material::{HexgridData, HexData}};
+use simula_action::ActionPlugin;
 
 fn main() {
     App::new()
@@ -22,6 +23,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(HexgridPlugin)
+        .add_plugin(ActionPlugin)
         .add_startup_system(hexgrid_setup)
         .add_startup_system(hexgrid_builder)
         .run();
