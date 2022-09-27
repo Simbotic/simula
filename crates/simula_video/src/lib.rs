@@ -2,7 +2,7 @@ use bevy::prelude::*;
 #[cfg(feature = "gif")]
 pub use gif::{GifAsset, GifAssetLoader};
 #[cfg(feature = "gst")]
-pub use gst::{GstAsset, create_gst};
+pub use gst::GstSink;
 #[cfg(feature = "webp")]
 pub use webp::{WebPAsset, WebPAssetLoader};
 
@@ -41,7 +41,9 @@ impl Plugin for VideoPlugin {
             .add_system(webp::run);
 
         #[cfg(feature = "gst")]
-        app.add_startup_system(gst::setup).add_system(gst::run);
+        app.add_startup_system(gst::setup)
+            .add_system(gst::stream)
+            .add_system(gst::launch);
     }
 }
 

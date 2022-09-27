@@ -17,10 +17,10 @@ use simula_core::{
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
 use simula_net::NetPlugin;
-#[cfg(feature = "gst")]
-use simula_video::create_gst;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
+#[cfg(feature = "gst")]
+use simula_video::GstSink;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
@@ -581,7 +581,6 @@ fn setup(
             unlit: true,
             ..Default::default()
         };
-        let gst_asset = create_gst();
         commands
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
@@ -598,7 +597,7 @@ fn setup(
                 playing: true,
                 ..Default::default()
             })
-            .insert(gst_asset)
+            .insert(GstSink::default())
             .insert(Name::new("Video: Gst"));
     }
 }
