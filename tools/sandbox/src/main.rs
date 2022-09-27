@@ -11,7 +11,7 @@ use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
-use simula_camera::orbitcam::*;
+use simula_camera::{orbitcam::*, flycam::*};
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
@@ -62,6 +62,7 @@ fn main() {
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
+        .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
@@ -254,6 +255,9 @@ fn setup(
                     .looking_at(Vec3::default(), Vec3::Y),
                 ..default()
             });
+        })
+        .insert(FlyCamera {
+            ..Default::default()
         });
 
     // FPS on screen
