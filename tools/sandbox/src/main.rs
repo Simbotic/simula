@@ -229,11 +229,11 @@ fn setup(
         .spawn_bundle(Camera3dBundle {
             ..Default::default()
         })
-        // .insert(OrbitCamera {
-        //     center: Vec3::new(0.0, 1.0, 0.0),
-        //     distance: 10.0,
-        //     ..Default::default()
-        // });
+        .insert(OrbitCamera {
+            center: Vec3::new(0.0, 1.0, 0.0),
+            distance: 10.0,
+            ..Default::default()
+        })
         .insert(FlyCamera {
             ..Default::default()
         });

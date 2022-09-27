@@ -49,6 +49,7 @@ use bevy::reflect::FromReflect;
 ///     .with(FlyCamera::default());
 /// }
 #[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct FlyCamera {
     /// The speed the FlyCamera accelerates at. Defaults to `1.0`
     pub accel: f32,
@@ -90,7 +91,7 @@ pub struct FlyCamera {
 impl Default for FlyCamera {
     fn default() -> Self {
         Self {
-            accel: 1.5,
+            accel: 1.2,
             max_speed: 0.5,
             sensitivity: 90.0,
             friction: 1.0,
@@ -103,10 +104,27 @@ impl Default for FlyCamera {
             key_right: KeyCode::D,
             key_up: KeyCode::E,
             key_down: KeyCode::Q,
-            enabled: true,
+            enabled: false,
             look_enabled: false,
         }
     }
+}
+
+fn forward_vector(rotation: &Quat) -> Vec3 {
+    rotation.mul_vec3(Vec3::Z).normalize()
+}
+
+fn forward_walk_vector(rotation: &Quat) -> Vec3 {
+    let f = forward_vector(rotation);
+    let f_flattened = Vec3::new(f.x, 0.0, f.z).normalize();
+    f_flattened
+}
+
+fn strafe_vector(rotation: &Quat) -> Vec3 {
+    // Rotate it 90 degrees to get the strafe direction
+    Quat::from_rotation_y(90.0f32.to_radians())
+        .mul_vec3(forward_walk_vector(rotation))
+        .normalize()
 }
 
 pub struct FlyCameraPlugin;
@@ -146,23 +164,20 @@ impl FlyCameraPlugin {
 
                 if mode.on(FlyCameraMode::Pan) {
                     //Get WASD button pressed
-                    let (x, y, z) = if camera.enabled {
+                    let (axis_h, axis_v, axis_float) = if camera.enabled {
                         (
                         motion.get(FlyCameraMotion::Right).unwrap_or_default(),
-                        motion.get(FlyCameraMotion::Up).unwrap_or_default(),
-                        motion.get(FlyCameraMotion::Forward).unwrap_or_default()
+                        motion.get(FlyCameraMotion::Forward).unwrap_or_default(),
+                        motion.get(FlyCameraMotion::Up).unwrap_or_default()
                         )
                     } else {
                         (0.0, 0.0, 0.0)
                     };
-                    let delta = Vec3::new(x, y, z);
 
                     //Calculate corresponding vector
-                    let right_dir = transform.rotation * -Vec3::X;
-                    let up_dir = transform.rotation * Vec3::Y;
-                    let forward_dir = transform.rotation * -Vec3::Z;
-                    let accel_vector = (delta.x * right_dir + delta.y * up_dir + delta.z * forward_dir)
-                        * camera.accel;
+                    let accel_vector: Vec3 = (strafe_vector(&transform.rotation) * -axis_h)
+                    + (forward_walk_vector(&transform.rotation) * -axis_v)
+                    + (Vec3::Y * axis_float);
 
                     //Apply acceleration
                     let accel: Vec3 = if accel_vector.length() != 0.0 {
