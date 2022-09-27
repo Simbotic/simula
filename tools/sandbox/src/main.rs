@@ -1,7 +1,8 @@
 use bevy::{
+    core_pipeline::clear_color::ClearColorConfig,
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    render::view::NoFrustumCulling,
+    render::view::{NoFrustumCulling, RenderLayers},
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use enum_iterator::IntoEnumIterator;
@@ -23,7 +24,7 @@ use simula_video::GifAsset;
 use simula_video::GstSink;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{VideoPlayer, VideoPlugin};
+use simula_video::{rt, VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
@@ -81,6 +82,7 @@ fn main() {
 
 fn setup(
     mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
@@ -118,7 +120,7 @@ fn setup(
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_xyz(-2.0, 0.0, -2.0),
+            transform: Transform::from_xyz(-2.5, 0.0, -1.5),
             ..Default::default()
         })
         .insert(Name::new("Shape: Cube"));
@@ -223,7 +225,10 @@ fn setup(
         ..Default::default()
     });
 
-    // orbit camera
+    let first_pass_layer = RenderLayers::layer(1);
+
+    let rt_image = images.add(rt::default_render_target_image());
+
     commands
         .spawn_bundle(Camera3dBundle {
             ..Default::default()
@@ -232,6 +237,23 @@ fn setup(
             center: Vec3::new(0.0, 1.0, 0.0),
             distance: 10.0,
             ..Default::default()
+        })
+        .insert(RenderLayers::layer(0).with(1))
+        .with_children(|parent| {
+            parent.spawn_bundle(Camera3dBundle {
+                camera_3d: Camera3d {
+                    clear_color: ClearColorConfig::Custom(Color::BLACK),
+                    ..default()
+                },
+                camera: Camera {
+                    priority: -1,
+                    target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
+                    ..default()
+                },
+                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 15.0))
+                    .looking_at(Vec3::default(), Vec3::Y),
+                ..default()
+            });
         });
 
     // FPS on screen
@@ -585,9 +607,9 @@ fn setup(
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
-                transform: Transform::from_xyz(2.0, 0.5, -3.0)
+                transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
-                    .with_scale(Vec3::new(1.6, 1.0, 1.0)),
+                    .with_scale(Vec3::new(1.0, 1.0, 1.0)),
                 ..Default::default()
             })
             .insert(VideoPlayer {
@@ -600,6 +622,26 @@ fn setup(
             .insert(GstSink::default())
             .insert(Name::new("Video: Gst"));
     }
+
+    // render target
+    let rt_material = StandardMaterial {
+        base_color: Color::rgb(1.0, 1.0, 1.0),
+        base_color_texture: Some(rt_image),
+        unlit: true,
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            material: materials.add(rt_material),
+            transform: Transform::from_xyz(-2.5, 0.5, -3.0)
+                .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+                .with_scale(Vec3::new(1.0, 1.0, 1.0)),
+            ..Default::default()
+        })
+        // .insert(RenderTarget { source: camera_rt })
+        .insert(first_pass_layer)
+        .insert(Name::new("Video: RenderTarget"));
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

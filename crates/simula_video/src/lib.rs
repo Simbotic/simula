@@ -13,6 +13,8 @@ mod gst;
 #[cfg(feature = "webp")]
 mod webp;
 
+pub mod rt;
+
 #[derive(Default, Debug, Component, Reflect)]
 #[reflect(Component)]
 pub struct VideoPlayer {
