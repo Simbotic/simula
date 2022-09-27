@@ -9,7 +9,7 @@ So much of AI is about compressing reality to a small vector space, like a video
 
 ### Easings Function
 
-![Easings Function](docs/easings_function.png)
+![Easings Function](docs/easings_functions.png)
 
 ### Signal Generators
 
