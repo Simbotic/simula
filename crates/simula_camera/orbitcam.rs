@@ -39,8 +39,8 @@ impl Default for OrbitCamera {
             distance: 5.0,
             center: Vec3::ZERO,
             rotate_sensitivity: 1.0,
-            pan_sensitivity: 10.0,
-            zoom_sensitivity: 0.8,
+            pan_sensitivity: 1.0,
+            zoom_sensitivity: 0.98,
             enabled: true,
         }
     }

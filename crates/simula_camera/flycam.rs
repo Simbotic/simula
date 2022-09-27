@@ -31,13 +31,12 @@
 //!
 
 use bevy::{
+    input::{
+        mouse::{MouseButtonInput, MouseMotion},
+        ButtonState,
+    },
     prelude::*,
 };
-use simula_action::{
-    action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
-    AxisMapInput, AxisMapSource, MouseAxis,
-};
-use bevy::reflect::FromReflect;
 
 /// A set of options for initializing a FlyCamera.
 /// Attach this component to a [`Camera3dBundle`](https://docs.rs/bevy/0.4.0/bevy/prelude/struct.Camera3dBundle.html) bundle to control it with your mouse and keyboard.
@@ -48,7 +47,7 @@ use bevy::reflect::FromReflect;
 ///     .spawn(Camera3dBundle::default())
 ///     .with(FlyCamera::default());
 /// }
-#[derive(Component, Reflect)]
+#[derive(Component)]
 pub struct FlyCamera {
     /// The speed the FlyCamera accelerates at. Defaults to `1.0`
     pub accel: f32,
@@ -65,22 +64,16 @@ pub struct FlyCamera {
     /// The current velocity of the FlyCamera. This value is always up-to-date, enforced by [FlyCameraPlugin](struct.FlyCameraPlugin.html)
     pub velocity: Vec3,
     /// Key used to move forward. Defaults to <kbd>W</kbd>
-    #[reflect(ignore)]
     pub key_forward: KeyCode,
     /// Key used to move backward. Defaults to <kbd>S</kbd>
-    #[reflect(ignore)]
     pub key_backward: KeyCode,
     /// Key used to move left. Defaults to <kbd>A</kbd>
-    #[reflect(ignore)]
     pub key_left: KeyCode,
     /// Key used to move right. Defaults to <kbd>D</kbd>
-    #[reflect(ignore)]
     pub key_right: KeyCode,
     /// Key used to move up. Defaults to <kbd>Space</kbd>
-    #[reflect(ignore)]
     pub key_up: KeyCode,
     /// Key used to move forward. Defaults to <kbd>LShift</kbd>
-    #[reflect(ignore)]
     pub key_down: KeyCode,
     /// If `false`, disable keyboard control of the camera. Defaults to `true`
     pub enabled: bool,
@@ -92,7 +85,7 @@ impl Default for FlyCamera {
         Self {
             accel: 1.5,
             max_speed: 0.5,
-            sensitivity: 90.0,
+            sensitivity: 3.0,
             friction: 1.0,
             pitch: 0.0,
             yaw: 0.0,
@@ -109,109 +102,136 @@ impl Default for FlyCamera {
     }
 }
 
-pub struct FlyCameraPlugin;
-impl FlyCameraPlugin {
+fn movement_axis(input: &Res<Input<KeyCode>>, plus: KeyCode, minus: KeyCode) -> f32 {
+    let mut axis = 0.0;
+    if input.pressed(plus) {
+        axis += 1.0;
+    }
+    if input.pressed(minus) {
+        axis -= 1.0;
+    }
+    axis
+}
 
-    fn camera_motion(
-        time: Res<Time>,
-        mut query: Query<(
-            &mut FlyCamera,
-            &mut Transform,
-            &mut Camera,
-            &mut Action<FlyCameraMode>,
-            &mut ActionAxis<FlyCameraMotion>,
-        )>,
-    ) {
-        for (mut camera, mut transform, _camera, mut mode, mut motion) in query.iter_mut() {
-            if camera.enabled {
-                if mode.on(FlyCameraMode::Rotate) {
-                    //Get mouse/arrow motion
-                    let x = motion.get(FlyCameraMotion::Right).unwrap_or_default();
-                    let y = motion.get(FlyCameraMotion::Up).unwrap_or_default();
-                    let delta = Vec2::new(x, y);
+fn forward_vector(rotation: &Quat) -> Vec3 {
+    rotation.mul_vec3(Vec3::Z).normalize()
+}
 
-                    //Convert to camera angle (degree)
-                    camera.yaw -= delta.x * camera.sensitivity * time.delta_seconds();
-                    camera.pitch -= delta.y * camera.sensitivity * time.delta_seconds();
-                    camera.pitch = camera.pitch.clamp(-89.0, 89.9);
+fn forward_walk_vector(rotation: &Quat) -> Vec3 {
+    let f = forward_vector(rotation);
+    let f_flattened = Vec3::new(f.x, 0.0, f.z).normalize();
+    f_flattened
+}
 
-                    //Convert degree to radian
-                    let yaw_radians = camera.yaw.to_radians();
-                    let pitch_radians = camera.pitch.to_radians();
+fn strafe_vector(rotation: &Quat) -> Vec3 {
+    // Rotate it 90 degrees to get the strafe direction
+    Quat::from_rotation_y(90.0f32.to_radians())
+        .mul_vec3(forward_walk_vector(rotation))
+        .normalize()
+}
 
-                    //Rotate camera
-                    transform.rotation = Quat::from_axis_angle(Vec3::Y, yaw_radians)
-                                * Quat::from_axis_angle(Vec3::X, pitch_radians);
-                }
+fn camera_movement_system(
+    time: Res<Time>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut query: Query<(&mut FlyCamera, &mut Transform)>,
+) {
+    for (mut options, mut transform) in query.iter_mut() {
+        let (axis_h, axis_v, axis_float) = if options.enabled {
+            (
+                movement_axis(&keyboard_input, options.key_right, options.key_left),
+                movement_axis(&keyboard_input, options.key_backward, options.key_forward),
+                movement_axis(&keyboard_input, options.key_up, options.key_down),
+            )
+        } else {
+            (0.0, 0.0, 0.0)
+        };
 
-                if mode.on(FlyCameraMode::Pan) {
-                    //Get WASD button pressed
-                    let (x, y, z) = if camera.enabled {
-                        (
-                        motion.get(FlyCameraMotion::Right).unwrap_or_default(),
-                        motion.get(FlyCameraMotion::Up).unwrap_or_default(),
-                        motion.get(FlyCameraMotion::Forward).unwrap_or_default()
-                        )
-                    } else {
-                        (0.0, 0.0, 0.0)
-                    };
-                    let delta = Vec3::new(x, y, z);
+        let rotation = transform.rotation;
+        let accel: Vec3 = (strafe_vector(&rotation) * axis_h)
+            + (forward_walk_vector(&rotation) * axis_v)
+            + (Vec3::Y * axis_float);
+        let accel: Vec3 = if accel.length() != 0.0 {
+            accel.normalize() * options.accel
+        } else {
+            Vec3::ZERO
+        };
 
-                    //Calculate corresponding vector
-                    let right_dir = transform.rotation * -Vec3::X;
-                    let up_dir = transform.rotation * Vec3::Y;
-                    let forward_dir = transform.rotation * -Vec3::Z;
-                    let accel_vector = (delta.x * right_dir + delta.y * up_dir + delta.z * forward_dir)
-                        * camera.accel;
+        let friction: Vec3 = if options.velocity.length() != 0.0 {
+            options.velocity.normalize() * -1.0 * options.friction
+        } else {
+            Vec3::ZERO
+        };
 
-                    //Apply acceleration
-                    let accel: Vec3 = if accel_vector.length() != 0.0 {
-                        accel_vector.normalize() * camera.accel
-                    } else {
-                        Vec3::ZERO
-                    };
+        options.velocity += accel * time.delta_seconds();
 
-                    //Calculate camera velocity
-                    camera.velocity += accel * time.delta_seconds();
-                }
-
-                //Calculate movement friction
-                let friction: Vec3 = if camera.velocity.length() != 0.0 {
-                    camera.velocity.normalize() * -1.0 * camera.friction
-                } else {
-                    Vec3::ZERO
-                };
-
-                //Clamp within max speed
-                if camera.velocity.length() > camera.max_speed {
-                    camera.velocity = camera.velocity.normalize() * camera.max_speed;
-                }
-
-                //Apply friction
-                let delta_friction = friction * time.delta_seconds();
-                camera.velocity =
-                    if (camera.velocity + delta_friction).signum() != camera.velocity.signum() {
-                        Vec3::ZERO
-                    } else {
-                        camera.velocity + delta_friction
-                    };
-                
-                //Move camera    
-                transform.translation += camera.velocity;
-            }
-            mode.clear();
-            motion.clear();
+        // clamp within max speed
+        if options.velocity.length() > options.max_speed {
+            options.velocity = options.velocity.normalize() * options.max_speed;
         }
+
+        let delta_friction = friction * time.delta_seconds();
+
+        options.velocity =
+            if (options.velocity + delta_friction).signum() != options.velocity.signum() {
+                Vec3::ZERO
+            } else {
+                options.velocity + delta_friction
+            };
+
+        transform.translation += options.velocity;
     }
 }
 
-impl Plugin for FlyCameraPlugin {
-    fn build(&self, app: &mut App) {
-        app.register_type::<FlyCamera>()
-            .add_system(setup)
-            .add_system(action_map::<FlyCameraMode, FlyCamera>)
-            .add_system(action_axis_map::<FlyCameraMotion, FlyCamera>)
-            .add_system(Self::camera_motion);
+fn mouse_motion_system(
+    time: Res<Time>,
+    mut mouse_button_input_events: EventReader<MouseButtonInput>,
+    mut mouse_motion_event_reader: EventReader<MouseMotion>,
+    mut query: Query<(&mut FlyCamera, &mut Transform)>,
+) {
+    let mut look_enabled: Option<bool> = None;
+
+    for event in mouse_button_input_events.iter() {
+        if event.button == MouseButton::Right {
+            if event.state == ButtonState::Pressed {
+                look_enabled = Some(true);
+            } else if event.state == ButtonState::Released {
+                look_enabled = Some(false);
+            }
+        }
+    }
+
+    let mut delta: Vec2 = Vec2::ZERO;
+    for event in mouse_motion_event_reader.iter() {
+        delta += event.delta;
+    }
+    if delta.is_nan() {
+        return;
+    }
+
+    for (mut options, mut transform) in query.iter_mut() {
+        if !options.enabled {
+            continue;
+        }
+
+        if let Some(look_enabled) = look_enabled {
+            options.look_enabled = look_enabled;
+        }
+
+        if !options.look_enabled {
+            continue;
+        }
+
+        options.yaw -= delta.x * options.sensitivity * time.delta_seconds();
+        options.pitch += delta.y * options.sensitivity * time.delta_seconds();
+
+        options.pitch = options.pitch.clamp(-89.0, 89.9);
+        // println!("pitch: {}, yaw: {}", options.pitch, options.yaw);
+
+        let yaw_radians = options.yaw.to_radians();
+        let pitch_radians = options.pitch.to_radians();
+
+        transform.rotation = Quat::from_axis_angle(Vec3::Y, yaw_radians)
+            * Quat::from_axis_angle(-Vec3::X, pitch_radians);
     }
 }
 
@@ -226,173 +246,11 @@ fn main() {
 
 **/
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
-pub enum FlyCameraMode {
-    #[default]
-    Idle,
-    Rotate,
-    Pan,
-}
+pub struct FlyCameraPlugin;
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
-pub enum FlyCameraMotion {
-    #[default]
-    Idle,
-    Right,
-    Up,
-    Forward
-}
-
-fn setup(
-    mut commands: Commands,
-    cameras: Query<
-        Entity,
-        (
-            With<FlyCamera>,
-            Without<ActionMap<FlyCameraMode>>,
-            Without<ActionAxisMap<FlyCameraMotion>>,
-        ),
-    >,
-) {
-    for entity in cameras.iter() {
-        let mut action_map = ActionMap::<FlyCameraMode>::default();
-        *action_map = vec![
-            // Rotate Mode
-            ActionMapInput {
-                action: FlyCameraMode::Rotate,
-                button: KeyCode::Right.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Rotate,
-                button: KeyCode::Left.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Rotate,
-                button: KeyCode::Up.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Rotate,
-                button: KeyCode::Down.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Rotate,
-                button: MouseButton::Right.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            // Pan Mode
-            ActionMapInput {
-                action: FlyCameraMode::Pan,
-                button: KeyCode::A.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Pan,
-                button: KeyCode::D.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Pan,
-                button: KeyCode::W.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Pan,
-                button: KeyCode::S.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Pan,
-                button: KeyCode::Q.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: FlyCameraMode::Pan,
-                button: KeyCode::E.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-        ];
-
-        let mut axis_map: ActionAxisMap<FlyCameraMotion> = Default::default();
-        *axis_map = vec![
-            // WASD
-            AxisMapInput {
-                axis: FlyCameraMotion::Up,
-                source: AxisMapSource::Keyboard {
-                    positive: KeyCode::Q.into(),
-                    negative: KeyCode::E.into(),
-                },
-            },
-            AxisMapInput {
-                axis: FlyCameraMotion::Right,
-                source: AxisMapSource::Keyboard {
-                    positive: KeyCode::A.into(),
-                    negative: KeyCode::D.into(),
-                },
-            },
-            AxisMapInput {
-                axis: FlyCameraMotion::Forward,
-                source: AxisMapSource::Keyboard {
-                    positive: KeyCode::W.into(),
-                    negative: KeyCode::S.into(),
-                },
-            },
-            // Arrows
-            AxisMapInput {
-                axis: FlyCameraMotion::Right,
-                source: AxisMapSource::Keyboard {
-                    positive: KeyCode::Right.into(),
-                    negative: KeyCode::Left.into(),
-                },
-            },
-            AxisMapInput {
-                axis: FlyCameraMotion::Up,
-                source: AxisMapSource::Keyboard {
-                    positive: KeyCode::Down.into(),
-                    negative: KeyCode::Up.into(),
-                },
-            },
-            // Mouse X Y
-            AxisMapInput {
-                axis: FlyCameraMotion::Right,
-                source: AxisMapSource::MouseAxis(MouseAxis::X),
-            },
-            AxisMapInput {
-                axis: FlyCameraMotion::Up,
-                source: AxisMapSource::MouseAxis(MouseAxis::Y),
-            },
-        ];
-
-        commands
-            .entity(entity)
-            .insert(Action::<FlyCameraMode>::default())
-            .insert(ActionAxis::<FlyCameraMotion>::default())
-            .insert(action_map)
-            .insert(axis_map);
+impl Plugin for FlyCameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(camera_movement_system)
+            .add_system(mouse_motion_system);
     }
 }

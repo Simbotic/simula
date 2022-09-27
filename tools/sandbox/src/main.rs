@@ -10,7 +10,7 @@ use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
-use simula_camera::{orbitcam::*, flycam::*,};
+use simula_camera::orbitcam::*;
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
@@ -61,7 +61,6 @@ fn main() {
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
-        .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
@@ -229,12 +228,9 @@ fn setup(
         .spawn_bundle(Camera3dBundle {
             ..Default::default()
         })
-        // .insert(OrbitCamera {
-        //     center: Vec3::new(0.0, 1.0, 0.0),
-        //     distance: 10.0,
-        //     ..Default::default()
-        // });
-        .insert(FlyCamera {
+        .insert(OrbitCamera {
+            center: Vec3::new(0.0, 1.0, 0.0),
+            distance: 10.0,
             ..Default::default()
         });
 
