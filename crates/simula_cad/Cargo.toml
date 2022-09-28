@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.8" }
 
-fj = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
-fj-math = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
-fj-operations = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
-fj-interop = { git = "https://github.com/hannobraun/Fornjot.git", rev = "0a8fc4f531ce8f96468d80f62c0fa9f61736c93e" }
+fj = "0.17"
+fj-math = "0.17"
+fj-operations = "0.17"
+fj-interop = "0.17"
 
 [dev-dependencies]
