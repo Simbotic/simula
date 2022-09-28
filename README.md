@@ -31,6 +31,20 @@ cargo run --release -p sandbox --features gif,gst
 ```
 
 ### OSX
+To get started with GStreamer in macOS, both the runtime and development packages, where they must be installed via the official GStreamer website: https://gstreamer.freedesktop.org/download/#macos
+
+In addition to install GStreamer, also it’s necessary install GStreamer plugins via Homebrew:
+```
+brew install gst-plugins-base
+```
+```
+brew install gst-plugins-rs
+```
+After installation, you also need to install `pkg-config` (e.g. via Homebrew) and set the `PKG_CONFIG_PATH` environment variable
+```
+export PKG_CONFIG_PATH="/Library/Frameworks/GStreamer.framework/Versions/1.0/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+```
+And finally run this command in the projects terminal
 ```
 DYLD_LIBRARY_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib cargo run --release -p sandbox --features gif,gst
 ```
