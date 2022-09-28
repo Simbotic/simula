@@ -226,8 +226,6 @@ fn setup(
         ..Default::default()
     });
 
-    let first_pass_layer = RenderLayers::layer(1);
-
     let rt_image = images.add(rt::default_render_target_image());
 
     commands
@@ -239,7 +237,7 @@ fn setup(
             distance: 10.0,
             ..Default::default()
         })
-        .insert(RenderLayers::layer(0).with(1))
+        .insert(RenderLayers::all())
         .with_children(|parent| {
             parent.spawn_bundle(Camera3dBundle {
                 camera_3d: Camera3d {
@@ -643,8 +641,7 @@ fn setup(
                 .with_scale(Vec3::new(1.0, 1.0, 1.0)),
             ..Default::default()
         })
-        // .insert(RenderTarget { source: camera_rt })
-        .insert(first_pass_layer)
+        .insert(RenderLayers::layer(1))
         .insert(Name::new("Video: RenderTarget"));
 }
 
