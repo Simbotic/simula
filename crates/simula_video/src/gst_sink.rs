@@ -13,13 +13,13 @@ use gstreamer_video as gst_video;
 
 #[derive(Component)]
 pub struct GstSink {
-    pipeline: String,
+    pub pipeline: String,
 }
 
 impl Default for GstSink {
     fn default() -> Self {
         Self {
-            pipeline: "videotestsrc ! video/x-raw,width=512,height=512 ! appsink name=simula"
+            pipeline: "videotestsrc ! appsink name=simula"
                 .to_string(),
         }
     }
@@ -106,7 +106,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
 
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
 
-    let sink = pipeline
+    let appsink = pipeline
         .by_name("simula")
         .ok_or_else(|| MissingElement("simula"))?
         .dynamic_cast::<gst_app::AppSink>()
@@ -118,7 +118,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
         .field("width", &512)
         .field("height", &512)
         .build();
-    sink.set_caps(Some(&caps));
+    appsink.set_caps(Some(&caps));
 
     // create app sink callbacks
     let callbacks = gst_app::AppSinkCallbacks::builder()
@@ -127,7 +127,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
             let buffer = sample.buffer().unwrap();
 
             let caps = sample.caps().expect("Sample without caps");
-            let info = gst_video::VideoInfo::from_caps(caps).expect("Failed to parse caps");
+            let video_info = gst_video::VideoInfo::from_caps(caps).expect("Failed to parse caps");
 
             // At this point, buffer is only a reference to an existing memory region somewhere.
             // When we want to access its content, we have to map it while requesting the required
@@ -136,7 +136,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
             // on the machine's main memory itself, but rather in the GPU's memory.
             // So mapping the buffer makes the underlying memory region accessible to us.
             // See: https://gstreamer.freedesktop.org/documentation/plugin-development/advanced/allocation.html
-            let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &info).map_err(
+            let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &video_info).map_err(
                 |_| {
                     element_error!(
                         appsink,
@@ -160,7 +160,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
         })
         .build();
 
-    sink.set_callbacks(callbacks);
+    appsink.set_callbacks(callbacks);
 
     Ok(pipeline)
 }

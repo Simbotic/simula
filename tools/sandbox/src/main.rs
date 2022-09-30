@@ -11,7 +11,7 @@ use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
-use simula_camera::{orbitcam::*, flycam::*};
+use simula_camera::{flycam::*, orbitcam::*};
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
@@ -20,11 +20,11 @@ use simula_core::{
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
-#[cfg(feature = "gst")]
-use simula_video::GstSink;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
 use simula_video::{rt, VideoPlayer, VideoPlugin};
+#[cfg(feature = "gst")]
+use simula_video::{GstSink, GstSrc};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
@@ -623,6 +623,11 @@ fn setup(
             })
             .insert(GstSink::default())
             .insert(Name::new("Video: Gst"));
+
+        commands.spawn().insert(GstSrc {
+            image: rt_image.clone(),
+            ..Default::default()
+        });
     }
 
     // render target

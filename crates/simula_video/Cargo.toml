@@ -21,6 +21,8 @@ gst = [
 bevy = { version = "0.8" }
 image = { version = "0.24", default-features = false }
 
+bevy_image_export = "0.2"
+
 # GStreamer dependencies
 gstreamer = { version = "0.18", optional = true }
 gstreamer-app = { version = "0.18", optional = true }

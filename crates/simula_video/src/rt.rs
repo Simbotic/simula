@@ -19,10 +19,21 @@ pub fn default_render_target_image() -> Image {
             sample_count: 1,
             usage: TextureUsages::TEXTURE_BINDING
                 | TextureUsages::COPY_DST
-                | TextureUsages::RENDER_ATTACHMENT,
+                | TextureUsages::RENDER_ATTACHMENT
+                | TextureUsages::COPY_SRC,
         },
         ..default()
     };
     image.resize(size);
     image
 }
+
+
+
+
+
+
+
+
+
+
