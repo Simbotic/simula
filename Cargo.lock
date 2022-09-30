@@ -5432,6 +5432,9 @@ dependencies = [
 [[package]]
 name = "simula_mission"
 version = "0.1.0"
+dependencies = [
+ "ta",
+]
 
 [[package]]
 name = "simula_net"
@@ -5685,6 +5688,12 @@ dependencies = [
  "toml",
  "version-compare",
 ]
+
+[[package]]
+name = "ta"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609409d472a0a7d8d4dd9e19891bbdef546b9dce670c3057d0e02192dc541226"
 
 [[package]]
 name = "taffy"
