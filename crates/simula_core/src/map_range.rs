@@ -15,11 +15,11 @@ pub fn map_range<
     let (to_min, to_max) = to_range;
     let from_range = from_max - from_min;
     let to_range = to_max - to_min;
+    let value = value.ease_calc(ease);
     let value = value - from_min;
     let value = value / from_range;
     let value = value * to_range;
     let value = value + to_min;
-    let value = value.ease_calc(ease);
     value
 }
 
