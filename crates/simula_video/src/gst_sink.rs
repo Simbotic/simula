@@ -19,8 +19,7 @@ pub struct GstSink {
 impl Default for GstSink {
     fn default() -> Self {
         Self {
-            pipeline: "videotestsrc ! appsink name=simula"
-                .to_string(),
+            pipeline: "videotestsrc ! appsink name=simula".to_string(),
         }
     }
 }
@@ -44,9 +43,9 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup() {}
+pub fn setup_gst_sink() {}
 
-pub fn stream(
+pub fn stream_gst_sinks(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     videos: Query<
@@ -80,7 +79,10 @@ pub fn stream(
     }
 }
 
-pub fn launch(mut commands: Commands, sinks: Query<(Entity, &GstSink), Without<GstSinkProcess>>) {
+pub fn launch_gst_sinks(
+    mut commands: Commands,
+    sinks: Query<(Entity, &GstSink), Without<GstSinkProcess>>,
+) {
     for (entity, sink) in sinks.iter() {
         let (sender, receiver) = bounded(1);
         let pipeline = sink.pipeline.clone();
@@ -136,8 +138,8 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
             // on the machine's main memory itself, but rather in the GPU's memory.
             // So mapping the buffer makes the underlying memory region accessible to us.
             // See: https://gstreamer.freedesktop.org/documentation/plugin-development/advanced/allocation.html
-            let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &video_info).map_err(
-                |_| {
+            let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &video_info)
+                .map_err(|_| {
                     element_error!(
                         appsink,
                         gst::ResourceError::Failed,
@@ -145,8 +147,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
                     );
 
                     gst::FlowError::Error
-                },
-            )?;
+                })?;
 
             // Now we can access the buffer's content.
             // The frame's data is a slice of planes, each plane being a slice of bytes.

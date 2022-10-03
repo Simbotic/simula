@@ -1,6 +1,7 @@
 use bevy::{
     core_pipeline::clear_color::ClearColorConfig,
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+    // log::LogPlugin,
     prelude::*,
     render::view::{NoFrustumCulling, RenderLayers},
 };
@@ -58,6 +59,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins)
+        // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
         .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
@@ -80,7 +82,9 @@ fn main() {
         .add_system(rotate_system)
         .add_system(force_graph_test);
 
+    // bevy_mod_debugdump::print_schedule(&mut app);
     // bevy_mod_debugdump::print_render_schedule(&mut app);
+    // bevy_mod_debugdump::print_render_graph(&mut app);
 
     app.run();
 }

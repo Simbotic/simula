@@ -21,9 +21,9 @@ pub struct RawBuffer {
     receiver: Receiver<Vec<u8>>,
 }
 
-pub fn setup() {}
+pub fn setup_raw_src() {}
 
-pub fn setup_buffers(
+pub fn setup_raw_srcs(
     mut commands: Commands,
     device: Res<RenderDevice>,
     images: Res<Assets<Image>>,
@@ -68,7 +68,7 @@ pub fn setup_render_graph(app: &mut App) {
     graph.add_node_edge(CAMERA_DRIVER, NODE_NAME).unwrap();
 }
 
-pub fn process_buffers(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
+pub fn process_raw_srcs(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
     for (buffer, mut src) in srcs.iter_mut() {
         if let Ok(data) = buffer.receiver.try_recv() {
             src.data = data.clone();

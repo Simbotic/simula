@@ -1,4 +1,4 @@
-use crate::raw::RawSrc;
+use crate::raw_src::RawSrc;
 use bevy::{asset::Error, prelude::*};
 use crossbeam_channel::{bounded, Receiver, Sender};
 use derive_more::{Display, Error};
@@ -40,9 +40,9 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup() {}
+pub fn setup_gst_src() {}
 
-pub fn stream(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
+pub fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
     for (process, src) in srcs.iter() {
         if src.data.len() > 0 {
             let _ = process.sender.try_send(src.data.clone());
@@ -50,7 +50,10 @@ pub fn stream(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
     }
 }
 
-pub fn launch(mut commands: Commands, srcs: Query<(Entity, &GstSrc), Without<GstSrcProcess>>) {
+pub fn launch_gst_srcs(
+    mut commands: Commands,
+    srcs: Query<(Entity, &GstSrc), Without<GstSrcProcess>>,
+) {
     for (entity, src) in srcs.iter() {
         let (sender, receiver) = bounded(1);
         let pipeline = src.pipeline.clone();
