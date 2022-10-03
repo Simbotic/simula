@@ -1,13 +1,13 @@
 use bevy::{
-    //core_pipeline::Transparent3d,
+    core_pipeline::core_3d::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
     math::prelude::*,
     pbr::{MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup, SetMeshViewBindGroup},
     prelude::*,
     render::{
+        extract_component::{ExtractComponent, ExtractComponentPlugin},
         mesh::{GpuBufferInfo, MeshVertexBufferLayout},
         render_asset::RenderAssets,
-        //render_component::{ExtractComponent, ExtractComponentPlugin},
         render_phase::{
             AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
             SetItemPipeline, TrackedRenderPass,
@@ -15,132 +15,60 @@ use bevy::{
         render_resource::*,
         renderer::RenderDevice,
         view::{ExtractedView, Msaa},
-        RenderApp, RenderStage, extract_component::{ExtractComponent, ExtractComponentPlugin},
-    }, core_pipeline::core_3d::Transparent3d,
+        RenderApp, RenderStage,
+    },
 };
+
 use bytemuck::{Pod, Zeroable};
 
-#[derive(Component, Default, Debug, Deref)]
-pub struct Pointcloud(pub Vec<PointData>);
-impl ExtractComponent for Pointcloud {
-    type Query = &'static Pointcloud;
+#[derive(Component, Deref, Clone)]
+pub struct HexgridData(pub Vec<HexData>);
+
+impl ExtractComponent for HexgridData {
+    type Query = &'static HexgridData;
     type Filter = ();
 
     fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Self {
-        Pointcloud(item.0.clone())
+        HexgridData(item.0.clone())
     }
 }
 
-pub struct PointcloudPlugin;
-
-impl Plugin for PointcloudPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractComponentPlugin::<Pointcloud>::default());
-        app.sub_app_mut(RenderApp)
-            .add_render_command::<Transparent3d, DrawCustom>()
-            .init_resource::<PointcloudPipeline>()
-            .init_resource::<SpecializedMeshPipelines<PointcloudPipeline>>()
-            .add_system_to_stage(RenderStage::Queue, queue_custom)
-            .add_system_to_stage(RenderStage::Prepare, prepare_instance_buffers);
-    }
-}
-
-#[derive(Clone, Copy, Pod, Zeroable, Default, Debug)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
-pub struct PointData {
+pub struct HexData {
     pub position: Vec3,
     pub scale: f32,
-    pub color: [f32; 4],
-}
-
-#[allow(clippy::too_many_arguments)]
-fn queue_custom(
-    transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
-    custom_pipeline: Res<PointcloudPipeline>,
-    msaa: Res<Msaa>,
-    mut pipelines: ResMut<SpecializedMeshPipelines<PointcloudPipeline>>,
-    mut pipeline_cache: ResMut<PipelineCache>,
-    meshes: Res<RenderAssets<Mesh>>,
-    material_meshes: Query<
-        (Entity, &MeshUniform, &Handle<Mesh>),
-        (With<Handle<Mesh>>, With<Pointcloud>),
-    >,
-    mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
-) {
-    let draw_custom = transparent_3d_draw_functions
-        .read()
-        .get_id::<DrawCustom>()
-        .unwrap();
-
-    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples);
-
-    for (view, mut transparent_phase) in views.iter_mut() {
-        let view_matrix = view.transform.compute_matrix();
-        let view_row_2 = view_matrix.row(2);
-        for (entity, mesh_uniform, mesh_handle) in material_meshes.iter() {
-            if let Some(mesh) = meshes.get(mesh_handle) {
-                let key =
-                    msaa_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology);
-                let pipeline = pipelines
-                    .specialize(&mut pipeline_cache, &custom_pipeline, key, &mesh.layout)
-                    .unwrap();
-                transparent_phase.add(Transparent3d {
-                    entity,
-                    pipeline,
-                    draw_function: draw_custom,
-                    distance: view_row_2.dot(mesh_uniform.transform.col(3)),
-                });
-            }
-        }
-    }
+    pub color: u32,
 }
 
 #[derive(Component)]
-struct InstanceBuffer {
-    buffer: Buffer,
-    length: usize,
+pub struct InstanceBuffer {
+    pub buffer: Buffer,
+    pub length: usize,
 }
 
-fn prepare_instance_buffers(
-    mut commands: Commands,
-    query: Query<(Entity, &Pointcloud)>,
-    render_device: Res<RenderDevice>,
-) {
-    for (entity, instance_data) in query.iter() {
-        let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
-            label: Some("pointcloud data buffer"),
-            contents: bytemuck::cast_slice(instance_data.as_slice()),
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-        });
-        commands.entity(entity).insert(InstanceBuffer {
-            buffer,
-            length: instance_data.len(),
-        });
-    }
+pub struct HexgridPipeline {
+    pub shader: Handle<Shader>,
+    pub mesh_pipeline: MeshPipeline,
 }
 
-struct PointcloudPipeline {
-    shader: Handle<Shader>,
-    mesh_pipeline: MeshPipeline,
-}
-
-impl FromWorld for PointcloudPipeline {
+impl FromWorld for HexgridPipeline {
     fn from_world(world: &mut World) -> Self {
         let world = world.cell();
         let asset_server = world.get_resource::<AssetServer>().unwrap();
         asset_server.watch_for_changes().unwrap();
-        let shader = asset_server.load("shaders/pointcloud.wgsl");
+        let shader = asset_server.load("shaders/hexgrid.wgsl");
 
         let mesh_pipeline = world.get_resource::<MeshPipeline>().unwrap();
 
-        PointcloudPipeline {
+        HexgridPipeline {
             shader,
             mesh_pipeline: mesh_pipeline.clone(),
         }
     }
 }
 
-impl SpecializedMeshPipeline for PointcloudPipeline {
+impl SpecializedMeshPipeline for HexgridPipeline {
     type Key = MeshPipelineKey;
 
     fn specialize(
@@ -151,7 +79,7 @@ impl SpecializedMeshPipeline for PointcloudPipeline {
         let mut descriptor = self.mesh_pipeline.specialize(key, layout)?;
         descriptor.vertex.shader = self.shader.clone();
         descriptor.vertex.buffers.push(VertexBufferLayout {
-            array_stride: std::mem::size_of::<PointData>() as u64,
+            array_stride: std::mem::size_of::<HexData>() as u64,
             step_mode: VertexStepMode::Instance,
             attributes: vec![
                 VertexAttribute {
@@ -160,7 +88,7 @@ impl SpecializedMeshPipeline for PointcloudPipeline {
                     shader_location: 3, // shader locations 0-2 are taken up by Position, Normal and UV attributes
                 },
                 VertexAttribute {
-                    format: VertexFormat::Float32x4,
+                    format: VertexFormat::Uint32,
                     offset: VertexFormat::Float32x4.size(),
                     shader_location: 4,
                 },
@@ -183,7 +111,8 @@ type DrawCustom = (
     DrawMeshInstanced,
 );
 
-struct DrawMeshInstanced;
+pub struct DrawMeshInstanced;
+
 impl EntityRenderCommand for DrawMeshInstanced {
     type Param = (
         SRes<RenderAssets<Mesh>>,
@@ -222,5 +151,79 @@ impl EntityRenderCommand for DrawMeshInstanced {
             }
         }
         RenderCommandResult::Success
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn queue_hexgrids(
+    transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
+    custom_pipeline: Res<HexgridPipeline>,
+    msaa: Res<Msaa>,
+    mut pipelines: ResMut<SpecializedMeshPipelines<HexgridPipeline>>,
+    mut pipeline_cache: ResMut<PipelineCache>,
+    meshes: Res<RenderAssets<Mesh>>,
+    material_meshes: Query<
+        (Entity, &MeshUniform, &Handle<Mesh>),
+        (With<Handle<Mesh>>, With<HexgridData>),
+    >,
+    mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
+) {
+    let draw_custom = transparent_3d_draw_functions
+        .read()
+        .get_id::<DrawCustom>()
+        .unwrap();
+
+    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples);
+
+    for (view, mut transparent_phase) in views.iter_mut() {
+        let view_matrix = view.transform.compute_matrix();
+        let view_row_2 = view_matrix.row(2);
+        for (entity, mesh_uniform, mesh_handle) in material_meshes.iter() {
+            if let Some(mesh) = meshes.get(mesh_handle) {
+                let key =
+                    msaa_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology);
+                let pipeline = pipelines
+                    .specialize(&mut pipeline_cache, &custom_pipeline, key, &mesh.layout)
+                    .unwrap();
+                transparent_phase.add(Transparent3d {
+                    entity,
+                    pipeline,
+                    draw_function: draw_custom,
+                    distance: view_row_2.dot(mesh_uniform.transform.col(3)),
+                });
+            }
+        }
+    }
+}
+
+fn prepare_hexgrids(
+    mut commands: Commands,
+    query: Query<(Entity, &HexgridData)>,
+    render_device: Res<RenderDevice>,
+) {
+    for (entity, instance_data) in query.iter() {
+        let buffer = render_device.create_buffer_with_data(&BufferInitDescriptor {
+            label: Some("instance data buffer"),
+            contents: bytemuck::cast_slice(instance_data.as_slice()),
+            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+        });
+        commands.entity(entity).insert(InstanceBuffer {
+            buffer,
+            length: instance_data.len(),
+        });
+    }
+}
+
+pub struct HexgridMaterialPlugin;
+
+impl Plugin for HexgridMaterialPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(ExtractComponentPlugin::<HexgridData>::default());
+        app.sub_app_mut(RenderApp)
+            .add_render_command::<Transparent3d, DrawCustom>()
+            .init_resource::<HexgridPipeline>()
+            .init_resource::<SpecializedMeshPipelines<HexgridPipeline>>()
+            .add_system_to_stage(RenderStage::Queue, queue_hexgrids)
+            .add_system_to_stage(RenderStage::Prepare, prepare_hexgrids);
     }
 }

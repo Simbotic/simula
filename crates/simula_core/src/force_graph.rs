@@ -3,32 +3,35 @@
 //! # Example
 //!
 //! ```
-//! use bevy::math::Vec3;
-//! use std::time::Duration;
-//! use simula_core::force_graph::{ForceGraph, Node, NodeData};
+//! use force_graph::{ForceGraph, Node, NodeData};
 //!
 //! // create a force graph with default parameters
 //! let mut graph = <ForceGraph>::new(Default::default());
 //!
 //! // create nodes
 //! let n1_idx = graph.add_node(NodeData {
-//!     position: Vec3::new(250.0, 250.0, 250.0),
+//!     x: 250.0,
+//!     y: 250.0,
 //!     ..Default::default()
 //! });
 //! let n2_idx = graph.add_node(NodeData {
-//!     position: Vec3::new(750.0, 250.0, 250.0),
+//!     x: 750.0,
+//!     y: 250.0,
 //!     ..Default::default()
 //! });
 //! let n3_idx = graph.add_node(NodeData {
-//!     position: Vec3::new(250.0, 750.0, 250.0),
+//!     x: 250.0,
+//!     y: 750.0,
 //!     ..Default::default()
 //! });
 //! let n4_idx = graph.add_node(NodeData {
-//!     position: Vec3::new(250.0, 250.0, 750.0),
+//!     x: 750.0,
+//!     y: 750.0,
 //!     ..Default::default()
 //! });
 //! let n5_idx = graph.add_node(NodeData {
-//!     position: Vec3::new(500.0, 500.0, 500.0),
+//!     x: 500.0,
+//!     y: 500.0,
 //!     is_anchor: true,
 //!     ..Default::default()
 //! });
@@ -45,18 +48,18 @@
 //! fn draw_edge(x1: f32, y1: f32, x2: f32, y2: f32) {}
 //!
 //! graph.visit_edges(|node1, node2, _edge| {
-//!     draw_edge(node1.position().x, node1.position().y, node2.position().x, node2.position().y);
+//!     draw_edge(node1.x(), node1.y(), node2.x(), node2.y());
 //! });
 //!
 //! // draw nodes with your own drawing function
 //! fn draw_node(x: f32, y: f32) {}
 //!
 //! graph.visit_nodes(|node| {
-//!     draw_node(node.position().x, node.position().y);
+//!     draw_node(node.x(), node.y());
 //! });
 //!
 //! // calculate dt with your own timing function
-//! let dt = Duration::new(0, 5);
+//! let dt = 0.1;
 //! graph.update(dt);
 //!
 //! // --- your game loop would repeat here ---
@@ -184,7 +187,7 @@ impl<UserNodeData, UserEdgeData> ForceGraph<UserNodeData, UserEdgeData> {
     ///
     /// Use the following syntax to create a graph with default parameters:
     /// ```
-    /// use simula_core::force_graph::ForceGraph;
+    /// use force_graph::ForceGraph;
     /// let graph = <ForceGraph>::new(Default::default());
     /// ```
     pub fn new(parameters: SimulationParameters) -> Self {
