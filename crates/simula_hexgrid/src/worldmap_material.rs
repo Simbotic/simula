@@ -155,7 +155,7 @@ impl EntityRenderCommand for DrawMeshInstanced {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn queue_custom(
+fn queue_hexgrids(
     transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
     custom_pipeline: Res<HexgridPipeline>,
     msaa: Res<Msaa>,
@@ -196,7 +196,7 @@ fn queue_custom(
     }
 }
 
-fn prepare_instance_buffers(
+fn prepare_hexgrids(
     mut commands: Commands,
     query: Query<(Entity, &HexgridData)>,
     render_device: Res<RenderDevice>,
@@ -223,7 +223,7 @@ impl Plugin for HexgridMaterialPlugin {
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<HexgridPipeline>()
             .init_resource::<SpecializedMeshPipelines<HexgridPipeline>>()
-            .add_system_to_stage(RenderStage::Queue, queue_custom)
-            .add_system_to_stage(RenderStage::Prepare, prepare_instance_buffers);
+            .add_system_to_stage(RenderStage::Queue, queue_hexgrids)
+            .add_system_to_stage(RenderStage::Prepare, prepare_hexgrids);
     }
 }

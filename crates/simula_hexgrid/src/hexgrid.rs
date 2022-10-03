@@ -6,6 +6,7 @@ use bevy::{
         view::{ComputedVisibility, NoFrustumCulling, Visibility}
     }, 
 };
+
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
 use std::hash::Hash;
@@ -24,7 +25,7 @@ pub struct TempHexTiles;
 pub struct HexagonTiles;
 
 pub struct RenderPathEvent {
-    pub value: RenderAction,
+    value: RenderAction,
 }
 
 pub enum RenderAction {
@@ -338,6 +339,7 @@ pub fn hexagon_pathfinder(
 
         // the hexagon arrangement you are using
         let orientation = path_find.orientation.clone();
+
 
         if path_find.destination_reached == true {
             path_find.nodes_weighted = HashMap::new();
