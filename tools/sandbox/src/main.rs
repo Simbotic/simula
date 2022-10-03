@@ -22,7 +22,7 @@ use simula_net::NetPlugin;
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, VideoPlayer, VideoPlugin};
+use simula_video::{rt, RawSrc, VideoPlayer, VideoPlugin};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -41,8 +41,9 @@ use simula_viz::{
 mod monkey;
 
 fn main() {
-    App::new()
-        .register_type::<SignalGenerator>()
+    let mut app = App::new();
+
+    app.register_type::<SignalGenerator>()
         .register_type::<SignalFunction>()
         .register_type::<SignalController<f32>>()
         .register_type::<ForceGraph<SandboxNodeData, SandboxEdgeData>>()
@@ -77,8 +78,11 @@ fn main() {
         .add_system(signal_generator_lines)
         .add_system(signal_control_lines)
         .add_system(rotate_system)
-        .add_system(force_graph_test)
-        .run();
+        .add_system(force_graph_test);
+
+    // bevy_mod_debugdump::print_render_schedule(&mut app);
+
+    app.run();
 }
 
 fn setup(
@@ -239,7 +243,7 @@ fn setup(
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
-            parent.spawn_bundle(Camera3dBundle {
+            let mut child = parent.spawn_bundle(Camera3dBundle {
                 camera_3d: Camera3d {
                     clear_color: ClearColorConfig::Custom(Color::BLACK),
                     ..default()
@@ -253,6 +257,12 @@ fn setup(
                     .looking_at(Vec3::default(), Vec3::Y),
                 ..default()
             });
+
+            // RawSrc is optional when using GstSrc, as it will be set automatically
+            child.insert(RawSrc::default());
+
+            #[cfg(feature = "gst")]
+            child.insert(GstSrc::default());
         })
         .insert(FlyCamera {
             ..Default::default()
@@ -623,11 +633,6 @@ fn setup(
             })
             .insert(GstSink::default())
             .insert(Name::new("Video: Gst"));
-
-        commands.spawn().insert(GstSrc {
-            image: rt_image.clone(),
-            ..Default::default()
-        });
     }
 
     // render target

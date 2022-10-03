@@ -1,8 +1,5 @@
-use bevy::{
-    asset::Error,
-    prelude::*,
-    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
-};
+use crate::raw::RawSrc;
+use bevy::{asset::Error, prelude::*};
 use crossbeam_channel::{bounded, Receiver, Sender};
 use derive_more::{Display, Error};
 use gst::element_error;
@@ -14,14 +11,12 @@ use gstreamer_video as gst_video;
 #[derive(Component)]
 pub struct GstSrc {
     pub pipeline: String,
-    pub image: Handle<Image>,
 }
 
 impl Default for GstSrc {
     fn default() -> Self {
         Self {
             pipeline: "appsrc name=simula ! videoconvert ! autovideosink".to_string(),
-            image: Default::default(),
         }
     }
 }
@@ -29,7 +24,7 @@ impl Default for GstSrc {
 #[derive(Component)]
 pub struct GstSrcProcess {
     pub process: std::thread::JoinHandle<()>,
-    sender: Sender<(Time, Vec<u8>)>,
+    sender: Sender<Vec<u8>>,
 }
 
 #[derive(Debug, Display, Error)]
@@ -47,47 +42,12 @@ struct ErrorMessage {
 
 pub fn setup() {}
 
-pub fn stream(
-    mut dummy: Local<Handle<Image>>,
-    mut commands: Commands,
-    time: Res<Time>,
-    images: Res<Assets<Image>>,
-    videos: Query<(&GstSrcProcess, &GstSrc)>,
-    asset_manager: Res<AssetServer>,
-) {
-    // Copy texture to buffer
-
-    
-    // if *dummy == Default::default() {
-    //     *dummy = asset_manager.load("textures/metric_512x512.png");
-    // }
-    // for (process, src) in videos.iter() {
-    //     if let Some(image) = images.get(&dummy.clone()) {
-            
-    //         let data = image.data.clone();
-    //         println!("Sending {} bytes", data.len());
-    //         let _ = process.sender.try_send((time.clone(), data));
-    //     }
-    // }
-    
-    for (process, src) in videos.iter() {
-        if let Some(image) = images.get(&src.image) {
-            let data = image.data.clone();
-            println!("Sending {} bytes", data.len());
-            let _ = process.sender.try_send((time.clone(), data));
+pub fn stream(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
+    for (process, src) in srcs.iter() {
+        if src.data.len() > 0 {
+            let _ = process.sender.try_send(src.data.clone());
         }
     }
-
-
-
-    // for (process, src) in videos.iter() {
-    //     if let Some(image) = images.get(&src.image) {
-            
-    //         let data = image.data.clone();
-    //         println!("Sending {} bytes", data.len());
-    //         let _ = process.sender.try_send((time.clone(), data));
-    //     }
-    // }
 }
 
 pub fn launch(mut commands: Commands, srcs: Query<(Entity, &GstSrc), Without<GstSrcProcess>>) {
@@ -100,16 +60,19 @@ pub fn launch(mut commands: Commands, srcs: Query<(Entity, &GstSrc), Without<Gst
                 Err(e) => eprintln!("Error! {}", e),
             }
         });
-        commands.entity(entity).insert(GstSrcProcess {
-            process: launch_handle,
-            sender,
-        });
+        commands
+            .entity(entity)
+            .insert(GstSrcProcess {
+                process: launch_handle,
+                sender,
+            })
+            .insert(RawSrc::default());
     }
 }
 
 fn create_pipeline(
     pipeline_str: String,
-    receiver: Receiver<(Time, Vec<u8>)>,
+    receiver: Receiver<Vec<u8>>,
 ) -> Result<gst::Pipeline, Error> {
     gst::init()?;
 
@@ -125,7 +88,6 @@ fn create_pipeline(
         .dynamic_cast::<gst_app::AppSrc>()
         .unwrap();
 
-    // set video caps
     let caps = gst::Caps::builder("video/x-raw")
         .field("format", &"BGRA")
         .field("width", &512)
@@ -134,45 +96,7 @@ fn create_pipeline(
         .build();
     appsrc.set_caps(Some(&caps));
     appsrc.set_format(gst::Format::Time);
-    appsrc.set_is_live(true);
-
     let video_info = gst_video::VideoInfo::from_caps(&caps).expect("Failed to parse caps");
-
-    let pipeline_time = Time::default();
-
-    // loop {
-    //     match receiver.recv() {
-    //         Ok((time, data)) => {
-    //             let mut buffer = gst::Buffer::with_size(video_info.size()).unwrap();
-    //             {
-    //                 let buffer = buffer.get_mut().unwrap();
-
-    //                 // let pipeline_elapsed = time.seconds_since_startup() - pipeline_time.seconds_since_startup();
-
-    //                 let ms = ((pipeline_time.seconds_since_startup()) * 1000.0) as u64;
-    //                 buffer.set_pts(gst::ClockTime::from_mseconds(ms));
-    //                 buffer.set_dts(gst::ClockTime::from_mseconds(ms));
-    //                 // buffer.set_duration(gst::ClockTime::from_mseconds(1000 / 60));
-    //                 // //
-    //                 // // buffer.set_pts(ms * gst::ClockTime::MSECOND);
-    //                 let mut map = buffer.map_writable().unwrap();
-    //                 let payload = map.as_mut_slice();
-    //                 payload.copy_from_slice(&data);
-    //             }
-    //             // appsrc already handles the error here
-    //             println!("Pushing buffer");
-    //             let _ = appsrc.push_buffer(buffer);
-    //         }
-    //         Err(e) => {
-    //             element_error!(
-    //                 appsrc,
-    //                 gst::CoreError::Failed,
-    //                 ("Failed to receive data: {}", e)
-    //             );
-    //             break;
-    //         }
-    //     }
-    // }
 
     let pipeline_start = std::time::Instant::now();
 
@@ -180,14 +104,10 @@ fn create_pipeline(
         .need_data(move |appsrc, _length| {
             let mut buffer = gst::Buffer::with_size(video_info.size()).unwrap();
             match receiver.recv() {
-                Ok((time, data)) => {
+                Ok(data) => {
                     let buffer = buffer.get_mut().unwrap();
-                    // let secs_since_pipeline_start =
-                    //     time.time_since_startup() - pipeline_start.elapsed();
-                    // let ms = (secs_since_pipeline_start * 1000.0) as u64;
                     let ms = pipeline_start.elapsed().as_millis() as u64;
                     buffer.set_pts(gst::ClockTime::from_mseconds(ms));
-                    // buffer.set_dts(gst::ClockTime::from_mseconds(ms));
                     let mut map = buffer.map_writable().unwrap();
                     let payload = map.as_mut_slice();
                     payload.copy_from_slice(&data)
@@ -200,9 +120,8 @@ fn create_pipeline(
                     );
                 }
             }
-            // appsrc already handles the error here
-            println!("Pushing buffer");
-            let _ = appsrc.push_buffer(buffer);
+            trace!("Pushing buffer");
+            let _ = appsrc.push_buffer(buffer); // appsrc already handles the error here
         })
         .build();
 

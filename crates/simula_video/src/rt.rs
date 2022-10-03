@@ -27,13 +27,3 @@ pub fn default_render_target_image() -> Image {
     image.resize(size);
     image
 }
-
-
-
-
-
-
-
-
-
-
