@@ -1,6 +1,7 @@
 use bevy::{
     core_pipeline::clear_color::ClearColorConfig,
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+    // log::LogPlugin,
     prelude::*,
     render::view::{NoFrustumCulling, RenderLayers},
 };
@@ -11,7 +12,7 @@ use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
-use simula_camera::{orbitcam::*, flycam::*};
+use simula_camera::{flycam::*, orbitcam::*};
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
@@ -20,11 +21,11 @@ use simula_core::{
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
-#[cfg(feature = "gst")]
-use simula_video::GstSink;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, VideoPlayer, VideoPlugin};
+use simula_video::{rt, RawSrc, VideoPlayer, VideoPlugin};
+#[cfg(feature = "gst")]
+use simula_video::{GstSink, GstSrc};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
@@ -41,8 +42,9 @@ use simula_viz::{
 mod monkey;
 
 fn main() {
-    App::new()
-        .register_type::<SignalGenerator>()
+    let mut app = App::new();
+
+    app.register_type::<SignalGenerator>()
         .register_type::<SignalFunction>()
         .register_type::<SignalController<f32>>()
         .register_type::<ForceGraph<SandboxNodeData, SandboxEdgeData>>()
@@ -57,6 +59,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins)
+        // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
         .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
@@ -77,8 +80,13 @@ fn main() {
         .add_system(signal_generator_lines)
         .add_system(signal_control_lines)
         .add_system(rotate_system)
-        .add_system(force_graph_test)
-        .run();
+        .add_system(force_graph_test);
+
+    // bevy_mod_debugdump::print_schedule(&mut app);
+    // bevy_mod_debugdump::print_render_schedule(&mut app);
+    // bevy_mod_debugdump::print_render_graph(&mut app);
+
+    app.run();
 }
 
 fn setup(
@@ -239,7 +247,7 @@ fn setup(
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
-            parent.spawn_bundle(Camera3dBundle {
+            let mut child = parent.spawn_bundle(Camera3dBundle {
                 camera_3d: Camera3d {
                     clear_color: ClearColorConfig::Custom(Color::BLACK),
                     ..default()
@@ -253,6 +261,12 @@ fn setup(
                     .looking_at(Vec3::default(), Vec3::Y),
                 ..default()
             });
+
+            // RawSrc is optional when using GstSrc, as it will be set automatically
+            child.insert(RawSrc::default());
+
+            #[cfg(feature = "gst")]
+            child.insert(GstSrc::default());
         })
         .insert(FlyCamera {
             ..Default::default()

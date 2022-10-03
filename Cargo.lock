@@ -928,6 +928,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mod_debugdump"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f22cfad8fab6ca053d81c1c8795e325fe2174fa47f7455f7be7a959ef9bbaf3"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_render",
+ "pretty-type-name",
+]
+
+[[package]]
 name = "bevy_pbr"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5127,6 +5139,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "bevy_mod_debugdump",
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
@@ -5502,6 +5515,7 @@ dependencies = [
  "gstreamer-app",
  "gstreamer-video",
  "image 0.24.4",
+ "wgpu",
 ]
 
 [[package]]
