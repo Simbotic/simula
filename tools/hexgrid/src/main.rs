@@ -69,7 +69,9 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
             ..default()
         })
         .insert(OrbitCamera {
+            y: 0.01,
             pan_sensitivity: 10.0,
+            distance: 50.0,
             center: Vec3::ZERO,
             ..Default::default()
         })
