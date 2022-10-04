@@ -13,6 +13,7 @@ bevy = { version = "0.8", features = [
 ] }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_core = { path = "../../crates/simula_core" }
+simula_action = { path = "../../crates/simula_action" }
 bevy-inspector-egui = "0.13"
 bytemuck = "1.11"
 rand = "0.8.5"
