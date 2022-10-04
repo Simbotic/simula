@@ -565,7 +565,12 @@ fn setup(
             ..Default::default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
-        let video_rotation = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
+        let video_rotation = Quat::from_euler(
+            EulerRot::YXZ,
+            0.0, //-std::f32::consts::FRAC_PI_2,
+            -std::f32::consts::FRAC_PI_2,
+            0.0,
+        );
         commands
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
@@ -585,6 +590,8 @@ fn setup(
             .insert(SmoothLookAt {
                 target: Some(camera_entity),
                 initial_pose: video_rotation,
+                yaw_ease: EaseFunction::ElasticInOut,
+                pitch_ease: EaseFunction::SineInOut,
                 ..Default::default()
             })
             .with_children(|parent| {
