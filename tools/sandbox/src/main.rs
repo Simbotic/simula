@@ -55,7 +55,7 @@ fn main() {
             title: "[Simbotic] Simula - Sandbox".to_string(),
             width: 940.,
             height: 528.,
-            ..Default::default()
+            ..default()
         })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
@@ -111,7 +111,7 @@ fn setup(
                 mesh: meshes.add(shape.to_mesh()),
                 material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
                 transform: Transform::from_xyz(0.0, -10.0, 0.0),
-                ..Default::default()
+                ..default()
             })
             .insert(Name::new("Shape: Star"));
     }
@@ -122,7 +122,7 @@ fn setup(
             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             transform: Transform::from_xyz(2.0, 0.01, 2.0),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Shape: Plane"));
 
@@ -132,7 +132,7 @@ fn setup(
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(-2.5, 0.0, -1.5),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Shape: Cube"));
 
@@ -144,12 +144,12 @@ fn setup(
                 divisions: 10,
                 start_color: Color::BLUE,
                 end_color: Color::RED,
-                ..Default::default()
+                ..default()
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Grid"));
 
@@ -158,14 +158,14 @@ fn setup(
         .spawn_bundle(AxesBundle {
             axes: Axes {
                 size: 1.,
-                ..Default::default()
+                inner_offset: 5.,
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            ..Default::default()
+            transform: Transform::from_xyz(0.0, 0.01, 0.0),
+            ..default()
         })
-        .insert(Name::new("Spline Cursor"));
+        .insert(Name::new("Axes: World"));
 
     // x - axis
     commands
@@ -177,7 +177,7 @@ fn setup(
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Axis: X"))
         .insert(Rotate {
@@ -196,7 +196,7 @@ fn setup(
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Axis: Y"))
         .insert(Rotate {
@@ -215,7 +215,7 @@ fn setup(
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Axis: Z"))
         .insert(Rotate {
@@ -230,22 +230,20 @@ fn setup(
         directional_light: DirectionalLight {
             color: Color::rgb(1.0, 1.0, 1.0),
             illuminance: 5000.,
-            ..Default::default()
+            ..default()
         },
         transform: Transform::from_matrix(light_transform),
-        ..Default::default()
+        ..default()
     });
 
     let rt_image = images.add(rt::default_render_target_image());
 
     let camera_entity = commands
-        .spawn_bundle(Camera3dBundle {
-            ..Default::default()
-        })
+        .spawn_bundle(Camera3dBundle { ..default() })
         .insert(OrbitCamera {
             center: Vec3::new(0.0, 1.0, 0.0),
             distance: 10.0,
-            ..Default::default()
+            ..default()
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
@@ -259,8 +257,6 @@ fn setup(
                     target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
                     ..default()
                 },
-                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 15.0))
-                    .looking_at(Vec3::default(), Vec3::Y),
                 ..default()
             });
 
@@ -270,9 +266,7 @@ fn setup(
             #[cfg(feature = "gst")]
             child.insert(GstSrc::default());
         })
-        .insert(FlyCamera {
-            ..Default::default()
-        })
+        .insert(FlyCamera { ..default() })
         .id();
 
     // FPS on screen
@@ -286,18 +280,18 @@ fn setup(
                     color: Color::rgb(0.0, 1.0, 0.0),
                 },
             }],
-            ..Default::default()
+            ..default()
         },
         style: Style {
             position_type: PositionType::Absolute,
             position: UiRect {
                 top: Val::Px(5.0),
                 left: Val::Px(5.0),
-                ..Default::default()
+                ..default()
             },
-            ..Default::default()
+            ..default()
         },
-        ..Default::default()
+        ..default()
     });
 
     // voxels
@@ -323,7 +317,7 @@ fn setup(
             voxels: Voxels { voxels },
             mesh: meshes.add(voxel_mesh.clone()),
             material: voxels_materials.add(VoxelsMaterial {}),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Voxels"))
         .insert(Rotate {
@@ -332,9 +326,7 @@ fn setup(
         });
 
     // rod mesh
-    let rod_mesh = simula_viz::rod::Rod {
-        ..Default::default()
-    };
+    let rod_mesh = simula_viz::rod::Rod { ..default() };
     let rod_mesh = simula_viz::rod::RodMesh::from(rod_mesh);
     commands
         .spawn()
@@ -342,10 +334,10 @@ fn setup(
             mesh: meshes.add(rod_mesh.mesh),
             material: materials.add(StandardMaterial {
                 base_color: Color::PINK,
-                ..Default::default()
+                ..default()
             }),
             transform: Transform::from_xyz(5.0, 0.0, -5.0),
-            ..Default::default()
+            ..default()
         })
         .insert(Name::new("Shape: Rod"));
 
@@ -375,7 +367,7 @@ fn setup(
         .insert_bundle(SpatialBundle {
             transform: Transform::from_xyz(7.5, -8.0, 0.0)
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            ..Default::default()
+            ..default()
         })
         .with_children(|parent| {
             for (i, ease_func) in EaseFunction::into_enum_iter().enumerate().skip(1) {
@@ -391,7 +383,7 @@ fn setup(
                             3.0 - ((i % 3) as f32),
                             0.0,
                         ),
-                        ..Default::default()
+                        ..default()
                     })
                     .insert(EaseLine {
                         points: points.clone(),
@@ -413,13 +405,13 @@ fn setup(
                 mesh: meshes.add(line_mesh.clone()),
                 material: lines_materials.add(LinesMaterial {}),
                 transform: Transform::from_xyz(0.0, 3.0 - (i as f32 * 0.2), 0.0),
-                ..Default::default()
+                ..default()
             })
             .insert(SignalGenerator {
                 func: signal_func,
                 amplitude: 0.1,
                 frequency: 3.0,
-                ..Default::default()
+                ..default()
             })
             .insert(SignalGeneratorLine {
                 points: points.clone(),
@@ -433,13 +425,13 @@ fn setup(
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 4.0, 0.0),
-            ..Default::default()
+            ..default()
         })
         .insert(SignalGenerator {
             func: SignalFunction::Pulse,
             amplitude: 1.0,
             frequency: 1.0,
-            ..Default::default()
+            ..default()
         })
         .insert(SignalGeneratorLine {
             points: points.clone(),
@@ -448,7 +440,7 @@ fn setup(
             kp: 0.1,
             ki: 0.0,
             kd: 0.0,
-            ..Default::default()
+            ..default()
         })
         .insert(SignalControlLine {
             points: points.clone(),
@@ -460,7 +452,7 @@ fn setup(
         mesh: meshes.add(line_mesh.clone()),
         material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_xyz(0.0, 3.5, 0.0),
-        ..Default::default()
+        ..default()
     };
     let graph = &mut graph_bundle.graph.graph;
 
@@ -471,18 +463,18 @@ fn setup(
         .with_children(|parent| {
             let root_index = graph.add_node(NodeData::<SandboxNodeData> {
                 is_anchor: true,
-                ..Default::default()
+                ..default()
             });
 
             parent
                 .spawn_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::UVSphere {
                         radius: 0.1,
-                        ..Default::default()
+                        ..default()
                     })),
                     material: materials.add(Color::GOLD.into()),
                     transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                    ..Default::default()
+                    ..default()
                 })
                 .insert(SandboxNode {
                     node_index: root_index,
@@ -492,7 +484,7 @@ fn setup(
                 let node_index = graph.add_node(NodeData::<SandboxNodeData> {
                     position: Vec3::new(rand::random(), rand::random(), rand::random()) * 0.01,
                     mass: 1.0,
-                    ..Default::default()
+                    ..default()
                 });
 
                 graph.add_edge(root_index, node_index, Default::default());
@@ -501,11 +493,11 @@ fn setup(
                     .spawn_bundle(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::UVSphere {
                             radius: 0.1,
-                            ..Default::default()
+                            ..default()
                         })),
                         material: materials.add(Color::ALICE_BLUE.into()),
                         transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                        ..Default::default()
+                        ..default()
                     })
                     .insert(SandboxNode { node_index });
 
@@ -514,7 +506,7 @@ fn setup(
                     let node_index = graph.add_node(NodeData::<SandboxNodeData> {
                         position: Vec3::new(rand::random(), rand::random(), rand::random()) * 0.01,
                         mass: 1.0,
-                        ..Default::default()
+                        ..default()
                     });
 
                     graph.add_edge(parent_index, node_index, Default::default());
@@ -523,11 +515,11 @@ fn setup(
                         .spawn_bundle(PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::UVSphere {
                                 radius: 0.1,
-                                ..Default::default()
+                                ..default()
                             })),
                             material: materials.add(Color::ALICE_BLUE.into()),
                             transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                            ..Default::default()
+                            ..default()
                         })
                         .insert(SandboxNode { node_index });
                 }
@@ -562,50 +554,60 @@ fn setup(
             base_color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
             unlit: true,
-            ..Default::default()
+            ..default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
-        let video_rotation = Quat::from_euler(
-            EulerRot::YXZ,
-            0.0, //-std::f32::consts::FRAC_PI_2,
-            -std::f32::consts::FRAC_PI_2,
-            0.0,
-        );
+        let video_rotation =
+            Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_2, 0.0, 0.0);
+
         commands
-            .spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+            .spawn_bundle(SpatialBundle {
                 transform: Transform::from_xyz(0.0, 0.5, -2.0).with_rotation(video_rotation),
-                ..Default::default()
+                ..default()
             })
-            .insert(VideoPlayer {
-                start_frame: 0,
-                end_frame: 80,
-                framerate: 20.0,
-                playing: true,
-                ..Default::default()
+            .with_children(|parent| {
+                parent
+                    .spawn_bundle(PbrBundle {
+                        mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                        material: materials.add(video_material),
+                        transform: Transform::from_rotation(Quat::from_euler(
+                            EulerRot::YXZ,
+                            0.0,
+                            -std::f32::consts::FRAC_PI_2,
+                            0.0,
+                        )),
+                        ..default()
+                    })
+                    .insert(VideoPlayer {
+                        start_frame: 0,
+                        end_frame: 80,
+                        framerate: 20.0,
+                        playing: true,
+                        ..default()
+                    })
+                    .insert(video_asset)
+                    .insert(Name::new("Video: RenderTarget"));
             })
-            .insert(video_asset)
             .insert(Name::new("Video: Robot"))
             .insert(SmoothLookAt {
                 target: Some(camera_entity),
                 initial_pose: video_rotation,
-                yaw_ease: EaseFunction::ElasticInOut,
-                pitch_ease: EaseFunction::SineInOut,
-                ..Default::default()
+                // yaw_ease: EaseFunction::ElasticInOut,
+                // pitch_ease: EaseFunction::SineInOut,
+                ..default()
             })
             .with_children(|parent| {
                 parent
                     .spawn_bundle(AxesBundle {
                         axes: Axes {
                             size: 1.,
-                            ..Default::default()
+                            ..default()
                         },
                         mesh: meshes.add(line_mesh.clone()),
                         material: lines_materials.add(LinesMaterial {}),
-                        ..Default::default()
+                        ..default()
                     })
-                    .insert(Name::new("Spline Cursor"));
+                    .insert(Name::new("LookAt Coords"));
             });
     }
 
@@ -616,7 +618,7 @@ fn setup(
             base_color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
             unlit: true,
-            ..Default::default()
+            ..default()
         };
         let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
@@ -625,14 +627,14 @@ fn setup(
                 material: materials.add(video_material),
                 transform: Transform::from_xyz(0.0, 0.5, -2.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-                ..Default::default()
+                ..default()
             })
             .insert(VideoPlayer {
                 start_frame: 0,
                 end_frame: 80,
                 framerate: 20.0,
                 playing: true,
-                ..Default::default()
+                ..default()
             })
             .insert(video_asset)
             .insert(Name::new("Video: Robot"));
@@ -645,7 +647,7 @@ fn setup(
             base_color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
             unlit: true,
-            ..Default::default()
+            ..default()
         };
         commands
             .spawn_bundle(PbrBundle {
@@ -654,14 +656,14 @@ fn setup(
                 transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                     .with_scale(Vec3::new(1.0, 1.0, 1.0)),
-                ..Default::default()
+                ..default()
             })
             .insert(VideoPlayer {
                 start_frame: 0,
                 end_frame: 80,
                 framerate: 20.0,
                 playing: true,
-                ..Default::default()
+                ..default()
             })
             .insert(GstSink::default())
             .insert(Name::new("Video: Gst"));
@@ -672,7 +674,7 @@ fn setup(
         base_color: Color::rgb(1.0, 1.0, 1.0),
         base_color_texture: Some(rt_image),
         unlit: true,
-        ..Default::default()
+        ..default()
     };
     commands
         .spawn_bundle(PbrBundle {
@@ -681,7 +683,7 @@ fn setup(
             transform: Transform::from_xyz(-2.5, 0.5, -3.0)
                 .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                 .with_scale(Vec3::new(1.0, 1.0, 1.0)),
-            ..Default::default()
+            ..default()
         })
         .insert(RenderLayers::layer(1))
         .insert(Name::new("Video: RenderTarget"));
