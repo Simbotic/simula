@@ -1,9 +1,10 @@
 pub mod axes;
+pub mod ease;
 pub mod force_graph;
 pub mod grid;
 pub mod lines;
+pub mod lookat;
 pub mod pointcloud;
 pub mod rod;
 pub mod signal;
 pub mod voxel;
-pub mod ease;

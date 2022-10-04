@@ -32,6 +32,7 @@ use simula_viz::{
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, Lines, LinesBundle, LinesMaterial, LinesPlugin},
+    lookat::{LookAtPlugin, SmoothLookAt},
     pointcloud::{PointData, Pointcloud, PointcloudPlugin},
     signal::{
         signal_control_lines, signal_generator_lines, SignalControlLine, SignalGeneratorLine,
@@ -73,6 +74,7 @@ fn main() {
         .add_plugin(PointcloudPlugin)
         .add_plugin(MonkeyPlugin)
         .add_plugin(VideoPlugin)
+        .add_plugin(LookAtPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -156,14 +158,14 @@ fn setup(
         .spawn_bundle(AxesBundle {
             axes: Axes {
                 size: 1.,
-                inner_offset: 5.,
+                ..Default::default()
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
-            transform: Transform::from_xyz(0.0, 0.01, 0.0),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
         })
-        .insert(Name::new("Axes: World"));
+        .insert(Name::new("Spline Cursor"));
 
     // x - axis
     commands
@@ -236,7 +238,7 @@ fn setup(
 
     let rt_image = images.add(rt::default_render_target_image());
 
-    commands
+    let camera_entity = commands
         .spawn_bundle(Camera3dBundle {
             ..Default::default()
         })
@@ -270,7 +272,8 @@ fn setup(
         })
         .insert(FlyCamera {
             ..Default::default()
-        });
+        })
+        .id();
 
     // FPS on screen
     commands.spawn_bundle(TextBundle {
@@ -562,12 +565,12 @@ fn setup(
             ..Default::default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+        let video_rotation = Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2);
         commands
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
-                transform: Transform::from_xyz(0.0, 0.5, -2.0)
-                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(0.0, 0.5, -2.0).with_rotation(video_rotation),
                 ..Default::default()
             })
             .insert(VideoPlayer {
@@ -578,7 +581,25 @@ fn setup(
                 ..Default::default()
             })
             .insert(video_asset)
-            .insert(Name::new("Video: Robot"));
+            .insert(Name::new("Video: Robot"))
+            .insert(SmoothLookAt {
+                target: Some(camera_entity),
+                initial_pose: video_rotation,
+                ..Default::default()
+            })
+            .with_children(|parent| {
+                parent
+                    .spawn_bundle(AxesBundle {
+                        axes: Axes {
+                            size: 1.,
+                            ..Default::default()
+                        },
+                        mesh: meshes.add(line_mesh.clone()),
+                        material: lines_materials.add(LinesMaterial {}),
+                        ..Default::default()
+                    })
+                    .insert(Name::new("Spline Cursor"));
+            });
     }
 
     #[cfg(feature = "webp")]
