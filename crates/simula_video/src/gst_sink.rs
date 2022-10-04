@@ -12,7 +12,20 @@ use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 
 #[derive(Component)]
-pub struct GstAsset {
+pub struct GstSink {
+    pub pipeline: String,
+}
+
+impl Default for GstSink {
+    fn default() -> Self {
+        Self {
+            pipeline: "videotestsrc ! appsink name=simula".to_string(),
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct GstSinkProcess {
     pub process: std::thread::JoinHandle<()>,
     receiver: Receiver<Vec<u8>>,
 }
@@ -30,18 +43,25 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup() {}
+pub fn setup_gst_sink() {}
 
-pub fn run(
+pub fn stream_gst_sinks(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    videos: Query<(&GstAsset, &Handle<StandardMaterial>, &ComputedVisibility)>,
+    videos: Query<
+        (
+            &GstSinkProcess,
+            &Handle<StandardMaterial>,
+            &ComputedVisibility,
+        ),
+        With<GstSink>,
+    >,
 ) {
-    for (video, material, visibility) in videos.iter() {
+    for (process, material, visibility) in videos.iter() {
         if !visibility.is_visible() {
             continue;
         }
-        if let Ok(data) = video.receiver.try_recv() {
+        if let Ok(data) = process.receiver.try_recv() {
             let mut material = materials.get_mut(&material).unwrap();
             let image = Image::new_fill(
                 Extent3d {
@@ -59,6 +79,26 @@ pub fn run(
     }
 }
 
+pub fn launch_gst_sinks(
+    mut commands: Commands,
+    sinks: Query<(Entity, &GstSink), Without<GstSinkProcess>>,
+) {
+    for (entity, sink) in sinks.iter() {
+        let (sender, receiver) = bounded(1);
+        let pipeline = sink.pipeline.clone();
+        let launch_handle = std::thread::spawn(move || {
+            match create_pipeline(pipeline, sender).and_then(pipeline_loop) {
+                Ok(r) => r,
+                Err(e) => eprintln!("Error! {}", e),
+            }
+        });
+        commands.entity(entity).insert(GstSinkProcess {
+            process: launch_handle,
+            receiver,
+        });
+    }
+}
+
 fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst::Pipeline, Error> {
     gst::init()?;
 
@@ -68,7 +108,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
 
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
 
-    let sink = pipeline
+    let appsink = pipeline
         .by_name("simula")
         .ok_or_else(|| MissingElement("simula"))?
         .dynamic_cast::<gst_app::AppSink>()
@@ -80,7 +120,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
         .field("width", &512)
         .field("height", &512)
         .build();
-    sink.set_caps(Some(&caps));
+    appsink.set_caps(Some(&caps));
 
     // create app sink callbacks
     let callbacks = gst_app::AppSinkCallbacks::builder()
@@ -89,7 +129,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
             let buffer = sample.buffer().unwrap();
 
             let caps = sample.caps().expect("Sample without caps");
-            let info = gst_video::VideoInfo::from_caps(caps).expect("Failed to parse caps");
+            let video_info = gst_video::VideoInfo::from_caps(caps).expect("Failed to parse caps");
 
             // At this point, buffer is only a reference to an existing memory region somewhere.
             // When we want to access its content, we have to map it while requesting the required
@@ -98,8 +138,8 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
             // on the machine's main memory itself, but rather in the GPU's memory.
             // So mapping the buffer makes the underlying memory region accessible to us.
             // See: https://gstreamer.freedesktop.org/documentation/plugin-development/advanced/allocation.html
-            let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &info).map_err(
-                |_| {
+            let frame = gst_video::VideoFrameRef::from_buffer_ref_readable(buffer, &video_info)
+                .map_err(|_| {
                     element_error!(
                         appsink,
                         gst::ResourceError::Failed,
@@ -107,8 +147,7 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
                     );
 
                     gst::FlowError::Error
-                },
-            )?;
+                })?;
 
             // Now we can access the buffer's content.
             // The frame's data is a slice of planes, each plane being a slice of bytes.
@@ -122,12 +161,12 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
         })
         .build();
 
-    sink.set_callbacks(callbacks);
+    appsink.set_callbacks(callbacks);
 
     Ok(pipeline)
 }
 
-fn main_loop(pipeline: gst::Pipeline) -> Result<(), Error> {
+fn pipeline_loop(pipeline: gst::Pipeline) -> Result<(), Error> {
     pipeline.set_state(gst::State::Playing)?;
 
     let bus = pipeline
@@ -159,25 +198,4 @@ fn main_loop(pipeline: gst::Pipeline) -> Result<(), Error> {
     pipeline.set_state(gst::State::Null)?;
 
     Ok(())
-}
-
-pub fn create_gst() -> GstAsset {
-    let (sender, receiver) = bounded(1);
-    let launch_handle = std::thread::spawn(move || {
-        match create_pipeline(
-            // "filesrc num-buffers=1000 location=assets/videos/sample-01.mkv ! decodebin ! videoconvert ! videoscale ! video/x-raw,format=RGBA,width=512,height=512 ! appsink name=simula".to_string(),
-            "videotestsrc ! video/x-raw,width=512,height=512 ! appsink name=simula".into(),
-            sender,
-        )
-        .and_then(main_loop)
-        {
-            Ok(r) => r,
-            Err(e) => eprintln!("Error! {}", e),
-        }
-    });
-
-    GstAsset {
-        process: launch_handle,
-        receiver,
-    }
 }

@@ -253,7 +253,6 @@ pub fn action_map<T, W>(
                         ActionMapButton::Keyboard(key_code) => {
                             if keyboard_action.on_enter(key_code) {
                                 if !action.on(action_map_input.action) {
-                                    // wants_enter += 1;
                                     action.enter(action_map_input.action);
                                 }
                             } else if keyboard_action.on(key_code) {
@@ -263,7 +262,6 @@ pub fn action_map<T, W>(
                         ActionMapButton::MouseButton(mouse_button) => {
                             if mouse_button_action.on_enter(mouse_button) {
                                 if !action.on(action_map_input.action) {
-                                    // wants_enter += 1;
                                     action.enter(action_map_input.action);
                                 }
                             } else if mouse_button_action.on(mouse_button) {

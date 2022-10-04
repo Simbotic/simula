@@ -1,17 +1,23 @@
+#[cfg(feature = "gst")]
+pub use crate::{gst_sink::GstSink, gst_src::GstSrc};
 use bevy::prelude::*;
 #[cfg(feature = "gif")]
 pub use gif::{GifAsset, GifAssetLoader};
-#[cfg(feature = "gst")]
-pub use gst::{GstAsset, create_gst};
+pub use raw_src::RawSrc;
 #[cfg(feature = "webp")]
 pub use webp::{WebPAsset, WebPAssetLoader};
 
 #[cfg(feature = "gif")]
 mod gif;
 #[cfg(feature = "gst")]
-mod gst;
+mod gst_sink;
+#[cfg(feature = "gst")]
+mod gst_src;
 #[cfg(feature = "webp")]
 mod webp;
+
+pub mod raw_src;
+pub mod rt;
 
 #[derive(Default, Debug, Component, Reflect)]
 #[reflect(Component)]
@@ -30,6 +36,11 @@ impl Plugin for VideoPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<VideoPlayer>().add_system(run);
 
+        app.add_startup_system(raw_src::setup_raw_src)
+            .add_system(raw_src::setup_raw_srcs)
+            .add_system(raw_src::process_raw_srcs);
+        raw_src::setup_render_graph(app);
+
         #[cfg(feature = "gif")]
         app.add_asset::<GifAsset>()
             .init_asset_loader::<GifAssetLoader>()
@@ -41,7 +52,15 @@ impl Plugin for VideoPlugin {
             .add_system(webp::run);
 
         #[cfg(feature = "gst")]
-        app.add_startup_system(gst::setup).add_system(gst::run);
+        {
+            app.add_startup_system(gst_sink::setup_gst_sink)
+                .add_system(gst_sink::stream_gst_sinks)
+                .add_system(gst_sink::launch_gst_sinks);
+
+            app.add_startup_system(gst_src::setup_gst_src)
+                .add_system(gst_src::stream_gst_srcs)
+                .add_system(gst_src::launch_gst_srcs);
+        }
     }
 }
 

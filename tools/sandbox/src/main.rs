@@ -1,7 +1,9 @@
 use bevy::{
+    core_pipeline::clear_color::ClearColorConfig,
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+    // log::LogPlugin,
     prelude::*,
-    render::view::NoFrustumCulling,
+    render::view::{NoFrustumCulling, RenderLayers},
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use enum_iterator::IntoEnumIterator;
@@ -10,20 +12,20 @@ use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
-use simula_camera::{orbitcam::*, flycam::*,};
+use simula_camera::{flycam::*, orbitcam::*};
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator},
 };
 use simula_net::NetPlugin;
-#[cfg(feature = "gst")]
-use simula_video::create_gst;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{VideoPlayer, VideoPlugin};
+use simula_video::{rt, RawSrc, VideoPlayer, VideoPlugin};
+#[cfg(feature = "gst")]
+use simula_video::{GstSink, GstSrc};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
@@ -40,8 +42,9 @@ use simula_viz::{
 mod monkey;
 
 fn main() {
-    App::new()
-        .register_type::<SignalGenerator>()
+    let mut app = App::new();
+
+    app.register_type::<SignalGenerator>()
         .register_type::<SignalFunction>()
         .register_type::<SignalController<f32>>()
         .register_type::<ForceGraph<SandboxNodeData, SandboxEdgeData>>()
@@ -56,6 +59,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins)
+        // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
         .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
@@ -76,12 +80,18 @@ fn main() {
         .add_system(signal_generator_lines)
         .add_system(signal_control_lines)
         .add_system(rotate_system)
-        .add_system(force_graph_test)
-        .run();
+        .add_system(force_graph_test);
+
+    // bevy_mod_debugdump::print_schedule(&mut app);
+    // bevy_mod_debugdump::print_render_schedule(&mut app);
+    // bevy_mod_debugdump::print_render_graph(&mut app);
+
+    app.run();
 }
 
 fn setup(
     mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
@@ -119,7 +129,7 @@ fn setup(
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_xyz(-2.0, 0.0, -2.0),
+            transform: Transform::from_xyz(-2.5, 0.0, -1.5),
             ..Default::default()
         })
         .insert(Name::new("Shape: Cube"));
@@ -224,7 +234,8 @@ fn setup(
         ..Default::default()
     });
 
-    // orbit camera
+    let rt_image = images.add(rt::default_render_target_image());
+
     commands
         .spawn_bundle(Camera3dBundle {
             ..Default::default()
@@ -233,6 +244,29 @@ fn setup(
             center: Vec3::new(0.0, 1.0, 0.0),
             distance: 10.0,
             ..Default::default()
+        })
+        .insert(RenderLayers::all())
+        .with_children(|parent| {
+            let mut child = parent.spawn_bundle(Camera3dBundle {
+                camera_3d: Camera3d {
+                    clear_color: ClearColorConfig::Custom(Color::BLACK),
+                    ..default()
+                },
+                camera: Camera {
+                    priority: -1,
+                    target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
+                    ..default()
+                },
+                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 15.0))
+                    .looking_at(Vec3::default(), Vec3::Y),
+                ..default()
+            });
+
+            // RawSrc is optional when using GstSrc, as it will be set automatically
+            child.insert(RawSrc::default());
+
+            #[cfg(feature = "gst")]
+            child.insert(GstSrc::default());
         })
         .insert(FlyCamera {
             ..Default::default()
@@ -585,14 +619,13 @@ fn setup(
             unlit: true,
             ..Default::default()
         };
-        let gst_asset = create_gst();
         commands
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
-                transform: Transform::from_xyz(2.0, 0.5, -3.0)
+                transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
-                    .with_scale(Vec3::new(1.6, 1.0, 1.0)),
+                    .with_scale(Vec3::new(1.0, 1.0, 1.0)),
                 ..Default::default()
             })
             .insert(VideoPlayer {
@@ -602,9 +635,28 @@ fn setup(
                 playing: true,
                 ..Default::default()
             })
-            .insert(gst_asset)
+            .insert(GstSink::default())
             .insert(Name::new("Video: Gst"));
     }
+
+    // render target
+    let rt_material = StandardMaterial {
+        base_color: Color::rgb(1.0, 1.0, 1.0),
+        base_color_texture: Some(rt_image),
+        unlit: true,
+        ..Default::default()
+    };
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            material: materials.add(rt_material),
+            transform: Transform::from_xyz(-2.5, 0.5, -3.0)
+                .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+                .with_scale(Vec3::new(1.0, 1.0, 1.0)),
+            ..Default::default()
+        })
+        .insert(RenderLayers::layer(1))
+        .insert(Name::new("Video: RenderTarget"));
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

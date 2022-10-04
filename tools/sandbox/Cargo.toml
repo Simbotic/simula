@@ -12,6 +12,7 @@ gst = ["simula_video/gst"]
 [dependencies]
 bevy = { version = "0.8" }
 bevy-inspector-egui = "0.13"
+bevy_mod_debugdump = "0.5"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
