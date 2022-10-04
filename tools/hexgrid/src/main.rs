@@ -7,8 +7,7 @@ use bevy::{prelude::*, render::view::NoFrustumCulling};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
-use simula_hexgrid::{hexgrid::*, worldmap_material::{HexgridData, HexData}};
-use simula_action::ActionPlugin;
+use simula_hexgrid::hexgrid::*;
 
 fn main() {
     App::new()
@@ -23,7 +22,6 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(HexgridPlugin)
-        .add_plugin(ActionPlugin)
         .add_startup_system(hexgrid_setup)
         .add_startup_system(hexgrid_builder)
         .run();
@@ -46,9 +44,9 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
                     .flat_map(|x| (-51..77).map(move |z| (x as f32 / 10.0, z as f32 / 10.0)))
                     .map(|(x, z)| HexData {
                         position: Vec3::new(
-                            x * -10.0 * 0.975,
+                            x * -10.0 + 2.0,
                             0.0,
-                            z * 10.0 * 1.1258 + (0.5629 * ((x * 10.0) % 2.0)),
+                            z * 10.0 + (0.5 * ((x * 10.0) % 2.0)),
                         ),
                         scale: 1.3,
                         color: Color::hsla(238.0, 0.95, 0.59, 0.0).as_rgba_u32(),
@@ -69,44 +67,40 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
             ..default()
         })
         .insert(OrbitCamera {
-            y: 0.01,
             pan_sensitivity: 10.0,
-            distance: 50.0,
             center: Vec3::ZERO,
             ..Default::default()
         })
         .insert(HexgridObject);
 }
 
-pub fn hexgrid_builder(
-    mut path_find: ResMut<PathFind>
-) {
-    path_find.counter_one = 0;
+pub fn hexgrid_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
+    shortest_path.counter_one = 0;
 
     // Loop while `counter` is less than 2048
-    while path_find.counter_one < 2048 {
-        path_find.counter_two = 0;
+    while shortest_path.counter_one < 2048 {
+        shortest_path.counter_two = 0;
 
-        while path_find.counter_two < 2048 {
-            let n = path_find.counter_one;
-            let m = path_find.counter_two;
+        while shortest_path.counter_two < 2048 {
+            let n = shortest_path.counter_one;
+            let m = shortest_path.counter_two;
 
             //hash from vec to make seed for deterministic random complexity value
             let vec = vec![n, m];
             let mut hash = DefaultHasher::new();
             vec.hash(&mut hash);
             let complexity_seed = hash.finish();
-            path_find.random_complexity =
+            shortest_path.random_complexity =
                 Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
-            let l = path_find.random_complexity;
+            let l = shortest_path.random_complexity;
 
             //create nodes
-            path_find.nodes.insert((n, m), l);
+            shortest_path.nodes.insert((n, m), l);
 
             //increment
-            path_find.counter_two += 1;
+            shortest_path.counter_two += 1;
         }
         //increment
-        path_find.counter_one += 1;
+        shortest_path.counter_one += 1;
     }
 }

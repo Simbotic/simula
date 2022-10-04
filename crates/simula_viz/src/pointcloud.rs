@@ -40,8 +40,8 @@ impl Plugin for PointcloudPlugin {
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<PointcloudPipeline>()
             .init_resource::<SpecializedMeshPipelines<PointcloudPipeline>>()
-            .add_system_to_stage(RenderStage::Queue, queue_custom)
-            .add_system_to_stage(RenderStage::Prepare, prepare_instance_buffers);
+            .add_system_to_stage(RenderStage::Queue, queue_pointclouds)
+            .add_system_to_stage(RenderStage::Prepare, prepare_pointclouds);
     }
 }
 
@@ -54,7 +54,7 @@ pub struct PointData {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn queue_custom(
+fn queue_pointclouds(
     transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
     custom_pipeline: Res<PointcloudPipeline>,
     msaa: Res<Msaa>,
@@ -101,7 +101,7 @@ struct InstanceBuffer {
     length: usize,
 }
 
-fn prepare_instance_buffers(
+fn prepare_pointclouds(
     mut commands: Commands,
     query: Query<(Entity, &Pointcloud)>,
     render_device: Res<RenderDevice>,
