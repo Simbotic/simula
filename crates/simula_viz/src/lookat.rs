@@ -25,7 +25,7 @@ impl Default for SmoothLookAt {
             target: None,
             initial_pose: Quat::IDENTITY,
             max_yaw: 45.0,
-            max_pitch: 45.0,
+            max_pitch: 20.0,
             yaw_ease: EaseFunction::Linear,
             pitch_ease: EaseFunction::Linear,
         }
@@ -42,26 +42,32 @@ pub fn smooth_look_at(
                 let target_position = target_transform.translation;
                 let position = transform.translation;
 
+                // Calculate look at transform
                 let look_transform = Transform::identity()
                     .with_translation(position)
                     .looking_at(target_position, Vec3::Y);
 
+                // Calculate yaw and pitch
                 let rotation = look_transform.rotation * look_at.initial_pose.inverse();
-                let (yaw, pitch, _) = rotation.to_euler(EulerRot::YXZ);
-                // println!("yaw: {}, pitch: {}", yaw.to_degrees(), pitch.to_degrees());
+                let (yaw, _pitch, roll) = rotation.to_euler(EulerRot::YXZ);
+                // TODO: why is this needed?
+                let pitch = roll;
 
+                // Clamp yaw and pitch
                 let max_yaw = look_at.max_yaw.to_radians();
                 let max_pitch = look_at.max_pitch.to_radians();
                 let yaw = yaw.clamp(-max_yaw, max_yaw);
                 let pitch = pitch.clamp(-max_pitch, max_pitch);
+
+                // Ease yaw and pitch
                 let yaw_alpha = yaw.abs() / max_yaw;
                 let pitch_alpha = pitch.abs() / max_pitch;
                 let yaw = yaw * yaw_alpha.calc(look_at.yaw_ease);
                 let pitch = pitch * pitch_alpha.calc(look_at.pitch_ease);
 
-                transform.rotation = Quat::from_rotation_y(yaw)
-                    * Quat::from_rotation_x(pitch)
-                    * look_at.initial_pose;
+                // Apply yaw and pitch
+                transform.rotation =
+                    Quat::from_euler(EulerRot::YXZ, yaw, 0.0, pitch) * look_at.initial_pose;
             }
         }
     }

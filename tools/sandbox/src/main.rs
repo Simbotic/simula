@@ -558,7 +558,7 @@ fn setup(
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
         let video_rotation =
-            Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_2, 0.0, 0.0);
+            Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_2 * 0.0, 0.0, 0.0);
 
         commands
             .spawn_bundle(SpatialBundle {
@@ -592,8 +592,8 @@ fn setup(
             .insert(SmoothLookAt {
                 target: Some(camera_entity),
                 initial_pose: video_rotation,
-                // yaw_ease: EaseFunction::ElasticInOut,
-                // pitch_ease: EaseFunction::SineInOut,
+                yaw_ease: EaseFunction::SineInOut,
+                pitch_ease: EaseFunction::SineInOut,
                 ..default()
             })
             .with_children(|parent| {
