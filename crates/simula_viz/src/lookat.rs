@@ -61,8 +61,14 @@ pub fn smooth_look_at(
                         local_target_position.y,
                         -local_target_position.z.abs(),
                     );
-                    Vec3::Y.dot(local_target_position.normalize()) * std::f32::consts::PI / 2.0
+                    let target_position = initial_pose * local_target_position;
+                    let look_transform = Transform::identity()
+                        .with_translation(position)
+                        .looking_at(target_position, Vec3::Y);
+                    let (_yaw, pitch, _roll) = look_transform.rotation.to_euler(EulerRot::YXZ);
+                    pitch
                 };
+                // println!("pitch: {}", pitch);
 
                 // Clamp and ease yaw
                 let max_yaw = look_at.max_yaw.to_radians();
