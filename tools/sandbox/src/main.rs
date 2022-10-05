@@ -558,11 +558,13 @@ fn setup(
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
         let video_rotation =
-            Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_2 * 0.0, 0.0, 0.0);
+            Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
+        let video_position = Vec3::new(0.0, 0.5, -2.0);
 
         commands
             .spawn_bundle(SpatialBundle {
-                transform: Transform::from_xyz(0.0, 0.5, -2.0).with_rotation(video_rotation),
+                transform: Transform::from_translation(video_position)
+                    .with_rotation(video_rotation),
                 ..default()
             })
             .with_children(|parent| {
@@ -609,6 +611,21 @@ fn setup(
                     })
                     .insert(Name::new("LookAt Coords"));
             });
+
+        commands
+            .spawn_bundle(AxesBundle {
+                transform: Transform::from_translation(video_position)
+                    .with_rotation(video_rotation),
+                axes: Axes {
+                    size: 3.,
+                    ..default()
+                },
+                visibility: Visibility { is_visible: false },
+                mesh: meshes.add(line_mesh.clone()),
+                material: lines_materials.add(LinesMaterial {}),
+                ..default()
+            })
+            .insert(Name::new("LookAt Coords"));
     }
 
     #[cfg(feature = "webp")]
