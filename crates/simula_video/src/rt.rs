@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{
     Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
 };
+use bevy::render::texture::BevyDefault;
 
 pub fn default_render_target_image() -> Image {
     let size = Extent3d {
@@ -14,7 +15,7 @@ pub fn default_render_target_image() -> Image {
             label: None,
             size,
             dimension: TextureDimension::D2,
-            format: TextureFormat::Bgra8UnormSrgb,
+            format: TextureFormat::bevy_default(),
             mip_level_count: 1,
             sample_count: 1,
             usage: TextureUsages::TEXTURE_BINDING
