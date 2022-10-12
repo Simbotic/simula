@@ -1,7 +1,9 @@
 use bevy::{prelude::*, tasks::IoTaskPool, utils::Uuid};
 use serde::{Deserialize, Serialize};
 use simula_socket::WebRtcSocket;
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
 
 #[derive(Default, Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PeerId {
@@ -47,6 +49,7 @@ impl Plugin for NetPlugin {
             .register_type::<LocalPeer>()
             .register_type::<Replicate>()
             .register_type::<Proxy>()
+            .register_type::<PeerId>()
             .add_system_to_stage(CoreStage::PreUpdate, extract_messages)
             .add_system_to_stage(CoreStage::PostUpdate, cleanup_proxies)
             .add_startup_system(setup)
@@ -181,7 +184,18 @@ impl Default for Proxy {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum Payload<T> {
-    Replicate { uuid: Uuid, data: T, name: String },
+    Replicate {
+        type_id: u32,
+        uuid: Uuid,
+        data: T,
+        name: String,
+    },
+}
+
+fn get_hash<T: Reflect>() -> u32 {
+    let mut hasher = DefaultHasher::new();
+    std::any::type_name::<T>().hash(&mut hasher);
+    hasher.finish() as u32
 }
 
 pub fn replicate<T>(
@@ -195,6 +209,8 @@ pub fn replicate<T>(
 ) where
     T: Reflect + Debug + for<'de> Deserialize<'de> + Component + Serialize + Send + Sync + 'static,
 {
+    let replicate_type_id = get_hash::<T>();
+
     if let Some(socket) = socket.as_mut() {
         // Send data to peers
         for (mut sync, data, name) in syncs.iter_mut() {
@@ -206,6 +222,7 @@ pub fn replicate<T>(
             if sync.last_sync + 1.0 / sync.rate < time.seconds_since_startup() {
                 sync.last_sync = time.seconds_since_startup();
                 let payload = Payload::Replicate {
+                    type_id: replicate_type_id,
                     uuid: sync.uuid,
                     data: data.clone(),
                     name,
@@ -221,10 +238,11 @@ pub fn replicate<T>(
                             should_send = true;
                         }
                         if should_send {
-                            trace!(
-                                "Sending to: {:?} net message: {}",
+                            println!(
+                                "Request replicate for: {:?} type: {} type_id: {}",
                                 peer.id,
-                                std::any::type_name::<T>().to_string()
+                                std::any::type_name::<T>().to_string(),
+                                replicate_type_id
                             );
                             socket.send(packet.clone().into(), peer.id.uuid);
                         }
@@ -247,11 +265,21 @@ pub fn replicate<T>(
                     std::any::type_name::<T>().to_string(),
                 );
                 match message {
-                    Payload::Replicate { uuid, data, name } => {
+                    Payload::Replicate {
+                        type_id,
+                        uuid,
+                        data,
+                        name,
+                    } if type_id == replicate_type_id => {
                         let proxy = proxies.iter_mut().find(|(_, proxy)| proxy.uuid == uuid);
                         if let Some((mut proxy_data, _)) = proxy {
                             *proxy_data = data;
                         } else {
+                            println!(
+                                "Instantiate Proxy for: {} type: {}",
+                                peer_id,
+                                std::any::type_name::<T>().to_string(),
+                            );
                             let id = uuid.to_string().get(0..4).unwrap_or_default().to_string();
                             commands
                                 .spawn()
@@ -264,6 +292,7 @@ pub fn replicate<T>(
                                 .insert(Name::new(format!("{}: Proxy ({})", name, id)));
                         }
                     }
+                    _ => {}
                 }
             } else {
                 error!(
