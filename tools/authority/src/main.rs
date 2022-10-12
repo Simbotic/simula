@@ -6,7 +6,7 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_authority::{Authority, NetAuthorityPlugin};
 use simula_camera::orbitcam::*;
-use simula_net::{NetPlugin, Replicate};
+use simula_net::{NetId, NetPlugin, Replicate};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -49,7 +49,8 @@ fn setup(
     commands
         .spawn()
         .insert(Authority::default())
-        .insert(Replicate::default())
+        .insert(Replicate::<Authority>::default())
+        .insert(NetId::default())
         .insert(Name::new("Authority"));
 
     // grid
