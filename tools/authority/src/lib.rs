@@ -37,7 +37,8 @@ impl Plugin for NetAuthorityPlugin {
             .add_system(replicate::<Authority>)
             .add_system(replicate::<Minion>)
             .add_system(replicate::<Worker>)
-            .add_system(setup_minions_replication);
+            .add_system(setup_minions_replication)
+            .add_system(reset_minions_replication);
     }
 }
 
@@ -76,6 +77,20 @@ fn setup_minions_replication(
                 target: Some(authority_proxy.sender.clone()),
                 ..default()
             });
+        }
+    }
+}
+
+fn reset_minions_replication(
+    mut commands: Commands,
+    authorities: Query<&Proxy, With<Authority>>,
+    minions: Query<Entity, (With<Minion>, With<Replicate<Minion>>)>,
+) {
+    // if authorities are gone or changed, remove replication from minions
+    // so it can be setup again
+    if authorities.iter().count() != 1 {
+        for minion_entity in minions.iter() {
+            commands.entity(minion_entity).remove::<Replicate<Minion>>();
         }
     }
 }
