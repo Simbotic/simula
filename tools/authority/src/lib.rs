@@ -10,14 +10,10 @@ pub struct Authority {
     pub count: u32,
 }
 
-pub enum Command {
-    SayHi,
-    Ask(String),
-}
-
-pub enum Protocol {
-    Authority,
-    Command(Command),
+#[derive(Reflect, Default, Debug, Component, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct Minion {
+    pub count: u32,
 }
 
 impl Plugin for NetAuthorityPlugin {

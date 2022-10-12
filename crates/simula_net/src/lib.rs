@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use simula_socket::WebRtcSocket;
 use std::fmt::Debug;
 
-#[derive(Default, Reflect, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PeerId {
     #[reflect(ignore)]
     uuid: Uuid,
@@ -133,17 +133,14 @@ pub fn extract_messages(mut socket: ResMut<Option<WebRtcSocket>>, mut messages: 
     }
 }
 
-#[derive(Debug, Clone, Component, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Component, Reflect)]
 #[reflect(Component)]
 pub struct Replicate {
     #[reflect(ignore)]
     pub uuid: Uuid,
-    #[serde(skip)]
     pub id: String,
     /// rate in hertz
-    #[serde(skip)]
     pub rate: f64,
-    #[serde(skip)]
     pub last_sync: f64,
 }
 
@@ -165,6 +162,7 @@ pub struct Proxy {
     #[reflect(ignore)]
     pub uuid: Uuid,
     pub id: String,
+    pub sender: PeerId,
 }
 
 impl Default for Proxy {
@@ -173,17 +171,14 @@ impl Default for Proxy {
         Self {
             uuid: id.clone(),
             id: id.to_string().get(0..4).unwrap_or_default().to_string(),
+            sender: PeerId::new(&Uuid::new_v4()),
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 enum Payload<T> {
-    Replicate {
-        replicate: Replicate,
-        data: T,
-        name: String,
-    },
+    Replicate { uuid: Uuid, data: T, name: String },
 }
 
 pub fn replicate<T>(
@@ -192,7 +187,7 @@ pub fn replicate<T>(
     mut socket: ResMut<Option<WebRtcSocket>>,
     messages: Res<Messages>,
     peers: Query<&RemotePeer>,
-    mut syncs: Query<(&mut Replicate, &T, &Name)>,
+    mut syncs: Query<(&mut Replicate, &T, Option<&Name>)>,
     mut proxies: Query<(&mut T, &Proxy), Without<Replicate>>,
 ) where
     T: Reflect + Debug + for<'de> Deserialize<'de> + Component + Serialize + Send + Sync + 'static,
@@ -200,12 +195,17 @@ pub fn replicate<T>(
     if let Some(socket) = socket.as_mut() {
         // Send data to peers
         for (mut sync, data, name) in syncs.iter_mut() {
+            let name = if let Some(name) = name {
+                name.into()
+            } else {
+                "Entity".to_string()
+            };
             if sync.last_sync + 1.0 / sync.rate < time.seconds_since_startup() {
                 sync.last_sync = time.seconds_since_startup();
                 let payload = Payload::Replicate {
-                    replicate: sync.clone(),
+                    uuid: sync.uuid,
                     data: data.clone(),
-                    name: name.into(),
+                    name,
                 };
                 for peer in peers.iter() {
                     if let Ok(packet) = bincode::serialize(&payload) {
@@ -234,29 +234,19 @@ pub fn replicate<T>(
                     std::any::type_name::<T>().to_string(),
                 );
                 match message {
-                    Payload::Replicate {
-                        replicate,
-                        data,
-                        name,
-                    } => {
-                        let proxy = proxies
-                            .iter_mut()
-                            .find(|(_, proxy)| proxy.uuid == replicate.uuid);
+                    Payload::Replicate { uuid, data, name } => {
+                        let proxy = proxies.iter_mut().find(|(_, proxy)| proxy.uuid == uuid);
                         if let Some((mut proxy_data, _)) = proxy {
                             *proxy_data = data;
                         } else {
-                            let id = replicate
-                                .uuid
-                                .to_string()
-                                .get(0..4)
-                                .unwrap_or_default()
-                                .to_string();
+                            let id = uuid.to_string().get(0..4).unwrap_or_default().to_string();
                             commands
                                 .spawn()
                                 .insert(data)
                                 .insert(Proxy {
-                                    uuid: replicate.uuid,
+                                    uuid,
                                     id: id.clone(),
+                                    sender: PeerId::new(peer_id),
                                 })
                                 .insert(Name::new(format!("{}: Proxy ({})", name, id)));
                         }

@@ -10,6 +10,7 @@ use enum_iterator::IntoEnumIterator;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
+use simula_authority::NetAuthorityPlugin;
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::{flycam::*, orbitcam::*};
@@ -39,7 +40,6 @@ use simula_viz::{
     },
     voxel::{Voxel, VoxelMesh, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
-use simula_authority::NetAuthorityPlugin;
 
 mod monkey;
 
@@ -530,24 +530,27 @@ fn setup(
         .insert_bundle(graph_bundle);
 
     // pointcloud
-    commands.spawn().insert_bundle((
-        meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
-        Transform::from_xyz(0.0, 10.0, 10.0),
-        GlobalTransform::default(),
-        Pointcloud(
-            (1..=10)
-                .flat_map(|x| (1..=10).map(move |y| (x as f32 / 10.0, y as f32 / 10.0)))
-                .map(|(x, y)| PointData {
-                    position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
-                    scale: 1.0,
-                    color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_f32(),
-                })
-                .collect(),
-        ),
-        Visibility::default(),
-        ComputedVisibility::default(),
-        NoFrustumCulling,
-    ));
+    commands
+        .spawn()
+        .insert_bundle((
+            meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
+            Transform::from_xyz(0.0, 10.0, 10.0),
+            GlobalTransform::default(),
+            Pointcloud(
+                (1..=10)
+                    .flat_map(|x| (1..=10).map(move |y| (x as f32 / 10.0, y as f32 / 10.0)))
+                    .map(|(x, y)| PointData {
+                        position: Vec3::new(x * 10.0 - 5.0, y * 10.0 - 5.0, 0.0),
+                        scale: 1.0,
+                        color: Color::hsla(x * 360., y, 0.5, 1.0).as_rgba_f32(),
+                    })
+                    .collect(),
+            ),
+            Visibility::default(),
+            ComputedVisibility::default(),
+            NoFrustumCulling,
+        ))
+        .insert(Name::new("Pointcloud"));
 
     #[cfg(feature = "gif")]
     {
