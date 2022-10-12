@@ -19,7 +19,7 @@ gst = [
 [dependencies]
 bevy = { version = "0.8" }
 image = { version = "0.24", default-features = false }
-wgpu = ">=0.12"
+wgpu = "0.13.1"
 crossbeam-channel = { version = "0.5.0" }
 
 # GStreamer dependencies
