@@ -104,20 +104,20 @@ fn setup(
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    // // network minion that will only communicate with authority
-    // commands
-    //     .spawn()
-    //     .insert(Minion::default())
-    //     .insert(NetId::default())
-    //     .insert(Name::new("Minion"));
+    // network minion that will only communicate with authority
+    commands
+        .spawn()
+        .insert(Minion::default())
+        .insert(NetId::default())
+        .insert(Name::new("Minion"));
 
-    // // network worker that will sync with everyone
-    // commands
-    //     .spawn()
-    //     .insert(Worker::default())
-    //     .insert(Replicate::<Worker>::default())
-    //     .insert(NetId::default())
-    //     .insert(Name::new("Worker"));
+    // network worker that will sync with everyone
+    commands
+        .spawn()
+        .insert(Worker::default())
+        .insert(Replicate::<Worker>::default())
+        .insert(NetId::default())
+        .insert(Name::new("Worker"));
 
     // network minion worker that will sync worker state with others
     // but only minion state with authority

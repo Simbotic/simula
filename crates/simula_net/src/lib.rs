@@ -262,7 +262,7 @@ pub fn replicate<T>(
                             should_send = true;
                         }
                         if should_send {
-                            println!(
+                            trace!(
                                 "Request replicate peer_id: {} net_id: {} component: {} type_id: {}",
                                 peer.id.id,
                                 net_id.id,
@@ -320,11 +320,12 @@ pub fn replicate<T>(
                                     })
                                     .insert(Name::new(format!("{}: Proxy ({})", name, id)))
                                     .id();
+                                // TODO: Clear cache at some point
                                 cache.insert(net_id, entity);
                                 entity
                             };
                             commands.entity(entity).insert(data);
-                            println!(
+                            debug!(
                                 "Replicated peer_id: {} net_id: {} component: {} type_id: {} cached: {}",
                                 peer_id.to_string().get(0..4).unwrap_or_default(),
                                 id,
