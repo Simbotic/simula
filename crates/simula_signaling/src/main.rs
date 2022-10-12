@@ -12,7 +12,7 @@ mod signaling;
 #[tokio::main]
 async fn main() {
     if env::var_os("RUST_LOG").is_none() {
-        // env::set_var("RUST_LOG", "simula_signaling=info");
+        env::set_var("RUST_LOG", "simula_signaling=info");
     }
     pretty_env_logger::init();
     let args = Args::parse();

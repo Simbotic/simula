@@ -48,6 +48,7 @@ impl Plugin for NetPlugin {
             .register_type::<Replicate>()
             .register_type::<Proxy>()
             .add_system_to_stage(CoreStage::PreUpdate, extract_messages)
+            .add_system_to_stage(CoreStage::PostUpdate, cleanup_proxies)
             .add_startup_system(setup)
             .add_system(run);
     }
@@ -90,19 +91,19 @@ fn run(
             info!("New peer: {}", peer);
         }
 
-        let net_peers = socket.connected_peers();
+        let _disconnected_peers = socket.disconnected_peers();
+
+        let connected_peers = socket.connected_peers();
 
         // Remove old peers from world
-        // TODO: in a quick test it didnt work
         for (entity, peer) in &peers {
-            if !net_peers.contains(&peer.id.uuid) {
-                warn!("SHOULD REMOVE peer");
+            if !connected_peers.contains(&peer.id.uuid) {
                 commands.entity(entity).despawn_recursive();
             }
         }
 
         // Add new peers to world
-        for net_peer in net_peers {
+        for net_peer in connected_peers {
             if peers
                 .iter()
                 .find(|(_, peer)| peer.id.uuid == *net_peer)
@@ -142,6 +143,7 @@ pub struct Replicate {
     /// rate in hertz
     pub rate: f64,
     pub last_sync: f64,
+    pub target: Option<PeerId>,
 }
 
 impl Default for Replicate {
@@ -152,6 +154,7 @@ impl Default for Replicate {
             id: id.to_string().get(0..4).unwrap_or_default().to_string(),
             rate: 1.0,
             last_sync: 0.0,
+            target: None,
         }
     }
 }
@@ -207,20 +210,30 @@ pub fn replicate<T>(
                     data: data.clone(),
                     name,
                 };
-                for peer in peers.iter() {
-                    if let Ok(packet) = bincode::serialize(&payload) {
-                        trace!(
-                            "Sending to: {:?} net message: {}",
-                            peer.id,
-                            std::any::type_name::<T>().to_string()
-                        );
-                        socket.send(packet.into(), peer.id.uuid);
-                    } else {
-                        error!(
-                            "Failed to serialize net message: {}",
-                            std::any::type_name::<T>().to_string()
-                        );
+                if let Ok(packet) = bincode::serialize(&payload) {
+                    for peer in peers.iter() {
+                        let mut should_send = false;
+                        if let Some(target) = &sync.target {
+                            if target == &peer.id {
+                                should_send = true;
+                            }
+                        } else {
+                            should_send = true;
+                        }
+                        if should_send {
+                            trace!(
+                                "Sending to: {:?} net message: {}",
+                                peer.id,
+                                std::any::type_name::<T>().to_string()
+                            );
+                            socket.send(packet.clone().into(), peer.id.uuid);
+                        }
                     }
+                } else {
+                    error!(
+                        "Failed to serialize net message: {}",
+                        std::any::type_name::<T>().to_string()
+                    );
                 }
             }
         }
@@ -257,6 +270,21 @@ pub fn replicate<T>(
                     "Failed to deserialize net message: {}",
                     std::any::type_name::<T>().to_string()
                 );
+            }
+        }
+    }
+}
+
+fn cleanup_proxies(
+    mut commands: Commands,
+    proxies: Query<(Entity, &Proxy)>,
+    socket: Res<Option<WebRtcSocket>>,
+) {
+    if let Some(socket) = socket.as_ref() {
+        let connected_peers = socket.connected_peers();
+        for (entity, proxy) in proxies.iter() {
+            if !connected_peers.contains(&proxy.sender.uuid) {
+                commands.entity(entity).despawn_recursive();
             }
         }
     }

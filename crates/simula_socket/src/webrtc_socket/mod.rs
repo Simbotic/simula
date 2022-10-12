@@ -71,6 +71,7 @@ impl Default for WebRtcSocketConfig {
 pub struct WebRtcSocket {
     messages_from_peers: futures_channel::mpsc::UnboundedReceiver<(PeerId, Packet)>,
     new_connected_peers: futures_channel::mpsc::UnboundedReceiver<PeerId>,
+    disconnected_peers: futures_channel::mpsc::UnboundedReceiver<PeerId>,
     peer_messages_out: futures_channel::mpsc::UnboundedSender<(PeerId, Packet)>,
     peers: Vec<PeerId>,
     id: PeerId,
@@ -95,6 +96,7 @@ impl WebRtcSocket {
     pub fn new_with_config(config: WebRtcSocketConfig) -> (Self, MessageLoopFuture) {
         let (messages_from_peers_tx, messages_from_peers) = futures_channel::mpsc::unbounded();
         let (new_connected_peers_tx, new_connected_peers) = futures_channel::mpsc::unbounded();
+        let (disconnected_peers_tx, disconnected_peers) = futures_channel::mpsc::unbounded();
         let (peer_messages_out_tx, peer_messages_out_rx) =
             futures_channel::mpsc::unbounded::<(PeerId, Packet)>();
 
@@ -107,6 +109,7 @@ impl WebRtcSocket {
                 messages_from_peers,
                 peer_messages_out: peer_messages_out_tx,
                 new_connected_peers,
+                disconnected_peers,
                 peers: vec![],
             },
             Box::pin(run_socket(
@@ -114,6 +117,7 @@ impl WebRtcSocket {
                 id,
                 peer_messages_out_rx,
                 new_connected_peers_tx,
+                disconnected_peers_tx,
                 messages_from_peers_tx,
             )),
         )
@@ -137,6 +141,17 @@ impl WebRtcSocket {
         let mut ids = Vec::new();
         while let Ok(Some(id)) = self.new_connected_peers.try_next() {
             self.peers.push(id.clone());
+            ids.push(id);
+        }
+        ids
+    }
+
+    pub fn disconnected_peers(&mut self) -> Vec<PeerId> {
+        let mut ids = Vec::new();
+        while let Ok(Some(id)) = self.disconnected_peers.try_next() {
+            if let Some(index) = self.peers.iter().position(|x| x == &id) {
+                self.peers.remove(index);
+            }
             ids.push(id);
         }
         ids
@@ -173,6 +188,7 @@ async fn run_socket(
     id: PeerId,
     peer_messages_out_rx: futures_channel::mpsc::UnboundedReceiver<(PeerId, Packet)>,
     new_connected_peers_tx: futures_channel::mpsc::UnboundedSender<PeerId>,
+    disconnected_peers_tx: futures_channel::mpsc::UnboundedSender<PeerId>,
     messages_from_peers_tx: futures_channel::mpsc::UnboundedSender<(PeerId, Packet)>,
 ) {
     debug!("Starting WebRtcSocket message loop");
@@ -190,6 +206,7 @@ async fn run_socket(
         events_receiver,
         peer_messages_out_rx,
         new_connected_peers_tx,
+        disconnected_peers_tx,
         messages_from_peers_tx,
     );
 

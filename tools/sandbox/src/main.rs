@@ -10,7 +10,7 @@ use enum_iterator::IntoEnumIterator;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
-use simula_authority::NetAuthorityPlugin;
+use simula_authority::{NetAuthorityPlugin, Minion};
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::{flycam::*, orbitcam::*};
@@ -104,6 +104,9 @@ fn setup(
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
+    // network minion
+    commands.spawn().insert(Minion::default());
+
     #[cfg(not(target_arch = "wasm32"))]
     {
         // CAD shape
