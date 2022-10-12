@@ -533,6 +533,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "authority"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "serde",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_viz",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5137,6 +5151,7 @@ dependencies = [
 name = "sandbox"
 version = "0.1.0"
 dependencies = [
+ "authority",
  "bevy",
  "bevy-inspector-egui",
  "bevy_mod_debugdump",
@@ -5454,7 +5469,10 @@ name = "simula_net"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bincode",
+ "serde",
  "simula_socket",
+ "uuid",
 ]
 
 [[package]]
@@ -5462,7 +5480,7 @@ name = "simula_octree"
 version = "0.1.0"
 
 [[package]]
-name = "simula_server"
+name = "simula_signaling"
 version = "0.2.0"
 dependencies = [
  "clap",

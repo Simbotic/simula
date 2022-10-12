@@ -1,5 +1,5 @@
 [package]
-name = "simula_server"
+name = "simula_signaling"
 version = "0.2.0"
 authors = ["Johan Helsing <johanhelsing@gmail.com>", "Alex Rozgo <alex.rozgo@gmail.com>"]
 edition = "2018"

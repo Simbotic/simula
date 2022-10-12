@@ -39,6 +39,7 @@ use simula_viz::{
     },
     voxel::{Voxel, VoxelMesh, Voxels, VoxelsBundle, VoxelsMaterial, VoxelsPlugin},
 };
+use simula_authority::NetAuthorityPlugin;
 
 mod monkey;
 
@@ -62,6 +63,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
         .add_plugin(NetPlugin)
+        .add_plugin(NetAuthorityPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())

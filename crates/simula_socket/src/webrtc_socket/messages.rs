@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-pub(crate) type PeerId = String;
+pub(crate) type PeerId = Uuid;
 
 /// Events go from signalling server to peer
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

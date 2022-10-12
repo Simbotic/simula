@@ -99,7 +99,7 @@ impl WebRtcSocket {
             futures_channel::mpsc::unbounded::<(PeerId, Packet)>();
 
         // Would perhaps be smarter to let signalling server decide this...
-        let id = Uuid::new_v4().to_string();
+        let id = Uuid::new_v4();
 
         (
             Self {
