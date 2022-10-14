@@ -1,4 +1,19 @@
+use bevy::prelude::*;
+
+pub mod account;
 pub mod asset;
+pub mod wallet;
+
+pub struct MissionPlugin;
+
+impl Plugin for MissionPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<account::Account>()
+            .register_type::<account::AccountId>()
+            .register_type::<wallet::Wallet>()
+            .register_type::<wallet::WalletId>();
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -12,6 +12,7 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
+simula_mission = { path = "../../crates/simula_mission" }
 
 anyhow = "1.0"
 rand = "0.8.5"

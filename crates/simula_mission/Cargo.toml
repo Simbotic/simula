@@ -8,5 +8,6 @@ ta = "0.5"
 bevy = { version = "0.8" }
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.7.1"
+hex = "0.4"
 
 [dev-dependencies]

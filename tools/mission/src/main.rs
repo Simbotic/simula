@@ -6,6 +6,12 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 use egui_node_graph::*;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
+use simula_mission::{
+    account::{Account, AccountId},
+    asset::Asset,
+    wallet::{Wallet, WalletId},
+    MissionPlugin,
+};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -34,10 +40,22 @@ fn main() {
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
+        .add_plugin(MissionPlugin)
+        .register_type::<MissionToken>()
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(graph::egui_update)
         .run();
+}
+
+#[derive(Default, Reflect, Component, Clone)]
+#[reflect(Component)]
+pub enum MissionToken {
+    #[default]
+    None,
+    Time(Asset<1000, 0>),
+    Trust(Asset<1000, 1>),
+    Energy(Asset<1000, 2>),
 }
 
 fn setup(
@@ -47,6 +65,42 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
+    commands
+        .spawn()
+        .insert(Wallet {
+            wallet_id: WalletId::try_from(
+                "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a".to_string(),
+            )
+            .unwrap(),
+        })
+        .with_children(|wallet| {
+            wallet
+                .spawn()
+                .insert(Account {
+                    account_id: AccountId::try_from(
+                        "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"
+                            .to_string(),
+                    )
+                    .unwrap(),
+                })
+                .with_children(|account| {
+                    account.spawn().insert(MissionToken::Energy(10000.into()));
+                })
+                .insert(Name::new("Account: 9d61b19d"));
+
+            wallet
+                .spawn()
+                .insert(Account {
+                    account_id: AccountId::try_from(
+                        "ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c"
+                            .to_string(),
+                    )
+                    .unwrap(),
+                })
+                .insert(Name::new("Account: ede3354e"));
+        })
+        .insert(Name::new("Wallet"));
+
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands

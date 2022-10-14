@@ -9,8 +9,22 @@ pub type Amount = i128;
 
 /// An asset for a specific class
 #[derive(
-    Serialize, Deserialize, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+    Deref,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
 )]
+#[reflect(Component)]
 pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64> {
     pub balance: Amount,
 }

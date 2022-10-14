@@ -3842,6 +3842,7 @@ dependencies = [
  "simula_action",
  "simula_camera",
  "simula_core",
+ "simula_mission",
  "simula_net",
  "simula_viz",
 ]
@@ -5462,6 +5463,7 @@ name = "simula_mission"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "hex",
  "ron",
  "serde",
  "ta",
