@@ -1,38 +1,95 @@
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-
-/// Balance of an asset
-pub type Balance = u128;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Signed version of Balance
-pub type Amount = i128;
+#[derive(Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Amount(i128);
+
+impl From<i128> for Amount {
+    fn from(amount: i128) -> Self {
+        Self(amount)
+    }
+}
+
+impl From<u32> for Amount {
+    fn from(amount: u32) -> Self {
+        Self(amount as i128)
+    }
+}
+
+impl From<i32> for Amount {
+    fn from(amount: i32) -> Self {
+        Self(amount as i128)
+    }
+}
+
+impl Serialize for Amount {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_i128(self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for Amount {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        i128::deserialize(deserializer).map(Self)
+    }
+}
+
+impl std::ops::Add for Amount {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
 
 /// An asset for a specific class
 #[derive(
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-    Deref,
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
+    Default, Component, Reflect, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
 )]
-#[reflect(Component)]
-pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64> {
-    pub balance: Amount,
+pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64>(Amount);
+
+impl<const CLASS_ID: u64, const ASSET_ID: u64> Asset<CLASS_ID, ASSET_ID> {
+    pub fn new(balance: Amount) -> Self {
+        Self(balance)
+    }
+
+    pub fn class_id() -> u64 {
+        CLASS_ID
+    }
+
+    pub fn asset_id() -> u64 {
+        ASSET_ID
+    }
 }
 
-/// Implement Into<Asset> for Amount
-impl<const CLASS_ID: u64, const ASSET_ID: u64> Into<Asset<CLASS_ID, ASSET_ID>> for Amount {
-    fn into(self) -> Asset<CLASS_ID, ASSET_ID> {
-        Asset { balance: self }
+impl<const CLASS_ID: u64, const ASSET_ID: u64> Serialize for Asset<CLASS_ID, ASSET_ID> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_i128(self.0 .0)
+    }
+}
+
+impl<'de, const CLASS_ID: u64, const ASSET_ID: u64> Deserialize<'de> for Asset<CLASS_ID, ASSET_ID> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        i128::deserialize(deserializer).map(Amount).map(Self)
+    }
+}
+
+impl<const CLASS_ID: u64, const ASSET_ID: u64> From<i128> for Asset<CLASS_ID, ASSET_ID> {
+    fn from(amount: i128) -> Self {
+        Self(amount.into())
     }
 }
 
@@ -42,12 +99,12 @@ pub struct AssetBalance {
     pub balance: Amount,
 }
 
-impl<const CLASS_ID: u64, const ASSET_ID: u64> Into<AssetBalance> for Asset<CLASS_ID, ASSET_ID> {
-    fn into(self) -> AssetBalance {
-        AssetBalance {
+impl<const CLASS_ID: u64, const ASSET_ID: u64> From<Asset<CLASS_ID, ASSET_ID>> for AssetBalance {
+    fn from(asset: Asset<CLASS_ID, ASSET_ID>) -> Self {
+        Self {
             class_id: CLASS_ID,
             asset_id: ASSET_ID,
-            balance: self.balance,
+            balance: asset.0,
         }
     }
 }
@@ -64,9 +121,9 @@ mod tests {
         Waste(Asset<1000, 2>),
     }
 
-    impl Into<AssetBalance> for AgentToken {
-        fn into(self) -> AssetBalance {
-            match self {
+    impl From<AgentToken> for AssetBalance {
+        fn from(token: AgentToken) -> Self {
+            match token {
                 AgentToken::Labor(asset) => asset.into(),
                 AgentToken::Energy(asset) => asset.into(),
                 AgentToken::Waste(asset) => asset.into(),
@@ -80,9 +137,9 @@ mod tests {
         Reward(Asset<2000, 1>),
     }
 
-    impl Into<AssetBalance> for MissionToken {
-        fn into(self) -> AssetBalance {
-            match self {
+    impl From<MissionToken> for AssetBalance {
+        fn from(token: MissionToken) -> Self {
+            match token {
                 MissionToken::Time(asset) => asset.into(),
                 MissionToken::Reward(asset) => asset.into(),
             }
@@ -91,16 +148,16 @@ mod tests {
 
     fn generate_agent_tokens() -> Vec<AgentToken> {
         vec![
-            AgentToken::Labor(Asset { balance: 20 }),
-            AgentToken::Energy(Asset { balance: 10000 }),
-            AgentToken::Waste(Asset { balance: 0 }),
+            AgentToken::Labor(20.into()),
+            AgentToken::Energy(10000.into()),
+            AgentToken::Waste(0.into()),
         ]
     }
 
     fn generate_mission_tokens() -> Vec<MissionToken> {
         vec![
-            MissionToken::Time(Asset { balance: 100 }),
-            MissionToken::Reward(Asset { balance: 1000 }),
+            MissionToken::Time(100.into()),
+            MissionToken::Reward(1000.into()),
         ]
     }
 
@@ -121,9 +178,11 @@ mod tests {
             .chain(mission_tokens.into_iter())
             .collect();
 
-        let balance = all_tokens.into_iter().fold(0, |acc, i| acc + i.balance);
+        let balance = all_tokens
+            .into_iter()
+            .fold(Amount(0), |acc, i| acc + i.balance);
 
-        assert_eq!(balance, 11120);
+        assert_eq!(balance, Amount(11120));
     }
 
     #[test]
@@ -138,7 +197,7 @@ mod tests {
     #[test]
     fn assets_deserialize_works() {
         let tokens = generate_agent_tokens();
-        let ser_ron = "[Labor((balance:20)),Energy((balance:10000)),Waste((balance:0))]";
+        let ser_ron = "[Labor(20),Energy(10000),Waste(0)]";
         let des_tokens: Vec<AgentToken> = ron::de::from_str(&ser_ron).unwrap();
         assert_eq!(tokens, des_tokens);
     }
