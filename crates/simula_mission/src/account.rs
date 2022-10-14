@@ -2,8 +2,12 @@ use bevy::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Match SugarFunge account size
-#[derive(Default, Reflect, PartialEq)]
-pub struct AccountId([u8; 32]);
+#[derive(Default, Reflect, PartialEq, Clone)]
+pub struct AccountId {
+    #[reflect(ignore)]
+    raw_id: [u8; 32],
+    pub id: String,
+}
 
 #[derive(Default, Debug, Reflect, Component, Serialize, Deserialize, PartialEq)]
 #[reflect(Component)]
@@ -19,7 +23,7 @@ impl ToString for AccountId {
 
 impl AsRef<[u8]> for AccountId {
     fn as_ref(&self) -> &[u8] {
-        &self.0[..]
+        &self.raw_id[..]
     }
 }
 
@@ -30,7 +34,10 @@ impl TryFrom<&[u8]> for AccountId {
         if data.len() == 32 {
             let mut inner = [0u8; 32];
             inner.copy_from_slice(data);
-            Ok(AccountId(inner))
+            Ok(AccountId {
+                raw_id: inner,
+                id: hex::encode(&inner),
+            })
         } else {
             Err(())
         }
@@ -45,7 +52,10 @@ impl TryFrom<String> for AccountId {
             if let Ok(hex_dec) = hex::decode(hex_str) {
                 let mut inner = [0u8; 32];
                 inner.copy_from_slice(&hex_dec);
-                Ok(AccountId(inner))
+                Ok(AccountId {
+                    raw_id: inner,
+                    id: hex::encode(&inner),
+                })
             } else {
                 Err(())
             }

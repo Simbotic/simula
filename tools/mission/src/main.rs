@@ -99,7 +99,7 @@ fn setup(
                 })
                 .insert(Name::new("Account: ede3354e"));
         })
-        .insert(Name::new("Wallet"));
+        .insert(Name::new("Wallet: d75a9801"));
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);

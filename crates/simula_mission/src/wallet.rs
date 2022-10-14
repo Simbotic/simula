@@ -1,9 +1,13 @@
 use bevy::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-/// Match SugarFunge account size
-#[derive(Default, Reflect, PartialEq)]
-pub struct WalletId([u8; 32]);
+/// Match SugarFunge wallet size
+#[derive(Default, Reflect, PartialEq, Clone)]
+pub struct WalletId {
+    #[reflect(ignore)]
+    raw_id: [u8; 32],
+    pub id: String,
+}
 
 #[derive(Default, Debug, Reflect, Component, Serialize, Deserialize, PartialEq)]
 #[reflect(Component)]
@@ -19,7 +23,7 @@ impl ToString for WalletId {
 
 impl AsRef<[u8]> for WalletId {
     fn as_ref(&self) -> &[u8] {
-        &self.0[..]
+        &self.raw_id[..]
     }
 }
 
@@ -30,7 +34,10 @@ impl TryFrom<&[u8]> for WalletId {
         if data.len() == 32 {
             let mut inner = [0u8; 32];
             inner.copy_from_slice(data);
-            Ok(WalletId(inner))
+            Ok(WalletId {
+                raw_id: inner,
+                id: hex::encode(&inner),
+            })
         } else {
             Err(())
         }
@@ -45,7 +52,10 @@ impl TryFrom<String> for WalletId {
             if let Ok(hex_dec) = hex::decode(hex_str) {
                 let mut inner = [0u8; 32];
                 inner.copy_from_slice(&hex_dec);
-                Ok(WalletId(inner))
+                Ok(WalletId {
+                    raw_id: inner,
+                    id: hex::encode(&inner),
+                })
             } else {
                 Err(())
             }
@@ -88,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_wallet_id() {
-        let hex_str = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a";
+        let hex_str = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
         let hex_dec = hex::decode(hex_str).unwrap();
 
         let wallet_id = WalletId::try_from(hex_dec.as_ref()).unwrap();
@@ -107,7 +117,7 @@ mod tests {
     fn wallet_serialize_works() {
         let wallet = Wallet {
             wallet_id: WalletId::try_from(
-                "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a".to_string(),
+                "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60".to_string(),
             )
             .unwrap(),
         };

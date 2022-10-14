@@ -20,7 +20,7 @@ impl PeerId {
     pub fn new(id: &Uuid) -> Self {
         Self {
             uuid: id.clone(),
-            id: id.to_string().get(0..4).unwrap_or_default().to_string(),
+            id: id.to_string(),
         }
     }
 }
@@ -84,7 +84,10 @@ fn setup(mut commands: Commands) {
         .insert(LocalPeer {
             id: peer_id.clone(),
         })
-        .insert(Name::new(format!("Peer: Local ({})", peer_id.id)));
+        .insert(Name::new(format!(
+            "Peer: Local ({})",
+            peer_id.id.get(0..8).unwrap_or_default()
+        )));
 }
 
 fn run(
@@ -124,7 +127,7 @@ fn run(
                     })
                     .insert(Name::new(format!(
                         "Peer: Remote ({})",
-                        net_peer.to_string().get(0..4).unwrap_or_default()
+                        net_peer.to_string().get(0..8).unwrap_or_default()
                     )));
             }
         }
@@ -163,7 +166,7 @@ impl Default for NetId {
         let id = Uuid::new_v4();
         Self {
             uuid: id.clone(),
-            id: id.to_string().get(0..4).unwrap_or_default().to_string(),
+            id: id.to_string(),
         }
     }
 }
@@ -307,7 +310,8 @@ pub fn replicate<T>(
                         if let Some((mut proxy_data, _net_id, _proxy)) = proxy {
                             *proxy_data = data;
                         } else {
-                            let id = net_id.to_string().get(0..4).unwrap_or_default().to_string();
+                            let net_id_label =
+                                net_id.to_string().get(0..8).unwrap_or_default().to_string();
                             let cached;
                             let entity = if let Some(entity) = cache.get(&net_id) {
                                 cached = true;
@@ -321,9 +325,12 @@ pub fn replicate<T>(
                                     })
                                     .insert(NetId {
                                         uuid: net_id,
-                                        id: id.clone(),
+                                        id: net_id.to_string(),
                                     })
-                                    .insert(Name::new(format!("{}: Proxy ({})", name, id)))
+                                    .insert(Name::new(format!(
+                                        "{}: Proxy ({})",
+                                        name, net_id_label
+                                    )))
                                     .id();
                                 // TODO: Clear cache at some point
                                 cache.insert(net_id, entity);
@@ -332,8 +339,8 @@ pub fn replicate<T>(
                             commands.entity(entity).insert(data);
                             debug!(
                                 "Replicated peer_id: {} net_id: {} component: {} type_id: {} cached: {}",
-                                peer_id.to_string().get(0..4).unwrap_or_default(),
-                                id,
+                                peer_id.to_string().get(0..8).unwrap_or_default(),
+                                net_id_label,
                                 std::any::type_name::<T>().to_string(),
                                 type_id,
                                 cached
