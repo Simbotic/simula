@@ -5461,6 +5461,9 @@ dependencies = [
 name = "simula_mission"
 version = "0.1.0"
 dependencies = [
+ "bevy",
+ "ron",
+ "serde",
  "ta",
 ]
 

@@ -1,3 +1,5 @@
+pub mod asset;
+
 #[cfg(test)]
 mod tests {
     use ta::indicators::ExponentialMovingAverage;
