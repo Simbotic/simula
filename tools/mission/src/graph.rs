@@ -362,16 +362,18 @@ pub fn egui_update(
                 editor_state.draw_graph_editor(ui, AllMyNodeTemplates, &mut user_state)
             })
             .unwrap()
-            .inner
-            .unwrap();
-        for node_response in graph_response.node_responses {
-            // Here, we ignore all other graph events. But you may find
-            // some use for them. For example, by playing a sound when a new
-            // connection is created
-            if let NodeResponse::User(user_event) = node_response {
-                match user_event {
-                    MyResponse::SetActiveNode(node) => user_state.active_node = Some(node),
-                    MyResponse::ClearActiveNode => user_state.active_node = None,
+            .inner;
+
+        if let Some(graph_response) = graph_response {
+            for node_response in graph_response.node_responses {
+                // Here, we ignore all other graph events. But you may find
+                // some use for them. For example, by playing a sound when a new
+                // connection is created
+                if let NodeResponse::User(user_event) = node_response {
+                    match user_event {
+                        MyResponse::SetActiveNode(node) => user_state.active_node = Some(node),
+                        MyResponse::ClearActiveNode => user_state.active_node = None,
+                    }
                 }
             }
         }
