@@ -140,8 +140,13 @@ pub struct Messages {
 }
 
 pub fn extract_messages(mut socket: ResMut<Option<WebRtcSocket>>, mut messages: ResMut<Messages>) {
+    messages.messages.clear();
     if let Some(socket) = socket.as_mut() {
-        messages.messages = socket.receive();
+        let mut message = socket.receive_one();
+        while let Ok(Some((peer, data))) = message {
+            messages.messages.push((peer, data));
+            message = socket.receive_one();
+        }
     }
 }
 

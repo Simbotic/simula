@@ -172,6 +172,12 @@ impl WebRtcSocket {
             .collect()
     }
 
+    pub fn receive_one(
+        &mut self,
+    ) -> Result<Option<(PeerId, Packet)>, futures_channel::mpsc::TryRecvError> {
+        self.messages_from_peers.try_next()
+    }
+
     pub fn send<T: Into<PeerId>>(&mut self, packet: Packet, id: T) {
         self.peer_messages_out
             .unbounded_send((id.into(), packet))
