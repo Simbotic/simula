@@ -1,7 +1,8 @@
 use bevy::prelude::*;
+use bevy_egui::egui::Ui;
+use bevy_inspector_egui::{Context, Inspectable};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// Signed version of Balance
 #[derive(Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Amount(i128);
 
@@ -54,6 +55,21 @@ impl std::ops::Add for Amount {
     Default, Component, Reflect, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
 )]
 pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64>(Amount);
+
+impl<const CLASS_ID: u64, const ASSET_ID: u64> Inspectable for Asset<CLASS_ID, ASSET_ID> {
+    type Attributes = ();
+
+    fn ui(&mut self, ui: &mut Ui, _options: Self::Attributes, _context: &mut Context) -> bool {
+        let changed;
+        ui.label(format!("Asset<{}, {}>", CLASS_ID, ASSET_ID));
+        let mut amount_text = self.0 .0.to_string();
+        changed = ui.text_edit_singleline(&mut amount_text).changed();
+        if changed {
+            self.0 .0 = amount_text.parse().unwrap();
+        }
+        changed
+    }
+}
 
 impl<const CLASS_ID: u64, const ASSET_ID: u64> Asset<CLASS_ID, ASSET_ID> {
     pub fn new(balance: Amount) -> Self {
@@ -188,6 +204,7 @@ mod tests {
     #[test]
     fn assets_serialize_works() {
         let tokens = generate_agent_tokens();
+        println!("tokens: {:?}", tokens);
         let ser_ron = ron::ser::to_string(&tokens).unwrap();
         println!("RON: {}", ser_ron);
         let des_tokens: Vec<AgentToken> = ron::de::from_str(&ser_ron).unwrap();

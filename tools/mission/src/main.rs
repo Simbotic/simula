@@ -3,6 +3,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use egui_node_graph::*;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
@@ -22,33 +23,37 @@ use simula_viz::{
 mod graph;
 
 fn main() {
-    App::new()
-        .insert_resource(WindowDescriptor {
-            title: "[Simbotic] Simula - Mission".to_string(),
-            width: 940.,
-            height: 528.,
-            ..Default::default()
-        })
-        .insert_resource(Msaa { samples: 4 })
-        .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(NetPlugin)
-        .add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(ActionPlugin)
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(OrbitCameraPlugin)
-        .add_plugin(LinesPlugin)
-        .add_plugin(AxesPlugin)
-        .add_plugin(GridPlugin)
-        .add_plugin(MissionPlugin)
-        .register_type::<MissionToken>()
-        .add_startup_system(setup)
-        .add_system(debug_info)
-        .add_system(graph::egui_update)
-        .run();
+    let mut app = App::new();
+
+    app.insert_resource(WindowDescriptor {
+        title: "[Simbotic] Simula - Mission".to_string(),
+        width: 940.,
+        height: 528.,
+        ..Default::default()
+    })
+    .insert_resource(Msaa { samples: 4 })
+    .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+    .add_plugins(DefaultPlugins)
+    .add_plugin(NetPlugin)
+    .add_plugin(WorldInspectorPlugin::new())
+    .add_plugin(ActionPlugin)
+    .add_plugin(FrameTimeDiagnosticsPlugin::default())
+    .add_plugin(OrbitCameraPlugin)
+    .add_plugin(LinesPlugin)
+    .add_plugin(AxesPlugin)
+    .add_plugin(GridPlugin)
+    .add_plugin(MissionPlugin)
+    .register_type::<MissionToken>()
+    .add_startup_system(setup)
+    .add_system(debug_info)
+    .add_system(graph::egui_update);
+
+    app.register_inspectable::<MissionToken>();
+
+    app.run();
 }
 
-#[derive(Default, Reflect, Component, Clone)]
+#[derive(Inspectable, Default, Reflect, Component, Clone)]
 #[reflect(Component)]
 pub enum MissionToken {
     #[default]
