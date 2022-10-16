@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
+// pub struct AccountBuilder
+
 /// Match SugarFunge account size
 #[derive(Default, Reflect, PartialEq, Clone)]
 pub struct AccountId {

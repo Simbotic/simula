@@ -7,12 +7,7 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use egui_node_graph::*;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_mission::{
-    account::{Account, AccountId},
-    asset::Asset,
-    wallet::{Wallet, WalletId},
-    MissionPlugin,
-};
+use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -53,7 +48,7 @@ fn main() {
     app.run();
 }
 
-#[derive(Inspectable, Default, Reflect, Component, Clone)]
+#[derive(Debug, Inspectable, Default, Reflect, Component, Clone)]
 #[reflect(Component)]
 pub enum MissionToken {
     #[default]
@@ -70,41 +65,35 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    commands
-        .spawn()
-        .insert(Wallet {
-            wallet_id: WalletId::try_from(
-                "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a".to_string(),
-            )
-            .unwrap(),
+    WalletBuilder::<MissionToken>::default()
+        .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+        .with_account(|account| {
+            account
+                .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(10000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(200.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(1000.into()));
+                });
         })
-        .with_children(|wallet| {
-            wallet
-                .spawn()
-                .insert(Account {
-                    account_id: AccountId::try_from(
-                        "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"
-                            .to_string(),
-                    )
-                    .unwrap(),
+        .with_account(|account| {
+            account
+                .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(99999.into()));
                 })
-                .with_children(|account| {
-                    account.spawn().insert(MissionToken::Energy(10000.into()));
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(99999.into()));
                 })
-                .insert(Name::new("Account: 9d61b19d"));
-
-            wallet
-                .spawn()
-                .insert(Account {
-                    account_id: AccountId::try_from(
-                        "ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c"
-                            .to_string(),
-                    )
-                    .unwrap(),
-                })
-                .insert(Name::new("Account: ede3354e"));
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(99999.into()));
+                });
         })
-        .insert(Name::new("Wallet: d75a9801"));
+        .build(&mut commands);
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
