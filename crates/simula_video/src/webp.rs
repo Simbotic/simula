@@ -69,14 +69,14 @@ pub fn run(
                     if video.current_frame <= gif.frames.len() {
                         debug!("video image: {:?} {:?}", gif.path, video);
                         let frame = gif.frames[video.current_frame].clone();
-                        let image = images.add(Image::new_fill(
+                        let image = images.add(Image::new(
                             Extent3d {
                                 width: frame.width(),
                                 height: frame.height(),
                                 depth_or_array_layers: 1,
                             },
                             TextureDimension::D2,
-                            &frame.into_raw(),
+                            frame.into_raw(),
                             TextureFormat::Rgba8UnormSrgb,
                         ));
                         gif.images.insert(video.current_frame, image.clone());
