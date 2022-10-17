@@ -21,6 +21,7 @@ pub struct FollowUI {
     pub max_view_angle: f32,
     pub size: Vec2,
     pub screen_pos: Option<Vec3>,
+    pub alpha: f32,
 }
 
 impl Default for FollowUI {
@@ -33,6 +34,7 @@ impl Default for FollowUI {
             max_view_angle: 30.0,
             size: Vec2::new(100.0, 100.0),
             screen_pos: None,
+            alpha: 1.0,
         }
     }
 }
@@ -87,6 +89,39 @@ pub fn follow_ui(
             } else {
                 follow_ui.screen_pos = None;
             }
+
+            let camera_pos_height_alpha = map_range(
+                camera_height,
+                (0.0, follow_ui.max_height),
+                (1.0, 0.0),
+                EaseFunction::SineInOut,
+            )
+            .clamp(0.0, 1.0);
+            let camera_neg_height_alpha = map_range(
+                camera_height,
+                (0.0, follow_ui.min_height),
+                (1.0, 0.0),
+                EaseFunction::SineInOut,
+            )
+            .clamp(0.0, 1.0);
+            let camera_distance_alpha = map_range(
+                camera_distance,
+                (follow_ui.min_distance, follow_ui.max_distance),
+                (1.0, 0.0),
+                EaseFunction::SineInOut,
+            )
+            .clamp(0.0, 1.0);
+            let view_angle_alpha = map_range(
+                view_angle,
+                (0.0, follow_ui.max_view_angle),
+                (1.0, 0.0),
+                EaseFunction::SineInOut,
+            )
+            .clamp(0.0, 1.0);
+            follow_ui.alpha = camera_pos_height_alpha
+                .min(camera_neg_height_alpha)
+                .min(camera_distance_alpha)
+                .min(view_angle_alpha);
         }
     }
 }
