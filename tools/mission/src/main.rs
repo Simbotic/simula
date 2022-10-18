@@ -5,8 +5,10 @@ use bevy::{
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_decision::{DecisionPlugin, DecisionEditorState, DecisionGraphState};
-use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder};
+use simula_decision::{
+    BehaviorBundle, BehaviorState, DecisionEditorState, DecisionGraphState, DecisionPlugin,
+};
+use simula_mission::{asset::Asset, wallet::Wallet, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -40,7 +42,12 @@ fn main() {
     .add_plugin(DecisionPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
-    .add_system(debug_info);
+    .add_system(debug_info)
+    .add_system_set(
+        SystemSet::new()
+            .with_system(behavior_agent_rest)
+            .with_system(behavior_agent_work),
+    );
 
     app.register_inspectable::<MissionToken>();
 
@@ -55,6 +62,7 @@ pub enum MissionToken {
     Time(Asset<1000, 0>),
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
 }
 
 fn setup(
@@ -64,7 +72,7 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    WalletBuilder::<MissionToken>::default()
+    let agent_wallet = WalletBuilder::<MissionToken>::default()
         .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
         .with_account(|account| {
             account
@@ -93,6 +101,25 @@ fn setup(
                 });
         })
         .build(&mut commands);
+
+    let agent_decision_graph = commands
+        .spawn()
+        .insert(DecisionEditorState {
+            show: true,
+            ..default()
+        })
+        .insert(DecisionGraphState::default())
+        .with_children(|parent| {
+            parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
+            parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
+        })
+        .insert(Name::new("Decision Graph"))
+        .id();
+
+    commands
+        .spawn()
+        .push_children(&[agent_wallet, agent_decision_graph])
+        .insert(Name::new("Agent: 001"));
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -173,18 +200,34 @@ fn setup(
         },
         ..Default::default()
     });
+}
 
-    commands
-        .spawn()
-        .insert(DecisionEditorState::default())
-        .insert(DecisionGraphState::default())
-        .insert(Name::new("Graph #1"));
+#[derive(Default, Component, Reflect, Clone)]
+struct AgentRest;
 
-    commands
-        .spawn()
-        .insert(DecisionEditorState::default())
-        .insert(DecisionGraphState::default())
-        .insert(Name::new("Graph #2"));
+fn behavior_agent_rest(
+    agents: Query<(
+        &AgentRest,
+        &mut BehaviorState,
+        &Wallet,
+        &mut DecisionGraphState,
+    )>,
+) {
+    for _agent in agents.iter() {}
+}
+
+#[derive(Default, Component, Reflect, Clone)]
+struct AgentWork;
+
+fn behavior_agent_work(
+    agents: Query<(
+        &AgentWork,
+        &mut BehaviorState,
+        &Wallet,
+        &mut DecisionGraphState,
+    )>,
+) {
+    for _agent in agents.iter() {}
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use bevy_inspector_egui::{bevy_egui::EguiContext, *};
 use egui_node_graph::*;
 use serde::{Deserialize, Serialize};
@@ -6,11 +6,46 @@ use std::borrow::Cow;
 
 pub struct DecisionPlugin;
 
+#[derive(Bundle)]
+pub struct BehaviorBundle<T>
+where
+    T: Reflect + Component + Clone,
+{
+    pub behavior: T,
+    pub state: BehaviorState,
+    pub name: Name,
+}
+
+impl<T> Default for BehaviorBundle<T>
+where
+    T: Default + Reflect + Component + Clone,
+{
+    fn default() -> Self {
+        Self {
+            behavior: T::default(),
+            state: BehaviorState::default(),
+            name: Name::new(std::any::type_name::<T>()),
+        }
+    }
+}
+
 impl Plugin for DecisionPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<DecisionGraphState>()
+            .register_type::<DecisionEditorState>()
+            .register_type::<BehaviorState>()
+            .register_inspectable::<BehaviorState>()
             .add_system(egui_update);
     }
+}
+
+#[derive(Default, Reflect, Clone, Component, Inspectable)]
+#[reflect(Component)]
+pub enum BehaviorState {
+    #[default]
+    Running,
+    Success,
+    Failure,
 }
 
 // ========= First, define your user data types =============
@@ -21,6 +56,7 @@ impl Plugin for DecisionPlugin {
 #[derive(Serialize, Deserialize)]
 pub struct DecisionNodeData {
     template: DecisionNodeTemplate,
+    behavior: Option<String>,
 }
 
 /// `DataType`s are what defines the possible range of connections when
@@ -88,12 +124,13 @@ pub enum DecisionNodeTemplate {
 /// node in the graph. Most side-effects (creating new nodes, deleting existing
 /// nodes, handling connections...) are already handled by the library, but this
 /// mechanism allows creating additional side effects from user code.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DecisionGraphResponse {
     SetActiveNode(NodeId),
     ClearActiveNode,
     AddPin(NodeId),
     RemovePin(NodeId),
+    SelectBehavior(NodeId, Option<String>),
 }
 
 /// The graph 'global' state. This state struct is passed around to the node and
@@ -104,6 +141,9 @@ pub enum DecisionGraphResponse {
 pub struct DecisionGraphState {
     #[reflect(ignore)]
     pub active_node: Option<NodeId>,
+    #[reflect(ignore)]
+    #[serde(skip)]
+    pub behaviors: HashSet<String>,
 }
 
 // =========== Then, you need to implement some traits ============
@@ -157,7 +197,10 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
     }
 
     fn user_data(&self) -> Self::NodeData {
-        DecisionNodeData { template: *self }
+        DecisionNodeData {
+            template: *self,
+            behavior: None,
+        }
     }
 
     fn build_node(
@@ -314,13 +357,6 @@ impl WidgetValueTrait for DecisionValueType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Behavior {
-    BehaviorA,
-    BehaviorB,
-    BehaviorC,
-}
-
 impl UserResponseTrait for DecisionGraphResponse {}
 impl NodeDataTrait for DecisionNodeData {
     type Response = DecisionGraphResponse;
@@ -347,15 +383,36 @@ impl NodeDataTrait for DecisionNodeData {
 
         // On hover, we show a tooltip.
 
-        if let DecisionNodeTemplate::Behavior = graph.nodes[node_id].user_data.template {
-            let mut selected = Behavior::BehaviorA;
-            egui::ComboBox::from_label("Select one!")
-                .selected_text(format!("{:?}", selected))
+        let template = graph.nodes[node_id].user_data.template;
+        let user_data = &graph.nodes[node_id].user_data;
+
+        if let DecisionNodeTemplate::Behavior = template {
+            let mut selected = user_data
+                .behavior
+                .clone()
+                .unwrap_or("Select Behavior".to_string());
+            let mut changed = false;
+            egui::ComboBox::from_label("")
+                .selected_text(format!("{}", selected))
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut selected, Behavior::BehaviorA, "BehaviorA");
-                    ui.selectable_value(&mut selected, Behavior::BehaviorB, "BehaviorB");
-                    ui.selectable_value(&mut selected, Behavior::BehaviorC, "BehaviorC");
+                    for behavior_name in &user_state.behaviors {
+                        changed = changed
+                            || ui
+                                .selectable_value(
+                                    &mut selected,
+                                    behavior_name.clone(),
+                                    behavior_name,
+                                )
+                                .changed();
+                    }
                 });
+            if changed {
+                // println!("Changed to {:?}", selected);
+                responses.push(NodeResponse::User(DecisionGraphResponse::SelectBehavior(
+                    node_id,
+                    Some(selected),
+                )))
+            }
         } else {
             // ui.collapsing("...", |ui| {
             //     let button = egui::Button::new(egui::RichText::new("➕ Pin"));
@@ -425,6 +482,7 @@ impl NodeDataTrait for DecisionNodeData {
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct DecisionEditorState {
+    pub show: bool,
     #[reflect(ignore)]
     pub state: GraphEditorState<
         DecisionNodeData,
@@ -443,8 +501,19 @@ pub fn egui_update(
         &mut DecisionGraphState,
         &Name,
     )>,
+    behaviors: Query<(&Parent, &Name), With<BehaviorState>>,
 ) {
     for (entity, mut editor_state, mut user_state, name) in states.iter_mut() {
+        if !editor_state.show {
+            continue;
+        }
+
+        for (parent, name) in behaviors.iter() {
+            if parent.get() == entity {
+                user_state.behaviors.insert(name.to_string());
+            }
+        }
+
         let ctx = egui_context.ctx_mut();
         // egui::TopBottomPanel::top("top").show(ctx, |ui| {
         //     egui::menu::bar(ui, |ui| {
@@ -482,6 +551,11 @@ pub fn egui_update(
                             if let Some(output_id) = graph.nodes[node_id].output_ids().last() {
                                 graph.remove_output_param(output_id);
                             }
+                        }
+                        DecisionGraphResponse::SelectBehavior(node_id, behavior) => {
+                            println!("Select behavior: {:?}", behavior);
+                            let graph = &mut editor_state.state.graph;
+                            graph.nodes[node_id].user_data.behavior = behavior;
                         }
                     }
                 }
