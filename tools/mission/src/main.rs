@@ -2,11 +2,10 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_inspector_egui::{Inspectable, RegisterInspectable};
-use egui_node_graph::*;
+use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
+use simula_decision::{DecisionPlugin, DecisionEditorState, DecisionGraphState};
 use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 use simula_viz::{
@@ -15,7 +14,7 @@ use simula_viz::{
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
 
-mod graph;
+// mod graph;
 
 fn main() {
     let mut app = App::new();
@@ -38,10 +37,10 @@ fn main() {
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
     .add_plugin(MissionPlugin)
+    .add_plugin(DecisionPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
-    .add_system(debug_info)
-    .add_system(graph::egui_update);
+    .add_system(debug_info);
 
     app.register_inspectable::<MissionToken>();
 
@@ -177,8 +176,15 @@ fn setup(
 
     commands
         .spawn()
-        .insert(graph::MyEditorState(GraphEditorState::new(1.0)))
-        .insert(graph::MyGraphState::default());
+        .insert(DecisionEditorState::default())
+        .insert(DecisionGraphState::default())
+        .insert(Name::new("Graph #1"));
+
+    commands
+        .spawn()
+        .insert(DecisionEditorState::default())
+        .insert(DecisionGraphState::default())
+        .insert(Name::new("Graph #2"));
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
