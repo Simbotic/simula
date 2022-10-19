@@ -2,12 +2,14 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
+use bevy_egui::{egui, EguiContext};
+use egui_extras::{TableBuilder, Size};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use egui_node_graph::*;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder};
+use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder, wallet::*, account::*};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -28,6 +30,7 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+    .insert_resource(SelectedWallet(0))
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -41,12 +44,16 @@ fn main() {
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_system(debug_info)
-    .add_system(graph::egui_update);
+    .add_system(graph::egui_update)
+    .add_system(wallet_ui_system);
 
     app.register_inspectable::<MissionToken>();
 
     app.run();
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SelectedWallet(usize);
 
 #[derive(Debug, Inspectable, Default, Reflect, Component, Clone)]
 #[reflect(Component)]
@@ -56,6 +63,90 @@ pub enum MissionToken {
     Time(Asset<1000, 0>),
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
+}
+
+pub fn wallet_ui_system (
+    mut egui_ctx: ResMut<EguiContext>,
+    wallets: Query<(&Wallet, &Children)>,
+    accounts: Query<(&Account, &Children)>,
+    assets: Query<&MissionToken>,
+    mut selected_wallet: ResMut<SelectedWallet>,
+) {
+    egui::Window::new("Wallets")
+        .default_width(200.0)
+        .resizable(true)
+        .vscroll(true)
+        .drag_bounds(egui::Rect::EVERYTHING)
+        .show(egui_ctx.ctx_mut(), |ui| {
+            let mut wallet_list: Vec<(String, &Children)> = vec![];
+            for (wallet, wallet_accounts) in wallets.iter() {
+                let wallet_id_trimmed = wallet.wallet_id
+                    .to_string()
+                    .get(0..8)
+                    .unwrap_or_default()
+                    .to_string();
+                wallet_list.push((wallet_id_trimmed, wallet_accounts));
+            }
+            egui::ComboBox::from_label("Select a wallet").show_index(
+                ui,
+                &mut selected_wallet.0,
+                wallet_list.len(),
+                |i| wallet_list[i].0.to_owned()
+            );
+            for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
+                if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                    let account_id_trimmed = account.account_id
+                            .to_string()
+                            .get(0..8)
+                            .unwrap_or_default()
+                            .to_string();
+                    ui.separator();
+                    ui.collapsing(format!("account {:?}", account_id_trimmed), |ui| {
+                        let mut asset_list: Vec<(String, i128)> = vec![];
+                        for &account_asset in account_assets.iter() {
+                            if let Ok(asset) = assets.get(account_asset) {
+                                let asset_name = match asset {
+                                    MissionToken::Time(_) => "Time",
+                                    MissionToken::Trust(_) => "Trust",
+                                    MissionToken::Energy(_) => "Energy",
+                                    MissionToken::None => "None",
+                                };
+                                let asset_value = match asset {
+                                    MissionToken::Time(asset) => asset.0.0,
+                                    MissionToken::Trust(asset) => asset.0.0,
+                                    MissionToken::Energy(asset) => asset.0.0,
+                                    MissionToken::None => 0,
+                                };
+                                asset_list.push((asset_name.to_string(), asset_value));
+                            }
+                        }
+                        TableBuilder::new(ui)
+                            .column(Size::remainder())
+                            .column(Size::remainder())
+                            .header(20.0, |mut header| {
+                                header.col(|ui| {
+                                    ui.heading(format!("Asset"));
+                                });
+                                header.col(|ui| {
+                                    ui.heading("Amount");
+                                });
+                            })
+                            .body(|mut body| {
+                                for asset in asset_list.iter() {
+                                    body.row(20.0, |mut row| {
+                                        row.col(|ui| {
+                                            ui.label(asset.0.clone());
+                                        });
+                                        row.col(|ui| {
+                                            ui.label(asset.1.to_string());
+                                        });
+                                    });
+                                }
+                            });
+                    });
+                }
+            }
+        });
 }
 
 fn setup(

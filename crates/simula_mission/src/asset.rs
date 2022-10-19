@@ -4,7 +4,7 @@ use bevy_inspector_egui::{Context, Inspectable};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Amount(i128);
+pub struct Amount(pub i128);
 
 impl From<i128> for Amount {
     fn from(amount: i128) -> Self {
@@ -54,7 +54,7 @@ impl std::ops::Add for Amount {
 #[derive(
     Default, Component, Reflect, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
 )]
-pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64>(Amount);
+pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64>(pub Amount);
 
 impl<const CLASS_ID: u64, const ASSET_ID: u64> Inspectable for Asset<CLASS_ID, ASSET_ID> {
     type Attributes = ();
