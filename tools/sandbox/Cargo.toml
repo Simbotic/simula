@@ -11,6 +11,7 @@ gst = ["simula_video/gst"]
 
 [dependencies]
 bevy = { version = "0.8" }
+bevy_egui = "0.16"
 bevy-inspector-egui = "0.13"
 bevy_mod_debugdump = "0.5"
 

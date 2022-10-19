@@ -63,14 +63,14 @@ pub fn stream_gst_sinks(
         }
         if let Ok(data) = process.receiver.try_recv() {
             let mut material = materials.get_mut(&material).unwrap();
-            let image = Image::new_fill(
+            let image = Image::new(
                 Extent3d {
                     width: 512,
                     height: 512,
                     depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
-                &data,
+                data,
                 TextureFormat::Rgba8UnormSrgb,
             );
             let image_handle = images.add(image);

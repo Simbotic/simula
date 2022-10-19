@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     render::view::{NoFrustumCulling, RenderLayers},
 };
+use bevy_egui::{egui, EguiContext, EguiPlugin};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use enum_iterator::IntoEnumIterator;
 use monkey::MonkeyPlugin;
@@ -30,6 +31,7 @@ use simula_video::{GstSink, GstSrc};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
+    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, Lines, LinesBundle, LinesMaterial, LinesPlugin},
@@ -64,6 +66,7 @@ fn main() {
         // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
         .add_plugin(NetPlugin)
         .add_plugin(NetAuthorityPlugin)
+        .add_plugin(EguiPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -77,9 +80,11 @@ fn main() {
         .add_plugin(MonkeyPlugin)
         .add_plugin(VideoPlugin)
         .add_plugin(LookAtPlugin)
+        .add_plugin(FollowUIPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
+        .add_system(follow_ui)
         .add_system(ease_lines)
         .add_system(signal_generator_lines)
         .add_system(signal_control_lines)
@@ -294,7 +299,46 @@ fn setup(
             child.insert(GstSrc::default());
         })
         .insert(FlyCamera { ..default() })
+        .insert(FollowUICamera)
         .id();
+
+    // Follow UI over torus
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Torus {
+                radius: 0.5,
+                ring_radius: 0.1,
+                ..default()
+            })),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(3.0, 0.0, 0.0),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(AxesBundle {
+                    axes: Axes {
+                        size: 1.,
+                        inner_offset: 1.,
+                        ..default()
+                    },
+                    mesh: meshes.add(line_mesh.clone()),
+                    material: lines_materials.add(LinesMaterial {}),
+                    transform: Transform::from_xyz(0.0, 1.0, 0.0),
+                    ..default()
+                })
+                .insert(FollowUI {
+                    min_distance: 0.1,
+                    max_distance: 10.0,
+                    min_height: -5.0,
+                    max_height: 5.0,
+                    max_view_angle: 45.0,
+                    ..default()
+                })
+                .insert(FollowPanel)
+                .insert(Name::new("FollowUI: Axes"));
+        })
+        .insert(Name::new("Follow UI: Shape"));
 
     // FPS on screen
     commands.spawn_bundle(TextBundle {
@@ -783,6 +827,92 @@ fn line_test(mut lines: Query<&mut Lines, With<RandomLines>>) {
             };
             lines.line_colored(start, end, color);
         }
+    }
+}
+
+#[derive(Component)]
+struct FollowPanel;
+
+fn follow_ui(
+    time: Res<Time>,
+    mut egui_context: ResMut<EguiContext>,
+    follow_uis: Query<&FollowUI, With<FollowPanel>>,
+) {
+    for follow_ui in follow_uis.iter() {
+        let ui_pos = if let Some(ui_pos) = follow_ui.screen_pos {
+            ui_pos
+        } else {
+            break;
+        };
+
+        let my_frame = egui::containers::Frame {
+            // margin: egui::style::Margin { left: 10., right: 10., top: 10., bottom: 10. },
+            rounding: egui::Rounding {
+                nw: 3.0,
+                ne: 3.0,
+                sw: 3.0,
+                se: 3.0,
+            },
+            fill: egui::Color32::from_rgba_premultiplied(50, 0, 50, 50),
+            ..default()
+        };
+
+        egui::Window::new("Follow UI")
+            .frame(my_frame)
+            .fixed_size(egui::Vec2::new(follow_ui.size.x, follow_ui.size.y))
+            .fixed_pos(egui::Pos2::new(ui_pos.x, ui_pos.y))
+            .collapsible(false)
+            .title_bar(false)
+            .show(egui_context.ctx_mut(), |ui| {
+                let time = time.seconds_since_startup();
+
+                let circle_line = {
+                    let n = 512;
+                    let circle_points: egui::plot::PlotPoints = (0..=n)
+                        .map(|i| {
+                            let t = egui::remap(
+                                i as f64,
+                                0.0..=(n as f64),
+                                0.0..=std::f64::consts::TAU,
+                            );
+                            let r = 1.0;
+                            [r * t.cos(), r * t.sin()]
+                        })
+                        .collect();
+                    egui::plot::Line::new(circle_points)
+                        .color(egui::Color32::from_rgb(100, 200, 100))
+                        .style(egui::plot::LineStyle::Solid)
+                };
+
+                let sin_line = {
+                    egui::plot::Line::new(egui::plot::PlotPoints::from_explicit_callback(
+                        move |x| 0.5 * (2.0 * x).sin() * time.sin(),
+                        ..,
+                        512,
+                    ))
+                    .color(egui::Color32::from_rgb(200, 100, 100))
+                    .style(egui::plot::LineStyle::Solid)
+                };
+
+                let thingy_line = {
+                    egui::plot::Line::new(egui::plot::PlotPoints::from_parametric_callback(
+                        move |t| ((2.0 * t + time).sin(), (3.0 * t).sin()),
+                        0.0..=std::f64::consts::TAU,
+                        256,
+                    ))
+                    .color(egui::Color32::from_rgb(100, 150, 250))
+                    .style(egui::plot::LineStyle::Solid)
+                    .name(format!("t = {:.2}", time))
+                };
+
+                let plot =
+                    egui::plot::Plot::new("lines_demo").legend(egui::plot::Legend::default());
+                plot.show_background(false).show(ui, |plot_ui| {
+                    plot_ui.line(circle_line);
+                    plot_ui.line(sin_line);
+                    plot_ui.line(thingy_line);
+                });
+            });
     }
 }
 
