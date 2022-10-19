@@ -80,7 +80,6 @@ pub enum MissionToken {
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
     Labor(Asset<1000, 3>),
-    MissionTime(Asset<1000, 4>),
 }
 
 pub fn wallet_ui_system (
@@ -128,7 +127,6 @@ pub fn wallet_ui_system (
                                     MissionToken::Trust(_) => "Trust",
                                     MissionToken::Energy(_) => "Energy",
                                     MissionToken::Labor(_) => "Labor",
-                                    MissionToken::MissionTime(_) => "MissionTime",
                                     MissionToken::None => "None",
                                 };
                                 let asset_value = match asset {
@@ -136,7 +134,6 @@ pub fn wallet_ui_system (
                                     MissionToken::Trust(asset) => asset.0.0,
                                     MissionToken::Energy(asset) => asset.0.0,
                                     MissionToken::Labor(asset) => asset.0.0,
-                                    MissionToken::MissionTime(asset) => asset.0.0,
                                     MissionToken::None => 0,
                                 };
                                 asset_list.push((asset_name.to_string(), asset_value));
@@ -191,9 +188,6 @@ fn setup(
                 })
                 .with_asset(|asset| {
                     asset.amount(MissionToken::Time(1000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::MissionTime(0.into()));
                 });
         })
         .with_account(|account| {
@@ -367,9 +361,9 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<Fp
 fn increase_mission_time(_time: Res<Time>,mut query: Query<&mut MissionToken>){
     for mut token in query.iter_mut(){
         match *token{
-            MissionToken::MissionTime(asset)=>{
+            MissionToken::Time(asset)=>{
                 //asset.0.0 += 1
-                *token = MissionToken::MissionTime(Asset(Amount(asset.0.0 + 1)))
+                *token = MissionToken::Time(Asset(Amount(asset.0.0 + 1)))
             }
             _=>{}
         }
