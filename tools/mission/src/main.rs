@@ -6,12 +6,11 @@ use bevy_egui::{egui, EguiContext};
 use egui_extras::{TableBuilder, Size};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-// use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder, wallet::*, account::*};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use simula_decision::{
     BehaviorBundle, BehaviorState, DecisionEditorState, DecisionGraphState, DecisionPlugin,
 };
-use simula_mission::{asset::Asset, wallet::Wallet, account::Account, MissionPlugin, WalletBuilder};
+use simula_mission::{asset::{Asset,Amount}, wallet::Wallet, account::Account, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -81,6 +80,7 @@ pub enum MissionToken {
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
     Labor(Asset<1000, 3>),
+    MissionTime(Asset<1000, 4>),
 }
 
 pub fn wallet_ui_system (
@@ -128,6 +128,7 @@ pub fn wallet_ui_system (
                                     MissionToken::Trust(_) => "Trust",
                                     MissionToken::Energy(_) => "Energy",
                                     MissionToken::Labor(_) => "Labor",
+                                    MissionToken::MissionTime(_) => "MissionTime",
                                     MissionToken::None => "None",
                                 };
                                 let asset_value = match asset {
@@ -135,6 +136,7 @@ pub fn wallet_ui_system (
                                     MissionToken::Trust(asset) => asset.0.0,
                                     MissionToken::Energy(asset) => asset.0.0,
                                     MissionToken::Labor(asset) => asset.0.0,
+                                    MissionToken::MissionTime(asset) => asset.0.0,
                                     MissionToken::None => 0,
                                 };
                                 asset_list.push((asset_name.to_string(), asset_value));
@@ -167,7 +169,6 @@ pub fn wallet_ui_system (
                 }
             }
         });
-    MissionTime(Asset<1000,3>)
 }
 
 fn setup(
@@ -228,6 +229,12 @@ fn setup(
         .spawn()
         .push_children(&[agent_wallet, agent_decision_graph])
         .insert(Name::new("Agent: 001"));
+
+    //commands
+    //    .spawn()
+    //    //.insert(Check{timer: Timer::from_seconds(1.0, true)})
+    //    .insert(graph::MyEditorState(GraphEditorState::new(1.0)))
+    //    .insert(graph::MyGraphState::default());
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -319,11 +326,29 @@ fn setup(
 #[derive(Default, Component, Reflect, Clone)]
 struct AgentRest;
 
-    commands
-        .spawn()
-        //.insert(Check{timer: Timer::from_seconds(1.0, true)})
-        .insert(graph::MyEditorState(GraphEditorState::new(1.0)))
-        .insert(graph::MyGraphState::default());
+fn behavior_agent_rest(
+    agents: Query<(
+        &AgentRest,
+        &mut BehaviorState,
+        &Wallet,
+        &mut DecisionGraphState,
+    )>,
+) {
+    for _agent in agents.iter() {}
+}
+
+#[derive(Default, Component, Reflect, Clone)]
+struct AgentWork;
+
+fn behavior_agent_work(
+    agents: Query<(
+        &AgentWork,
+        &mut BehaviorState,
+        &Wallet,
+        &mut DecisionGraphState,
+    )>,
+) {
+    for _agent in agents.iter() {}
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
