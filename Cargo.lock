@@ -140,6 +140,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "getrandom 0.2.7",
  "once_cell",
+ "serde",
  "version_check",
 ]
 
@@ -1086,7 +1087,7 @@ dependencies = [
  "bevy_render",
  "bevy_transform",
  "bevy_utils",
- "ron",
+ "ron 0.7.1",
  "serde",
  "thiserror",
  "uuid",
@@ -2210,14 +2211,26 @@ dependencies = [
  "ahash 0.8.0",
  "epaint",
  "nohash-hasher",
+ "ron 0.8.0",
+ "serde",
+]
+
+[[package]]
+name = "egui_extras"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f698f685bb0ad39e87109e2f695ded0bccde77d5d40bbf7590cb5561c1e3039d"
+dependencies = [
+ "egui",
 ]
 
 [[package]]
 name = "egui_node_graph"
 version = "0.3.0"
-source = "git+https://github.com/setzer22/egui_node_graph.git?rev=75308d0e72dd604339cd864173ca31f1bc7a3fc7#75308d0e72dd604339cd864173ca31f1bc7a3fc7"
+source = "git+https://github.com/setzer22/egui_node_graph.git?rev=b65a780f35a383444f0559c63e1d0ea22e16076d#b65a780f35a383444f0559c63e1d0ea22e16076d"
 dependencies = [
  "egui",
+ "serde",
  "slotmap",
  "smallvec",
  "thiserror",
@@ -2258,6 +2271,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9542a40106fdba943a055f418d1746a050e1a903a049b030c2b097d4686a33cf"
 dependencies = [
  "bytemuck",
+ "serde",
 ]
 
 [[package]]
@@ -2375,6 +2389,7 @@ dependencies = [
  "emath",
  "nohash-hasher",
  "parking_lot 0.12.1",
+ "serde",
 ]
 
 [[package]]
@@ -3835,13 +3850,17 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy-inspector-egui",
+ "bevy_egui",
+ "egui_extras",
  "egui_node_graph",
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
+ "serde",
  "simula_action",
  "simula_camera",
  "simula_core",
+ "simula_decision",
  "simula_mission",
  "simula_net",
  "simula_viz",
@@ -5028,6 +5047,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ron"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "300a51053b1cb55c80b7a9fde4120726ddf25ca241a1cbb926626f62fb136bff"
+dependencies = [
+ "base64",
+ "bitflags",
+ "serde",
+]
+
+[[package]]
 name = "rtcp"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5155,6 +5185,7 @@ dependencies = [
  "authority",
  "bevy",
  "bevy-inspector-egui",
+ "bevy_egui",
  "bevy_mod_debugdump",
  "enum-display-derive",
  "enum-iterator",
@@ -5400,7 +5431,7 @@ dependencies = [
  "bevy",
  "bevy_egui",
  "derivative",
- "ron",
+ "ron 0.7.1",
  "serde",
  "simula_action_macro",
  "simula_core",
@@ -5447,6 +5478,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "simula_decision"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-inspector-egui",
+ "egui_node_graph",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "serde",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_mission",
+ "simula_net",
+ "simula_viz",
+]
+
+[[package]]
 name = "simula_hexgrid"
 version = "0.1.0"
 dependencies = [
@@ -5466,7 +5517,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_egui",
  "hex",
- "ron",
+ "ron 0.7.1",
  "serde",
  "ta",
 ]
@@ -5568,6 +5619,7 @@ version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1e08e261d0e8f5c43123b7adf3e4ca1690d655377ac93a03b2c9d3e98de1342"
 dependencies = [
+ "serde",
  "version_check",
 ]
 

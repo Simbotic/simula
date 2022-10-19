@@ -116,7 +116,7 @@ where
         self
     }
 
-    pub fn build(&self, cmd: &mut Commands) -> Wallet {
+    pub fn build(&self, cmd: &mut Commands) -> Entity {
         let name = self
             .id
             .to_string()
@@ -132,11 +132,8 @@ where
                     account.build(wallet);
                 }
             })
-            .insert(Name::new(format!("Wallet: {}", name)));
-
-        Wallet {
-            wallet_id: self.id.clone(),
-        }
+            .insert(Name::new(format!("Wallet: {}", name)))
+            .id()
     }
 }
 

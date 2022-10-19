@@ -2,12 +2,16 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_inspector_egui::{Inspectable, RegisterInspectable};
-use egui_node_graph::*;
+use bevy_egui::{egui, EguiContext};
+use egui_extras::{TableBuilder, Size};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_mission::{asset::{Asset, Amount}, MissionPlugin, WalletBuilder};
+// use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder, wallet::*, account::*};
+use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
+use simula_decision::{
+    BehaviorBundle, BehaviorState, DecisionEditorState, DecisionGraphState, DecisionPlugin,
+};
+use simula_mission::{asset::Asset, wallet::Wallet, account::Account, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -15,7 +19,7 @@ use simula_viz::{
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
 
-mod graph;
+// mod graph;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -36,6 +40,7 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+    .insert_resource(SelectedWallet(0))
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -46,17 +51,26 @@ fn main() {
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
     .add_plugin(MissionPlugin)
+    .add_plugin(DecisionPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_system(debug_info)
     .add_system(increase_mission_time)
     //.add_system(check_increase)
-    .add_system(graph::egui_update);
+    .add_system(wallet_ui_system)
+    .add_system_set(
+        SystemSet::new()
+            .with_system(behavior_agent_rest)
+            .with_system(behavior_agent_work),
+    );
 
     app.register_inspectable::<MissionToken>();
 
     app.run();
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SelectedWallet(usize);
 
 #[derive(Debug, Inspectable, Default, Reflect, Component, Clone)]
 #[reflect(Component)]
@@ -66,6 +80,93 @@ pub enum MissionToken {
     Time(Asset<1000, 0>),
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
+}
+
+pub fn wallet_ui_system (
+    mut egui_ctx: ResMut<EguiContext>,
+    wallets: Query<(&Wallet, &Children)>,
+    accounts: Query<(&Account, &Children)>,
+    assets: Query<&MissionToken>,
+    mut selected_wallet: ResMut<SelectedWallet>,
+) {
+    egui::Window::new("Wallets")
+        .default_width(200.0)
+        .resizable(true)
+        .vscroll(true)
+        .drag_bounds(egui::Rect::EVERYTHING)
+        .show(egui_ctx.ctx_mut(), |ui| {
+            let mut wallet_list: Vec<(String, &Children)> = vec![];
+            for (wallet, wallet_accounts) in wallets.iter() {
+                let wallet_id_trimmed = wallet.wallet_id
+                    .to_string()
+                    .get(0..8)
+                    .unwrap_or_default()
+                    .to_string();
+                wallet_list.push((wallet_id_trimmed, wallet_accounts));
+            }
+            egui::ComboBox::from_label("Select a wallet").show_index(
+                ui,
+                &mut selected_wallet.0,
+                wallet_list.len(),
+                |i| wallet_list[i].0.to_owned()
+            );
+            for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
+                if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                    let account_id_trimmed = account.account_id
+                            .to_string()
+                            .get(0..8)
+                            .unwrap_or_default()
+                            .to_string();
+                    ui.separator();
+                    ui.collapsing(format!("account {:?}", account_id_trimmed), |ui| {
+                        let mut asset_list: Vec<(String, i128)> = vec![];
+                        for &account_asset in account_assets.iter() {
+                            if let Ok(asset) = assets.get(account_asset) {
+                                let asset_name = match asset {
+                                    MissionToken::Time(_) => "Time",
+                                    MissionToken::Trust(_) => "Trust",
+                                    MissionToken::Energy(_) => "Energy",
+                                    MissionToken::Labor(_) => "Labor",
+                                    MissionToken::None => "None",
+                                };
+                                let asset_value = match asset {
+                                    MissionToken::Time(asset) => asset.0.0,
+                                    MissionToken::Trust(asset) => asset.0.0,
+                                    MissionToken::Energy(asset) => asset.0.0,
+                                    MissionToken::Labor(asset) => asset.0.0,
+                                    MissionToken::None => 0,
+                                };
+                                asset_list.push((asset_name.to_string(), asset_value));
+                            }
+                        }
+                        TableBuilder::new(ui)
+                            .column(Size::remainder())
+                            .column(Size::remainder())
+                            .header(20.0, |mut header| {
+                                header.col(|ui| {
+                                    ui.heading(format!("Asset"));
+                                });
+                                header.col(|ui| {
+                                    ui.heading("Amount");
+                                });
+                            })
+                            .body(|mut body| {
+                                for asset in asset_list.iter() {
+                                    body.row(20.0, |mut row| {
+                                        row.col(|ui| {
+                                            ui.label(asset.0.clone());
+                                        });
+                                        row.col(|ui| {
+                                            ui.label(asset.1.to_string());
+                                        });
+                                    });
+                                }
+                            });
+                    });
+                }
+            }
+        });
     MissionTime(Asset<1000,3>)
 }
 
@@ -76,7 +177,7 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    WalletBuilder::<MissionToken>::default()
+    let agent_wallet = WalletBuilder::<MissionToken>::default()
         .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
         .with_account(|account| {
             account
@@ -108,6 +209,25 @@ fn setup(
                 });
         })
         .build(&mut commands);
+
+    let agent_decision_graph = commands
+        .spawn()
+        .insert(DecisionEditorState {
+            show: true,
+            ..default()
+        })
+        .insert(DecisionGraphState::default())
+        .with_children(|parent| {
+            parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
+            parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
+        })
+        .insert(Name::new("Decision Graph"))
+        .id();
+
+    commands
+        .spawn()
+        .push_children(&[agent_wallet, agent_decision_graph])
+        .insert(Name::new("Agent: 001"));
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -194,6 +314,10 @@ fn setup(
             }),
         )
         .insert(FpsText);
+}
+
+#[derive(Default, Component, Reflect, Clone)]
+struct AgentRest;
 
     commands
         .spawn()

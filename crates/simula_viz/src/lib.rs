@@ -8,3 +8,4 @@ pub mod pointcloud;
 pub mod rod;
 pub mod signal;
 pub mod voxel;
+pub mod follow_ui;
