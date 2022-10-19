@@ -110,61 +110,67 @@ pub fn wallet_ui_system (
                 wallet_list.len(),
                 |i| wallet_list[i].0.to_owned()
             );
-            for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
-                if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                    let account_id_trimmed = account.account_id
-                            .to_string()
-                            .get(0..8)
-                            .unwrap_or_default()
-                            .to_string();
-                    ui.separator();
-                    ui.collapsing(format!("account {:?}", account_id_trimmed), |ui| {
-                        let mut asset_list: Vec<(String, i128)> = vec![];
-                        for &account_asset in account_assets.iter() {
-                            if let Ok(asset) = assets.get(account_asset) {
-                                let asset_name = match asset {
-                                    MissionToken::Time(_) => "Time",
-                                    MissionToken::Trust(_) => "Trust",
-                                    MissionToken::Energy(_) => "Energy",
-                                    MissionToken::Labor(_) => "Labor",
-                                    MissionToken::None => "None",
-                                };
-                                let asset_value = match asset {
-                                    MissionToken::Time(asset) => asset.0.0,
-                                    MissionToken::Trust(asset) => asset.0.0,
-                                    MissionToken::Energy(asset) => asset.0.0,
-                                    MissionToken::Labor(asset) => asset.0.0,
-                                    MissionToken::None => 0,
-                                };
-                                asset_list.push((asset_name.to_string(), asset_value));
-                            }
-                        }
-                        TableBuilder::new(ui)
-                            .column(Size::remainder())
-                            .column(Size::remainder())
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading(format!("Asset"));
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Amount");
-                                });
-                            })
-                            .body(|mut body| {
-                                for asset in asset_list.iter() {
-                                    body.row(20.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.label(asset.0.clone());
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(asset.1.to_string());
-                                        });
-                                    });
+
+            egui::Grid::new("accounts_grid").striped(true).show(ui, |ui| {
+                ui.heading("Accounts");
+                ui.end_row();
+                for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
+                    if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                        let account_id_trimmed = account.account_id
+                                .to_string()
+                                .get(0..8)
+                                .unwrap_or_default()
+                                .to_string();
+                        ui.collapsing(account_id_trimmed.clone(), |ui| {
+                            let mut asset_list: Vec<(String, i128)> = vec![];
+                            for &account_asset in account_assets.iter() {
+                                if let Ok(asset) = assets.get(account_asset) {
+                                    let asset_name = match asset {
+                                        MissionToken::Time(_) => "Time",
+                                        MissionToken::Trust(_) => "Trust",
+                                        MissionToken::Energy(_) => "Energy",
+                                        MissionToken::Labor(_) => "Labor",
+                                        MissionToken::None => "None",
+                                    };
+                                    let asset_value = match asset {
+                                        MissionToken::Time(asset) => asset.0.0,
+                                        MissionToken::Trust(asset) => asset.0.0,
+                                        MissionToken::Energy(asset) => asset.0.0,
+                                        MissionToken::Labor(asset) => asset.0.0,
+                                        MissionToken::None => 0,
+                                    };
+                                    asset_list.push((asset_name.to_string(), asset_value));
                                 }
-                            });
-                    });
+                            }
+                            TableBuilder::new(ui)
+                                .column(Size::remainder().at_least(100.0))
+                                .column(Size::remainder().at_least(100.0))
+                                .striped(true)
+                                .header(20.0, |mut header| {
+                                    header.col(|ui| {
+                                        ui.heading(format!("Asset"));
+                                    });
+                                    header.col(|ui| {
+                                        ui.heading("Amount");
+                                    });
+                                })
+                                .body(|mut body| {
+                                    for asset in asset_list.iter() {
+                                        body.row(20.0, |mut row| {
+                                            row.col(|ui| {
+                                                ui.label(asset.0.clone());
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(asset.1.to_string());
+                                            });
+                                        });
+                                    }
+                                });
+                        });
+                    }
+                    ui.end_row();
                 }
-            }
+            });
         });
 }
 
