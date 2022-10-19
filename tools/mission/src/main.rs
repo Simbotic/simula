@@ -7,7 +7,7 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use egui_node_graph::*;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder};
+use simula_mission::{asset::{Asset, Amount}, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -16,6 +16,14 @@ use simula_viz::{
 };
 
 mod graph;
+
+// A unit struct to help identify the FPS UI component, since there may be many Text components
+#[derive(Component)]
+struct FpsText;
+
+// A unit struct to help identify the color-changing Text component
+#[derive(Component)]
+struct ColorText;
 
 fn main() {
     let mut app = App::new();
@@ -41,6 +49,8 @@ fn main() {
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_system(debug_info)
+    .add_system(increase_mission_time)
+    //.add_system(check_increase)
     .add_system(graph::egui_update);
 
     app.register_inspectable::<MissionToken>();
@@ -56,6 +66,7 @@ pub enum MissionToken {
     Time(Asset<1000, 0>),
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
+    MissionTime(Asset<1000,3>)
 }
 
 fn setup(
@@ -78,6 +89,9 @@ fn setup(
                 })
                 .with_asset(|asset| {
                     asset.amount(MissionToken::Time(1000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::MissionTime(0.into()));
                 });
         })
         .with_account(|account| {
@@ -149,44 +163,87 @@ fn setup(
             distance: 10.0,
             ..Default::default()
         });
-
-    // FPS on screen
-    commands.spawn_bundle(TextBundle {
-        text: Text {
-            sections: vec![TextSection {
-                value: "\nFPS: ".to_string(),
-                style: TextStyle {
+    
+    //FPS ON SCREEN
+    commands
+        .spawn_bundle(
+            TextBundle::from_sections([
+                TextSection::new(
+                    "FPS: ",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+                        font_size: 30.0,
+                        color: Color::WHITE,
+                    },
+                ),
+                TextSection::from_style(TextStyle {
                     font: asset_server.load("fonts/FiraMono-Medium.ttf"),
-                    font_size: 12.0,
-                    color: Color::rgb(0.0, 1.0, 0.0),
+                    font_size: 30.0,
+                    color: Color::GOLD,
+                }),
+            ])
+            .with_style(Style {
+                align_self: AlignSelf::FlexEnd,
+                position_type: PositionType::Absolute,
+                position: UiRect {
+                    top: Val::Px(24.0),
+                    left: Val::Px(15.0),
+                    ..default()
                 },
-            }],
-            ..Default::default()
-        },
-        style: Style {
-            position_type: PositionType::Absolute,
-            position: UiRect {
-                top: Val::Px(5.0),
-                left: Val::Px(5.0),
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+                ..default()
+            }),
+        )
+        .insert(FpsText);
 
     commands
         .spawn()
+        //.insert(Check{timer: Timer::from_seconds(1.0, true)})
         .insert(graph::MyEditorState(GraphEditorState::new(1.0)))
         .insert(graph::MyGraphState::default());
 }
 
-fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
+fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
+    
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
-            for mut text in query.iter_mut() {
-                text.sections[0].value = format!("{:.2}", average);
+            // Update the value of the second section
+            for mut text in &mut query {
+                text.sections[1].value = format!("{average:.2}");
             }
         }
-    };
+    }
+    
 }
+
+fn increase_mission_time(_time: Res<Time>,mut query: Query<&mut MissionToken>){
+    for mut token in query.iter_mut(){
+        match *token{
+            MissionToken::MissionTime(asset)=>{
+                //asset.0.0 += 1
+                *token = MissionToken::MissionTime(Asset(Amount(asset.0.0 + 1)))
+            }
+            _=>{}
+        }
+    }
+}
+
+//fn check_increase(time: Res<Time>,mut q: Query<&mut Check>,mut query: Query<&mut MissionToken>){
+//    for mut check in q.iter_mut(){
+//        check.timer.tick(time.delta());
+//        if check.timer.just_finished(){
+//            for token in query.iter_mut(){
+//                match *token{
+//                    MissionToken::MissionTime(asset)=>{
+//                        println!("{:?}",asset.0.0)
+//                    }
+//                    _=>{}
+//                }
+//            }
+//        }
+//    }
+//}
+
+//#[derive(Component)]
+//pub struct Check{
+// timer: Timer
+//}
