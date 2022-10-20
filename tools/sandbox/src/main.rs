@@ -31,7 +31,7 @@ use simula_video::{GstSink, GstSrc};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     ease::{ease_lines, EaseLine},
-    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
+    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin, FollowUIVisibility},
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, Lines, LinesBundle, LinesMaterial, LinesPlugin},
@@ -272,7 +272,7 @@ fn setup(
 
     let camera_entity = commands
         .spawn_bundle(Camera3dBundle {
-            transform: Transform::from_xyz(-10.0, 2.0, 0.0)
+            transform: Transform::from_xyz(0.0, 2.0, -10.0)
                 .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
             ..default()
         })
@@ -297,7 +297,7 @@ fn setup(
             #[cfg(feature = "gst")]
             child.insert(GstSrc::default());
         })
-        .insert(FlyCamera { ..default() })
+        .insert(FlyCamera::default())
         .insert(FollowUICamera)
         .id();
 
@@ -329,7 +329,7 @@ fn setup(
                     })
                     .insert(FollowUI {
                         min_distance: 0.1,
-                        max_distance: 10.0,
+                        max_distance: 20.0,
                         min_height: -5.0,
                         max_height: 5.0,
                         max_view_angle: 45.0,
@@ -837,17 +837,12 @@ struct FollowPanel;
 fn follow_ui(
     time: Res<Time>,
     mut egui_context: ResMut<EguiContext>,
-    follow_uis: Query<(Entity, &FollowUI), With<FollowPanel>>,
+    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<FollowPanel>>,
 ) {
-    for (entity, follow_ui) in follow_uis.iter() {
-        let ui_pos = if let Some(ui_pos) = follow_ui.screen_pos {
-            ui_pos
-        } else {
-            break;
-        };
+    for (entity, follow_ui, visibility) in follow_uis.iter() {
+        let ui_pos = visibility.screen_pos;
 
         let my_frame = egui::containers::Frame {
-            // margin: egui::style::Margin { left: 10., right: 10., top: 10., bottom: 10. },
             rounding: egui::Rounding {
                 nw: 3.0,
                 ne: 3.0,
