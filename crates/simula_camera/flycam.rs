@@ -23,7 +23,7 @@ impl Default for FlyCamera {
             max_speed: 0.5,
             sensitivity: 20.0,
             friction: 1.0,
-            invert_pitch: true,
+            invert_pitch: false,
         }
     }
 }
@@ -77,9 +77,9 @@ impl FlyCameraPlugin {
                 let yaw = delta.x * camera.sensitivity * time.delta_seconds();
                 let pitch = delta.y * camera.sensitivity * time.delta_seconds();
                 let pitch = if camera.invert_pitch {
-                    pitch
-                } else {
                     pitch * -1.0
+                } else {
+                    pitch
                 };
 
                 // Rotate camera
