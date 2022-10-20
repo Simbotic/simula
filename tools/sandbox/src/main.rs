@@ -298,11 +298,6 @@ fn setup(
             child.insert(GstSrc::default());
         })
         .insert(FlyCamera {
-            invert_pitch: if cfg!(target_os = "macos") {
-                true
-            } else {
-                false
-            },
             ..default()
         })
         .insert(FollowUICamera)
