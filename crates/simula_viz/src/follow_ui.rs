@@ -44,8 +44,12 @@ pub fn follow_ui(
     mut query: Query<(&mut FollowUI, &GlobalTransform)>,
     camera_query: Query<(&Camera, &GlobalTransform), With<FollowUICamera>>,
 ) {
-    for (mut follow_ui, ui_global_transform) in query.iter_mut() {
-        for (camera, camera_global_transform) in camera_query.iter() {
+    if camera_query.iter().count() > 1 {
+        warn!("Only one FollowUICamera is allowed");
+    }
+
+    if let Some((camera, camera_global_transform)) = camera_query.iter().next() {
+        for (mut follow_ui, ui_global_transform) in query.iter_mut() {
             let camera_height =
                 camera_global_transform.translation().y - ui_global_transform.translation().y;
             let camera_distance = Vec3::distance(
