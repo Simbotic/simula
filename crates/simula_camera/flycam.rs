@@ -65,9 +65,12 @@ impl FlyCameraPlugin {
                 front.y = front.y.clamp(-0.8, 0.8);
                 let front = front.normalize();
                 let right = strafe_vector(&transform.rotation);
+                // let mut right = Vec3::Y.cross(front);
+                // right.y = 0.0;
+                // let right = right.normalize();
                 let up = front.cross(right).normalize();
                 let rotation = Mat3::from_cols(right, up, front);
-                let rotation = Quat::from_mat3(&rotation);
+                let rotation = Quat::from_mat3(&rotation).normalize();
 
                 // Get look motion
                 let x = motion.get(FlyCameraMotion::LookRight).unwrap_or_default();
@@ -84,8 +87,9 @@ impl FlyCameraPlugin {
                 };
 
                 // Rotate camera
-                let rotation = rotation * Quat::from_axis_angle(right, pitch);
-                let rotation = rotation * Quat::from_axis_angle(Vec3::Y, -yaw);
+                let rotation = Quat::from_axis_angle(Vec3::Y, -yaw)
+                    * Quat::from_axis_angle(right, -pitch)
+                    * rotation;
                 transform.rotation = rotation;
             }
 

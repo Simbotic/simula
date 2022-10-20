@@ -272,7 +272,7 @@ fn setup(
 
     let camera_entity = commands
         .spawn_bundle(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 2.0, -10.0)
+            transform: Transform::from_xyz(-10.0, 2.0, 0.0)
                 .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
             ..default()
         })
@@ -297,49 +297,49 @@ fn setup(
             #[cfg(feature = "gst")]
             child.insert(GstSrc::default());
         })
-        .insert(FlyCamera {
-            ..default()
-        })
+        .insert(FlyCamera { ..default() })
         .insert(FollowUICamera)
         .id();
 
-    // Follow UI over torus
-    commands
-        .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Torus {
-                radius: 0.5,
-                ring_radius: 0.1,
+    for i in 0..5 {
+        // Follow UI over torus
+        commands
+            .spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Torus {
+                    radius: 0.5,
+                    ring_radius: 0.1,
+                    ..default()
+                })),
+                material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+                transform: Transform::from_xyz(3.0 + i as f32 * 5.0, 0.0, 0.0),
                 ..default()
-            })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_xyz(3.0, 0.0, 0.0),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent
-                .spawn_bundle(AxesBundle {
-                    axes: Axes {
-                        size: 1.,
-                        inner_offset: 1.,
+            })
+            .with_children(|parent| {
+                parent
+                    .spawn_bundle(AxesBundle {
+                        axes: Axes {
+                            size: 1.,
+                            inner_offset: 1.,
+                            ..default()
+                        },
+                        mesh: meshes.add(line_mesh.clone()),
+                        material: lines_materials.add(LinesMaterial {}),
+                        transform: Transform::from_xyz(0.0, 1.0, 0.0),
                         ..default()
-                    },
-                    mesh: meshes.add(line_mesh.clone()),
-                    material: lines_materials.add(LinesMaterial {}),
-                    transform: Transform::from_xyz(0.0, 1.0, 0.0),
-                    ..default()
-                })
-                .insert(FollowUI {
-                    min_distance: 0.1,
-                    max_distance: 10.0,
-                    min_height: -5.0,
-                    max_height: 5.0,
-                    max_view_angle: 45.0,
-                    ..default()
-                })
-                .insert(FollowPanel)
-                .insert(Name::new("FollowUI: Axes"));
-        })
-        .insert(Name::new("Follow UI: Shape"));
+                    })
+                    .insert(FollowUI {
+                        min_distance: 0.1,
+                        max_distance: 10.0,
+                        min_height: -5.0,
+                        max_height: 5.0,
+                        max_view_angle: 45.0,
+                        ..default()
+                    })
+                    .insert(FollowPanel)
+                    .insert(Name::new("FollowUI: Axes"));
+            })
+            .insert(Name::new("Follow UI: Shape"));
+    }
 
     // FPS on screen
     commands.spawn_bundle(TextBundle {
@@ -837,9 +837,9 @@ struct FollowPanel;
 fn follow_ui(
     time: Res<Time>,
     mut egui_context: ResMut<EguiContext>,
-    follow_uis: Query<&FollowUI, With<FollowPanel>>,
+    follow_uis: Query<(Entity, &FollowUI), With<FollowPanel>>,
 ) {
-    for follow_ui in follow_uis.iter() {
+    for (entity, follow_ui) in follow_uis.iter() {
         let ui_pos = if let Some(ui_pos) = follow_ui.screen_pos {
             ui_pos
         } else {
@@ -859,6 +859,7 @@ fn follow_ui(
         };
 
         egui::Window::new("Follow UI")
+            .id(egui::Id::new(entity))
             .frame(my_frame)
             .fixed_size(egui::Vec2::new(follow_ui.size.x, follow_ui.size.y))
             .fixed_pos(egui::Pos2::new(ui_pos.x, ui_pos.y))
