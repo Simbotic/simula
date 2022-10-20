@@ -38,7 +38,7 @@ impl Default for OrbitCamera {
             pitch_range: 0.01..=3.13,
             distance: 5.0,
             center: Vec3::ZERO,
-            rotate_sensitivity: 1.0,
+            rotate_sensitivity: 10.0,
             pan_sensitivity: 10.0,
             zoom_sensitivity: 0.8,
             enabled: true,
