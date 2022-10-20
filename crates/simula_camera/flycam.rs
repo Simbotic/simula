@@ -23,7 +23,7 @@ impl Default for FlyCamera {
             max_speed: 0.5,
             sensitivity: 20.0,
             friction: 1.0,
-            invert_pitch: false,
+            invert_pitch: true,
         }
     }
 }
