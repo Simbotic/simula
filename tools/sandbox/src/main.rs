@@ -271,10 +271,9 @@ fn setup(
     let rt_image = images.add(rt::default_render_target_image());
 
     let camera_entity = commands
-        .spawn_bundle(Camera3dBundle { ..default() })
-        .insert(OrbitCamera {
-            center: Vec3::new(0.0, 1.0, 0.0),
-            distance: 10.0,
+        .spawn_bundle(Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 2.0, -10.0)
+                .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
             ..default()
         })
         .insert(RenderLayers::all())
@@ -298,7 +297,14 @@ fn setup(
             #[cfg(feature = "gst")]
             child.insert(GstSrc::default());
         })
-        .insert(FlyCamera { ..default() })
+        .insert(FlyCamera {
+            invert_pitch: if cfg!(target_os = "macos") {
+                true
+            } else {
+                false
+            },
+            ..default()
+        })
         .insert(FollowUICamera)
         .id();
 
