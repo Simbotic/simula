@@ -21,7 +21,7 @@ impl Default for FlyCamera {
             accel: 1.2,
             velocity: Vec3::ZERO,
             max_speed: 0.5,
-            sensitivity: 2.0,
+            sensitivity: 20.0,
             friction: 1.0,
             invert_pitch: false,
         }
