@@ -15,14 +15,15 @@ pub struct FlyCamera {
     pub friction: f32,
     pub invert_pitch: bool,
 }
+
 impl Default for FlyCamera {
     fn default() -> Self {
         Self {
-            accel: 1.2,
+            accel: 5.0,
             velocity: Vec3::ZERO,
-            max_speed: 0.5,
+            max_speed: 0.2,
             sensitivity: 20.0,
-            friction: 1.0,
+            friction: 1.5,
             invert_pitch: false,
         }
     }
@@ -32,7 +33,7 @@ fn forward_vector(rotation: &Quat) -> Vec3 {
     rotation.mul_vec3(Vec3::Z).normalize()
 }
 
-fn forward_walk_vector(rotation: &Quat) -> Vec3 {
+fn forward_xy_vector(rotation: &Quat) -> Vec3 {
     let f = forward_vector(rotation);
     let f_flattened = Vec3::new(f.x, 0.0, f.z).normalize();
     f_flattened
@@ -41,7 +42,7 @@ fn forward_walk_vector(rotation: &Quat) -> Vec3 {
 fn strafe_vector(rotation: &Quat) -> Vec3 {
     // Rotate it 90 degrees to get the strafe direction
     Quat::from_rotation_y(90.0f32.to_radians())
-        .mul_vec3(forward_walk_vector(rotation))
+        .mul_vec3(forward_xy_vector(rotation))
         .normalize()
 }
 
@@ -71,11 +72,11 @@ impl FlyCameraPlugin {
                 // Get look motion
                 let x = motion.get(FlyCameraMotion::LookRight).unwrap_or_default();
                 let y = motion.get(FlyCameraMotion::LookUp).unwrap_or_default();
-                let delta = Vec2::new(x, y);
+                let delta_look = Vec2::new(x, y);
 
                 // Look delta
-                let yaw = delta.x * camera.sensitivity * time.delta_seconds();
-                let pitch = delta.y * camera.sensitivity * time.delta_seconds();
+                let yaw = delta_look.x * camera.sensitivity * time.delta_seconds();
+                let pitch = delta_look.y * camera.sensitivity * time.delta_seconds();
                 let pitch = if camera.invert_pitch {
                     pitch * -1.0
                 } else {
@@ -89,16 +90,16 @@ impl FlyCameraPlugin {
             }
 
             // Get motion
-            let (axis_h, axis_v, axis_float) = (
+            let (delta_strafe, delta_forward, delta_up) = (
                 motion.get(FlyCameraMotion::Strafe).unwrap_or_default(),
                 motion.get(FlyCameraMotion::Forward).unwrap_or_default(),
                 motion.get(FlyCameraMotion::Up).unwrap_or_default(),
             );
 
             // Compute motion vector
-            let accel_vector: Vec3 = (strafe_vector(&transform.rotation) * -axis_h)
-                + (forward_walk_vector(&transform.rotation) * -axis_v)
-                + (Vec3::Y * axis_float);
+            let accel_vector: Vec3 = (strafe_vector(&transform.rotation) * -delta_strafe)
+                + (forward_xy_vector(&transform.rotation) * -delta_forward)
+                + (Vec3::Y * delta_up);
 
             // Apply acceleration
             let accel: Vec3 = if accel_vector.length() != 0.0 {
@@ -134,8 +135,8 @@ impl FlyCameraPlugin {
             // Move camera
             transform.translation += camera.velocity;
 
+            // Reset actions
             mode.clear();
-
             motion.clear();
         }
     }
