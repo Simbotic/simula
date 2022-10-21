@@ -21,6 +21,7 @@ pub fn map_range<
     value
 }
 
+// Map a value from one range to another, clamped to the output range
 pub fn map_range_clamped<
     T: Copy + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Div<Output = T> + Clamp<T>,
 >(
@@ -40,6 +41,7 @@ pub fn map_range_clamped<
     value
 }
 
+// Map a value from one range to another with an ease function
 pub fn map_range_eased<
     T: Copy
         + Add<Output = T>
