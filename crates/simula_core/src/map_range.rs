@@ -84,7 +84,7 @@ impl EasingCalc<f32> for f32 {
 
 impl EasingCalc<Vec3> for Vec3 {
     fn ease_calc(&self, f: EaseFunction) -> Vec3 {
-        Vec3::new(self.x.ease_calc(f), self.y.calc(f), self.z.calc(f))
+        Vec3::new(self.x.calc(f), self.y.calc(f), self.z.calc(f))
     }
 }
 
