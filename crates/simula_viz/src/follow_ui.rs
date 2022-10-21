@@ -45,7 +45,12 @@ impl Default for FollowUI {
 pub fn follow_ui(
     mut commands: Commands,
     windows: Res<Windows>,
-    query: Query<(Entity, &FollowUI, &GlobalTransform)>,
+    mut query: Query<(
+        Entity,
+        &FollowUI,
+        Option<&mut FollowUIVisibility>,
+        &GlobalTransform,
+    )>,
     camera_query: Query<(&Camera, &GlobalTransform), With<FollowUICamera>>,
 ) {
     if camera_query.iter().count() > 1 {
@@ -53,7 +58,7 @@ pub fn follow_ui(
     }
 
     if let Some((camera, camera_global_transform)) = camera_query.iter().next() {
-        for (entity, follow_ui, ui_global_transform) in query.iter() {
+        for (entity, follow_ui, visibility, ui_global_transform) in query.iter_mut() {
             let camera_height =
                 camera_global_transform.translation().y - ui_global_transform.translation().y;
             let camera_distance = Vec3::distance(
@@ -110,11 +115,6 @@ pub fn follow_ui(
             };
 
             if let Some(screen_pos) = screen_pos {
-                let mut visibility = FollowUIVisibility {
-                    screen_pos,
-                    alpha: 1.0,
-                };
-
                 let camera_pos_height_alpha = map_range(
                     camera_height,
                     (0.0, follow_ui.max_height),
@@ -143,12 +143,19 @@ pub fn follow_ui(
                     EaseFunction::SineInOut,
                 )
                 .clamp(0.0, 1.0);
-                visibility.alpha = camera_pos_height_alpha
+                let alpha = camera_pos_height_alpha
                     .min(camera_neg_height_alpha)
                     .min(camera_distance_alpha)
                     .min(view_angle_alpha);
 
-                commands.entity(entity).insert(visibility);
+                if let Some(mut visibility) = visibility {
+                    visibility.screen_pos = screen_pos;
+                    visibility.alpha = alpha;
+                } else {
+                    commands
+                        .entity(entity)
+                        .insert(FollowUIVisibility { screen_pos, alpha });
+                }
             } else {
                 commands.entity(entity).remove::<FollowUIVisibility>();
             }
