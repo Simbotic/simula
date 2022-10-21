@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use simula_core::{ease::EaseFunction, map_range::map_range};
+use simula_core::{
+    ease::EaseFunction,
+    map_range::{map_range, map_range_eased},
+};
 
 pub struct FollowUIPlugin;
 
@@ -82,18 +85,10 @@ pub fn follow_ui(
                 {
                     if screen_pos.z > 0.0 {
                         if let Some(window) = windows.get_primary() {
-                            screen_pos.x = map_range(
-                                screen_pos.x,
-                                (-1.0, 1.0),
-                                (0.0, window.width()),
-                                EaseFunction::Linear,
-                            );
-                            screen_pos.y = map_range(
-                                screen_pos.y,
-                                (-1.0, 1.0),
-                                (window.height(), 0.0),
-                                EaseFunction::Linear,
-                            );
+                            screen_pos.x =
+                                map_range(screen_pos.x, (-1.0, 1.0), (0.0, window.width()));
+                            screen_pos.y =
+                                map_range(screen_pos.y, (-1.0, 1.0), (window.height(), 0.0));
                             screen_pos.x = screen_pos.x - follow_ui.size.x / 2.0;
                             screen_pos.y = screen_pos.y - follow_ui.size.y / 2.0;
                             Some(screen_pos)
@@ -115,28 +110,28 @@ pub fn follow_ui(
             };
 
             if let Some(screen_pos) = screen_pos {
-                let camera_pos_height_alpha = map_range(
+                let camera_pos_height_alpha = map_range_eased(
                     camera_height,
                     (0.0, follow_ui.max_height),
                     (1.0, 0.0),
                     EaseFunction::SineInOut,
                 )
                 .clamp(0.0, 1.0);
-                let camera_neg_height_alpha = map_range(
+                let camera_neg_height_alpha = map_range_eased(
                     camera_height,
                     (0.0, follow_ui.min_height),
                     (1.0, 0.0),
                     EaseFunction::SineInOut,
                 )
                 .clamp(0.0, 1.0);
-                let camera_distance_alpha = map_range(
+                let camera_distance_alpha = map_range_eased(
                     camera_distance,
                     (follow_ui.min_distance, follow_ui.max_distance),
                     (1.0, 0.0),
                     EaseFunction::SineInOut,
                 )
                 .clamp(0.0, 1.0);
-                let view_angle_alpha = map_range(
+                let view_angle_alpha = map_range_eased(
                     view_angle,
                     (0.0, follow_ui.max_view_angle),
                     (1.0, 0.0),
