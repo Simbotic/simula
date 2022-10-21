@@ -92,17 +92,32 @@ pub trait Clamp<T> {
 
 impl Clamp<f32> for f32 {
     fn clamp(self, min: Self, max: Self) -> Self {
-        self.max(min).min(max)
+        if min < max {
+            self.max(min).min(max)
+        } else {
+            self.max(max).min(min)
+        }
     }
 }
 
 impl Clamp<Vec3> for Vec3 {
     fn clamp(self, min: Self, max: Self) -> Self {
-        Vec3::new(
-            self.x.clamp(min.x, max.x),
-            self.y.clamp(min.y, max.y),
-            self.z.clamp(min.z, max.z),
-        )
+        let x = if min.x < max.x {
+            self.x.max(min.x).min(max.x)
+        } else {
+            self.x.max(max.x).min(min.x)
+        };
+        let y = if min.y < max.y {
+            self.y.max(min.y).min(max.y)
+        } else {
+            self.y.max(max.y).min(min.y)
+        };
+        let z = if min.z < max.z {
+            self.z.max(min.z).min(max.z)
+        } else {
+            self.z.max(max.z).min(min.z)
+        };
+        Vec3::new(x, y, z)
     }
 }
 
