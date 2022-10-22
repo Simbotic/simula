@@ -5,18 +5,19 @@ use bevy::{
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_decision::{
-    BehaviorBundle, BehaviorState, DecisionEditorState, DecisionGraphState, DecisionPlugin,
+use simula_behavior::{
+    BehaviorBundle, BehaviorEditorState, BehaviorGraphState, BehaviorPlugin, BehaviorState,
 };
 use simula_mission::{asset::Asset, wallet::Wallet, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
+#[cfg(feature = "gif")]
+use simula_video::GifAsset;
+use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
-
-// mod graph;
 
 fn main() {
     let mut app = App::new();
@@ -38,8 +39,9 @@ fn main() {
     .add_plugin(LinesPlugin)
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
+    .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
-    .add_plugin(DecisionPlugin)
+    .add_plugin(BehaviorPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_system(debug_info)
@@ -69,6 +71,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
@@ -102,23 +105,84 @@ fn setup(
         })
         .build(&mut commands);
 
-    let agent_decision_graph = commands
+    let agent_behavior_graph = commands
         .spawn()
-        .insert(DecisionEditorState {
+        .insert(BehaviorEditorState {
             show: true,
             ..default()
         })
-        .insert(DecisionGraphState::default())
+        .insert(BehaviorGraphState::default())
         .with_children(|parent| {
             parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
             parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
         })
-        .insert(Name::new("Decision Graph"))
+        .insert(Name::new("Behavior Graph"))
+        .id();
+
+    let video_material = StandardMaterial {
+        base_color: Color::rgb(1.0, 1.0, 1.0),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true,
+        ..default()
+    };
+    let video_rotation =
+        Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
+    let video_position = Vec3::new(0.0, 0.5, 0.0);
+
+    let agent_body = commands
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_translation(video_position).with_rotation(video_rotation),
+            ..default()
+        })
+        .with_children(|parent| {
+            let mut child = parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                material: materials.add(video_material),
+                transform: Transform::from_rotation(Quat::from_euler(
+                    EulerRot::YXZ,
+                    0.0,
+                    -std::f32::consts::FRAC_PI_2,
+                    0.0,
+                )),
+                ..default()
+            });
+            child
+                .insert(VideoPlayer {
+                    start_frame: 0,
+                    end_frame: 80,
+                    framerate: 20.0,
+                    playing: true,
+                    ..default()
+                })
+                .insert(Name::new("Video: RenderTarget"));
+
+            #[cfg(feature = "gif")]
+            {
+                let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+                child.insert(video_asset);
+            }
+        })
+        .insert(Name::new("Agent: Body"))
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(AxesBundle {
+                    axes: Axes {
+                        size: 1.,
+                        ..default()
+                    },
+                    mesh: meshes.add(line_mesh.clone()),
+                    material: lines_materials.add(LinesMaterial {}),
+                    ..default()
+                })
+                .insert(Name::new("LookAt Coords"));
+        })
         .id();
 
     commands
-        .spawn()
-        .push_children(&[agent_wallet, agent_decision_graph])
+        .spawn_bundle(SpatialBundle { 
+            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+            ..default() })
+        .push_children(&[agent_wallet, agent_behavior_graph, agent_body])
         .insert(Name::new("Agent: 001"));
 
     // grid
@@ -210,7 +274,7 @@ fn behavior_agent_rest(
         &AgentRest,
         &mut BehaviorState,
         &Wallet,
-        &mut DecisionGraphState,
+        &mut BehaviorGraphState,
     )>,
 ) {
     for _agent in agents.iter() {}
@@ -224,7 +288,7 @@ fn behavior_agent_work(
         &AgentWork,
         &mut BehaviorState,
         &Wallet,
-        &mut DecisionGraphState,
+        &mut BehaviorGraphState,
     )>,
 ) {
     for _agent in agents.iter() {}

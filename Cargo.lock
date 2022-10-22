@@ -2218,6 +2218,16 @@ dependencies = [
 [[package]]
 name = "egui_node_graph"
 version = "0.3.0"
+dependencies = [
+ "egui",
+ "slotmap",
+ "smallvec",
+ "thiserror",
+]
+
+[[package]]
+name = "egui_node_graph"
+version = "0.3.0"
 source = "git+https://github.com/setzer22/egui_node_graph.git?rev=b65a780f35a383444f0559c63e1d0ea22e16076d#b65a780f35a383444f0559c63e1d0ea22e16076d"
 dependencies = [
  "egui",
@@ -3841,17 +3851,18 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy-inspector-egui",
- "egui_node_graph",
+ "egui_node_graph 0.3.0 (git+https://github.com/setzer22/egui_node_graph.git?rev=b65a780f35a383444f0559c63e1d0ea22e16076d)",
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
  "serde",
  "simula_action",
+ "simula_behavior",
  "simula_camera",
  "simula_core",
- "simula_decision",
  "simula_mission",
  "simula_net",
+ "simula_video",
  "simula_viz",
 ]
 
@@ -5435,6 +5446,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "simula_behavior"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-inspector-egui",
+ "egui_node_graph 0.3.0",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "serde",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_mission",
+ "simula_net",
+ "simula_viz",
+]
+
+[[package]]
 name = "simula_cad"
 version = "0.1.0"
 dependencies = [
@@ -5464,26 +5495,6 @@ dependencies = [
  "petgraph",
  "rand 0.8.5",
  "serde",
-]
-
-[[package]]
-name = "simula_decision"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bevy",
- "bevy-inspector-egui",
- "egui_node_graph",
- "enum-display-derive",
- "enum-iterator",
- "rand 0.8.5",
- "serde",
- "simula_action",
- "simula_camera",
- "simula_core",
- "simula_mission",
- "simula_net",
- "simula_viz",
 ]
 
 [[package]]

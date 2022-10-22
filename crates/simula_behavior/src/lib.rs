@@ -4,7 +4,7 @@ use egui_node_graph::*;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-pub struct DecisionPlugin;
+pub struct BehaviorPlugin;
 
 #[derive(Bundle)]
 pub struct BehaviorBundle<T>
@@ -29,10 +29,10 @@ where
     }
 }
 
-impl Plugin for DecisionPlugin {
+impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<DecisionGraphState>()
-            .register_type::<DecisionEditorState>()
+        app.register_type::<BehaviorGraphState>()
+            .register_type::<BehaviorEditorState>()
             .register_type::<BehaviorState>()
             .register_inspectable::<BehaviorState>()
             .add_system(egui_update);
@@ -48,8 +48,6 @@ pub enum BehaviorState {
     Failure,
 }
 
-// ========= First, define your user data types =============
-
 /// The NodeData holds a custom data struct inside each node. It's useful to
 /// store additional information that doesn't live in parameters. For this
 /// example, the node data stores the template (i.e. the "type") of the node.
@@ -57,6 +55,7 @@ pub enum BehaviorState {
 pub struct DecisionNodeData {
     template: DecisionNodeTemplate,
     behavior: Option<String>,
+    name: String,
 }
 
 /// `DataType`s are what defines the possible range of connections when
@@ -112,7 +111,7 @@ pub enum DecisionNodeTemplate {
     // MakeScalar,
     // AddScalar,
     // SubtractScalar,
-    // VectorTimesScalar,
+    VectorTimesScalar,
     // AddVector,
     // SubtractVector,
     Sequence,
@@ -131,6 +130,8 @@ pub enum DecisionGraphResponse {
     AddPin(NodeId),
     RemovePin(NodeId),
     SelectBehavior(NodeId, Option<String>),
+    EditingNodeName(NodeId, String),
+    NodeNameChange(NodeId, String),
 }
 
 /// The graph 'global' state. This state struct is passed around to the node and
@@ -138,23 +139,24 @@ pub enum DecisionGraphResponse {
 /// the user. For this example, we use it to keep track of the 'active' node.
 #[derive(Default, Component, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
-pub struct DecisionGraphState {
+pub struct BehaviorGraphState {
     #[reflect(ignore)]
     pub active_node: Option<NodeId>,
     #[reflect(ignore)]
     #[serde(skip)]
     pub behaviors: HashSet<String>,
+    #[reflect(ignore)]
+    #[serde(skip)]
+    pub editing_node_name: Option<(NodeId, String)>,
 }
 
-// =========== Then, you need to implement some traits ============
-
 // A trait for the data types, to tell the library how to display them
-impl DataTypeTrait<DecisionGraphState> for DecisionDataType {
-    fn data_type_color(&self, _user_state: &mut DecisionGraphState) -> egui::Color32 {
+impl DataTypeTrait<BehaviorGraphState> for DecisionDataType {
+    fn data_type_color(&self, _user_state: &mut BehaviorGraphState) -> egui::Color32 {
         match self {
             DecisionDataType::Scalar => egui::Color32::from_rgb(38, 109, 211),
             DecisionDataType::Vec2 => egui::Color32::from_rgb(238, 207, 109),
-            DecisionDataType::Flow => egui::Color32::from_rgb(238, 255, 109),
+            DecisionDataType::Flow => color_hex_utils::color_from_hex("#555555").unwrap(),
         }
     }
 
@@ -173,7 +175,7 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
     type NodeData = DecisionNodeData;
     type DataType = DecisionDataType;
     type ValueType = DecisionValueType;
-    type UserState = DecisionGraphState;
+    type UserState = BehaviorGraphState;
 
     fn node_finder_label(&self) -> &str {
         match self {
@@ -183,7 +185,7 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
             // MyNodeTemplate::SubtractScalar => "Scalar subtract",
             // MyNodeTemplate::AddVector => "Vector add",
             // MyNodeTemplate::SubtractVector => "Vector subtract",
-            // MyNodeTemplate::VectorTimesScalar => "Vector times scalar",
+            DecisionNodeTemplate::VectorTimesScalar => "Vector times scalar",
             DecisionNodeTemplate::Sequence => "Sequence",
             DecisionNodeTemplate::Selector => "Selector",
             DecisionNodeTemplate::Behavior => "Behavior",
@@ -193,6 +195,8 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
     fn node_graph_label(&self) -> String {
         // It's okay to delegate this to node_finder_label if you don't want to
         // show different names in the node finder and the node itself.
+        // self.node_finder_label().into()
+        // self.user_data().name
         self.node_finder_label().into()
     }
 
@@ -200,6 +204,7 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
         DecisionNodeData {
             template: *self,
             behavior: None,
+            name: self.node_finder_label().into(),
         }
     }
 
@@ -211,6 +216,36 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
     ) {
         // The nodes are created empty by default. This function needs to take
         // care of creating the desired inputs and outputs based on the template
+
+        let input_scalar = |graph: &mut DecisionGraph, name: &str| {
+            graph.add_input_param(
+                node_id,
+                name.to_string(),
+                DecisionDataType::Scalar,
+                DecisionValueType::Scalar { value: 0.0 },
+                InputParamKind::ConnectionOrConstant,
+                true,
+            );
+        };
+        let input_vector = |graph: &mut DecisionGraph, name: &str| {
+            graph.add_input_param(
+                node_id,
+                name.to_string(),
+                DecisionDataType::Vec2,
+                DecisionValueType::Vec2 {
+                    value: egui::vec2(0.0, 0.0),
+                },
+                InputParamKind::ConnectionOrConstant,
+                true,
+            );
+        };
+
+        let output_scalar = |graph: &mut DecisionGraph, name: &str| {
+            graph.add_output_param(node_id, name.to_string(), DecisionDataType::Scalar);
+        };
+        let output_vector = |graph: &mut DecisionGraph, name: &str| {
+            graph.add_output_param(node_id, name.to_string(), DecisionDataType::Vec2);
+        };
 
         match self {
             // MyNodeTemplate::AddScalar => {
@@ -234,16 +269,16 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
             //     input_scalar(graph, "B");
             //     output_scalar(graph, "out");
             // }
-            // MyNodeTemplate::SubtractScalar => {
+            // DecisionNodeTemplate::SubtractScalar => {
             //     input_scalar(graph, "A");
             //     input_scalar(graph, "B");
             //     output_scalar(graph, "out");
             // }
-            // MyNodeTemplate::VectorTimesScalar => {
-            //     input_scalar(graph, "scalar");
-            //     input_vector(graph, "vector");
-            //     output_vector(graph, "out");
-            // }
+            DecisionNodeTemplate::VectorTimesScalar => {
+                input_scalar(graph, "scalar");
+                input_vector(graph, "vector");
+                output_vector(graph, "out");
+            }
             // MyNodeTemplate::AddVector => {
             //     input_vector(graph, "v1");
             //     input_vector(graph, "v2");
@@ -318,7 +353,7 @@ impl NodeTemplateIter for AllMyNodeTemplates {
             // MyNodeTemplate::SubtractScalar,
             // MyNodeTemplate::AddVector,
             // MyNodeTemplate::SubtractVector,
-            // MyNodeTemplate::VectorTimesScalar,
+            DecisionNodeTemplate::VectorTimesScalar,
             DecisionNodeTemplate::Sequence,
             DecisionNodeTemplate::Selector,
             DecisionNodeTemplate::Behavior,
@@ -360,9 +395,92 @@ impl WidgetValueTrait for DecisionValueType {
 impl UserResponseTrait for DecisionGraphResponse {}
 impl NodeDataTrait for DecisionNodeData {
     type Response = DecisionGraphResponse;
-    type UserState = DecisionGraphState;
+    type UserState = BehaviorGraphState;
     type DataType = DecisionDataType;
     type ValueType = DecisionValueType;
+
+    // Change titlebar color
+    fn titlebar_color(
+        &self,
+        ui: &egui::Ui,
+        node_id: NodeId,
+        graph: &Graph<DecisionNodeData, DecisionDataType, DecisionValueType>,
+        user_state: &mut Self::UserState,
+    ) -> Option<egui::Color32> {
+        let template = graph.nodes[node_id].user_data.template;
+        match template {
+            DecisionNodeTemplate::Sequence => color_hex_utils::color_from_hex("#328900").ok(),
+            DecisionNodeTemplate::Selector => color_hex_utils::color_from_hex("#EE0000").ok(),
+            DecisionNodeTemplate::Behavior => color_hex_utils::color_from_hex("#0085D4").ok(),
+            DecisionNodeTemplate::VectorTimesScalar => {
+                color_hex_utils::color_from_hex("#0085D4").ok()
+            }
+        }
+    }
+
+    fn titlebar_ui(
+        &self,
+        ui: &mut egui::Ui,
+        node_id: NodeId,
+        graph: &Graph<DecisionNodeData, DecisionDataType, DecisionValueType>,
+        user_state: &mut Self::UserState,
+    ) -> Vec<NodeResponse<DecisionGraphResponse, DecisionNodeData>>
+    where
+        DecisionGraphResponse: UserResponseTrait,
+    {
+        let mut responses = Vec::new();
+
+
+
+        let text_color = color_hex_utils::color_from_hex("#fefefe").unwrap();
+        ui.visuals_mut().widgets.noninteractive.fg_stroke = egui::Stroke::new(2.0, text_color);
+
+        egui::Grid::new("some_unique_id").show(ui, |ui| {
+
+            ui.small_button("+");
+
+            if let Some(name) = user_state
+                .editing_node_name
+                .as_ref()
+                .and_then(|(id, name)| if *id == node_id { Some(name) } else { None })
+            {
+                let mut name = name.clone();
+                if ui.add(egui::TextEdit::singleline(&mut name)).lost_focus() {
+                    user_state.editing_node_name = None;
+                    responses.push(NodeResponse::User(DecisionGraphResponse::NodeNameChange(
+                        node_id, name,
+                    )));
+                } else {
+                    responses.push(NodeResponse::User(DecisionGraphResponse::EditingNodeName(
+                        node_id, name,
+                    )));
+                }
+            } else {
+                if ui
+                    .add(
+                        egui::Label::new(
+                            egui::RichText::new(&graph[node_id].user_data.name)
+                                .text_style(egui::TextStyle::Button)
+                                .strong()
+                                .color(text_color),
+                        )
+                        .sense(egui::Sense::click()),
+                    )
+                    .double_clicked()
+                {
+                    responses.push(NodeResponse::User(DecisionGraphResponse::EditingNodeName(
+                        node_id,
+                        graph[node_id].user_data.name.clone(),
+                    )));
+                }
+                ui.add_space(8.0); // The size of the little cross icon
+            }
+
+            ui.small_button("x");
+        });
+
+        responses
+    }
 
     // This method will be called when drawing each node. This allows adding
     // extra ui elements inside the nodes. In this case, we create an "active"
@@ -428,11 +546,12 @@ impl NodeDataTrait for DecisionNodeData {
             // .on_hover_text("Add or remove pins");
 
             ui.horizontal(|ui| {
-                let button = egui::Button::new(egui::RichText::new("➕"));
+                
+                let button = egui::Button::new(egui::RichText::new("➕")).small();
                 if ui.add(button).clicked() {
                     responses.push(NodeResponse::User(DecisionGraphResponse::AddPin(node_id)));
                 }
-                let button = egui::Button::new(egui::RichText::new("➖"));
+                let button = egui::Button::new(egui::RichText::new("➖")).small();
                 if ui.add(button).clicked() {
                     responses.push(NodeResponse::User(DecisionGraphResponse::RemovePin(
                         node_id,
@@ -475,13 +594,13 @@ impl NodeDataTrait for DecisionNodeData {
     }
 }
 
-// type MyGraph = Graph<DecisionNodeData, DecisionDataType, DecisionValueType>;
+type DecisionGraph = Graph<DecisionNodeData, DecisionDataType, DecisionValueType>;
 // type MyEditorState =
 //     GraphEditorState<MyNodeData, MyDataType, MyValueType, MyNodeTemplate, MyGraphState>;
 
 #[derive(Default, Component, Reflect)]
 #[reflect(Component)]
-pub struct DecisionEditorState {
+pub struct BehaviorEditorState {
     pub show: bool,
     #[reflect(ignore)]
     pub state: GraphEditorState<
@@ -489,7 +608,7 @@ pub struct DecisionEditorState {
         DecisionDataType,
         DecisionValueType,
         DecisionNodeTemplate,
-        DecisionGraphState,
+        BehaviorGraphState,
     >,
 }
 
@@ -497,8 +616,8 @@ pub fn egui_update(
     mut egui_context: ResMut<EguiContext>,
     mut states: Query<(
         Entity,
-        &mut DecisionEditorState,
-        &mut DecisionGraphState,
+        &mut BehaviorEditorState,
+        &mut BehaviorGraphState,
         &Name,
     )>,
     behaviors: Query<(&Parent, &Name), With<BehaviorState>>,
@@ -556,6 +675,16 @@ pub fn egui_update(
                             println!("Select behavior: {:?}", behavior);
                             let graph = &mut editor_state.state.graph;
                             graph.nodes[node_id].user_data.behavior = behavior;
+                        }
+                        DecisionGraphResponse::EditingNodeName(node_id, name) => {
+                            user_state.editing_node_name = Some((node_id, name));
+                            // let graph = &mut editor_state.state.graph;
+                            // graph.nodes[node_id].user_data.editing_name = true;
+                        }
+                        DecisionGraphResponse::NodeNameChange(node_id, name) => {
+                            println!("Node name change: {:?}", name);
+                            let graph = &mut editor_state.state.graph;
+                            graph.nodes[node_id].user_data.name = name;
                         }
                     }
                 }
