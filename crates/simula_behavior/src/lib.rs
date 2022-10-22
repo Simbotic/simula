@@ -52,8 +52,8 @@ pub enum BehaviorState {
 /// store additional information that doesn't live in parameters. For this
 /// example, the node data stores the template (i.e. the "type") of the node.
 #[derive(Serialize, Deserialize)]
-pub struct DecisionNodeData {
-    template: DecisionNodeTemplate,
+pub struct BehaviorNodeData {
+    template: BehaviorNodeTemplate,
     behavior: Option<String>,
     name: String,
 }
@@ -62,7 +62,7 @@ pub struct DecisionNodeData {
 /// attaching two ports together. The graph UI will make sure to not allow
 /// attaching incompatible datatypes.
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
-pub enum DecisionDataType {
+pub enum BehaviorDataType {
     Scalar,
     Vec2,
     Flow,
@@ -76,16 +76,16 @@ pub enum DecisionDataType {
 /// up to the user code in this example to make sure no parameter is created
 /// with a DataType of Scalar and a ValueType of Vec2.
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum DecisionValueType {
+pub enum BehaviorValueType {
     Vec2 { value: egui::Vec2 },
     Scalar { value: f32 },
     Connection,
 }
 
-impl DecisionValueType {
+impl BehaviorValueType {
     /// Tries to downcast this value type to a vector
     pub fn try_to_vec2(self) -> anyhow::Result<egui::Vec2> {
-        if let DecisionValueType::Vec2 { value } = self {
+        if let BehaviorValueType::Vec2 { value } = self {
             Ok(value)
         } else {
             anyhow::bail!("Invalid cast from {:?} to vec2", self)
@@ -94,7 +94,7 @@ impl DecisionValueType {
 
     /// Tries to downcast this value type to a scalar
     pub fn try_to_scalar(self) -> anyhow::Result<f32> {
-        if let DecisionValueType::Scalar { value } = self {
+        if let BehaviorValueType::Scalar { value } = self {
             Ok(value)
         } else {
             anyhow::bail!("Invalid cast from {:?} to scalar", self)
@@ -106,7 +106,7 @@ impl DecisionValueType {
 /// will display in the "new node" popup. The user code needs to tell the
 /// library how to convert a NodeTemplate into a Node.
 #[derive(Clone, Copy, Serialize, Deserialize)]
-pub enum DecisionNodeTemplate {
+pub enum BehaviorNodeTemplate {
     // MakeVector,
     // MakeScalar,
     // AddScalar,
@@ -124,7 +124,7 @@ pub enum DecisionNodeTemplate {
 /// nodes, handling connections...) are already handled by the library, but this
 /// mechanism allows creating additional side effects from user code.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum DecisionGraphResponse {
+pub enum BehaviorGraphResponse {
     SetActiveNode(NodeId),
     ClearActiveNode,
     AddPin(NodeId),
@@ -151,30 +151,30 @@ pub struct BehaviorGraphState {
 }
 
 // A trait for the data types, to tell the library how to display them
-impl DataTypeTrait<BehaviorGraphState> for DecisionDataType {
+impl DataTypeTrait<BehaviorGraphState> for BehaviorDataType {
     fn data_type_color(&self, _user_state: &mut BehaviorGraphState) -> egui::Color32 {
         match self {
-            DecisionDataType::Scalar => egui::Color32::from_rgb(38, 109, 211),
-            DecisionDataType::Vec2 => egui::Color32::from_rgb(238, 207, 109),
-            DecisionDataType::Flow => color_hex_utils::color_from_hex("#555555").unwrap(),
+            BehaviorDataType::Scalar => egui::Color32::from_rgb(38, 109, 211),
+            BehaviorDataType::Vec2 => egui::Color32::from_rgb(238, 207, 109),
+            BehaviorDataType::Flow => color_hex_utils::color_from_hex("#555555").unwrap(),
         }
     }
 
     fn name(&self) -> Cow<'_, str> {
         match self {
-            DecisionDataType::Scalar => Cow::Borrowed("scalar"),
-            DecisionDataType::Vec2 => Cow::Borrowed("2d vector"),
-            DecisionDataType::Flow => Cow::Borrowed("Flow"),
+            BehaviorDataType::Scalar => Cow::Borrowed("scalar"),
+            BehaviorDataType::Vec2 => Cow::Borrowed("2d vector"),
+            BehaviorDataType::Flow => Cow::Borrowed("Flow"),
         }
     }
 }
 
 // A trait for the node kinds, which tells the library how to build new nodes
 // from the templates in the node finder
-impl NodeTemplateTrait for DecisionNodeTemplate {
-    type NodeData = DecisionNodeData;
-    type DataType = DecisionDataType;
-    type ValueType = DecisionValueType;
+impl NodeTemplateTrait for BehaviorNodeTemplate {
+    type NodeData = BehaviorNodeData;
+    type DataType = BehaviorDataType;
+    type ValueType = BehaviorValueType;
     type UserState = BehaviorGraphState;
 
     fn node_finder_label(&self) -> &str {
@@ -185,10 +185,10 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
             // MyNodeTemplate::SubtractScalar => "Scalar subtract",
             // MyNodeTemplate::AddVector => "Vector add",
             // MyNodeTemplate::SubtractVector => "Vector subtract",
-            DecisionNodeTemplate::VectorTimesScalar => "Vector times scalar",
-            DecisionNodeTemplate::Sequence => "Sequence",
-            DecisionNodeTemplate::Selector => "Selector",
-            DecisionNodeTemplate::Behavior => "Behavior",
+            BehaviorNodeTemplate::VectorTimesScalar => "Vector times scalar",
+            BehaviorNodeTemplate::Sequence => "Sequence",
+            BehaviorNodeTemplate::Selector => "Selector",
+            BehaviorNodeTemplate::Behavior => "Behavior",
         }
     }
 
@@ -201,7 +201,7 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
     }
 
     fn user_data(&self) -> Self::NodeData {
-        DecisionNodeData {
+        BehaviorNodeData {
             template: *self,
             behavior: None,
             name: self.node_finder_label().into(),
@@ -217,22 +217,22 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
         // The nodes are created empty by default. This function needs to take
         // care of creating the desired inputs and outputs based on the template
 
-        let input_scalar = |graph: &mut DecisionGraph, name: &str| {
+        let input_scalar = |graph: &mut BehaviorGraph, name: &str| {
             graph.add_input_param(
                 node_id,
                 name.to_string(),
-                DecisionDataType::Scalar,
-                DecisionValueType::Scalar { value: 0.0 },
+                BehaviorDataType::Scalar,
+                BehaviorValueType::Scalar { value: 0.0 },
                 InputParamKind::ConnectionOrConstant,
                 true,
             );
         };
-        let input_vector = |graph: &mut DecisionGraph, name: &str| {
+        let input_vector = |graph: &mut BehaviorGraph, name: &str| {
             graph.add_input_param(
                 node_id,
                 name.to_string(),
-                DecisionDataType::Vec2,
-                DecisionValueType::Vec2 {
+                BehaviorDataType::Vec2,
+                BehaviorValueType::Vec2 {
                     value: egui::vec2(0.0, 0.0),
                 },
                 InputParamKind::ConnectionOrConstant,
@@ -240,11 +240,11 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
             );
         };
 
-        let output_scalar = |graph: &mut DecisionGraph, name: &str| {
-            graph.add_output_param(node_id, name.to_string(), DecisionDataType::Scalar);
+        let output_scalar = |graph: &mut BehaviorGraph, name: &str| {
+            graph.add_output_param(node_id, name.to_string(), BehaviorDataType::Scalar);
         };
-        let output_vector = |graph: &mut DecisionGraph, name: &str| {
-            graph.add_output_param(node_id, name.to_string(), DecisionDataType::Vec2);
+        let output_vector = |graph: &mut BehaviorGraph, name: &str| {
+            graph.add_output_param(node_id, name.to_string(), BehaviorDataType::Vec2);
         };
 
         match self {
@@ -269,12 +269,12 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
             //     input_scalar(graph, "B");
             //     output_scalar(graph, "out");
             // }
-            // DecisionNodeTemplate::SubtractScalar => {
+            // BehaviorNodeTemplate::SubtractScalar => {
             //     input_scalar(graph, "A");
             //     input_scalar(graph, "B");
             //     output_scalar(graph, "out");
             // }
-            DecisionNodeTemplate::VectorTimesScalar => {
+            BehaviorNodeTemplate::VectorTimesScalar => {
                 input_scalar(graph, "scalar");
                 input_vector(graph, "vector");
                 output_vector(graph, "out");
@@ -298,38 +298,38 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
             //     input_scalar(graph, "value");
             //     output_scalar(graph, "out");
             // }
-            DecisionNodeTemplate::Sequence => {
+            BehaviorNodeTemplate::Sequence => {
                 graph.add_input_param(
                     node_id,
                     "".to_string(),
-                    DecisionDataType::Flow,
-                    DecisionValueType::Connection,
+                    BehaviorDataType::Flow,
+                    BehaviorValueType::Connection,
                     InputParamKind::ConnectionOrConstant,
                     true,
                 );
 
-                graph.add_output_param(node_id, "".to_string(), DecisionDataType::Flow);
-                graph.add_output_param(node_id, "".to_string(), DecisionDataType::Flow);
+                graph.add_output_param(node_id, "".to_string(), BehaviorDataType::Flow);
+                graph.add_output_param(node_id, "".to_string(), BehaviorDataType::Flow);
             }
-            DecisionNodeTemplate::Selector => {
+            BehaviorNodeTemplate::Selector => {
                 graph.add_input_param(
                     node_id,
                     "".to_string(),
-                    DecisionDataType::Flow,
-                    DecisionValueType::Connection,
+                    BehaviorDataType::Flow,
+                    BehaviorValueType::Connection,
                     InputParamKind::ConnectionOrConstant,
                     true,
                 );
 
-                graph.add_output_param(node_id, "".to_string(), DecisionDataType::Flow);
-                graph.add_output_param(node_id, "".to_string(), DecisionDataType::Flow);
+                graph.add_output_param(node_id, "".to_string(), BehaviorDataType::Flow);
+                graph.add_output_param(node_id, "".to_string(), BehaviorDataType::Flow);
             }
-            DecisionNodeTemplate::Behavior => {
+            BehaviorNodeTemplate::Behavior => {
                 graph.add_input_param(
                     node_id,
                     "".to_string(),
-                    DecisionDataType::Flow,
-                    DecisionValueType::Connection,
+                    BehaviorDataType::Flow,
+                    BehaviorValueType::Connection,
                     InputParamKind::ConnectionOrConstant,
                     true,
                 );
@@ -340,7 +340,7 @@ impl NodeTemplateTrait for DecisionNodeTemplate {
 
 pub struct AllMyNodeTemplates;
 impl NodeTemplateIter for AllMyNodeTemplates {
-    type Item = DecisionNodeTemplate;
+    type Item = BehaviorNodeTemplate;
 
     fn all_kinds(&self) -> Vec<Self::Item> {
         // This function must return a list of node kinds, which the node finder
@@ -353,21 +353,21 @@ impl NodeTemplateIter for AllMyNodeTemplates {
             // MyNodeTemplate::SubtractScalar,
             // MyNodeTemplate::AddVector,
             // MyNodeTemplate::SubtractVector,
-            DecisionNodeTemplate::VectorTimesScalar,
-            DecisionNodeTemplate::Sequence,
-            DecisionNodeTemplate::Selector,
-            DecisionNodeTemplate::Behavior,
+            BehaviorNodeTemplate::VectorTimesScalar,
+            BehaviorNodeTemplate::Sequence,
+            BehaviorNodeTemplate::Selector,
+            BehaviorNodeTemplate::Behavior,
         ]
     }
 }
 
-impl WidgetValueTrait for DecisionValueType {
-    type Response = DecisionGraphResponse;
-    fn value_widget(&mut self, param_name: &str, ui: &mut egui::Ui) -> Vec<DecisionGraphResponse> {
+impl WidgetValueTrait for BehaviorValueType {
+    type Response = BehaviorGraphResponse;
+    fn value_widget(&mut self, param_name: &str, ui: &mut egui::Ui) -> Vec<BehaviorGraphResponse> {
         // This trait is used to tell the library which UI to display for the
         // inline parameter widgets.
         match self {
-            DecisionValueType::Vec2 { value } => {
+            BehaviorValueType::Vec2 { value } => {
                 ui.label(param_name);
                 ui.horizontal(|ui| {
                     ui.label("x");
@@ -376,13 +376,13 @@ impl WidgetValueTrait for DecisionValueType {
                     ui.add(egui::DragValue::new(&mut value.y));
                 });
             }
-            DecisionValueType::Scalar { value } => {
+            BehaviorValueType::Scalar { value } => {
                 ui.horizontal(|ui| {
                     ui.label(param_name);
                     ui.add(egui::DragValue::new(value));
                 });
             }
-            DecisionValueType::Connection { .. } => {
+            BehaviorValueType::Connection { .. } => {
                 // ui.label(param_name);
                 // ui.label("Connection");
             }
@@ -392,27 +392,27 @@ impl WidgetValueTrait for DecisionValueType {
     }
 }
 
-impl UserResponseTrait for DecisionGraphResponse {}
-impl NodeDataTrait for DecisionNodeData {
-    type Response = DecisionGraphResponse;
+impl UserResponseTrait for BehaviorGraphResponse {}
+impl NodeDataTrait for BehaviorNodeData {
+    type Response = BehaviorGraphResponse;
     type UserState = BehaviorGraphState;
-    type DataType = DecisionDataType;
-    type ValueType = DecisionValueType;
+    type DataType = BehaviorDataType;
+    type ValueType = BehaviorValueType;
 
     // Change titlebar color
     fn titlebar_color(
         &self,
         ui: &egui::Ui,
         node_id: NodeId,
-        graph: &Graph<DecisionNodeData, DecisionDataType, DecisionValueType>,
+        graph: &Graph<BehaviorNodeData, BehaviorDataType, BehaviorValueType>,
         user_state: &mut Self::UserState,
     ) -> Option<egui::Color32> {
         let template = graph.nodes[node_id].user_data.template;
         match template {
-            DecisionNodeTemplate::Sequence => color_hex_utils::color_from_hex("#328900").ok(),
-            DecisionNodeTemplate::Selector => color_hex_utils::color_from_hex("#EE0000").ok(),
-            DecisionNodeTemplate::Behavior => color_hex_utils::color_from_hex("#0085D4").ok(),
-            DecisionNodeTemplate::VectorTimesScalar => {
+            BehaviorNodeTemplate::Sequence => color_hex_utils::color_from_hex("#328900").ok(),
+            BehaviorNodeTemplate::Selector => color_hex_utils::color_from_hex("#EE0000").ok(),
+            BehaviorNodeTemplate::Behavior => color_hex_utils::color_from_hex("#0085D4").ok(),
+            BehaviorNodeTemplate::VectorTimesScalar => {
                 color_hex_utils::color_from_hex("#0085D4").ok()
             }
         }
@@ -422,11 +422,11 @@ impl NodeDataTrait for DecisionNodeData {
         &self,
         ui: &mut egui::Ui,
         node_id: NodeId,
-        graph: &Graph<DecisionNodeData, DecisionDataType, DecisionValueType>,
+        graph: &Graph<BehaviorNodeData, BehaviorDataType, BehaviorValueType>,
         user_state: &mut Self::UserState,
-    ) -> Vec<NodeResponse<DecisionGraphResponse, DecisionNodeData>>
+    ) -> Vec<NodeResponse<BehaviorGraphResponse, BehaviorNodeData>>
     where
-        DecisionGraphResponse: UserResponseTrait,
+        BehaviorGraphResponse: UserResponseTrait,
     {
         let mut responses = Vec::new();
 
@@ -447,11 +447,11 @@ impl NodeDataTrait for DecisionNodeData {
                 let mut name = name.clone();
                 if ui.add(egui::TextEdit::singleline(&mut name)).lost_focus() {
                     user_state.editing_node_name = None;
-                    responses.push(NodeResponse::User(DecisionGraphResponse::NodeNameChange(
+                    responses.push(NodeResponse::User(BehaviorGraphResponse::NodeNameChange(
                         node_id, name,
                     )));
                 } else {
-                    responses.push(NodeResponse::User(DecisionGraphResponse::EditingNodeName(
+                    responses.push(NodeResponse::User(BehaviorGraphResponse::EditingNodeName(
                         node_id, name,
                     )));
                 }
@@ -468,7 +468,7 @@ impl NodeDataTrait for DecisionNodeData {
                     )
                     .double_clicked()
                 {
-                    responses.push(NodeResponse::User(DecisionGraphResponse::EditingNodeName(
+                    responses.push(NodeResponse::User(BehaviorGraphResponse::EditingNodeName(
                         node_id,
                         graph[node_id].user_data.name.clone(),
                     )));
@@ -491,11 +491,11 @@ impl NodeDataTrait for DecisionNodeData {
         &self,
         ui: &mut egui::Ui,
         node_id: NodeId,
-        graph: &Graph<DecisionNodeData, DecisionDataType, DecisionValueType>,
+        graph: &Graph<BehaviorNodeData, BehaviorDataType, BehaviorValueType>,
         user_state: &mut Self::UserState,
-    ) -> Vec<NodeResponse<DecisionGraphResponse, DecisionNodeData>>
+    ) -> Vec<NodeResponse<BehaviorGraphResponse, BehaviorNodeData>>
     where
-        DecisionGraphResponse: UserResponseTrait,
+        BehaviorGraphResponse: UserResponseTrait,
     {
         let mut responses = Vec::new();
 
@@ -504,7 +504,7 @@ impl NodeDataTrait for DecisionNodeData {
         let template = graph.nodes[node_id].user_data.template;
         let user_data = &graph.nodes[node_id].user_data;
 
-        if let DecisionNodeTemplate::Behavior = template {
+        if let BehaviorNodeTemplate::Behavior = template {
             let mut selected = user_data
                 .behavior
                 .clone()
@@ -526,7 +526,7 @@ impl NodeDataTrait for DecisionNodeData {
                 });
             if changed {
                 // println!("Changed to {:?}", selected);
-                responses.push(NodeResponse::User(DecisionGraphResponse::SelectBehavior(
+                responses.push(NodeResponse::User(BehaviorGraphResponse::SelectBehavior(
                     node_id,
                     Some(selected),
                 )))
@@ -549,11 +549,11 @@ impl NodeDataTrait for DecisionNodeData {
                 
                 let button = egui::Button::new(egui::RichText::new("➕")).small();
                 if ui.add(button).clicked() {
-                    responses.push(NodeResponse::User(DecisionGraphResponse::AddPin(node_id)));
+                    responses.push(NodeResponse::User(BehaviorGraphResponse::AddPin(node_id)));
                 }
                 let button = egui::Button::new(egui::RichText::new("➖")).small();
                 if ui.add(button).clicked() {
-                    responses.push(NodeResponse::User(DecisionGraphResponse::RemovePin(
+                    responses.push(NodeResponse::User(BehaviorGraphResponse::RemovePin(
                         node_id,
                     )));
                 }
@@ -594,7 +594,7 @@ impl NodeDataTrait for DecisionNodeData {
     }
 }
 
-type DecisionGraph = Graph<DecisionNodeData, DecisionDataType, DecisionValueType>;
+type BehaviorGraph = Graph<BehaviorNodeData, BehaviorDataType, BehaviorValueType>;
 // type MyEditorState =
 //     GraphEditorState<MyNodeData, MyDataType, MyValueType, MyNodeTemplate, MyGraphState>;
 
@@ -604,10 +604,10 @@ pub struct BehaviorEditorState {
     pub show: bool,
     #[reflect(ignore)]
     pub state: GraphEditorState<
-        DecisionNodeData,
-        DecisionDataType,
-        DecisionValueType,
-        DecisionNodeTemplate,
+        BehaviorNodeData,
+        BehaviorDataType,
+        BehaviorValueType,
+        BehaviorNodeTemplate,
         BehaviorGraphState,
     >,
 }
@@ -657,31 +657,31 @@ pub fn egui_update(
                 // connection is created
                 if let NodeResponse::User(user_event) = node_response {
                     match user_event {
-                        DecisionGraphResponse::SetActiveNode(node) => {
+                        BehaviorGraphResponse::SetActiveNode(node) => {
                             user_state.active_node = Some(node)
                         }
-                        DecisionGraphResponse::ClearActiveNode => user_state.active_node = None,
-                        DecisionGraphResponse::AddPin(node_id) => {
+                        BehaviorGraphResponse::ClearActiveNode => user_state.active_node = None,
+                        BehaviorGraphResponse::AddPin(node_id) => {
                             let graph = &mut editor_state.state.graph;
-                            graph.add_output_param(node_id, "".to_string(), DecisionDataType::Flow);
+                            graph.add_output_param(node_id, "".to_string(), BehaviorDataType::Flow);
                         }
-                        DecisionGraphResponse::RemovePin(node_id) => {
+                        BehaviorGraphResponse::RemovePin(node_id) => {
                             let graph = &mut editor_state.state.graph;
                             if let Some(output_id) = graph.nodes[node_id].output_ids().last() {
                                 graph.remove_output_param(output_id);
                             }
                         }
-                        DecisionGraphResponse::SelectBehavior(node_id, behavior) => {
+                        BehaviorGraphResponse::SelectBehavior(node_id, behavior) => {
                             println!("Select behavior: {:?}", behavior);
                             let graph = &mut editor_state.state.graph;
                             graph.nodes[node_id].user_data.behavior = behavior;
                         }
-                        DecisionGraphResponse::EditingNodeName(node_id, name) => {
+                        BehaviorGraphResponse::EditingNodeName(node_id, name) => {
                             user_state.editing_node_name = Some((node_id, name));
                             // let graph = &mut editor_state.state.graph;
                             // graph.nodes[node_id].user_data.editing_name = true;
                         }
-                        DecisionGraphResponse::NodeNameChange(node_id, name) => {
+                        BehaviorGraphResponse::NodeNameChange(node_id, name) => {
                             println!("Node name change: {:?}", name);
                             let graph = &mut editor_state.state.graph;
                             graph.nodes[node_id].user_data.name = name;
