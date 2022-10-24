@@ -3,6 +3,10 @@ name = "mission"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["gif"]
+gif = ["simula_video/gif"]
+
 [dependencies]
 bevy = { version = "0.8" }
 bevy-inspector-egui = "0.13"
@@ -14,7 +18,8 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
-simula_decision = { path = "../../crates/simula_decision" }
+simula_video = { path = "../../crates/simula_video" }
+simula_behavior = { path = "../../crates/simula_behavior" }
 simula_mission = { path = "../../crates/simula_mission" }
 
 anyhow = "1.0"
@@ -23,4 +28,6 @@ enum-iterator = "0.7.0"
 enum-display-derive = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
 
-egui_node_graph = { rev = "b65a780f35a383444f0559c63e1d0ea22e16076d", git = "https://github.com/setzer22/egui_node_graph.git", features = ["persistence"] }
+egui_node_graph = { rev = "5cfdcab5573d76e209cd89e58666619bebf12473", git = "https://github.com/Simbotic/egui_node_graph.git", features = [
+    "persistence",
+] }

@@ -1,3 +1,4 @@
+use behaviors::AgentBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -5,13 +6,14 @@ use bevy::{
 use bevy_egui::{egui, EguiContext};
 use egui_extras::{TableBuilder, Size};
 use simula_action::ActionPlugin;
+use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
 use simula_camera::orbitcam::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use simula_decision::{
-    BehaviorBundle, BehaviorState, DecisionEditorState, DecisionGraphState, DecisionPlugin,
-};
-use simula_mission::{asset::{Asset,Amount}, wallet::Wallet, account::Account, MissionPlugin, WalletBuilder};
+use simula_mission::{asset::{Asset,Amount}, account::Account, MissionPlugin, WalletBuilder, wallet::Wallet};
 use simula_net::NetPlugin;
+#[cfg(feature = "gif")]
+use simula_video::GifAsset;
+use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -19,7 +21,7 @@ use simula_viz::{
     follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin, FollowUIVisibility}
 };
 
-// mod graph;
+mod behaviors;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -51,21 +53,19 @@ fn main() {
     .add_plugin(LinesPlugin)
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
+    .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
-    .add_plugin(DecisionPlugin)
+    .add_plugin(BehaviorPlugin)
+    .add_plugin(AgentBehaviorPlugin)
     .add_plugin(FollowUIPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_startup_system(initialize_images)
+    .add_startup_system(setup_behaviors)
     .add_system(debug_info)
     .add_system(increase_mission_time)
     //.add_system(check_increase)
-    .add_system(wallet_ui_system)
-    .add_system_set(
-        SystemSet::new()
-            .with_system(behavior_agent_rest)
-            .with_system(behavior_agent_work),
-    );
+    .add_system(wallet_ui_system);
 
     app.register_inspectable::<MissionToken>();
 
@@ -210,6 +210,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
@@ -243,23 +244,85 @@ fn setup(
         })
         .build(&mut commands);
 
-    let agent_decision_graph = commands
+    let agent_behavior_graph = commands
         .spawn()
-        .insert(DecisionEditorState {
+        .insert(BehaviorEditorState {
             show: true,
             ..default()
         })
-        .insert(DecisionGraphState::default())
-        .with_children(|parent| {
-            parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
-            parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
+        .insert(BehaviorGraphState::default())
+        .with_children(|_parent| {
+            // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
+            // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
         })
-        .insert(Name::new("Decision Graph"))
+        .insert(Name::new("Behavior Graph"))
+        .id();
+
+    let video_material = StandardMaterial {
+        base_color: Color::rgb(1.0, 1.0, 1.0),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true,
+        ..default()
+    };
+    let video_rotation =
+        Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
+    let video_position = Vec3::new(0.0, 0.5, 0.0);
+
+    let agent_body = commands
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_translation(video_position).with_rotation(video_rotation),
+            ..default()
+        })
+        .with_children(|parent| {
+            let mut child = parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                material: materials.add(video_material),
+                transform: Transform::from_rotation(Quat::from_euler(
+                    EulerRot::YXZ,
+                    0.0,
+                    -std::f32::consts::FRAC_PI_2,
+                    0.0,
+                )),
+                ..default()
+            });
+            child
+                .insert(VideoPlayer {
+                    start_frame: 0,
+                    end_frame: 80,
+                    framerate: 20.0,
+                    playing: true,
+                    ..default()
+                })
+                .insert(Name::new("Video: RenderTarget"));
+
+            #[cfg(feature = "gif")]
+            {
+                let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+                child.insert(video_asset);
+            }
+        })
+        .insert(Name::new("Agent: Body"))
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(AxesBundle {
+                    axes: Axes {
+                        size: 1.,
+                        ..default()
+                    },
+                    mesh: meshes.add(line_mesh.clone()),
+                    material: lines_materials.add(LinesMaterial {}),
+                    ..default()
+                })
+                .insert(Name::new("LookAt Coords"));
+        })
         .id();
 
     commands
-        .spawn()
-        .push_children(&[agent_wallet, agent_decision_graph])
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+            ..default()
+        })
+        .push_children(&[agent_wallet, agent_behavior_graph, agent_body])
         .insert(Name::new("Agent: 001"));
 
     //commands
@@ -376,36 +439,7 @@ fn setup(
 #[derive(Component)]
 struct FollowPanel;
 
-#[derive(Default, Component, Reflect, Clone)]
-struct AgentRest;
-
-fn behavior_agent_rest(
-    agents: Query<(
-        &AgentRest,
-        &mut BehaviorState,
-        &Wallet,
-        &mut DecisionGraphState,
-    )>,
-) {
-    for _agent in agents.iter() {}
-}
-
-#[derive(Default, Component, Reflect, Clone)]
-struct AgentWork;
-
-fn behavior_agent_work(
-    agents: Query<(
-        &AgentWork,
-        &mut BehaviorState,
-        &Wallet,
-        &mut DecisionGraphState,
-    )>,
-) {
-    for _agent in agents.iter() {}
-}
-
-fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
-    
+fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
             // Update the value of the second section
@@ -415,18 +449,6 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<Fp
         }
     }
     
-}
-
-fn increase_mission_time(_time: Res<Time>,mut query: Query<&mut MissionToken>){
-    for mut token in query.iter_mut(){
-        match *token{
-            MissionToken::Time(asset)=>{
-                //asset.0.0 += 1
-                *token = MissionToken::Time(Asset(Amount(asset.0.0 + 1)))
-            }
-            _=>{}
-        }
-    }
 }
 
 //fn check_increase(time: Res<Time>,mut q: Query<&mut Check>,mut query: Query<&mut MissionToken>){
@@ -462,6 +484,40 @@ pub struct ImageTextureIds {
     energy_icon: Option<egui::TextureId>,
 }
 
+
+fn increase_mission_time(_time: Res<Time>,mut query: Query<&mut MissionToken>){
+    for mut token in query.iter_mut(){
+        match *token{
+            MissionToken::Time(asset)=>{
+                //asset.0.0 += 1
+                *token = MissionToken::Time(Asset(Amount(asset.0.0 + 1)))
+            }
+            _=>{}
+        }
+    }
+}
+
+//fn check_increase(time: Res<Time>,mut q: Query<&mut Check>,mut query: Query<&mut MissionToken>){
+//    for mut check in q.iter_mut(){
+//        check.timer.tick(time.delta());
+//        if check.timer.just_finished(){
+//            for token in query.iter_mut(){
+//                match *token{
+//                    MissionToken::MissionTime(asset)=>{
+//                        println!("{:?}",asset.0.0)
+//                    }
+//                    _=>{}
+//                }
+//            }
+//        }
+//    }
+//}
+
+//#[derive(Component)]
+//pub struct Check{
+// timer: Timer
+//}
+
 impl FromWorld for Images {
     fn from_world(world: &mut World) -> Self {
         if let Some(asset_server) = world.get_resource_mut::<AssetServer>() {
@@ -488,4 +544,8 @@ fn initialize_images (
     image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
     image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
     image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
+}
+
+fn setup_behaviors(mut commands: Commands) {
+    behaviors::create(&mut commands);
 }
