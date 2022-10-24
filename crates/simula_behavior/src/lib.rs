@@ -57,12 +57,12 @@ impl Plugin for BehaviorPlugin {
 #[reflect(Component)]
 pub struct BehaviorRunning;
 
-/// A marker added to entities that complete with success
+/// A marker added to behaviors that complete with success
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
 #[reflect(Component)]
 pub struct BehaviorSuccess;
 
-/// A marker added to entities that complete with failure
+/// A marker added to behaviors that complete with failure
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
 #[reflect(Component)]
 pub struct BehaviorFailure;
@@ -122,16 +122,19 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
     commands.entity(parent).push_children(children);
 }
 
+/// A component added to identify the root of a behavior tree
 #[derive(Default, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
 pub struct BehaviorTree {
     pub root: Option<Entity>,
 }
 
+/// A marker added to currently running behaviors
 #[derive(Default, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
 pub struct BehaviorCursor;
 
+/// Query filter for running behaviors
 #[derive(WorldQuery)]
 pub struct BehaviorRunQuery {
     _cursor: With<BehaviorCursor>,
@@ -140,6 +143,7 @@ pub struct BehaviorRunQuery {
     _success: Without<BehaviorSuccess>,
 }
 
+/// Query filter for behaviors ready to run
 #[derive(WorldQuery)]
 pub struct BehaviorWithoutQuery {
     _cursor: Without<BehaviorCursor>,
@@ -148,6 +152,7 @@ pub struct BehaviorWithoutQuery {
     _success: Without<BehaviorSuccess>,
 }
 
+/// Query filter for behaviors that have completed
 #[derive(WorldQuery)]
 pub struct BehaviorDoneQuery {
     _cursor: With<BehaviorCursor>,
@@ -155,6 +160,7 @@ pub struct BehaviorDoneQuery {
     _done: Or<(With<BehaviorFailure>, With<BehaviorSuccess>)>,
 }
 
+/// Process completed behaviors, pass cursor to parent
 pub fn complete_behavior(
     mut commands: Commands,
     mut dones: Query<(Entity, &BehaviorParent, &Name), BehaviorDoneQuery>,
