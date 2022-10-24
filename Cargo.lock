@@ -2218,18 +2218,7 @@ dependencies = [
 [[package]]
 name = "egui_node_graph"
 version = "0.3.0"
-dependencies = [
- "egui",
- "serde",
- "slotmap",
- "smallvec",
- "thiserror",
-]
-
-[[package]]
-name = "egui_node_graph"
-version = "0.3.0"
-source = "git+https://github.com/setzer22/egui_node_graph.git?rev=b65a780f35a383444f0559c63e1d0ea22e16076d#b65a780f35a383444f0559c63e1d0ea22e16076d"
+source = "git+https://github.com/setzer22/egui_node_graph.git?rev=5cfdcab5573d76e209cd89e58666619bebf12473#5cfdcab5573d76e209cd89e58666619bebf12473"
 dependencies = [
  "egui",
  "serde",
@@ -3852,7 +3841,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy-inspector-egui",
- "egui_node_graph 0.3.0 (git+https://github.com/setzer22/egui_node_graph.git?rev=b65a780f35a383444f0559c63e1d0ea22e16076d)",
+ "egui_node_graph",
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
@@ -5453,7 +5442,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy-inspector-egui",
- "egui_node_graph 0.3.0",
+ "egui_node_graph",
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
