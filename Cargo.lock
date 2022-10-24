@@ -2220,6 +2220,7 @@ name = "egui_node_graph"
 version = "0.3.0"
 dependencies = [
  "egui",
+ "serde",
  "slotmap",
  "smallvec",
  "thiserror",
@@ -5456,6 +5457,7 @@ dependencies = [
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
+ "ron 0.7.1",
  "serde",
  "simula_action",
  "simula_camera",

@@ -1,14 +1,13 @@
+use behaviors::AgentBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use simula_action::ActionPlugin;
+use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
 use simula_camera::orbitcam::*;
-use simula_behavior::{
-    BehaviorBundle, BehaviorEditorState, BehaviorGraphState, BehaviorPlugin, BehaviorState,
-};
-use simula_mission::{asset::Asset, wallet::Wallet, MissionPlugin, WalletBuilder};
+use simula_mission::{asset::Asset, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
@@ -18,6 +17,8 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
+
+mod behaviors;
 
 fn main() {
     let mut app = App::new();
@@ -42,14 +43,11 @@ fn main() {
     .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
     .add_plugin(BehaviorPlugin)
+    .add_plugin(AgentBehaviorPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
-    .add_system(debug_info)
-    .add_system_set(
-        SystemSet::new()
-            .with_system(behavior_agent_rest)
-            .with_system(behavior_agent_work),
-    );
+    .add_startup_system(setup_behaviors)
+    .add_system(debug_info);
 
     app.register_inspectable::<MissionToken>();
 
@@ -112,9 +110,9 @@ fn setup(
             ..default()
         })
         .insert(BehaviorGraphState::default())
-        .with_children(|parent| {
-            parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
-            parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
+        .with_children(|_parent| {
+            // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
+            // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
         })
         .insert(Name::new("Behavior Graph"))
         .id();
@@ -179,9 +177,10 @@ fn setup(
         .id();
 
     commands
-        .spawn_bundle(SpatialBundle { 
+        .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
-            ..default() })
+            ..default()
+        })
         .push_children(&[agent_wallet, agent_behavior_graph, agent_body])
         .insert(Name::new("Agent: 001"));
 
@@ -266,34 +265,6 @@ fn setup(
     });
 }
 
-#[derive(Default, Component, Reflect, Clone)]
-struct AgentRest;
-
-fn behavior_agent_rest(
-    agents: Query<(
-        &AgentRest,
-        &mut BehaviorState,
-        &Wallet,
-        &mut BehaviorGraphState,
-    )>,
-) {
-    for _agent in agents.iter() {}
-}
-
-#[derive(Default, Component, Reflect, Clone)]
-struct AgentWork;
-
-fn behavior_agent_work(
-    agents: Query<(
-        &AgentWork,
-        &mut BehaviorState,
-        &Wallet,
-        &mut BehaviorGraphState,
-    )>,
-) {
-    for _agent in agents.iter() {}
-}
-
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
@@ -302,4 +273,8 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
             }
         }
     };
+}
+
+fn setup_behaviors(mut commands: Commands) {
+    behaviors::create(&mut commands);
 }
