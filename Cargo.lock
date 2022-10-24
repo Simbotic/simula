@@ -3851,6 +3851,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",
+ "egui",
  "egui_extras",
  "egui_node_graph",
  "enum-display-derive",
