@@ -548,7 +548,7 @@ pub fn drag_and_drop (
     mut wallets: Query<(&mut Wallet, &Children)>,
     mut accounts: Query<(&mut Account, &Children)>,
     mut assets: Query<&mut MissionToken>,
-    mut drag_drop: ResMut<DragAndDropDemo>
+    //mut drag_drop: ResMut<DragAndDropDemo>
 ) {
     //drag_drop.wallet_list = vec![];
     //for (wallet, wallet_accounts) in wallets.iter() {
