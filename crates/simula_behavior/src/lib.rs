@@ -43,12 +43,14 @@ impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<editor::BehaviorGraphState>()
             .register_type::<editor::BehaviorEditorState>()
-            // .register_type::<BehaviorState>()
-            // .register_inspectable::<BehaviorState>()
+            .register_type::<BehaviorSuccess>()
+            .register_type::<BehaviorRunning>()
+            .register_type::<BehaviorFailure>()
             .add_system(editor::egui_update)
             .add_system(complete_behavior)
             .add_system(sequence::run)
-            .add_system(debug_message::run);
+            .add_system(selector::run)
+            .add_system(debug_action::run);
     }
 }
 
@@ -118,7 +120,6 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
             parent: Some(parent),
         });
     }
-    println!("Added children to parent");
     commands.entity(parent).push_children(children);
 }
 
