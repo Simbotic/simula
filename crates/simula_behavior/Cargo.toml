@@ -1,26 +1,17 @@
 [package]
-name = "mission"
+name = "simula_behavior"
 version = "0.1.0"
 edition = "2021"
-
-[features]
-default = ["gif"]
-gif = ["simula_video/gif"]
 
 [dependencies]
 bevy = { version = "0.8" }
 bevy-inspector-egui = "0.13"
-bevy_egui = "0.16"
-egui = { version = "0.19.0", default-features = false }
-egui_extras = "0.19.0"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
-simula_video = { path = "../../crates/simula_video" }
-simula_behavior = { path = "../../crates/simula_behavior" }
 simula_mission = { path = "../../crates/simula_mission" }
 
 anyhow = "1.0"
@@ -28,7 +19,9 @@ rand = "0.8.5"
 enum-iterator = "0.7.0"
 enum-display-derive = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
+ron = "0.7.1"
 
-egui_node_graph = { rev = "5cfdcab5573d76e209cd89e58666619bebf12473", git = "https://github.com/Simbotic/egui_node_graph.git", features = [
-    "persistence",
-] }
+egui_node_graph = { rev = "5cfdcab5573d76e209cd89e58666619bebf12473", git = "https://github.com/Simbotic/egui_node_graph.git", features = ["persistence"] }
+# egui_node_graph = { path = "../../../egui_node_graph/egui_node_graph", features = ["persistence"] }
+
+[dev-dependencies]

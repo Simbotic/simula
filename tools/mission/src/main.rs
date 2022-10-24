@@ -1,3 +1,4 @@
+use behaviors::AgentBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -5,6 +6,7 @@ use bevy::{
 use bevy_egui::{egui,egui::{vec2,Id,Label,Sense}, EguiContext};
 use egui_extras::{TableBuilder, Size};
 use simula_action::ActionPlugin;
+use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
 use simula_camera::orbitcam::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use simula_decision::{
@@ -12,12 +14,15 @@ use simula_decision::{
 };
 use simula_mission::{asset::{Asset,Amount}, wallet::Wallet, account::Account, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
+#[cfg(feature = "gif")]
+use simula_video::GifAsset;
+use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
-// mod graph;
+mod behaviors;
 mod drag_and_drop;
 use drag_and_drop::*;
 
@@ -51,10 +56,13 @@ fn main() {
     .add_plugin(LinesPlugin)
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
+    .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
-    .add_plugin(DecisionPlugin)
+    .add_plugin(BehaviorPlugin)
+    .add_plugin(AgentBehaviorPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
+    .add_startup_system(setup_behaviors)
     .add_system(debug_info)
     .add_system(increase_mission_time)
     .add_system(wallet_ui_system)
@@ -63,6 +71,7 @@ fn main() {
             .with_system(behavior_agent_rest)
             .with_system(behavior_agent_work),
     )
+    .add_system(debug_info)
     .add_system(drag_and_drop);
 
     app.register_inspectable::<MissionToken>();
@@ -179,6 +188,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
@@ -244,16 +254,75 @@ fn setup(
     
     let agent_decision_graph = commands
         .spawn()
-        .insert(DecisionEditorState {
+        .insert(BehaviorEditorState {
             show: true,
             ..default()
         })
-        .insert(DecisionGraphState::default())
-        .with_children(|parent| {
-            parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
-            parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
+        .insert(BehaviorGraphState::default())
+        .with_children(|_parent| {
+            // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
+            // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
         })
-        .insert(Name::new("Decision Graph"))
+        .insert(Name::new("Behavior Graph"))
+        .id();
+
+    let video_material = StandardMaterial {
+        base_color: Color::rgb(1.0, 1.0, 1.0),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true,
+        ..default()
+    };
+    let video_rotation =
+        Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
+    let video_position = Vec3::new(0.0, 0.5, 0.0);
+
+    let agent_body = commands
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_translation(video_position).with_rotation(video_rotation),
+            ..default()
+        })
+        .with_children(|parent| {
+            let mut child = parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                material: materials.add(video_material),
+                transform: Transform::from_rotation(Quat::from_euler(
+                    EulerRot::YXZ,
+                    0.0,
+                    -std::f32::consts::FRAC_PI_2,
+                    0.0,
+                )),
+                ..default()
+            });
+            child
+                .insert(VideoPlayer {
+                    start_frame: 0,
+                    end_frame: 80,
+                    framerate: 20.0,
+                    playing: true,
+                    ..default()
+                })
+                .insert(Name::new("Video: RenderTarget"));
+
+            #[cfg(feature = "gif")]
+            {
+                let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+                child.insert(video_asset);
+            }
+        })
+        .insert(Name::new("Agent: Body"))
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(AxesBundle {
+                    axes: Axes {
+                        size: 1.,
+                        ..default()
+                    },
+                    mesh: meshes.add(line_mesh.clone()),
+                    material: lines_materials.add(LinesMaterial {}),
+                    ..default()
+                })
+                .insert(Name::new("LookAt Coords"));
+        })
         .id();
 
     let agent_decision_graph_2 = commands
@@ -271,8 +340,11 @@ fn setup(
         .id();
 
     commands
-        .spawn()
-        .push_children(&[agent_wallet, agent_decision_graph])
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+            ..default()
+        })
+        .push_children(&[agent_wallet, agent_behavior_graph, agent_body])
         .push_children(&[agent_wallet_2, agent_decision_graph_2])
         .insert(Name::new("Agent: 001"));
 
@@ -661,4 +733,8 @@ egui::Window::new("Transfer assets")
         }
     }
 });
+}
+
+fn setup_behaviors(mut commands: Commands) {
+    behaviors::create(&mut commands);
 }
