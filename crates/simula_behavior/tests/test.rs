@@ -1,7 +1,7 @@
 use bevy::{ecs::system::CommandQueue, prelude::*};
 use simula_behavior::{
-    actions::*, add_children, complete_behavior, composites::*, BehaviorCursor, BehaviorFailure,
-    BehaviorInfo, BehaviorRunning, BehaviorSuccess, BehaviorTree,
+    actions::*, add_children, complete_behavior, composites::*, BehaviorCursor, BehaviorDocument,
+    BehaviorFailure, BehaviorInfo, BehaviorRunning, BehaviorSuccess, BehaviorTree, DebugNode,
 };
 
 fn test_app(app: &mut App) -> &mut App {
@@ -442,4 +442,22 @@ fn selector_debug_failure() {
     assert!(app.world.get::<BehaviorRunning>(debug_message_1).is_none());
     assert!(app.world.get::<BehaviorSuccess>(debug_message_1).is_none());
     assert!(app.world.get::<BehaviorFailure>(debug_message_1).is_some());
+}
+
+#[test]
+fn deserialize_behavior_tree() {
+    let data_str = r#"
+        (
+            root:(
+                Sequence(()),
+                [
+                    (DebugAction((message:"Hello, from DebugMessage 0!", fail:false, repeat:0)), []),
+                    (DebugAction((message:"Hello, from DebugMessage 1!", fail:false, repeat:5)), []),
+                ]
+            )
+        )
+    "#;
+
+    let data = ron::from_str::<BehaviorDocument<DebugNode>>(data_str);
+    assert!(data.is_ok());
 }

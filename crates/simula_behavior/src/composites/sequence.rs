@@ -3,8 +3,9 @@ use crate::{
     BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Component, Reflect, Clone)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Sequence;
 
 impl BehaviorInfo for Sequence {
@@ -27,14 +28,14 @@ pub fn run(
     >,
 ) {
     for (entity, children) in &sequences {
-        if children.children.is_empty() {
+        if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
             let mut done = true;
             for (child_entity, child_parent, failure, success) in
-                nodes.iter_many(&children.children)
+                nodes.iter_many(children.iter())
             {
-                if let Some(child_parent) = child_parent.parent {
+                if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
                         if failure.is_some() {
                             // Child failed, so we fail

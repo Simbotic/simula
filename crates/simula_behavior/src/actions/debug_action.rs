@@ -1,7 +1,8 @@
 use crate::{BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType};
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default, Component, Reflect, Clone)]
+#[derive(Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct DebugAction {
     pub message: String,
     pub fail: bool,

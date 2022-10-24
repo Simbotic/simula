@@ -1,8 +1,6 @@
-use bevy::prelude::*;
-use simula_behavior::{
-    actions::*, add_children, composites::*, BehaviorCursor, BehaviorInfo, BehaviorRunning,
-    BehaviorTree,
-};
+use bevy::{prelude::*, reflect::TypeUuid};
+use serde::{Deserialize, Serialize};
+use simula_behavior::{actions::*, composites::*};
 
 pub mod agent_rest;
 pub mod agent_work;
@@ -15,39 +13,18 @@ impl Plugin for AgentBehaviorPlugin {
     }
 }
 
-pub fn create(commands: &mut Commands) {
-    let mut root_node = commands.spawn();
-    Sequence::spawn(&mut root_node);
-    let root_node = root_node
-        .insert(BehaviorRunning)
-        .insert(BehaviorCursor)
-        .id();
-
-    let mut debug_message_0 = commands.spawn();
-    DebugAction::spawn(&mut debug_message_0);
-    debug_message_0.insert(DebugAction {
-        message: "Hello, from DebugMessage 0!".to_string(),
-        ..default()
-    });
-    debug_message_0.insert(Name::new("DebugMessage0"));
-    let debug_message_0 = debug_message_0.id();
-
-    let mut debug_message_1 = commands.spawn();
-    DebugAction::spawn(&mut debug_message_1);
-    debug_message_1.insert(DebugAction {
-        message: "Hello, from DebugMessage 1!".to_string(),
-        repeat: 5,
-        ..default()
-    });
-    debug_message_1.insert(Name::new("DebugMessage1"));
-    let debug_message_1 = debug_message_1.id();
-
-    add_children(commands, root_node, &[debug_message_0, debug_message_1]);
-
-    commands
-        .spawn()
-        .insert(BehaviorTree {
-            root: Some(root_node),
-        })
-        .push_children(&[root_node]);
+#[derive(Serialize, Deserialize, TypeUuid)]
+#[uuid = "28111cc6-5360-11ed-a639-02a179e5df2b"]
+pub enum DebugNode {
+    DebugAction(DebugAction),
+    Selector(Selector),
+    Sequence(Sequence),
 }
+
+impl Default for DebugNode {
+    fn default() -> Self {
+        Self::DebugAction(DebugAction::default())
+    }
+}
+
+pub fn create(_commands: &mut Commands) {}
