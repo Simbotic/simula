@@ -9,9 +9,6 @@ use simula_action::ActionPlugin;
 use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
 use simula_camera::orbitcam::*;
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use simula_decision::{
-    BehaviorBundle, BehaviorState, DecisionEditorState, DecisionGraphState, DecisionPlugin,
-};
 use simula_mission::{asset::{Asset,Amount}, wallet::Wallet, account::Account, MissionPlugin, WalletBuilder};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -66,11 +63,11 @@ fn main() {
     .add_system(debug_info)
     .add_system(increase_mission_time)
     .add_system(wallet_ui_system)
-    .add_system_set(
-        SystemSet::new()
-            .with_system(behavior_agent_rest)
-            .with_system(behavior_agent_work),
-    )
+    //.add_system_set(
+    //    SystemSet::new()
+    //        .with_system(behavior_agent_rest)
+    //        .with_system(behavior_agent_work),
+    //)
     .add_system(debug_info)
     .add_system(drag_and_drop);
 
@@ -325,27 +322,13 @@ fn setup(
         })
         .id();
 
-    let agent_decision_graph_2 = commands
-        .spawn()
-        .insert(DecisionEditorState {
-            show: true,
-            ..default()
-        })
-        .insert(DecisionGraphState::default())
-        .with_children(|parent| {
-            parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
-            parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
-        })
-        .insert(Name::new("Decision Graph"))
-        .id();
 
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[agent_wallet, agent_behavior_graph, agent_body])
-        .push_children(&[agent_wallet_2, agent_decision_graph_2])
+        .push_children(&[agent_wallet, agent_decision_graph, agent_body])
         .insert(Name::new("Agent: 001"));
 
     //commands
@@ -443,31 +426,6 @@ fn setup(
 
 #[derive(Default, Component, Reflect, Clone)]
 struct AgentRest;
-
-fn behavior_agent_rest(
-    agents: Query<(
-        &AgentRest,
-        &mut BehaviorState,
-        &Wallet,
-        &mut DecisionGraphState,
-    )>,
-) {
-    for _agent in agents.iter() {}
-}
-
-#[derive(Default, Component, Reflect, Clone)]
-struct AgentWork;
-
-fn behavior_agent_work(
-    agents: Query<(
-        &AgentWork,
-        &mut BehaviorState,
-        &Wallet,
-        &mut DecisionGraphState,
-    )>,
-) {
-    for _agent in agents.iter() {}
-}
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
     
