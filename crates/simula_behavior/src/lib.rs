@@ -2,7 +2,6 @@ use actions::*;
 use asset::BTNode;
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::Inspectable;
-use colored::*;
 use composites::*;
 use decorators::repeater;
 
@@ -215,7 +214,7 @@ pub fn complete_behavior(
     for (entity, parent, name) in dones.iter_mut() {
         debug!(
             "[{}] - {} is done, completing",
-            entity.id().to_string().magenta(),
+            entity.id().to_string(),
             name.to_string()
         );
         if let Some(trace) = trace.as_mut() {
@@ -243,7 +242,7 @@ pub fn start_behavior(
     for (entity, children, name) in ready.iter_mut() {
         debug!(
             "[{}] + {} is ready, starting",
-            entity.id().to_string().cyan(),
+            entity.id().to_string(),
             name.to_string()
         );
         if let Some(trace) = trace.as_mut() {
