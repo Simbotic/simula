@@ -2,8 +2,13 @@
 
 ## Create a Behavior System
 
-### Behavior Node types
-Create enum with all behavior nodes to support. This enum will become part of the behavior's document asset. Make sure UUID is unique.
+- Behavior - All behavior nodes, custom actions, decorators and composites.
+- BehaviorNode - One of many actions, decorators or composites.
+- BehaviorDocument - A struct describing a configuraiton for an entire Behavior.
+- BehaviorAsset - A bevy asset for integrating custom Behavior with asset system.
+
+### Behavior
+Create a Behavior enum with all behavior nodes to support. This enum will become part of the behavior's document asset. Make sure UUID is unique.
 
 ```
 #[derive(Serialize, Deserialize, TypeUuid)]
