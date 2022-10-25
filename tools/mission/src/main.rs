@@ -3,10 +3,7 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_egui::{
-    egui,
-    EguiContext,
-};
+use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use egui_extras::{Size, TableBuilder};
 use simula_action::ActionPlugin;
@@ -280,7 +277,7 @@ fn setup(
                 });
         })
         .build(&mut commands);
-    
+
     let _agent_wallet_2 = WalletBuilder::<MissionToken>::default()
         .id("e75b980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
         .with_account(|account| {
@@ -310,7 +307,7 @@ fn setup(
                 });
         })
         .build(&mut commands);
-    
+
     let _agent_wallet_3 = WalletBuilder::<MissionToken>::default()
         .id("e75d880182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
         .with_account(|account| {
@@ -343,12 +340,11 @@ fn setup(
                 });
         })
         .build(&mut commands);
-    
+
     let _agent_wallet_4 = WalletBuilder::<MissionToken>::default()
         .id("d76a990182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
         .with_account(|account| {
-            account
-                .id("fde3454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c");
+            account.id("fde3454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c");
         })
         .build(&mut commands);
 

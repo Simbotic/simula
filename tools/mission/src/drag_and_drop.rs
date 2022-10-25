@@ -1,8 +1,5 @@
-use bevy_egui::{
-    egui::*,
-    EguiContext,
-};
-use bevy::prelude::{App, Plugin, Query,Commands, Children, ResMut, BuildChildren};
+use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut};
+use bevy_egui::{egui::*, EguiContext};
 use simula_mission::{
     account::Account,
     asset::{Amount, Asset},
@@ -15,8 +12,7 @@ pub struct DragAndDropPlugin;
 
 impl Plugin for DragAndDropPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_system(drag_and_drop);
+        app.add_system(drag_and_drop);
     }
 }
 
@@ -96,22 +92,14 @@ pub fn drop_target<R>(
     InnerResponse::new(ret, response)
 }
 
-fn build_mission_token (mission_type: String, amount: i128) -> MissionToken{
-    if mission_type == "ENERGY"{
-        MissionToken::Energy(Asset(Amount(
-            amount
-        )))
-    }else if mission_type == "LABOR"{
-        MissionToken::Labor(Asset(Amount(
-            amount
-        )))
-    }
-    else if mission_type == "TRUST"{
-        MissionToken::Trust(Asset(Amount(
-            amount
-        )))
-    }
-    else{
+fn build_mission_token(mission_type: String, amount: i128) -> MissionToken {
+    if mission_type == "ENERGY" {
+        MissionToken::Energy(Asset(Amount(amount)))
+    } else if mission_type == "LABOR" {
+        MissionToken::Labor(Asset(Amount(amount)))
+    } else if mission_type == "TRUST" {
+        MissionToken::Trust(Asset(Amount(amount)))
+    } else {
         MissionToken::None
     }
 }
@@ -288,9 +276,10 @@ pub fn drag_and_drop(
                                     }
                                 }
                             }
-                            if !asset_exists{
-                                let mission_token = build_mission_token(mission_tuple.clone().0, mission_tuple.1);
-                                if mission_token != MissionToken::None{
+                            if !asset_exists {
+                                let mission_token =
+                                    build_mission_token(mission_tuple.clone().0, mission_tuple.1);
+                                if mission_token != MissionToken::None {
                                     let new_asset = commands.spawn().insert(mission_token).id();
                                     commands.entity(*drop_account).push_children(&[new_asset]);
                                 }
