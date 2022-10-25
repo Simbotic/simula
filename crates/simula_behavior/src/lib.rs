@@ -1,9 +1,8 @@
 use actions::*;
-use asset::{BTNode, BehaviorAsset, BehaviorAssetLoader};
-use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
+use asset::BTNode;
+use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::Inspectable;
 use composites::*;
-use serde::{Deserialize, Serialize};
 
 pub use crate::asset::BehaviorDocument;
 
@@ -12,6 +11,8 @@ pub mod asset;
 pub mod composites;
 pub mod decorators;
 pub mod editor;
+
+pub mod my_behavior;
 
 pub struct BehaviorPlugin;
 
@@ -44,45 +45,19 @@ where
     }
 }
 
-#[derive(Serialize, Deserialize, TypeUuid)]
-#[uuid = "5c3fbd4c-5359-11ed-9c5d-02a179e5df2b"]
-pub enum DebugNode {
-    DebugAction(DebugAction),
-    Selector(Selector),
-    Sequence(Sequence),
-}
-
-impl Default for DebugNode {
-    fn default() -> Self {
-        Self::DebugAction(DebugAction::default())
-    }
-}
-
-trait BehaviorNodeInfo {
+/// How to spawn a behavior node
+trait BehaviorSpawner {
     fn spawn_with(&self, commands: &mut EntityCommands);
-}
-
-impl BehaviorNodeInfo for DebugNode {
-    fn spawn_with(&self, commands: &mut EntityCommands) {
-        match self {
-            DebugNode::DebugAction(action) => BehaviorInfo::spawn_with(commands, action),
-            DebugNode::Selector(selector) => BehaviorInfo::spawn_with(commands, selector),
-            DebugNode::Sequence(sequence) => BehaviorInfo::spawn_with(commands, sequence),
-        }
-    }
 }
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<BehaviorAsset<DebugNode>>()
-            .init_asset_loader::<BehaviorAssetLoader<DebugNode>>()
+        app.add_plugin(my_behavior::MyBehaviorPlugin)
             .register_type::<editor::BehaviorGraphState>()
             .register_type::<editor::BehaviorEditorState>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
-            .add_startup_system(data_test)
-            .add_system(behevoir_document_test)
             .add_system(editor::egui_update)
             .add_system(complete_behavior)
             .add_system(sequence::run)
@@ -93,7 +68,7 @@ impl Plugin for BehaviorPlugin {
 
 fn gen_tree<T>(parent: Option<Entity>, commands: &mut Commands, node: &BTNode<T>) -> Entity
 where
-    T: Default + BehaviorNodeInfo,
+    T: Default + BehaviorSpawner,
 {
     let BTNode(node_type, nodes) = node;
     let mut entity = commands.spawn();
@@ -115,59 +90,6 @@ where
     add_children(commands, entity, &children);
 
     entity
-}
-
-fn behevoir_document_test(
-    mut commands: Commands,
-    mut document: Local<Option<Handle<BehaviorAsset<DebugNode>>>>,
-    mut behavior: Local<Option<Entity>>,
-    asset_server: Res<AssetServer>,
-    bhts: Res<Assets<BehaviorAsset<DebugNode>>>,
-) {
-    if document.is_none() {
-        *document = Some(asset_server.load("behaviors/debug_test.bht.ron"));
-    }
-
-    if behavior.is_none() {
-        if let Some(document) = &*document {
-            if let Some(behavior_asset) = bhts.get(&document) {
-                println!("behavior_asset LOADED");
-                *behavior = Some(gen_tree(None, &mut commands, &behavior_asset.document.root));
-            }
-        }
-    }
-}
-
-fn data_test() {
-    let data = BehaviorAsset {
-        path: "test".to_string(),
-        document: BehaviorDocument {
-            root: BTNode(
-                DebugNode::Sequence(Sequence::default()),
-                vec![
-                    BTNode(
-                        DebugNode::DebugAction(DebugAction {
-                            message: "Hello, from DebugMessage 0!".to_string(),
-                            ..default()
-                        }),
-                        vec![],
-                    ),
-                    BTNode(
-                        DebugNode::DebugAction(DebugAction {
-                            message: "Hello, from DebugMessage 1!".to_string(),
-                            repeat: 5,
-                            ..default()
-                        }),
-                        vec![],
-                    ),
-                ],
-            ),
-        },
-    };
-    let data_str = ron::to_string(&data.document).unwrap();
-    println!("{}", data_str);
-    let data = ron::from_str::<BehaviorDocument<DebugNode>>(&data_str);
-    assert!(data.is_ok());
 }
 
 /// A marker added to entities that want to run a behavior
@@ -210,6 +132,7 @@ pub enum BehaviorType {
     Selector,
 }
 
+/// A component to provide static behavior node info
 pub trait BehaviorInfo
 where
     Self: Reflect + Component + Clone + Default + Sized + 'static,

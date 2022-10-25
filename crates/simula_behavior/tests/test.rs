@@ -1,7 +1,8 @@
 use bevy::{ecs::system::CommandQueue, prelude::*};
 use simula_behavior::{
-    actions::*, add_children, complete_behavior, composites::*, BehaviorCursor, BehaviorDocument,
-    BehaviorFailure, BehaviorInfo, BehaviorRunning, BehaviorSuccess, BehaviorTree, DebugNode,
+    actions::*, add_children, complete_behavior, composites::*, my_behavior::MyBehavior,
+    BehaviorCursor, BehaviorDocument, BehaviorFailure, BehaviorInfo, BehaviorRunning,
+    BehaviorSuccess, BehaviorTree,
 };
 
 fn test_app(app: &mut App) -> &mut App {
@@ -10,7 +11,6 @@ fn test_app(app: &mut App) -> &mut App {
     app.add_system(sequence::run);
     app.add_system(selector::run);
     app.add_system(debug_action::run);
-
     app
 }
 
@@ -458,6 +458,6 @@ fn deserialize_behavior_tree() {
         )
     "#;
 
-    let data = ron::from_str::<BehaviorDocument<DebugNode>>(data_str);
+    let data = ron::from_str::<BehaviorDocument<MyBehavior>>(data_str);
     assert!(data.is_ok());
 }
