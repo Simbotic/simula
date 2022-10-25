@@ -11,6 +11,7 @@ gif = ["simula_video/gif"]
 bevy = { version = "0.8" }
 bevy-inspector-egui = "0.13"
 bevy_egui = "0.16"
+egui = { version = "0.19.0", default-features = false }
 egui_extras = "0.19.0"
 
 simula_core = { path = "../../crates/simula_core" }
@@ -24,9 +25,10 @@ simula_mission = { path = "../../crates/simula_mission" }
 
 anyhow = "1.0"
 rand = "0.8.5"
-enum-iterator = "0.7.0"
+enum-iterator = "1.2"
 enum-display-derive = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
+ron = "0.7.1"
 
 egui_node_graph = { rev = "5cfdcab5573d76e209cd89e58666619bebf12473", git = "https://github.com/Simbotic/egui_node_graph.git", features = [
     "persistence",

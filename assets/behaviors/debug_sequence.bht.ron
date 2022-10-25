@@ -1,0 +1,9 @@
+(
+    root:(
+        Sequence(()),
+        [
+            (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)), []),
+            (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:5)), []),
+        ]
+    )
+)

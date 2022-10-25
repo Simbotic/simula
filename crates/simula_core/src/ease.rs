@@ -1,11 +1,11 @@
 use bevy::prelude::Reflect;
-use enum_iterator::IntoEnumIterator;
+use enum_iterator::Sequence;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[allow(missing_docs)]
 #[derive(
-    Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, IntoEnumIterator, Display,
+    Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Sequence, Display,
 )]
 pub enum EaseFunction {
     Linear,

@@ -4,6 +4,7 @@ use bevy::{
     utils::BoxedFuture,
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct BTNode<T: Default>(pub T, pub Vec<BTNode<T>>);
@@ -17,7 +18,7 @@ pub struct BehaviorDocument<T: Default> {
 #[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
 pub struct BehaviorAsset<T>
 where
-    T: Default,
+    T: Default + Debug,
 {
     pub path: String,
     pub document: BehaviorDocument<T>,
@@ -28,7 +29,7 @@ pub struct BehaviorAssetLoader<T>(std::marker::PhantomData<T>);
 
 impl<T> AssetLoader for BehaviorAssetLoader<T>
 where
-    T: Sync + Send + 'static + Default + TypeUuid + for<'de> Deserialize<'de>,
+    T: Sync + Send + 'static + Default + Debug + TypeUuid + for<'de> Deserialize<'de>,
 {
     fn load<'a>(
         &'a self,

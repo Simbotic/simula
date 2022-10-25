@@ -2,7 +2,7 @@ use crate::{BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, Be
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct DebugAction {
     pub message: String,
     pub fail: bool,
@@ -20,7 +20,7 @@ pub fn run(
     mut debug_actions: Query<(Entity, &mut DebugAction), BehaviorRunQuery>,
 ) {
     for (entity, mut debug_action) in &mut debug_actions {
-        debug!("{}: {}", debug_action.repeat, debug_action.message);
+        debug!("[{}] {}", debug_action.repeat, debug_action.message);
         if debug_action.repeat == 0 {
             if debug_action.fail {
                 commands.entity(entity).insert(BehaviorFailure);
