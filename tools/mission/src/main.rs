@@ -78,7 +78,6 @@ fn main() {
     .add_startup_system(setup_behaviors)
     .add_system(debug_info)
     .add_system(increase_mission_time)
-    //.add_system(check_increase)
     .add_system(wallet_ui_system)
     .add_system(debug_info)
     .add_system(drag_and_drop);
@@ -503,12 +502,6 @@ fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) 
             _ => {}
         }
     }
-}
-
-#[derive(Clone, PartialEq, Component, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-pub struct DragAndDropDemo {
-    wallet_list: Vec<(String, Vec<(String, Vec<(String, i128)>)>)>,
 }
 
 pub fn drag_and_drop(
