@@ -2,7 +2,9 @@ use actions::*;
 use asset::BTNode;
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*};
 use bevy_inspector_egui::Inspectable;
+use colored::*;
 use composites::*;
+use decorators::repeater;
 
 pub use crate::asset::BehaviorDocument;
 
@@ -11,8 +13,6 @@ pub mod asset;
 pub mod composites;
 pub mod decorators;
 pub mod editor;
-
-pub mod my_behavior;
 
 pub struct BehaviorPlugin;
 
@@ -46,27 +46,28 @@ where
 }
 
 /// How to spawn a behavior node
-trait BehaviorSpawner {
+pub trait BehaviorSpawner {
     fn spawn_with(&self, commands: &mut EntityCommands);
 }
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(my_behavior::MyBehaviorPlugin)
-            .register_type::<editor::BehaviorGraphState>()
+        app.register_type::<editor::BehaviorGraphState>()
             .register_type::<editor::BehaviorEditorState>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
             .add_system(editor::egui_update)
             .add_system(complete_behavior)
+            .add_system(start_behavior)
             .add_system(sequence::run)
             .add_system(selector::run)
+            .add_system(repeater::run)
             .add_system(debug_action::run);
     }
 }
 
-fn gen_tree<T>(parent: Option<Entity>, commands: &mut Commands, node: &BTNode<T>) -> Entity
+pub fn spawn_tree<T>(parent: Option<Entity>, commands: &mut Commands, node: &BTNode<T>) -> Entity
 where
     T: Default + BehaviorSpawner,
 {
@@ -75,16 +76,9 @@ where
     node_type.spawn_with(&mut entity);
     let entity = entity.insert(BehaviorParent(parent)).id();
 
-    if parent.is_none() {
-        commands
-            .entity(entity)
-            .insert(BehaviorRunning)
-            .insert(BehaviorCursor);
-    }
-
     let children = nodes
         .iter()
-        .map(|node| gen_tree(Some(entity), commands, node))
+        .map(|node| spawn_tree(Some(entity), commands, node))
         .collect::<Vec<Entity>>();
 
     add_children(commands, entity, &children);
@@ -128,8 +122,8 @@ pub struct BehaviorChildren(Vec<Entity>);
 pub enum BehaviorType {
     #[default]
     Action,
-    Sequence,
-    Selector,
+    Composite,
+    Decorator,
 }
 
 /// A component to provide static behavior node info
@@ -171,23 +165,25 @@ pub struct BehaviorTree {
 }
 
 /// A marker added to currently running behaviors
-#[derive(Default, Reflect, Clone, Component, Inspectable)]
+#[derive(Default, Debug, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
 pub struct BehaviorCursor;
 
 /// Query filter for running behaviors
 #[derive(WorldQuery)]
 pub struct BehaviorRunQuery {
+    _node: With<BehaviorNode>,
     _cursor: With<BehaviorCursor>,
     _running: With<BehaviorRunning>,
     _failure: Without<BehaviorFailure>,
     _success: Without<BehaviorSuccess>,
 }
 
-/// Query filter for behaviors ready to run
+/// Query filter for behaviors ready to start
 #[derive(WorldQuery)]
-pub struct BehaviorWithoutQuery {
-    _cursor: Without<BehaviorCursor>,
+pub struct BehaviorReadyQuery {
+    _node: With<BehaviorNode>,
+    _cursor: With<BehaviorCursor>,
     _running: Without<BehaviorRunning>,
     _failure: Without<BehaviorFailure>,
     _success: Without<BehaviorSuccess>,
@@ -196,22 +192,74 @@ pub struct BehaviorWithoutQuery {
 /// Query filter for behaviors that have completed
 #[derive(WorldQuery)]
 pub struct BehaviorDoneQuery {
+    _node: With<BehaviorNode>,
     _cursor: With<BehaviorCursor>,
     _running: With<BehaviorRunning>,
     _done: Or<(With<BehaviorFailure>, With<BehaviorSuccess>)>,
+}
+
+#[derive(Default, Debug, Clone, Deref, DerefMut, PartialEq)]
+pub struct BehaviorTrace(pub Vec<String>);
+impl BehaviorTrace {
+    pub fn from_list(traces: &[&str]) -> Self {
+        Self(traces.iter().map(|s| s.to_string()).collect())
+    }
 }
 
 /// Process completed behaviors, pass cursor to parent
 pub fn complete_behavior(
     mut commands: Commands,
     mut dones: Query<(Entity, &BehaviorParent, &Name), BehaviorDoneQuery>,
+    mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
     for (entity, parent, name) in dones.iter_mut() {
-        debug!("{} is done", name.to_string());
+        debug!(
+            "[{}] - {} is done, completing",
+            entity.id().to_string().magenta(),
+            name.to_string()
+        );
+        if let Some(trace) = trace.as_mut() {
+            trace.push(format!(
+                "[{}] - {} is done, completing",
+                entity.id(),
+                name.to_string(),
+            ));
+        }
         commands.entity(entity).remove::<BehaviorRunning>();
         commands.entity(entity).remove::<BehaviorCursor>();
         if let Some(parent) = **parent {
             commands.entity(parent).insert(BehaviorCursor);
+        }
+    }
+}
+
+/// Process ready behaviors, start them
+pub fn start_behavior(
+    mut commands: Commands,
+    mut ready: Query<(Entity, &BehaviorChildren, &Name), BehaviorReadyQuery>,
+    nodes: Query<Entity, (With<BehaviorNode>, Without<BehaviorCursor>)>,
+    mut trace: Option<ResMut<BehaviorTrace>>,
+) {
+    for (entity, children, name) in ready.iter_mut() {
+        debug!(
+            "[{}] + {} is ready, starting",
+            entity.id().to_string().cyan(),
+            name.to_string()
+        );
+        if let Some(trace) = trace.as_mut() {
+            trace.push(format!(
+                "[{}] + {} is ready, starting",
+                entity.id(),
+                name.to_string(),
+            ));
+        }
+        commands.entity(entity).insert(BehaviorRunning);
+
+        // Reset all children
+        for entity in nodes.iter_many(children.iter()) {
+            commands.entity(entity).remove::<BehaviorRunning>();
+            commands.entity(entity).remove::<BehaviorSuccess>();
+            commands.entity(entity).remove::<BehaviorFailure>();
         }
     }
 }

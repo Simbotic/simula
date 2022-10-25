@@ -1,15 +1,19 @@
 use crate::{
-    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorParent,
+    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
     BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// A selector will return a success if any of its children succeed and not process
+/// any further children. It will process the first child, and if it fails will
+/// process the second, until a success is reached, at which point it will instantly
+/// return success. It will fail if all children fail.
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Selector;
 
 impl BehaviorInfo for Selector {
-    const TYPE: BehaviorType = BehaviorType::Selector;
+    const TYPE: BehaviorType = BehaviorType::Composite;
     const NAME: &'static str = "Selector";
     const DESC: &'static str = "Selector behavior node";
 }
@@ -24,7 +28,11 @@ pub fn run(
             Option<&BehaviorFailure>,
             Option<&BehaviorSuccess>,
         ),
-        (Without<BehaviorCursor>, Without<BehaviorRunning>),
+        (
+            With<BehaviorNode>,
+            Without<BehaviorCursor>,
+            Without<BehaviorRunning>,
+        ),
     >,
 ) {
     for (entity, children) in &selectors {
@@ -32,9 +40,7 @@ pub fn run(
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
             let mut done = true;
-            for (child_entity, child_parent, failure, success) in
-                nodes.iter_many(children.iter())
-            {
+            for (child_entity, child_parent, failure, success) in nodes.iter_many(children.iter()) {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
                         if failure.is_some() {
@@ -48,7 +54,6 @@ pub fn run(
                             done = false;
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
-                            commands.entity(child_entity).insert(BehaviorRunning);
                             break;
                         }
                     }

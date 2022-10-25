@@ -1,4 +1,4 @@
-use behaviors::AgentBehaviorPlugin;
+use behaviors::mission_behavior::MissionBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -9,6 +9,7 @@ use bevy_egui::{
     EguiContext,
 };
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
+use drag_and_drop::*;
 use egui_extras::{Size, TableBuilder};
 use simula_action::ActionPlugin;
 use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
@@ -29,9 +30,9 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
+
 mod behaviors;
 mod drag_and_drop;
-use drag_and_drop::*;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -70,12 +71,11 @@ fn main() {
     .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
     .add_plugin(BehaviorPlugin)
-    .add_plugin(AgentBehaviorPlugin)
     .add_plugin(FollowUIPlugin)
+    .add_plugin(MissionBehaviorPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_startup_system(initialize_images)
-    .add_startup_system(setup_behaviors)
     .add_system(debug_info)
     .add_system(increase_mission_time)
     .add_system(wallet_ui_system)
@@ -704,8 +704,4 @@ fn initialize_images(
     image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
     image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
     image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
-}
-
-fn setup_behaviors(mut commands: Commands) {
-    behaviors::create(&mut commands);
 }
