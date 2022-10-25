@@ -7,7 +7,7 @@ use bevy::{
 };
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use bevy_inspector_egui::WorldInspectorPlugin;
-use enum_iterator::IntoEnumIterator;
+use enum_iterator::all;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
@@ -442,7 +442,7 @@ fn setup(
             ..default()
         })
         .with_children(|parent| {
-            for (i, ease_func) in EaseFunction::into_enum_iter().enumerate().skip(1) {
+            for (i, ease_func) in all::<EaseFunction>().enumerate().skip(1) {
                 let i = i - 1;
                 // println!("{:2}: {:?}", i, ease_func);
                 let name = ease_func.to_string();
@@ -470,7 +470,7 @@ fn setup(
     let points: Vec<Vec3> = (-100i32..=100)
         .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
         .collect();
-    for (i, signal_func) in SignalFunction::into_enum_iter().enumerate().skip(1) {
+    for (i, signal_func) in all::<SignalFunction>().enumerate().skip(1) {
         let name = signal_func.to_string();
         commands
             .spawn_bundle(LinesBundle {

@@ -290,7 +290,7 @@ pub fn select_tile(
                     let mut hash = DefaultHasher::new();
                     vec.hash(&mut hash);
                     let complexity_seed = hash.finish();
-                    let l = Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
+                    let l = Prng::rand_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
                     let mut s = 0.95;
 
                     //lowers saturation of out of bound tiles

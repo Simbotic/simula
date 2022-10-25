@@ -91,7 +91,7 @@ pub fn hexgrid_builder(mut shortest_path: ResMut<ShortestPathBuilder>) {
             vec.hash(&mut hash);
             let complexity_seed = hash.finish();
             shortest_path.random_complexity =
-                Prng::range_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
+                Prng::rand_float_range(&mut Prng::new(complexity_seed), 0.0, 20.0);
             let l = shortest_path.random_complexity;
 
             //create nodes
