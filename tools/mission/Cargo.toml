@@ -28,7 +28,7 @@ rand = "0.8.5"
 enum-iterator = "1.2"
 enum-display-derive = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
-ron = "0.8"
+ron = "0.7.1"
 
 egui_node_graph = { rev = "5cfdcab5573d76e209cd89e58666619bebf12473", git = "https://github.com/Simbotic/egui_node_graph.git", features = [
     "persistence",

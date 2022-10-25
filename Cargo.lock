@@ -166,14 +166,14 @@ dependencies = [
 
 [[package]]
 name = "alsa"
-version = "0.6.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5634739325616a86b999bb65b49e1e502f179596145fd47b60e00b687782cea"
+checksum = "5915f52fe2cf65e83924d037b6c5290b7cee097c6b5c8700746e6168a343fd6b"
 dependencies = [
  "alsa-sys",
  "bitflags",
  "libc",
- "nix 0.24.2",
+ "nix 0.23.1",
 ]
 
 [[package]]
@@ -3836,7 +3836,7 @@ dependencies = [
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
- "ron 0.8.0",
+ "ron 0.7.1",
  "serde",
  "simula_action",
  "simula_behavior",
@@ -5428,7 +5428,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
- "ron 0.8.0",
+ "ron 0.7.1",
  "serde",
  "simula_action_macro",
  "simula_core",
@@ -5453,7 +5453,7 @@ dependencies = [
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
- "ron 0.8.0",
+ "ron 0.7.1",
  "serde",
  "simula_action",
  "simula_camera",
@@ -5515,7 +5515,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_egui",
  "hex",
- "ron 0.8.0",
+ "ron 0.7.1",
  "serde",
  "ta",
 ]
