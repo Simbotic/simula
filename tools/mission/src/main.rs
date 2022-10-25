@@ -3,22 +3,31 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_egui::{egui,egui::{vec2,Id,Label,Sense}, EguiContext};
-use egui_extras::{TableBuilder, Size};
+use bevy_egui::{
+    egui,
+    egui::{vec2, Id, Label, Sense},
+    EguiContext,
+};
+use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
+use egui_extras::{Size, TableBuilder};
 use simula_action::ActionPlugin;
 use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
 use simula_camera::orbitcam::*;
-use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use simula_mission::{asset::{Asset,Amount}, account::Account, MissionPlugin, WalletBuilder, wallet::Wallet};
+use simula_mission::{
+    account::Account,
+    asset::{Amount, Asset},
+    wallet::Wallet,
+    MissionPlugin, WalletBuilder,
+};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
+    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin, FollowUIVisibility},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
-    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin, FollowUIVisibility}
 };
 mod behaviors;
 mod drag_and_drop;
@@ -44,7 +53,11 @@ fn main() {
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
     .insert_resource(SelectedWallet(0))
-    .insert_resource(ImageTextureIds{time_icon: None, energy_icon: None, trust_icon: None})
+    .insert_resource(ImageTextureIds {
+        time_icon: None,
+        energy_icon: None,
+        trust_icon: None,
+    })
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -65,7 +78,6 @@ fn main() {
     .add_startup_system(setup_behaviors)
     .add_system(debug_info)
     .add_system(increase_mission_time)
-    //.add_system(check_increase)
     .add_system(wallet_ui_system)
     .add_system(debug_info)
     .add_system(drag_and_drop);
@@ -92,7 +104,7 @@ pub enum MissionToken {
     Labor(Asset<1000, 3>),
 }
 
-fn wallet_ui_system (
+fn wallet_ui_system(
     mut egui_ctx: ResMut<EguiContext>,
     wallets: Query<(&Wallet, &Children)>,
     accounts: Query<(&Account, &Children)>,
@@ -114,7 +126,8 @@ fn wallet_ui_system (
             .show(egui_ctx.ctx_mut(), |ui| {
                 let mut wallet_list: Vec<(String, &Children)> = vec![];
                 for (wallet, wallet_accounts) in wallets.iter() {
-                    let wallet_id_trimmed = wallet.wallet_id
+                    let wallet_id_trimmed = wallet
+                        .wallet_id
                         .to_string()
                         .get(0..8)
                         .unwrap_or_default()
@@ -125,89 +138,106 @@ fn wallet_ui_system (
                     ui,
                     &mut selected_wallet.0,
                     wallet_list.len(),
-                    |i| wallet_list[i].0.to_owned()
+                    |i| wallet_list[i].0.to_owned(),
                 );
 
-                egui::Grid::new("accounts_grid").striped(true).show(ui, |ui| {
-                    if !wallet_list[selected_wallet.0].1.is_empty() {
-                        ui.heading("Accounts");
-                        ui.end_row();
-                    } else {
-                        ui.heading("No accounts in selected wallet");
-                        ui.end_row();
-                    }
-                    for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
-                        if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                            let account_id_trimmed = account.account_id
+                egui::Grid::new("accounts_grid")
+                    .striped(true)
+                    .show(ui, |ui| {
+                        if !wallet_list[selected_wallet.0].1.is_empty() {
+                            ui.heading("Accounts");
+                            ui.end_row();
+                        } else {
+                            ui.heading("No accounts in selected wallet");
+                            ui.end_row();
+                        }
+                        for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
+                            if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                                let account_id_trimmed = account
+                                    .account_id
                                     .to_string()
                                     .get(0..8)
                                     .unwrap_or_default()
                                     .to_string();
-                            ui.collapsing(account_id_trimmed.clone(), |ui| {
-                                let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> = vec![];
-                                for &account_asset in account_assets.iter() {
-                                    if let Ok(asset) = assets.get(account_asset) {
-                                        let asset_name = match asset {
-                                            MissionToken::Time(_) => "Time",
-                                            MissionToken::Trust(_) => "Trust",
-                                            MissionToken::Energy(_) => "Energy",
-                                            MissionToken::Labor(_) => "Labor",
-                                            MissionToken::None => "None",
-                                        };
-                                        let asset_value = match asset {
-                                            MissionToken::Time(asset) => asset.0.0,
-                                            MissionToken::Trust(asset) => asset.0.0,
-                                            MissionToken::Energy(asset) => asset.0.0,
-                                            MissionToken::Labor(asset) => asset.0.0,
-                                            MissionToken::None => 0,
-                                        };
-                                        let asset_icon = match asset {
-                                            MissionToken::Time(_) => image_texture_ids.time_icon,
-                                            MissionToken::Trust(_) => image_texture_ids.trust_icon,
-                                            MissionToken::Energy(_) => image_texture_ids.energy_icon,
-                                            MissionToken::Labor(_) => None,
-                                            MissionToken::None => None,
-                                        };
-                                        asset_list.push((asset_name.to_string(), asset_value, asset_icon));
+                                ui.collapsing(account_id_trimmed.clone(), |ui| {
+                                    let mut asset_list: Vec<(
+                                        String,
+                                        i128,
+                                        Option<egui::TextureId>,
+                                    )> = vec![];
+                                    for &account_asset in account_assets.iter() {
+                                        if let Ok(asset) = assets.get(account_asset) {
+                                            let asset_name = match asset {
+                                                MissionToken::Time(_) => "Time",
+                                                MissionToken::Trust(_) => "Trust",
+                                                MissionToken::Energy(_) => "Energy",
+                                                MissionToken::Labor(_) => "Labor",
+                                                MissionToken::None => "None",
+                                            };
+                                            let asset_value = match asset {
+                                                MissionToken::Time(asset) => asset.0 .0,
+                                                MissionToken::Trust(asset) => asset.0 .0,
+                                                MissionToken::Energy(asset) => asset.0 .0,
+                                                MissionToken::Labor(asset) => asset.0 .0,
+                                                MissionToken::None => 0,
+                                            };
+                                            let asset_icon = match asset {
+                                                MissionToken::Time(_) => {
+                                                    image_texture_ids.time_icon
+                                                }
+                                                MissionToken::Trust(_) => {
+                                                    image_texture_ids.trust_icon
+                                                }
+                                                MissionToken::Energy(_) => {
+                                                    image_texture_ids.energy_icon
+                                                }
+                                                MissionToken::Labor(_) => None,
+                                                MissionToken::None => None,
+                                            };
+                                            asset_list.push((
+                                                asset_name.to_string(),
+                                                asset_value,
+                                                asset_icon,
+                                            ));
+                                        }
                                     }
-                                }
-                                TableBuilder::new(ui)
-                                    .column(Size::remainder().at_least(100.0))
-                                    .column(Size::remainder().at_least(100.0))
-                                    .striped(true)
-                                    .header(20.0, |mut header| {
-                                        header.col(|ui| {
-                                            ui.heading(format!("Asset"));
-                                        });
-                                        header.col(|ui| {
-                                            ui.heading("Amount");
-                                        });
-                                    })
-                                    .body(|mut body| {
-                                        for asset in asset_list.iter() {
-                                            body.row(20.0, |mut row| {
-                                                row.col(|ui| {
-                                                    ui.horizontal(|ui| {
-                                                        if let Some(icon) = asset.2 {
-                                                            ui.add(egui::widgets::Image::new(
-                                                                icon,
-                                                                [20.0, 20.0],
-                                                            ));
-                                                        }
-                                                        ui.label(asset.0.clone());   
+                                    TableBuilder::new(ui)
+                                        .column(Size::remainder().at_least(100.0))
+                                        .column(Size::remainder().at_least(100.0))
+                                        .striped(true)
+                                        .header(20.0, |mut header| {
+                                            header.col(|ui| {
+                                                ui.heading(format!("Asset"));
+                                            });
+                                            header.col(|ui| {
+                                                ui.heading("Amount");
+                                            });
+                                        })
+                                        .body(|mut body| {
+                                            for asset in asset_list.iter() {
+                                                body.row(20.0, |mut row| {
+                                                    row.col(|ui| {
+                                                        ui.horizontal(|ui| {
+                                                            if let Some(icon) = asset.2 {
+                                                                ui.add(egui::widgets::Image::new(
+                                                                    icon,
+                                                                    [20.0, 20.0],
+                                                                ));
+                                                            }
+                                                            ui.label(asset.0.clone());
+                                                        });
+                                                    });
+                                                    row.col(|ui| {
+                                                        ui.label(asset.1.to_string());
                                                     });
                                                 });
-                                                row.col(|ui| {
-                                                    ui.label(asset.1.to_string());
-                                                });
-                                            });
-                                        }
-                                    });
-                            });
+                                            }
+                                        });
+                                });
+                            }
+                            ui.end_row();
                         }
-                        ui.end_row();
-                    }
-                });
+                    });
             });
     }
 }
@@ -250,36 +280,6 @@ fn setup(
         })
         .build(&mut commands);
 
-    let agent_wallet_2 = WalletBuilder::<MissionToken>::default()
-        .id("f75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("2d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("ude3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()));
-                });
-        })
-        .build(&mut commands);
-    
     let agent_decision_graph = commands
         .spawn()
         .insert(BehaviorEditorState {
@@ -353,7 +353,6 @@ fn setup(
         })
         .id();
 
-
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
@@ -361,12 +360,6 @@ fn setup(
         })
         .push_children(&[agent_wallet, agent_decision_graph, agent_body])
         .insert(Name::new("Agent: 001"));
-
-    //commands
-    //    .spawn()
-    //    //.insert(Check{timer: Timer::from_seconds(1.0, true)})
-    //    .insert(graph::MyEditorState(GraphEditorState::new(1.0)))
-    //    .insert(graph::MyGraphState::default());
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -421,7 +414,8 @@ fn setup(
             center: Vec3::new(0.0, 1.0, 0.0),
             distance: 10.0,
             ..Default::default()
-        }).insert(FollowUICamera);
+        })
+        .insert(FollowUICamera);
 
     commands
         .spawn()
@@ -436,11 +430,10 @@ fn setup(
             max_height: 5.0,
             max_view_angle: 45.0,
             ..default()
-        },
-        )
+        })
         .insert(FollowPanel)
         .insert(Name::new("Follow UI: Shape"));
-    
+
     //FPS ON SCREEN
     commands
         .spawn_bundle(
@@ -488,29 +481,7 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
             }
         }
     }
-    
 }
-
-//fn check_increase(time: Res<Time>,mut q: Query<&mut Check>,mut query: Query<&mut MissionToken>){
-//    for mut check in q.iter_mut(){
-//        check.timer.tick(time.delta());
-//        if check.timer.just_finished(){
-//            for token in query.iter_mut(){
-//                match *token{
-//                    MissionToken::MissionTime(asset)=>{
-//                        println!("{:?}",asset.0.0)
-//                    }
-//                    _=>{}
-//                }
-//            }
-//        }
-//    }
-//}
-
-//#[derive(Component)]
-//pub struct Check{
-// timer: Timer
-//}
 
 pub struct Images {
     time_icon: Handle<Image>,
@@ -524,264 +495,188 @@ pub struct ImageTextureIds {
     energy_icon: Option<egui::TextureId>,
 }
 
-
-fn increase_mission_time(_time: Res<Time>,mut query: Query<&mut MissionToken>){
-    for mut token in query.iter_mut(){
-        match *token{
-            MissionToken::Time(asset)=>{
-                //asset.0.0 += 1
-                *token = MissionToken::Time(Asset(Amount(asset.0.0 + 1)))
-            }
-            _=>{}
+fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) {
+    for mut token in query.iter_mut() {
+        match *token {
+            MissionToken::Time(asset) => *token = MissionToken::Time(Asset(Amount(asset.0 .0 + 1))),
+            _ => {}
         }
     }
 }
 
-#[derive(Clone, PartialEq,Component,Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-pub struct DragAndDropDemo {
-    wallet_list: Vec<(String, Vec<(String, Vec<(String, i128)>)>)> 
-}
-
-pub fn drag_and_drop (
+pub fn drag_and_drop(
     mut egui_ctx: ResMut<EguiContext>,
-    mut wallets: Query<(&mut Wallet, &Children)>,
-    mut accounts: Query<(&mut Account, &Children)>,
+    wallets: Query<(&mut Wallet, &Children)>,
+    accounts: Query<(&mut Account, &Children)>,
     mut assets: Query<&mut MissionToken>,
-    //mut drag_drop: ResMut<DragAndDropDemo>
 ) {
-    //drag_drop.wallet_list = vec![];
-    //for (wallet, wallet_accounts) in wallets.iter() {
-    //    let wallet_id_trimmed = wallet.wallet_id
-    //        .to_string()
-    //        .get(0..8)
-    //        .unwrap_or_default()
-    //        .to_string();
-    //    let mut account_list: Vec<(String, Vec<(String, i128)>)> = vec![];
-    //    for &wallet_account in wallet_accounts {
-    //        if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-    //            let account_id_trimmed = account.account_id
-    //                .to_string()
-    //                .get(0..8)
-    //                .unwrap_or_default()
-    //                .to_string();
-    //            let mut asset_list: Vec<(String, i128)> = vec![];
-    //            for &account_asset in account_assets.iter() {
-    //                if let Ok(asset) = assets.get(account_asset) {
-    //                    let asset_name = match asset {
-    //                        MissionToken::Time(_) => "Time",
-    //                        MissionToken::Trust(_) => "Trust",
-    //                        MissionToken::Energy(_) => "Energy",
-    //                        MissionToken::Labor(_) => "Labor",
-    //                        MissionToken::None => "None",
-    //                    };
-    //                    let asset_value = match asset {
-    //                        MissionToken::Time(asset) => asset.0.0,
-    //                        MissionToken::Trust(asset) => asset.0.0,
-    //                        MissionToken::Energy(asset) => asset.0.0,
-    //                        MissionToken::Labor(asset) => asset.0.0,
-    //                        MissionToken::None => 0,
-    //                    };
-    //                    asset_list.push((asset_name.to_string(), asset_value));
-    //                }
-    //            }
-    //            account_list.push((account_id_trimmed, asset_list));
-    //        }
-    //    }
-    //    drag_drop.wallet_list.push((wallet_id_trimmed, account_list));
-    //}
-    //println!("{:?}",drag_drop.wallet_list );
-    //egui::Window::new("Transfer assets")
-    //    .open(&mut true)
-    //    .default_size(vec2(256.0, 256.0))
-    //    .vscroll(false)
-    //    .resizable(true)
-    //    .show(egui_ctx.ctx_mut(), |ui| {
-    //        
-    //        //ui.label(".");
-    //        let id_source = "my_drag_and_drop_demo";
-    //        let mut source_col_row_aisle = None;  //this will hold the dragged asset position: (column, row, aisle) (it's a pseudo 3D array)
-    //        let mut drop_col = None;
-    //        ui.columns(drag_drop.wallet_list.len(), |uis| {
-    //            for (wallet_idx, wallet) in drag_drop.wallet_list.clone().into_iter().enumerate() { // iterate wallets
-    //                let ui = &mut uis[wallet_idx];  // our current column, index comes from the iteration of wallets
-    //                let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
-    //                let response = drop_target(ui, can_accept_what_is_being_dragged, |ui| {  // Call the drag and drop function
-    //                    ui.set_min_size(vec2(64.0, 100.0)); // set window size (To be Modified)
-    //                    for (account_idx, account) in wallet.1.iter().enumerate() { // iterate accounts
-    //                        ui.add(Label::new(account.0.clone()));
-    //                        for (asset_idx, asset) in account .1.iter().enumerate(){  // iterate assets
-    //                        
-    //                            let item_id = Id::new(id_source).with(wallet_idx).with(account_idx).with(asset_idx); // we create an id with all index
-    //                            drag_source(ui, item_id, |ui| {
-    //                                let response = ui.add(Label::new(asset.0.clone()).sense(Sense::click())); //añadir vainas locas
-    //                                response.context_menu(|ui| {
-    //                                    if ui.button("Remove").clicked() {
-    //                                        drag_drop.wallet_list[wallet_idx].1[account_idx].1.remove(asset_idx); // we remove the selected asset
-    //                                        ui.close_menu();
-    //                                    }
-    //                                });
-    //                            });
-    //                            if ui.memory().is_being_dragged(item_id) {
-    //                                source_col_row_aisle = Some((wallet_idx, account_idx, asset_idx));
-    //                            }
-    //                        }
-    //                    }
-    //                })
-    //                .response;
-    //                let response = response.context_menu(|ui| {
-    //                    if ui.button("New Item").clicked() {
-    //                        drag_drop.wallet_list[wallet_idx].1[source_col_row_aisle.unwrap().1].1.push(("New Item".to_owned(),1));
-    //                        ui.close_menu();
-    //                    }
-    //                });
-    //                let is_being_dragged = ui.memory().is_anything_being_dragged();
-    //                if is_being_dragged && can_accept_what_is_being_dragged && response.hovered() {
-    //                    drop_col = Some(wallet_idx);
-    //                }
-    //            }
-    //        });
-    //        if let Some((source_col, source_row, source_aisle)) = source_col_row_aisle {
-    //            if let Some(drop_col) = drop_col {
-    //                if ui.input().pointer.any_released() {
-    //                    // do the drop:
-    //                    let item = drag_drop.wallet_list[source_col].1[source_row].1.remove(source_aisle);
-    //                    drag_drop.wallet_list[drop_col].1[source_row].1.push(item);
-    //                }
-    //            }
-    //        }
-    //    });
-    
-egui::Window::new("Transfer assets")
-.open(&mut true)
-.default_size(vec2(256.0, 256.0))
-.vscroll(false)
-.resizable(true)
-.show(egui_ctx.ctx_mut(), |ui| {
-    
-    //ui.label(".");
-    let id_source = "my_drag_and_drop_demo";
-    let mut source_col_row_aisle = None;  //this will hold the dragged asset position: (column, row, aisle) (it's a pseudo 3D array)
-    let mut drop_col = None;
-    //let mut drop_row = None;
-    ui.columns(wallets.into_iter().len(), |uis| {
+    egui::Window::new("Transfer assets")
+        .open(&mut true)
+        .default_size(vec2(256.0, 256.0))
+        .vscroll(false)
+        .resizable(true)
+        .show(egui_ctx.ctx_mut(), |ui| {
+            let id_source = "my_drag_and_drop_demo";
+            let mut source_asset = None; //this will hold the dragged asset position
+            let mut drop_account = None; //this holds the wallet and account where the asset is dropped
 
-        for (wallet_idx, wallet) in wallets.into_iter().enumerate() { // iterate wallets
-
-            let ui = &mut uis[wallet_idx];  // our current column, index comes from the iteration of wallets
-
-            let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
-
-            let response = drop_target(ui, can_accept_what_is_being_dragged, |ui| {  // Call the drag and drop function
-
-                ui.set_min_size(vec2(64.0, 100.0)); // set window size (To be Modified)
-
-                for (account_idx, account) in wallet.1.into_iter().enumerate() { // iterate accounts
-
-                    if let Ok((account, account_assets)) = accounts.get(*account) { // obtain al the assets from the current account
-
-                        let account_id_trimmed = account.account_id
-                            .to_string()
-                            .get(0..8)
-                            .unwrap_or_default()
-                            .to_string();
-
-                        ui.add(Label::new(account_id_trimmed));
-
-                        for (asset_idx, asset) in account_assets.iter().enumerate(){  // iterate assets
-
-                            if let Ok(asset) = assets.get(*asset){
-
-                                let asset_name = match asset {
-                                    MissionToken::Time(_) => "Time",
-                                    MissionToken::Trust(_) => "Trust",
-                                    MissionToken::Energy(_) => "Energy",
-                                    MissionToken::Labor(_) => "Labor",
-                                    MissionToken::None => "None",
-                                };
-    
-                                let asset_value = match asset{
-                                    MissionToken::Time(asset) => asset.0.0,
-                                    MissionToken::Trust(asset) => asset.0.0,
-                                    MissionToken::Energy(asset) => asset.0.0,
-                                    MissionToken::Labor(asset) => asset.0.0,
-                                    MissionToken::None => 0,
-                                };
-
-                                let item_id = Id::new(id_source).with(wallet_idx).with(account_idx).with(asset_idx); // we create an id with all index
-                                drag_source(ui, item_id, |ui| {
-                                   ui.add(Label::new(format!("{}: {}",asset_name,asset_value)).sense(Sense::click())); //añadir vainas locas
-                                    //let response = 
-                                    //response.context_menu(|ui| {
-                                    //    if ui.button("Remove").clicked() {
-                                    //        //drag_drop.wallet_list[wallet_idx].1[account_idx].1.remove(asset_idx); // we remove the selected asset
-                                    //        println!("restamos");
-                                    //        ui.close_menu();
-                                    //    }
-                                    //});
-                                });
-                                if ui.memory().is_being_dragged(item_id) {
-                                    source_col_row_aisle = Some((wallet_idx, account_idx, asset_idx));
-                                }
-
-                            }
-                        
-                        }
-                        
-                    }
-                }
-            })
-            .response;
-            //let response = response.context_menu(|ui| {
-            //    if ui.button("New Item").clicked() {
-            //        drag_drop.wallet_list[wallet_idx].1[source_col_row_aisle.unwrap().1].1.push(("New Item".to_owned(),1));
-            //        ui.close_menu();
-            //    }
-            //});
-            let is_being_dragged = ui.memory().is_anything_being_dragged();
-            if is_being_dragged && can_accept_what_is_being_dragged && response.hovered() {
-                drop_col = Some(wallet_idx);
-                //drop_row = Some(account_idx);
-            }
-        }
-    });
-    if let Some((source_col, source_row, source_aisle)) = source_col_row_aisle {
-        if let Some(drop_col) = drop_col {
-            if ui.input().pointer.any_released() {
-                // do the drop:
+            ui.columns(wallets.into_iter().len(), |uis| {
                 for (wallet_idx, wallet) in wallets.into_iter().enumerate() {
+                    // iterate wallets
+
+                    let ui = &mut uis[wallet_idx]; // our current column, index comes from the iteration of wallets
+
+                    let wallet_id_trimmed = wallet
+                        .0
+                        .wallet_id
+                        .to_string()
+                        .get(0..8)
+                        .unwrap_or_default()
+                        .to_string();
+
+                    ui.add(Label::new(format!("Wallet: {}", wallet_id_trimmed)));
+
+                    let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
+
+                    ui.set_min_size(vec2(64.0, 100.0)); // set window size (To be Modified)
+
                     for (account_idx, account) in wallet.1.into_iter().enumerate() {
-                        if let Ok((account, account_assets)) = accounts.get(*account) { 
-                            for (asset_idx, asset) in account_assets.into_iter().enumerate(){
-                                if wallet_idx == source_col
-                                    && account_idx == source_row
-                                    && asset_idx == source_aisle {
-                                        println!("match");
-                                        //if let Ok(mut asset) = assets.get(*asset){
-                                        //    match asset{
-                                        //        MissionToken::Energy(value)=>{
-                                        //            *asset = MissionToken::Energy(Asset(Amount(0)))
-                                        //        }
-                                        //        _=>{}
-                                        //    }
-                                        //}
+                        // iterate accounts
+
+                        let response = drop_target(ui, can_accept_what_is_being_dragged, |ui| {
+                            // Call the drag and drop function
+
+                            if let Ok((account, account_assets)) = accounts.get(*account) {
+                                // obtain al the assets from the current account
+
+                                let account_id_trimmed = account
+                                    .account_id
+                                    .to_string()
+                                    .get(0..8)
+                                    .unwrap_or_default()
+                                    .to_string();
+
+                                ui.add(Label::new(account_id_trimmed));
+
+                                for (asset_idx, asset_entity) in account_assets.iter().enumerate() {
+                                    // iterate assets
+
+                                    if let Ok(asset) = assets.get(*asset_entity) {
+                                        let asset_name = match asset {
+                                            MissionToken::Time(_) => "Time",
+                                            MissionToken::Trust(_) => "Trust",
+                                            MissionToken::Energy(_) => "Energy",
+                                            MissionToken::Labor(_) => "Labor",
+                                            MissionToken::None => "None",
+                                        };
+
+                                        let asset_value = match asset {
+                                            MissionToken::Time(asset) => asset.0 .0,
+                                            MissionToken::Trust(asset) => asset.0 .0,
+                                            MissionToken::Energy(asset) => asset.0 .0,
+                                            MissionToken::Labor(asset) => asset.0 .0,
+                                            MissionToken::None => 0,
+                                        };
+
+                                        let item_id = Id::new(id_source)
+                                            .with(wallet_idx)
+                                            .with(account_idx)
+                                            .with(asset_idx); // we create an id with all index
+
+                                        drag_source(ui, item_id, |ui| {
+                                            ui.add(
+                                                Label::new(format!(
+                                                    "{}: {}",
+                                                    asset_name, asset_value
+                                                ))
+                                                .sense(Sense::click()),
+                                            ); //we make the asset dragable
+                                        });
+
+                                        if ui.memory().is_being_dragged(item_id) {
+                                            source_asset = Some(asset_entity); // we now know which asset is being dragged
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                        .response;
+
+                        let is_being_dragged = ui.memory().is_anything_being_dragged();
+
+                        if is_being_dragged
+                            && can_accept_what_is_being_dragged
+                            && response.hovered()
+                        {
+                            drop_account = Some(account); //we store the drop target
+                        }
+                    }
+                }
+            });
+
+            if let Some(source_asset) = source_asset {
+                if let Some(drop_account) = drop_account {
+                    let mut mission_tuple: (String, i128) = ("".to_string(), 0);
+
+                    if ui.input().pointer.any_released() {
+                        // check the release
+
+                        if let Ok(mut asset) = assets.get_mut(*source_asset) {
+                            // we remove the dragged element
+                            match *asset {
+                                MissionToken::Energy(value) => {
+                                    mission_tuple = ("ENERGY".to_string(), value.0 .0);
+                                    *asset = MissionToken::Energy(Asset(Amount(0)))
+                                }
+                                MissionToken::Labor(value) => {
+                                    mission_tuple = ("LABOR".to_string(), value.0 .0);
+                                    *asset = MissionToken::Labor(Asset(Amount(0)))
+                                }
+                                MissionToken::Trust(value) => {
+                                    mission_tuple = ("TRUST".to_string(), value.0 .0);
+                                    *asset = MissionToken::Trust(Asset(Amount(0)))
+                                }
+                                _ => {}
+                            }
+                        }
+
+                        if let Ok(account) = accounts.get(*drop_account) {
+                            // we add the dragged element
+
+                            for asset in account.1.iter() {
+                                if let Ok(mut asset) = assets.get_mut(*asset) {
+                                    match *asset {
+                                        MissionToken::Energy(value) => {
+                                            if mission_tuple.0 == "ENERGY" {
+                                                *asset = MissionToken::Energy(Asset(Amount(
+                                                    value.0 .0 + mission_tuple.1,
+                                                )))
+                                            }
+                                        }
+                                        MissionToken::Labor(value) => {
+                                            if mission_tuple.0 == "LABOR" {
+                                                *asset = MissionToken::Labor(Asset(Amount(
+                                                    value.0 .0 + mission_tuple.1,
+                                                )))
+                                            }
+                                        }
+                                        MissionToken::Trust(value) => {
+                                            if mission_tuple.0 == "TRUST" {
+                                                *asset = MissionToken::Trust(Asset(Amount(
+                                                    value.0 .0 + mission_tuple.1,
+                                                )))
+                                            }
+                                        }
+                                        _ => {}
+                                    }
                                 }
                             }
                         }
                     }
                 }
-                //let item = drag_drop.wallet_list[source_col].1[source_row].1.remove(source_aisle);
-                //drag_drop.wallet_list[drop_col].1[source_row].1.push(item);
             }
-        }
-    }
-});
+        });
 }
-
-//#[derive(Component)]
-//pub struct Check{
-// timer: Timer
-//}
 
 impl FromWorld for Images {
     fn from_world(world: &mut World) -> Self {
@@ -801,7 +696,7 @@ impl FromWorld for Images {
     }
 }
 
-fn initialize_images (
+fn initialize_images(
     mut egui_ctx: ResMut<EguiContext>,
     images: Local<Images>,
     mut image_texture_ids: ResMut<ImageTextureIds>,

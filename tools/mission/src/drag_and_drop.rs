@@ -1,4 +1,4 @@
-use bevy_egui::{egui::*};
+use bevy_egui::egui::*;
 
 pub fn drag_source(ui: &mut Ui, id: Id, body: impl FnOnce(&mut Ui)) {
     let is_being_dragged = ui.memory().is_being_dragged(id);
