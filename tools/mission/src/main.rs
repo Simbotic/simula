@@ -1,11 +1,9 @@
-use behaviors::mission_behavior::MissionBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
 use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use drag_and_drop::*;
 use egui_extras::{Size, TableBuilder};
 use simula_action::ActionPlugin;
 use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
