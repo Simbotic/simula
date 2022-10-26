@@ -79,7 +79,9 @@ fn main() {
     .add_startup_system(setup)
     .add_system(debug_info)
     .add_system(increase_mission_time)
-    .add_system(wallet_ui_system);
+    .add_system(wallet_ui_system)
+    .add_system(increase_time_with_signal)
+    .add_system(indicator_mission_time);
 
     app.register_inspectable::<MissionToken>();
 
