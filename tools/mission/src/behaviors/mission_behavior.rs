@@ -6,7 +6,7 @@ use simula_behavior::{
     asset::{async_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument},
     composites::*,
     decorators::*,
-    BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTree,
+    BehaviorInfo, BehaviorSpawner, BehaviorTree,
 };
 
 pub struct MissionBehaviorPlugin;
@@ -54,68 +54,43 @@ impl BehaviorSpawner for MissionBehavior {
 
 fn setup() {}
 
-fn create_from_data() {
+pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> BehaviorTree {
     let document = BehaviorDocument {
-            root: BTNode(
-                MissionBehavior::Repeater(Repeater {
-                    repeat: Repeat::Times(2),
-                    ..default()
-                }),
-                vec![BTNode(
-                    MissionBehavior::Sequence(Sequence::default()),
-                    vec![
-                        BTNode(
-                            MissionBehavior::DebugAction(DebugAction {
-                                message: "Hello, from DebugMessage0!".to_string(),
-                                ..default()
-                            }),
-                            vec![],
-                        ),
-                        BTNode(
-                            MissionBehavior::DebugAction(DebugAction {
-                                message: "Hello, from DebugMessage1!".to_string(),
-                                repeat: 5,
-                                ..default()
-                            }),
-                            vec![],
-                        ),
-                    ],
-                )],
-            ),
-        };
-    let data_str = ron::to_string(&document).unwrap();
-    println!("{}", data_str);
-    let data = ron::from_str::<BehaviorDocument<MissionBehavior>>(&data_str);
-    assert!(data.is_ok());
-    // let data = data.unwrap();
-    // println!("{:#?}", data);
+        root: BTNode(
+            MissionBehavior::Repeater(Repeater {
+                repeat: Repeat::Times(2),
+                ..default()
+            }),
+            vec![BTNode(
+                MissionBehavior::Sequence(Sequence::default()),
+                vec![
+                    BTNode(
+                        MissionBehavior::DebugAction(DebugAction {
+                            message: "Hello, from DebugMessage0!".to_string(),
+                            ..default()
+                        }),
+                        vec![],
+                    ),
+                    BTNode(
+                        MissionBehavior::DebugAction(DebugAction {
+                            message: "Hello, from DebugMessage1!".to_string(),
+                            repeat: 5,
+                            ..default()
+                        }),
+                        vec![],
+                    ),
+                ],
+            )],
+        ),
+    };
+    BehaviorTree::from_document(parent, commands, &document)
 }
 
-fn create_from_asset(
-    mut commands: Commands,
-    mut document: Local<Option<Handle<BehaviorAsset<MissionBehavior>>>>,
-    mut behavior: Local<Option<Entity>>,
-    asset_server: Res<AssetServer>,
-    bhts: Res<Assets<BehaviorAsset<MissionBehavior>>>,
-) {
-    // if document.is_none() {
-    //     *document = Some(asset_server.load("behaviors/debug_repeater.bht.ron"));
-    // }
-    // if behavior.is_none() {
-    //     if let Some(document) = &*document {
-    //         if let Some(behavior_asset) = bhts.get(&document) {
-    //             let root_entity = commands.spawn().id();
-    //             let root_entity = BehaviorTree::insert_tree(
-    //                 root_entity,
-    //                 None,
-    //                 &mut commands,
-    //                 &behavior_asset.document.root,
-    //             );
-    //             commands.entity(root_entity).insert(BehaviorCursor);
-    //             *behavior = Some(root_entity);
-    //         }
-    //     }
-    // }
-}
-
-
+// fn create_from_asset(
+//     mut commands: Commands,
+//     mut document: Local<Option<Handle<BehaviorAsset<MissionBehavior>>>>,
+//     mut behavior: Local<Option<Entity>>,
+//     _asset_server: Res<AssetServer>,
+//     _bhts: Res<Assets<BehaviorAsset<MissionBehavior>>>,
+// ) {
+// }

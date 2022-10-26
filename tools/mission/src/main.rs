@@ -1,3 +1,4 @@
+use behaviors::mission_behavior;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -6,7 +7,7 @@ use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use egui_extras::{Size, TableBuilder};
 use simula_action::ActionPlugin;
-use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
+use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin, BehaviorCursor};
 use simula_camera::orbitcam::*;
 use simula_mission::{
     account::Account,
@@ -409,12 +410,18 @@ fn setup(
         })
         .id();
 
+    let behavior_tree = mission_behavior::create_from_data(None, &mut commands);
+    if let Some(root) = behavior_tree.root {
+        commands.entity(root).insert(BehaviorCursor);
+    }
+
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[agent_wallet, agent_decision_graph, agent_body])
+        .push_children(&[agent_wallet, agent_decision_graph, agent_body, behavior_tree.root.unwrap()])
+        .insert(behavior_tree)
         .insert(Name::new("Agent: 001"));
 
     // grid
