@@ -18,6 +18,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(sequence::run);
     app.add_system(selector::run);
     app.add_system(repeater::run);
+    app.add_system(inverter::run);
     app.add_system(debug_action::run);
     app.init_resource::<BehaviorTrace>();
     app
@@ -30,6 +31,7 @@ pub enum TestBehavior {
     Selector(Selector),
     Sequence(Sequence),
     Repeater(Repeater),
+    Inverter(Inverter),
 }
 
 impl Default for TestBehavior {
@@ -41,10 +43,11 @@ impl Default for TestBehavior {
 impl BehaviorSpawner for TestBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
-            TestBehavior::DebugAction(action) => BehaviorInfo::spawn_with(commands, action),
-            TestBehavior::Selector(selector) => BehaviorInfo::spawn_with(commands, selector),
-            TestBehavior::Sequence(sequence) => BehaviorInfo::spawn_with(commands, sequence),
-            TestBehavior::Repeater(repeater) => BehaviorInfo::spawn_with(commands, repeater),
+            TestBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }

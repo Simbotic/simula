@@ -33,9 +33,9 @@ Let the behavior system know how to spawn behavior nodes. Usually the following 
 impl BehaviorSpawner for MyBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
-            MyBehavior::DebugAction(action) => BehaviorInfo::spawn_with(commands, action),
-            MyBehavior::Selector(selector) => BehaviorInfo::spawn_with(commands, selector),
-            MyBehavior::Sequence(sequence) => BehaviorInfo::spawn_with(commands, sequence),
+            MyBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }

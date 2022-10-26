@@ -29,6 +29,7 @@ pub enum MissionBehavior {
     Selector(Selector),
     Sequence(Sequence),
     Repeater(Repeater),
+    Inverter(Inverter),
     AgentRest(behaviors::agent_rest::AgentRest),
     AgentWork(behaviors::agent_work::AgentWork),
 }
@@ -42,12 +43,13 @@ impl Default for MissionBehavior {
 impl BehaviorSpawner for MissionBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
-            MissionBehavior::DebugAction(action) => BehaviorInfo::spawn_with(commands, action),
-            MissionBehavior::Selector(selector) => BehaviorInfo::spawn_with(commands, selector),
-            MissionBehavior::Sequence(sequence) => BehaviorInfo::spawn_with(commands, sequence),
-            MissionBehavior::Repeater(repeater) => BehaviorInfo::spawn_with(commands, repeater),
-            MissionBehavior::AgentRest(agent) => BehaviorInfo::spawn_with(commands, agent),
-            MissionBehavior::AgentWork(agent) => BehaviorInfo::spawn_with(commands, agent),
+            MissionBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::AgentRest(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::AgentWork(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }
