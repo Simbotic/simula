@@ -1,198 +1,205 @@
-use bevy::{ecs::system::CommandQueue, prelude::*};
-use common::*;
-use simula_behavior::{
-    actions::*, add_children, composites::*, BehaviorCursor, BehaviorFailure, BehaviorInfo,
-    BehaviorRunning, BehaviorSuccess, BehaviorTree,
-};
-
-mod common;
+use simula_behavior::{test::*, BehaviorTrace};
 
 #[test]
-fn sequence_debug_success() {
-    let mut app = App::new();
-
-    test_app(&mut app);
-
-    let mut command_queue = CommandQueue::default();
-    let mut commands = Commands::new(&mut command_queue, &app.world);
-
-    let mut root_node = commands.spawn();
-    Sequence::spawn(&mut root_node);
-    let root_node = root_node.insert(BehaviorCursor).id();
-
-    let mut debug_message_0 = commands.spawn();
-    DebugAction::spawn(&mut debug_message_0);
-    debug_message_0.insert(DebugAction {
-        message: "Hello, from DebugMessage0!".to_string(),
-        fail: false,
-        repeat: 1,
-    });
-    debug_message_0.insert(Name::new("DebugMessage0"));
-    let debug_message_0 = debug_message_0.id();
-
-    let mut debug_message_1 = commands.spawn();
-    DebugAction::spawn(&mut debug_message_1);
-    debug_message_1.insert(DebugAction {
-        message: "Hello, from DebugMessage1!".to_string(),
-        fail: false,
-        repeat: 1,
-    });
-    debug_message_1.insert(Name::new("DebugMessage1"));
-    let debug_message_1 = debug_message_1.id();
-
-    add_children(
-        &mut commands,
-        root_node,
-        &[debug_message_0, debug_message_1],
-    );
-
-    commands
-        .spawn()
-        .insert(BehaviorTree {
-            root: Some(root_node),
-        })
-        .push_children(&[root_node, debug_message_0, debug_message_1]);
-
-    command_queue.apply(&mut app.world);
-
-    // Confirm root is only behavior with cursor
-    let mut root_query = app.world.query_filtered::<Entity, With<BehaviorCursor>>();
-    let entity = root_query.single(&app.world);
-    assert_eq!(root_node, entity);
-
-    // Run until debug_message_0 is Running
-    let mut iters = 0;
-    while app.world.get::<BehaviorRunning>(debug_message_0).is_none() {
-        iters = iters + 1;
-        assert!(iters < MAX_ITERS);
-        app.update();
-    }
-
-    // Confirm debug_message_0 is only behavior with cursor
-    let mut debug_message_0_query = app.world.query_filtered::<Entity, With<BehaviorCursor>>();
-    let entity = debug_message_0_query.single(&app.world);
-    assert_eq!(debug_message_0, entity);
-
-    // Run until debug_message_1 is Running
-    let mut iters = 0;
-    while app.world.get::<BehaviorRunning>(debug_message_1).is_none() {
-        iters = iters + 1;
-        assert!(iters < MAX_ITERS);
-        app.update();
-    }
-
-    // Confirm debug_message_1 is only behavior with cursor
-    let mut debug_message_1_query = app.world.query_filtered::<Entity, With<BehaviorCursor>>();
-    let entity = debug_message_1_query.single(&app.world);
-    assert_eq!(debug_message_1, entity);
-
-    // Run until root is Success
-    let mut iters = 0;
-    while app.world.get::<BehaviorSuccess>(root_node).is_none() {
-        iters = iters + 1;
-        assert!(iters < MAX_ITERS);
-        app.update();
-    }
-
-    // Give app chance to complete behavior
-    app.update();
-
-    // Confirm there are no cursors
-    let mut cursors = app.world.query::<&BehaviorCursor>();
-    assert_eq!(cursors.iter(&app.world).count(), 0);
+fn sequence_single_success() {
+    let behavior = r#"
+    (
+        root:(
+            Sequence(()), 
+            [
+                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)),[]),
+                (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0)),[]),
+                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0)),[]),
+            ],
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::sequence::Sequence",
+        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[1] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[0] SUCCESS simula_behavior::composites::sequence::Sequence",
+    ]);
+    assert_eq!(&trace, &expected_trace);
 }
 
 #[test]
-fn sequence_debug_failure() {
-    let mut app = App::new();
+fn sequence_single_failure() {
+    let behavior = r#"
+    (
+        root:(
+            Sequence(()), 
+            [
+                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)),[]),
+                (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0)),[]),
+                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0)),[]),
+            ],
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::sequence::Sequence",
+        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[1] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[0] FAILURE simula_behavior::composites::sequence::Sequence",
+    ]);
+    assert_eq!(&trace, &expected_trace);
+}
 
-    test_app(&mut app);
+#[test]
+fn sequence_nested_success() {
+    let behavior = r#"
+    (
+        root:(
+            Sequence(()),
+            [
+                (
+                    Sequence(()),
+                    [
+                        (
+                            Sequence(()),
+                            [
+                                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)),[]),
+                            ]
+                        ),
+                        (
+                            Sequence(()),
+                            [
+                                (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0)),[]),
+                                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0)),[]),
+                            ]
+                        )
+                    ]
+                ),
+            ]
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::sequence::Sequence",
+        "[1] STARTED simula_behavior::composites::sequence::Sequence",
+        "[2] STARTED simula_behavior::composites::sequence::Sequence",
+        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] SUCCESS simula_behavior::composites::sequence::Sequence",
+        "[4] STARTED simula_behavior::composites::sequence::Sequence",
+        "[5] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[5] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[6] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[6] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[4] SUCCESS simula_behavior::composites::sequence::Sequence",
+        "[1] SUCCESS simula_behavior::composites::sequence::Sequence",
+        "[0] SUCCESS simula_behavior::composites::sequence::Sequence",
+    ]);
+    assert_eq!(&trace, &expected_trace);
+}
 
-    let mut command_queue = CommandQueue::default();
-    let mut commands = Commands::new(&mut command_queue, &app.world);
+#[test]
+fn sequence_nested_failure() {
+    let behavior = r#"
+    (
+        root:(
+            Sequence(()),
+            [
+                (
+                    Sequence(()),
+                    [
+                        (
+                            Sequence(()),
+                            [
+                                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)),[]),
+                            ]
+                        ),
+                        (
+                            Sequence(()),
+                            [
+                                (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0)),[]),
+                                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0)),[]),
+                            ]
+                        )
+                    ]
+                ),
+            ]
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::sequence::Sequence",
+        "[1] STARTED simula_behavior::composites::sequence::Sequence",
+        "[2] STARTED simula_behavior::composites::sequence::Sequence",
+        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] SUCCESS simula_behavior::composites::sequence::Sequence",
+        "[4] STARTED simula_behavior::composites::sequence::Sequence",
+        "[5] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[5] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[4] FAILURE simula_behavior::composites::sequence::Sequence",
+        "[1] FAILURE simula_behavior::composites::sequence::Sequence",
+        "[0] FAILURE simula_behavior::composites::sequence::Sequence",
+    ]);
+    assert_eq!(&trace, &expected_trace);
+}
 
-    let mut root_node = commands.spawn();
-    Sequence::spawn(&mut root_node);
-    let root_node = root_node.insert(BehaviorCursor).id();
-
-    let mut debug_message_0 = commands.spawn();
-    DebugAction::spawn(&mut debug_message_0);
-    debug_message_0.insert(DebugAction {
-        message: "Hello, from DebugMessage0 should succeed!".to_string(),
-        fail: false,
-        repeat: 1,
-    });
-    debug_message_0.insert(Name::new("DebugMessage0"));
-    let debug_message_0 = debug_message_0.id();
-
-    let mut debug_message_1 = commands.spawn();
-    DebugAction::spawn(&mut debug_message_1);
-    debug_message_1.insert(DebugAction {
-        message: "Hello, from DebugMessage1 that should fail!".to_string(),
-        fail: true,
-        repeat: 1,
-    });
-    debug_message_1.insert(Name::new("DebugMessage1"));
-    let debug_message_1 = debug_message_1.id();
-
-    add_children(
-        &mut commands,
-        root_node,
-        &[debug_message_0, debug_message_1],
-    );
-
-    commands
-        .spawn()
-        .insert(BehaviorTree {
-            root: Some(root_node),
-        })
-        .push_children(&[root_node, debug_message_0, debug_message_1]);
-
-    command_queue.apply(&mut app.world);
-
-    // Confirm root is only behavior with cursor
-    let mut root_query = app.world.query_filtered::<Entity, With<BehaviorCursor>>();
-    let entity = root_query.single(&app.world);
-    assert_eq!(root_node, entity);
-
-    // Run until debug_message_0 is Running
-    let mut iters = 0;
-    while app.world.get::<BehaviorRunning>(debug_message_0).is_none() {
-        iters = iters + 1;
-        assert!(iters < MAX_ITERS);
-        app.update();
-    }
-
-    // Confirm debug_message_0 is only behavior with cursor
-    let mut debug_message_0_query = app.world.query_filtered::<Entity, With<BehaviorCursor>>();
-    let entity = debug_message_0_query.single(&app.world);
-    assert_eq!(debug_message_0, entity);
-
-    // Run until debug_message_1 is Running
-    let mut iters = 0;
-    while app.world.get::<BehaviorRunning>(debug_message_1).is_none() {
-        iters = iters + 1;
-        assert!(iters < MAX_ITERS);
-        app.update();
-    }
-
-    // Confirm debug_message_1 is only behavior with cursor
-    let mut debug_message_1_query = app.world.query_filtered::<Entity, With<BehaviorCursor>>();
-    let entity = debug_message_1_query.single(&app.world);
-    assert_eq!(debug_message_1, entity);
-
-    // Run until root is Failure
-    let mut iters = 0;
-    while app.world.get::<BehaviorFailure>(root_node).is_none() {
-        iters = iters + 1;
-        assert!(iters < MAX_ITERS);
-        app.update();
-    }
-
-    // Give app chance to complete behavior
-    app.update();
-
-    // Confirm there are no cursors
-    let mut cursors = app.world.query::<&BehaviorCursor>();
-    assert_eq!(cursors.iter(&app.world).count(), 0);
+#[test]
+fn sequence_nested_selector_success() {
+    let behavior = r#"
+    (
+        root:(
+            Sequence(()),
+            [
+                (
+                    Sequence(()),
+                    [
+                        (
+                            Selector(()),
+                            [
+                                (DebugAction((message:"Unlocked the doors!", fail:false, repeat:0)),[]),
+                            ]
+                        ),
+                        (
+                            Sequence(()),
+                            [
+                                (DebugAction((message:"Closed doors!", fail:false, repeat:0)),[]),
+                                (DebugAction((message:"Go to selected door!", fail:false, repeat:0)),[]),
+                            ]
+                        )
+                    ]
+                ),
+            ]
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::sequence::Sequence",
+        "[1] STARTED simula_behavior::composites::sequence::Sequence",
+        "[2] STARTED simula_behavior::composites::selector::Selector",
+        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] SUCCESS simula_behavior::composites::selector::Selector",
+        "[4] STARTED simula_behavior::composites::sequence::Sequence",
+        "[5] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[5] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[6] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[6] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[4] SUCCESS simula_behavior::composites::sequence::Sequence",
+        "[1] SUCCESS simula_behavior::composites::sequence::Sequence",
+        "[0] SUCCESS simula_behavior::composites::sequence::Sequence",
+    ]);
+    assert_eq!(&trace, &expected_trace);
 }
