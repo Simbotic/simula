@@ -53,6 +53,7 @@ impl Plugin for MyBehaviorPlugin {
             // Add your new behavior asset to the plugin
             .add_asset::<BehaviorAsset<MyBehavior>>()
             .init_asset_loader::<BehaviorAssetLoader<MyBehavior>>()
+            .add_system(async_loader::<MyBehavior>)
             // Add any custom behavior nodes 
             .add_system(my_behavior::dummy_action::run)
             .add_system(my_behavior::dummy_flipper::run);
@@ -65,6 +66,7 @@ impl Plugin for MyBehaviorPlugin {
 From File
 ```
 let document: Handle<BehaviorAsset<MissionBehavior>> = asset_server.load("my_behavior_test.bht.ron");
+let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
 From code
@@ -97,6 +99,7 @@ let document = BehaviorDocument {
         )],
     ),
 };
+let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
 From text
@@ -111,14 +114,20 @@ let data_str = r#"
     ))
 "#;
 let document = ron::from_str::<BehaviorDocument<MyBehavior>>(data_str);
+let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
+
 
 ## Instantiating and Start Behaviors
 ```
 // Generate all entities with their behavior components
-let root_entity = spawn_tree(None, &mut commands, &document.root);
+let behavior = BehaviorTree::from_document(None, commands, &document);
+
 // Set cursor at root, so it starts running
-commands.entity(root_entity).insert(BehaviorCursor);
+commands.entity(behavior.root).insert(BehaviorCursor);
+
+// New entity organize behavior
+commands.spawn().insert(behavior).push_children(&[behavior.root]);
 ```
 
 ## Custom Behavior Node

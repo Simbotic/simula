@@ -44,6 +44,7 @@ where
                 path: load_context.path().display().to_string(),
                 document,
             };
+            println!("WWWWWWWWWW   Loaded asset: {:?}", asset);
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })
@@ -54,30 +55,28 @@ where
     }
 }
 
-#[derive(Deref, Component)]
-pub struct BehaviorAssetLoading<T>(pub Handle<BehaviorAsset<T>>)
+#[derive(Component)]
+pub struct BehaviorAssetLoading<T>
 where
-    T: TypeUuid + Send + Sync + 'static + Default + Debug;
+    T: TypeUuid + Send + Sync + 'static + Default + Debug,
+{
+    pub document: Handle<BehaviorAsset<T>>,
+    pub parent: Option<Entity>,
+}
 
 pub fn async_loader<T>(
     mut commands: Commands,
     loaded_assets: Res<Assets<BehaviorAsset<T>>>,
     queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
 ) where
-    T: BehaviorSpawner
-        + TypeUuid
-        + Send
-        + Sync
-        + 'static
-        + Default
-        + Debug
-        + for<'de> Deserialize<'de>,
+    T: BehaviorSpawner + TypeUuid + Send + Sync + 'static + Default + Debug,
 {
     for (entity, queued_asset) in queued_assets.iter() {
-        if let Some(loaded_asset) = loaded_assets.get(queued_asset) {
+        if let Some(loaded_asset) = loaded_assets.get(&queued_asset.document) {
             let BehaviorAsset { document, .. } = loaded_asset;
             let BehaviorDocument { root } = document;
-            BehaviorTree::insert_tree::<T>(entity, None, &mut commands, &root);
+            BehaviorTree::insert_tree::<T>(entity, queued_asset.parent, &mut commands, &root);
+            commands.entity(entity).remove::<BehaviorAssetLoading<T>>();
         }
     }
 }

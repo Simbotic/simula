@@ -1,12 +1,12 @@
 use actions::*;
-use asset::{BTNode, BehaviorAsset, BehaviorAssetLoading};
+use asset::{BTNode, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use bevy_inspector_egui::Inspectable;
 use composites::*;
 use decorators::repeater;
 use std::fmt::Debug;
 
-pub use crate::asset::BehaviorDocument;
+pub use crate::asset::{BehaviorAsset, BehaviorDocument};
 
 pub mod actions;
 pub mod asset;
@@ -149,16 +149,17 @@ pub struct BehaviorTree {
 impl BehaviorTree {
     /// Spawn from behavior asset
     pub fn from_asset<T>(
+        parent: Option<Entity>,
         commands: &mut Commands,
-        asset_server: &Res<AssetServer>,
-        path: &str,
+        document: Handle<BehaviorAsset<T>>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + Debug,
     {
-        let document: Handle<BehaviorAsset<T>> = asset_server.load(path);
-        let entity = commands.spawn().insert(BehaviorAssetLoading(document)).id();
-
+        let entity = commands
+            .spawn()
+            .insert(BehaviorAssetLoading { document, parent })
+            .id();
         Self { root: Some(entity) }
     }
 
@@ -287,7 +288,7 @@ pub fn complete_behavior(
             error!("Behavior is both success and failure");
             "ERROR"
         };
-        println!(
+        debug!(
             "[{}] {} {}",
             entity.id().to_string(),
             state,
@@ -313,14 +314,13 @@ pub fn start_behavior(
 ) {
     for (entity, children, name) in ready.iter_mut() {
         // Reset all children
-        // println!("[{}] RESETNG {}", entity.id(), name.to_string());
+        // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
         for entity in nodes.iter_many(children.iter()) {
             commands.entity(entity).remove::<BehaviorRunning>();
             commands.entity(entity).remove::<BehaviorSuccess>();
             commands.entity(entity).remove::<BehaviorFailure>();
         }
-
-        println!("[{}] STARTED {}", entity.id().to_string(), name.to_string());
+        debug!("[{}] STARTED {}", entity.id().to_string(), name.to_string());
         if let Some(trace) = trace.as_mut() {
             trace.push(format!("[{}] STARTED {}", entity.id(), name.to_string(),));
         }

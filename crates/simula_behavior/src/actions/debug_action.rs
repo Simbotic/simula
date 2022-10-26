@@ -20,7 +20,7 @@ pub fn run(
     mut debug_actions: Query<(Entity, &mut DebugAction), BehaviorRunQuery>,
 ) {
     for (entity, mut debug_action) in &mut debug_actions {
-        println!(
+        debug!(
             "[{}] RUNNING #{} {}",
             entity.id(),
             debug_action.repeat,

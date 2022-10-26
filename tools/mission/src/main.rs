@@ -6,8 +6,12 @@ use bevy::{
 use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use egui_extras::{Size, TableBuilder};
+use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
-use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin, BehaviorCursor};
+use simula_behavior::{
+    editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorAsset, BehaviorCursor,
+    BehaviorPlugin, BehaviorTree,
+};
 use simula_camera::orbitcam::*;
 use simula_mission::{
     account::Account,
@@ -66,6 +70,7 @@ fn main() {
     .add_plugin(GridPlugin)
     .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
+    .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
     .add_plugin(DragAndDropPlugin)
@@ -160,68 +165,79 @@ fn wallet_ui_system(
                     |i| wallet_list[i].0.to_owned(),
                 );
 
-                egui::Grid::new("accounts_grid").striped(false).show(ui, |ui| {
-                    if !wallet_list[selected_wallet.0].1.is_empty() {
-                        ui.heading("Accounts");
-                        ui.end_row();
-                    } else {
-                        ui.heading("No accounts in selected wallet");
-                        ui.end_row();
-                    }
-                    for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
-                        if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                            let account_id_trimmed = account.account_id
+                egui::Grid::new("accounts_grid")
+                    .striped(false)
+                    .show(ui, |ui| {
+                        if !wallet_list[selected_wallet.0].1.is_empty() {
+                            ui.heading("Accounts");
+                            ui.end_row();
+                        } else {
+                            ui.heading("No accounts in selected wallet");
+                            ui.end_row();
+                        }
+                        for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
+                            if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                                let account_id_trimmed = account
+                                    .account_id
                                     .to_string()
                                     .get(0..8)
                                     .unwrap_or_default()
                                     .to_string();
-                            ui.collapsing(account_id_trimmed.clone(), |ui| {
-                                let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> = vec![];
-                                for &account_asset in account_assets.iter() {
-                                    if let Ok(asset) = assets.get(account_asset) {
-                                        let asset_name = asset.name();
-                                        let asset_value = asset.amount();
-                                        let asset_icon = asset.icon(&image_texture_ids);
-                                        asset_list.push((asset_name.to_string(), asset_value.0, asset_icon));
+                                ui.collapsing(account_id_trimmed.clone(), |ui| {
+                                    let mut asset_list: Vec<(
+                                        String,
+                                        i128,
+                                        Option<egui::TextureId>,
+                                    )> = vec![];
+                                    for &account_asset in account_assets.iter() {
+                                        if let Ok(asset) = assets.get(account_asset) {
+                                            let asset_name = asset.name();
+                                            let asset_value = asset.amount();
+                                            let asset_icon = asset.icon(&image_texture_ids);
+                                            asset_list.push((
+                                                asset_name.to_string(),
+                                                asset_value.0,
+                                                asset_icon,
+                                            ));
+                                        }
                                     }
-                                }
-                                TableBuilder::new(ui)
-                                    .column(Size::remainder().at_least(100.0))
-                                    .column(Size::remainder().at_least(100.0))
-                                    .striped(false)
-                                    .header(20.0, |mut header| {
-                                        header.col(|ui| {
-                                            ui.heading(format!("Asset"));
-                                        });
-                                        header.col(|ui| {
-                                            ui.heading("Amount");
-                                        });
-                                    })
-                                    .body(|mut body| {
-                                        for asset in asset_list.iter() {
-                                            body.row(20.0, |mut row| {
-                                                row.col(|ui| {
-                                                    ui.horizontal(|ui| {
-                                                        if let Some(icon) = asset.2 {
-                                                            ui.add(egui::widgets::Image::new(
-                                                                icon,
-                                                                [20.0, 20.0],
-                                                            ));
-                                                        }
-                                                        ui.label(asset.0.clone());   
+                                    TableBuilder::new(ui)
+                                        .column(Size::remainder().at_least(100.0))
+                                        .column(Size::remainder().at_least(100.0))
+                                        .striped(false)
+                                        .header(20.0, |mut header| {
+                                            header.col(|ui| {
+                                                ui.heading(format!("Asset"));
+                                            });
+                                            header.col(|ui| {
+                                                ui.heading("Amount");
+                                            });
+                                        })
+                                        .body(|mut body| {
+                                            for asset in asset_list.iter() {
+                                                body.row(20.0, |mut row| {
+                                                    row.col(|ui| {
+                                                        ui.horizontal(|ui| {
+                                                            if let Some(icon) = asset.2 {
+                                                                ui.add(egui::widgets::Image::new(
+                                                                    icon,
+                                                                    [20.0, 20.0],
+                                                                ));
+                                                            }
+                                                            ui.label(asset.0.clone());
+                                                        });
+                                                    });
+                                                    row.col(|ui| {
+                                                        ui.label(asset.1.to_string());
                                                     });
                                                 });
-                                                row.col(|ui| {
-                                                    ui.label(asset.1.to_string());
-                                                });
-                                            });
-                                        }
-                                    });
-                            });
+                                            }
+                                        });
+                                });
+                            }
+                            ui.end_row();
                         }
-                        ui.end_row();
-                    }
-                });
+                    });
             });
     }
 }
@@ -337,7 +353,7 @@ fn setup(
         })
         .build(&mut commands);
 
-    let agent_decision_graph = commands
+    let agent_behavior_graph = commands
         .spawn()
         .insert(BehaviorEditorState {
             show: true,
@@ -410,19 +426,41 @@ fn setup(
         })
         .id();
 
-    let behavior_tree = mission_behavior::create_from_data(None, &mut commands);
-    if let Some(root) = behavior_tree.root {
+    // Build Agent 001
+    let behavior = mission_behavior::create_from_data(None, &mut commands);
+    if let Some(root) = behavior.root {
         commands.entity(root).insert(BehaviorCursor);
     }
-
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[agent_wallet, agent_decision_graph, agent_body, behavior_tree.root.unwrap()])
-        .insert(behavior_tree)
+        .push_children(&[
+            agent_wallet,
+            agent_behavior_graph,
+            agent_body,
+            behavior.root.unwrap(),
+        ])
+        .insert(behavior)
         .insert(Name::new("Agent: 001"));
+
+    // Build Agent 002
+    let document: Handle<BehaviorAsset<mission_behavior::MissionBehavior>> =
+        asset_server.load("behaviors/debug_sequence.bht.ron");
+    println!("Document: {:?}", document);
+    let behavior = BehaviorTree::from_asset(None, &mut commands, document);
+    if let Some(root) = behavior.root {
+        commands.entity(root).insert(BehaviorCursor);
+    }
+    commands
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+            ..default()
+        })
+        .push_children(&[_agent_wallet_4, behavior.root.unwrap()])
+        .insert(behavior)
+        .insert(Name::new("Agent: 002"));
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -621,7 +659,7 @@ impl AssetInfo for MissionToken {
             MissionToken::None => None,
         }
     }
-    
+
     fn amount(&self) -> Amount {
         match self {
             MissionToken::None => 0.into(),

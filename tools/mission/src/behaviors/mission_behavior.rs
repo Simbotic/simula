@@ -85,12 +85,3 @@ pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> Beha
     };
     BehaviorTree::from_document(parent, commands, &document)
 }
-
-// fn create_from_asset(
-//     mut commands: Commands,
-//     mut document: Local<Option<Handle<BehaviorAsset<MissionBehavior>>>>,
-//     mut behavior: Local<Option<Entity>>,
-//     _asset_server: Res<AssetServer>,
-//     _bhts: Res<Assets<BehaviorAsset<MissionBehavior>>>,
-// ) {
-// }
