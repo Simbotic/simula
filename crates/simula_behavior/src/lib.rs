@@ -71,16 +71,19 @@ impl Plugin for BehaviorPlugin {
 /// A marker added to entities that want to run a behavior
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
 #[reflect(Component)]
+#[component(storage = "SparseSet")]
 pub struct BehaviorRunning;
 
 /// A marker added to behaviors that complete with success
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
 #[reflect(Component)]
+#[component(storage = "SparseSet")]
 pub struct BehaviorSuccess;
 
 /// A marker added to behaviors that complete with failure
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
 #[reflect(Component)]
+#[component(storage = "SparseSet")]
 pub struct BehaviorFailure;
 
 /// A marker added to behavior node entities
@@ -225,6 +228,7 @@ impl BehaviorTree {
 /// A marker added to currently running behaviors
 #[derive(Default, Debug, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
+#[component(storage = "SparseSet")]
 pub struct BehaviorCursor;
 
 /// Query filter for running behaviors
