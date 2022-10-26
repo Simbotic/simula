@@ -3,20 +3,20 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::{
     actions::*,
-    asset::{BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument},
+    asset::{async_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument},
     composites::*,
     decorators::*,
-    spawn_tree, BehaviorCursor, BehaviorInfo, BehaviorSpawner,
+    BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTree,
 };
 
 pub struct MissionBehaviorPlugin;
 
 impl Plugin for MissionBehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<BehaviorAsset<MissionBehavior>>()
+        app.add_startup_system(setup)
+            .add_asset::<BehaviorAsset<MissionBehavior>>()
             .init_asset_loader::<BehaviorAssetLoader<MissionBehavior>>()
-            .add_startup_system(data_test)
-            .add_system(behevoir_document_test)
+            .add_system(async_loader::<MissionBehavior>)
             .add_system(behaviors::agent_rest::run)
             .add_system(behaviors::agent_work::run);
     }
@@ -52,32 +52,10 @@ impl BehaviorSpawner for MissionBehavior {
     }
 }
 
-fn behevoir_document_test(
-    mut commands: Commands,
-    mut document: Local<Option<Handle<BehaviorAsset<MissionBehavior>>>>,
-    mut behavior: Local<Option<Entity>>,
-    asset_server: Res<AssetServer>,
-    bhts: Res<Assets<BehaviorAsset<MissionBehavior>>>,
-) {
-    if document.is_none() {
-        *document = Some(asset_server.load("behaviors/debug_repeater.bht.ron"));
-    }
-    if behavior.is_none() {
-        if let Some(document) = &*document {
-            if let Some(behavior_asset) = bhts.get(&document) {
-                println!("behavior_asset LOADED");
-                let root_entity = spawn_tree(None, &mut commands, &behavior_asset.document.root);
-                commands.entity(root_entity).insert(BehaviorCursor);
-                *behavior = Some(root_entity);
-            }
-        }
-    }
-}
+fn setup() {}
 
-fn data_test() {
-    let data = BehaviorAsset {
-        path: "test".to_string(),
-        document: BehaviorDocument {
+fn create_from_data() {
+    let document = BehaviorDocument {
             root: BTNode(
                 MissionBehavior::Repeater(Repeater {
                     repeat: Repeat::Times(2),
@@ -104,12 +82,40 @@ fn data_test() {
                     ],
                 )],
             ),
-        },
-    };
-    let data_str = ron::to_string(&data.document).unwrap();
+        };
+    let data_str = ron::to_string(&document).unwrap();
     println!("{}", data_str);
     let data = ron::from_str::<BehaviorDocument<MissionBehavior>>(&data_str);
     assert!(data.is_ok());
     // let data = data.unwrap();
     // println!("{:#?}", data);
 }
+
+fn create_from_asset(
+    mut commands: Commands,
+    mut document: Local<Option<Handle<BehaviorAsset<MissionBehavior>>>>,
+    mut behavior: Local<Option<Entity>>,
+    asset_server: Res<AssetServer>,
+    bhts: Res<Assets<BehaviorAsset<MissionBehavior>>>,
+) {
+    // if document.is_none() {
+    //     *document = Some(asset_server.load("behaviors/debug_repeater.bht.ron"));
+    // }
+    // if behavior.is_none() {
+    //     if let Some(document) = &*document {
+    //         if let Some(behavior_asset) = bhts.get(&document) {
+    //             let root_entity = commands.spawn().id();
+    //             let root_entity = BehaviorTree::insert_tree(
+    //                 root_entity,
+    //                 None,
+    //                 &mut commands,
+    //                 &behavior_asset.document.root,
+    //             );
+    //             commands.entity(root_entity).insert(BehaviorCursor);
+    //             *behavior = Some(root_entity);
+    //         }
+    //     }
+    // }
+}
+
+

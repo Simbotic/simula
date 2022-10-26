@@ -1,5 +1,7 @@
+use crate::{BehaviorSpawner, BehaviorTree};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
+    prelude::*,
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
@@ -49,5 +51,33 @@ where
 
     fn extensions(&self) -> &[&str] {
         &["bht.ron"]
+    }
+}
+
+#[derive(Deref, Component)]
+pub struct BehaviorAssetLoading<T>(pub Handle<BehaviorAsset<T>>)
+where
+    T: TypeUuid + Send + Sync + 'static + Default + Debug;
+
+pub fn async_loader<T>(
+    mut commands: Commands,
+    loaded_assets: Res<Assets<BehaviorAsset<T>>>,
+    queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
+) where
+    T: BehaviorSpawner
+        + TypeUuid
+        + Send
+        + Sync
+        + 'static
+        + Default
+        + Debug
+        + for<'de> Deserialize<'de>,
+{
+    for (entity, queued_asset) in queued_assets.iter() {
+        if let Some(loaded_asset) = loaded_assets.get(queued_asset) {
+            let BehaviorAsset { document, .. } = loaded_asset;
+            let BehaviorDocument { root } = document;
+            BehaviorTree::insert_tree::<T>(entity, None, &mut commands, &root);
+        }
     }
 }

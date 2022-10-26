@@ -1,9 +1,13 @@
-use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
-use serde::{Deserialize, Serialize};
-use simula_behavior::{
-    actions::*, complete_behavior, composites::*, decorators::*, start_behavior, BehaviorInfo,
-    BehaviorSpawner, BehaviorTrace,
+use crate::{
+    actions::*, asset::BehaviorDocument, complete_behavior, composites::*, decorators::*,
+    start_behavior, BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTrace, BehaviorTree,
 };
+use bevy::{
+    ecs::system::{CommandQueue, EntityCommands},
+    prelude::*,
+    reflect::TypeUuid,
+};
+use serde::{Deserialize, Serialize};
 
 pub const MAX_ITERS: usize = 200;
 
@@ -43,4 +47,34 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Repeater(repeater) => BehaviorInfo::spawn_with(commands, repeater),
         }
     }
+}
+
+pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
+    // Load behavior tree from RON string
+    let document = ron::from_str::<BehaviorDocument<TestBehavior>>(behavior);
+    assert!(document.is_ok());
+    let document = document.unwrap();
+
+    // Create app
+    let mut app = App::new();
+    test_app(&mut app);
+    let mut command_queue = CommandQueue::default();
+    let mut commands = Commands::new(&mut command_queue, &app.world);
+
+    // Spawn tree
+    let entity = BehaviorTree::spawn_tree(None, &mut commands, &document.root);
+    commands.entity(entity).insert(BehaviorCursor);
+
+    // Apply commands
+    command_queue.apply(&mut app.world);
+
+    // Run app
+    let mut iters = 0;
+    while iters < MAX_ITERS {
+        iters = iters + 1;
+        app.update();
+    }
+
+    // Get app trace
+    app.world.get_resource::<BehaviorTrace>().unwrap().clone()
 }

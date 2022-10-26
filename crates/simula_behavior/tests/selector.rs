@@ -1,11 +1,8 @@
 use bevy::{ecs::system::CommandQueue, prelude::*};
 use simula_behavior::{
-    actions::*, add_children, composites::*, BehaviorCursor,
-    BehaviorFailure, BehaviorInfo, BehaviorRunning, BehaviorSuccess, BehaviorTree,
+    actions::*, add_children, composites::*, test::*, BehaviorCursor,
+    BehaviorFailure, BehaviorInfo, BehaviorRunning, BehaviorSuccess, BehaviorTrace, BehaviorTree,
 };
-use common::*;
-
-mod common;
 
 #[test]
 fn selector_debug_success() {
@@ -202,4 +199,65 @@ fn selector_debug_failure() {
     assert!(app.world.get::<BehaviorRunning>(debug_message_1).is_none());
     assert!(app.world.get::<BehaviorSuccess>(debug_message_1).is_none());
     assert!(app.world.get::<BehaviorFailure>(debug_message_1).is_some());
+}
+
+#[test]
+fn selector_debug_single() {
+    let behavior = r#"
+    (
+        root:(
+            Selector(()), 
+            [
+                (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0)),[]),
+                (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0)),[]),
+                (DebugAction((message:"Hello, from DebugMessage2!", fail:true, repeat:0)),[]),
+            ],
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::selector::Selector",
+        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[1] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[0] SUCCESS simula_behavior::composites::selector::Selector",
+    ]);
+    assert_eq!(&trace, &expected_trace);
+}
+
+#[test]
+fn selector_debug_nested() {
+    let behavior = r#"
+    (
+        root:(
+            Selector(()), 
+            [
+                (Selector(()),
+                [
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0)),[]),
+                    (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0)),[]),
+                ]),
+                (Selector(()),
+                [
+                    (DebugAction((message:"Hello, from DebugMessage2!", fail:true, repeat:0)),[]),
+                    (DebugAction((message:"Hello, from DebugMessage3!", fail:false, repeat:0)),[]),
+                ]),
+            ],
+        )
+    )
+    "#;
+    let trace = trace_behavior(behavior);
+    println!("{:#?}", trace);
+    let expected_trace = BehaviorTrace::from_list(&[
+        "[0] STARTED simula_behavior::composites::selector::Selector",
+        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[1] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
+        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[0] SUCCESS simula_behavior::composites::selector::Selector",
+    ]);
+    assert_eq!(&trace, &expected_trace);
 }
