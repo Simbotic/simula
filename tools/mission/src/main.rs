@@ -6,6 +6,9 @@ use bevy::{
 use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use egui_extras::{Size, TableBuilder};
+use ta::indicators::*;
+use std::time::Duration;
+use simula_core::signal::{SignalGenerator, SignalFunction};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
 use simula_behavior::{
@@ -59,6 +62,7 @@ fn main() {
         energy_icon: None,
         trust_icon: None,
     })
+    .init_resource::<TimeDuration>()
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -80,6 +84,8 @@ fn main() {
     .add_system(debug_info)
     .add_system(increase_mission_time)
     .add_system(wallet_ui_system);
+    .add_system(increase_time_with_signal)
+    .add_system(indicator_mission_time);
 
     app.register_inspectable::<MissionToken>();
 
@@ -605,6 +611,32 @@ fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) 
     }
 }
 
+#[derive(Default)]
+pub struct TimeDuration {
+    time: Duration,
+}
+
+fn increase_time_with_signal(
+    time_duration: Res<TimeDuration>, 
+    mut query: Query<&mut MissionToken>,
+) {
+    for mut token in query.iter_mut() {
+        let generate = 
+        SignalGenerator::sample(&mut SignalGenerator{
+            func: SignalFunction::Identity, 
+            amplitude: 1.0,
+            frequency: 1.0,
+            ..default()
+        }, time_duration.time);
+        let generate = generate.round() as i128;
+        match *token {
+            MissionToken::Time(asset) => 
+            *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
+            _ => {}
+        }
+    }
+}
+
 impl FromWorld for Images {
     fn from_world(world: &mut World) -> Self {
         if let Some(asset_server) = world.get_resource_mut::<AssetServer>() {
@@ -668,5 +700,19 @@ impl AssetInfo for MissionToken {
             MissionToken::Energy(asset) => asset.0,
             MissionToken::Labor(asset) => asset.0,
         }
+    }
+}
+
+fn indicator_mission_time(
+    _time: Res<Time>,
+    mut assets: Query<&mut MissionToken>,
+) { 
+    for asset in assets.iter_mut() {
+        let asset_value = match *asset {
+            MissionToken::Time(asset) => asset.0 .0,
+            _ => default()
+        };
+        let _time_indicator = 
+            ExponentialMovingAverage::new(asset_value as usize);
     }
 }
