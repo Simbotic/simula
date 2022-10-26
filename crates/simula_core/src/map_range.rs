@@ -155,6 +155,10 @@ mod tests {
             2.0
         );
         assert_eq!(
+            map_range_eased(2.0, (0.0, 1.0), (1.0, 2.0), EaseFunction::Linear),
+            2.0
+        );
+        assert_eq!(
             map_range_eased(0.0, (1.0, 0.0), (0.0, 1.0), EaseFunction::Linear),
             1.0
         );
@@ -167,6 +171,14 @@ mod tests {
             0.0
         );
         assert_eq!(
+            map_range_eased(2.0, (1.0, 0.0), (0.0, 1.0), EaseFunction::Linear),
+            0.0
+        );
+        assert_eq!(
+            map_range_eased(-1.0, (1.0, 0.0), (1.0, 2.0), EaseFunction::Linear),
+            2.0
+        );
+        assert_eq!(
             map_range_eased(0.0, (1.0, 0.0), (1.0, 2.0), EaseFunction::Linear),
             2.0
         );
@@ -176,6 +188,10 @@ mod tests {
         );
         assert_eq!(
             map_range_eased(1.0, (1.0, 0.0), (1.0, 2.0), EaseFunction::Linear),
+            1.0
+        );
+        assert_eq!(
+            map_range_eased(2.0, (1.0, 0.0), (1.0, 2.0), EaseFunction::Linear),
             1.0
         );
     }
@@ -284,6 +300,15 @@ mod tests {
         assert_eq!(
             map_range_eased(
                 Vec3::new(1.0, 1.0, 1.0),
+                (Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0)),
+                (Vec3::new(1.0, 1.0, 1.0), Vec3::new(2.0, 2.0, 2.0)),
+                EaseFunction::Linear
+            ),
+            Vec3::new(1.0, 1.0, 1.0)
+        );
+        assert_eq!(
+            map_range_eased(
+                Vec3::new(2.0, 2.0, 2.0),
                 (Vec3::new(1.0, 1.0, 1.0), Vec3::new(0.0, 0.0, 0.0)),
                 (Vec3::new(1.0, 1.0, 1.0), Vec3::new(2.0, 2.0, 2.0)),
                 EaseFunction::Linear
@@ -401,6 +426,24 @@ mod tests {
                 EaseFunction::Linear
             ),
             Vec3::new(1.25, 1.25, 1.25)
+        );
+        assert_eq!(
+            map_range_eased(
+                Vec3::new(-1.5, -1.5, -1.5),
+                (Vec3::new(1.0, 1.0, 1.0), Vec3::new(-1.0, -1.0, -1.0)),
+                (Vec3::new(1.0, 1.0, 1.0), Vec3::new(2.0, 2.0, 2.0)),
+                EaseFunction::Linear
+            ),
+            Vec3::new(2.0, 2.0, 2.0)
+        );
+        assert_eq!(
+            map_range_eased(
+                Vec3::new(1.5, 1.5, 1.5),
+                (Vec3::new(1.0, 1.0, 1.0), Vec3::new(-1.0, -1.0, -1.0)),
+                (Vec3::new(1.0, 1.0, 1.0), Vec3::new(2.0, 2.0, 2.0)),
+                EaseFunction::Linear
+            ),
+            Vec3::new(1.0, 1.0, 1.0)
         );
     }
 }
