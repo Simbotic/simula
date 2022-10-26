@@ -16,7 +16,7 @@ impl Prng {
         self.rng.rand_float()
     }
 
-    pub fn range_float_range(&mut self, a: f32, b: f32) -> f32 {
+    pub fn rand_float_range(&mut self, a: f32, b: f32) -> f32 {
         self.rng.rand_float() * (b - a) + a
     }
 }
