@@ -72,7 +72,9 @@ impl Plugin for BehaviorPlugin {
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
-pub struct BehaviorRunning;
+pub struct BehaviorRunning {
+    pub on_enter_handled: bool,
+}
 
 /// A marker added to behaviors that complete with success
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
@@ -328,6 +330,6 @@ pub fn start_behavior(
         if let Some(trace) = trace.as_mut() {
             trace.push(format!("[{}] STARTED {}", entity.id(), name.to_string(),));
         }
-        commands.entity(entity).insert(BehaviorRunning);
+        commands.entity(entity).insert(BehaviorRunning::default());
     }
 }

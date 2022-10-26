@@ -64,12 +64,14 @@ impl Plugin for MyBehaviorPlugin {
 ### Creating Behaviors
 
 From File
+
 ```
 let document: Handle<BehaviorAsset<MissionBehavior>> = asset_server.load("my_behavior_test.bht.ron");
 let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
 From code
+
 ```
 let document = BehaviorDocument {
     root: BTNode(
@@ -103,6 +105,7 @@ let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
 From text
+
 ```
 let data_str = r#"
     (root:(
@@ -119,6 +122,7 @@ let behavior = BehaviorTree::from_document(None, commands, &document);
 
 
 ## Instantiating and Start Behaviors
+
 ```
 // Generate all entities with their behavior components
 let behavior = BehaviorTree::from_document(None, commands, &document);
@@ -126,7 +130,7 @@ let behavior = BehaviorTree::from_document(None, commands, &document);
 // Set cursor at root, so it starts running
 commands.entity(behavior.root).insert(BehaviorCursor);
 
-// New entity organize behavior
+// New entity to organize behavior. Inserting the behavior component into a new entity and pushing the tree as child is optional, just for organization purposes.
 commands.spawn().insert(behavior).push_children(&[behavior.root]);
 ```
 
@@ -143,6 +147,7 @@ pub struct DebugAction {
 ```
 
 `impl BehaviorInfo` to aid in debug and tools.
+
 ```
 impl BehaviorInfo for DebugAction {
     const TYPE: BehaviorType = BehaviorType::Action;
@@ -152,6 +157,7 @@ impl BehaviorInfo for DebugAction {
 ```
 
 Create a system as you would any other ECS system. Use the `BehaviorRunQuery` query filter to let the Behavior System take control. Once your action is done, insert a `BehaviorSuccess` component.
+
 ```
 pub fn run(
     mut commands: Commands,
@@ -170,4 +176,10 @@ pub fn run(
         }
     }
 }
+```
+
+Add your custom behavior node to app systems
+
+```
+app.add_system(debug_action::run)
 ```
