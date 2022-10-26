@@ -3835,6 +3835,7 @@ dependencies = [
  "egui_node_graph",
  "enum-display-derive",
  "enum-iterator",
+ "hex",
  "rand 0.8.5",
  "ron 0.7.1",
  "serde",
