@@ -1,15 +1,9 @@
-use behaviors::mission_behavior::MissionBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_egui::{
-    egui,
-    egui::{vec2, Id, Label, Sense},
-    EguiContext,
-};
+use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use drag_and_drop::*;
 use egui_extras::{Size, TableBuilder};
 use simula_action::ActionPlugin;
 use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
@@ -33,6 +27,7 @@ use simula_viz::{
 
 mod behaviors;
 mod drag_and_drop;
+use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -72,15 +67,13 @@ fn main() {
     .add_plugin(MissionPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
-    .add_plugin(MissionBehaviorPlugin)
+    .add_plugin(DragAndDropPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
     .add_startup_system(initialize_images)
     .add_system(debug_info)
     .add_system(increase_mission_time)
-    .add_system(wallet_ui_system)
-    .add_system(debug_info)
-    .add_system(drag_and_drop);
+    .add_system(wallet_ui_system);
 
     app.register_inspectable::<MissionToken>();
 
@@ -93,7 +86,7 @@ pub struct SelectedWallet(usize);
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet2(usize);
 
-#[derive(Debug, Inspectable, Default, Reflect, Component, Clone)]
+#[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
 #[reflect(Component)]
 pub enum MissionToken {
     #[default]
@@ -253,6 +246,9 @@ fn setup(
                 })
                 .with_asset(|asset| {
                     asset.amount(MissionToken::Time(1000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Labor(630.into()));
                 });
         })
         .with_account(|account| {
@@ -267,6 +263,76 @@ fn setup(
                 .with_asset(|asset| {
                     asset.amount(MissionToken::Time(99999.into()));
                 });
+        })
+        .build(&mut commands);
+
+    let _agent_wallet_2 = WalletBuilder::<MissionToken>::default()
+        .id("e75b980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+        .with_account(|account| {
+            account
+                .id("8d61c19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(2000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(500.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(6900.into()));
+                });
+        })
+        .with_account(|account| {
+            account
+                .id("fde4354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(50.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(750.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(0.into()));
+                });
+        })
+        .build(&mut commands);
+
+    let _agent_wallet_3 = WalletBuilder::<MissionToken>::default()
+        .id("e75d880182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+        .with_account(|account| {
+            account
+                .id("7d61d19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(3000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(800000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(10500.into()));
+                });
+        })
+        .with_account(|account| {
+            account
+                .id("ffe4454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(650.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(15000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(10.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Labor(100.into()));
+                });
+        })
+        .build(&mut commands);
+
+    let _agent_wallet_4 = WalletBuilder::<MissionToken>::default()
+        .id("d76a990182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+        .with_account(|account| {
+            account.id("fde3454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c");
         })
         .build(&mut commands);
 
@@ -492,180 +558,6 @@ fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) 
             _ => {}
         }
     }
-}
-
-pub fn drag_and_drop(
-    mut egui_ctx: ResMut<EguiContext>,
-    wallets: Query<(&mut Wallet, &Children)>,
-    accounts: Query<(&mut Account, &Children)>,
-    mut assets: Query<&mut MissionToken>,
-) {
-    egui::Window::new("Transfer assets")
-        .open(&mut true)
-        .default_size(vec2(256.0, 256.0))
-        .vscroll(false)
-        .resizable(true)
-        .show(egui_ctx.ctx_mut(), |ui| {
-            let id_source = "my_drag_and_drop_demo";
-            let mut source_asset = None; //this will hold the dragged asset position
-            let mut drop_account = None; //this holds the wallet and account where the asset is dropped
-
-            ui.columns(wallets.into_iter().len(), |uis| {
-                for (wallet_idx, wallet) in wallets.into_iter().enumerate() {
-                    // iterate wallets
-
-                    let ui = &mut uis[wallet_idx]; // our current column, index comes from the iteration of wallets
-
-                    let wallet_id_trimmed = wallet
-                        .0
-                        .wallet_id
-                        .to_string()
-                        .get(0..8)
-                        .unwrap_or_default()
-                        .to_string();
-
-                    ui.add(Label::new(format!("Wallet: {}", wallet_id_trimmed)));
-
-                    let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
-
-                    ui.set_min_size(vec2(64.0, 100.0)); // set window size (To be Modified)
-
-                    for (account_idx, account) in wallet.1.into_iter().enumerate() {
-                        // iterate accounts
-
-                        let response = drop_target(ui, can_accept_what_is_being_dragged, |ui| {
-                            // Call the drag and drop function
-
-                            if let Ok((account, account_assets)) = accounts.get(*account) {
-                                // obtain al the assets from the current account
-
-                                let account_id_trimmed = account
-                                    .account_id
-                                    .to_string()
-                                    .get(0..8)
-                                    .unwrap_or_default()
-                                    .to_string();
-
-                                ui.add(Label::new(account_id_trimmed));
-
-                                for (asset_idx, asset_entity) in account_assets.iter().enumerate() {
-                                    // iterate assets
-
-                                    if let Ok(asset) = assets.get(*asset_entity) {
-                                        let asset_name = match asset {
-                                            MissionToken::Time(_) => "Time",
-                                            MissionToken::Trust(_) => "Trust",
-                                            MissionToken::Energy(_) => "Energy",
-                                            MissionToken::Labor(_) => "Labor",
-                                            MissionToken::None => "None",
-                                        };
-
-                                        let asset_value = match asset {
-                                            MissionToken::Time(asset) => asset.0 .0,
-                                            MissionToken::Trust(asset) => asset.0 .0,
-                                            MissionToken::Energy(asset) => asset.0 .0,
-                                            MissionToken::Labor(asset) => asset.0 .0,
-                                            MissionToken::None => 0,
-                                        };
-
-                                        let item_id = Id::new(id_source)
-                                            .with(wallet_idx)
-                                            .with(account_idx)
-                                            .with(asset_idx); // we create an id with all index
-
-                                        drag_source(ui, item_id, |ui| {
-                                            ui.add(
-                                                Label::new(format!(
-                                                    "{}: {}",
-                                                    asset_name, asset_value
-                                                ))
-                                                .sense(Sense::click()),
-                                            ); //we make the asset dragable
-                                        });
-
-                                        if ui.memory().is_being_dragged(item_id) {
-                                            source_asset = Some(asset_entity); // we now know which asset is being dragged
-                                        }
-                                    }
-                                }
-                            }
-                        })
-                        .response;
-
-                        let is_being_dragged = ui.memory().is_anything_being_dragged();
-
-                        if is_being_dragged
-                            && can_accept_what_is_being_dragged
-                            && response.hovered()
-                        {
-                            drop_account = Some(account); //we store the drop target
-                        }
-                    }
-                }
-            });
-
-            if let Some(source_asset) = source_asset {
-                if let Some(drop_account) = drop_account {
-                    let mut mission_tuple: (String, i128) = ("".to_string(), 0);
-
-                    if ui.input().pointer.any_released() {
-                        // check the release
-
-                        if let Ok(mut asset) = assets.get_mut(*source_asset) {
-                            // we remove the dragged element
-                            match *asset {
-                                MissionToken::Energy(value) => {
-                                    mission_tuple = ("ENERGY".to_string(), value.0 .0);
-                                    *asset = MissionToken::Energy(Asset(Amount(0)))
-                                }
-                                MissionToken::Labor(value) => {
-                                    mission_tuple = ("LABOR".to_string(), value.0 .0);
-                                    *asset = MissionToken::Labor(Asset(Amount(0)))
-                                }
-                                MissionToken::Trust(value) => {
-                                    mission_tuple = ("TRUST".to_string(), value.0 .0);
-                                    *asset = MissionToken::Trust(Asset(Amount(0)))
-                                }
-                                _ => {}
-                            }
-                        }
-
-                        if let Ok(account) = accounts.get(*drop_account) {
-                            // we add the dragged element
-
-                            for asset in account.1.iter() {
-                                if let Ok(mut asset) = assets.get_mut(*asset) {
-                                    match *asset {
-                                        MissionToken::Energy(value) => {
-                                            if mission_tuple.0 == "ENERGY" {
-                                                *asset = MissionToken::Energy(Asset(Amount(
-                                                    value.0 .0 + mission_tuple.1,
-                                                )))
-                                            }
-                                        }
-                                        MissionToken::Labor(value) => {
-                                            if mission_tuple.0 == "LABOR" {
-                                                *asset = MissionToken::Labor(Asset(Amount(
-                                                    value.0 .0 + mission_tuple.1,
-                                                )))
-                                            }
-                                        }
-                                        MissionToken::Trust(value) => {
-                                            if mission_tuple.0 == "TRUST" {
-                                                *asset = MissionToken::Trust(Asset(Amount(
-                                                    value.0 .0 + mission_tuple.1,
-                                                )))
-                                            }
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
 }
 
 impl FromWorld for Images {
