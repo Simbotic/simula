@@ -1,6 +1,6 @@
 use crate::{
-    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
-    BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
+    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
+    BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -21,31 +21,25 @@ impl BehaviorInfo for Selector {
 pub fn run(
     mut commands: Commands,
     selectors: Query<(Entity, &BehaviorChildren), (With<Selector>, BehaviorRunQuery)>,
-    nodes: Query<
-        (
-            Entity,
-            &BehaviorParent,
-            Option<&BehaviorFailure>,
-            Option<&BehaviorSuccess>,
-        ),
-        (
-            With<BehaviorNode>,
-            Without<BehaviorCursor>,
-            Without<BehaviorRunning>,
-        ),
-    >,
+    nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
     for (entity, children) in &selectors {
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
             let mut should_fail = true;
-            for (child_entity, child_parent, failure, success) in nodes.iter_many(children.iter()) {
+            for BehaviorChildQueryItem {
+                child_entity,
+                child_parent,
+                child_failure,
+                child_success,
+            } in nodes.iter_many(children.iter())
+            {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
-                        if failure.is_some() {
+                        if child_failure.is_some() {
                             // Child failed, so we move to next child
-                        } else if success.is_some() {
+                        } else if child_success.is_some() {
                             // Child succeeded, so we succeed
                             commands.entity(entity).insert(BehaviorSuccess);
                             should_fail = false;

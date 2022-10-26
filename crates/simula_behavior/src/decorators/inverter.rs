@@ -1,6 +1,6 @@
 use crate::{
-    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
-    BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
+    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
+    BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -18,18 +18,7 @@ impl BehaviorInfo for Inverter {
 pub fn run(
     mut commands: Commands,
     mut inverters: Query<(Entity, &BehaviorChildren), (With<Inverter>, BehaviorRunQuery)>,
-    nodes: Query<
-        (
-            &BehaviorParent,
-            Option<&BehaviorFailure>,
-            Option<&BehaviorSuccess>,
-        ),
-        (
-            With<BehaviorNode>,
-            Without<BehaviorCursor>,
-            Without<BehaviorRunning>,
-        ),
-    >,
+    nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
     for (entity, children) in &mut inverters {
         if children.is_empty() {
@@ -39,15 +28,21 @@ pub fn run(
                 warn!("Has more than one child, only the first will be used");
             }
             let child_entity = children[0]; // Safe because we checked for empty
-            if let Ok((parent, failure, success)) = nodes.get(child_entity) {
-                if let Some(parent) = **parent {
-                    if entity == parent {
+            if let Ok(BehaviorChildQueryItem {
+                child_entity,
+                child_parent,
+                child_failure,
+                child_success,
+            }) = nodes.get(child_entity)
+            {
+                if let Some(child_parent) = **child_parent {
+                    if entity == child_parent {
                         // Child failed, so we succeed
-                        if failure.is_some() {
+                        if child_failure.is_some() {
                             commands.entity(entity).insert(BehaviorSuccess);
                         }
                         // Child succeeded, so we fail
-                        else if success.is_some() {
+                        else if child_success.is_some() {
                             commands.entity(entity).insert(BehaviorFailure);
                         }
                         // Child is ready, pass on cursor
@@ -55,7 +50,15 @@ pub fn run(
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
                         }
+                    } else {
+                        // Child is not ours, so we fail
+                        warn!("Child is not ours");
+                        commands.entity(entity).insert(BehaviorFailure);
                     }
+                } else {
+                    // Child has no parent, so we fail
+                    warn!("Child has no parent");
+                    commands.entity(entity).insert(BehaviorFailure);
                 }
             }
         }

@@ -262,6 +262,22 @@ pub struct BehaviorDoneQuery {
     _done: Or<(With<BehaviorFailure>, With<BehaviorSuccess>)>,
 }
 
+/// Query for behavior children
+#[derive(WorldQuery)]
+pub struct BehaviorChildQuery {
+    child_entity: Entity,
+    child_parent: &'static BehaviorParent,
+    child_failure: Option<&'static BehaviorFailure>,
+    child_success: Option<&'static BehaviorSuccess>,
+}
+
+#[derive(WorldQuery)]
+pub struct BehaviorChildQueryFilter {
+    _node: With<BehaviorNode>,
+    _cursor: Without<BehaviorCursor>,
+    _running: Without<BehaviorRunning>,
+}
+
 #[derive(Default, Debug, Clone, Deref, DerefMut, PartialEq)]
 pub struct BehaviorTrace(pub Vec<String>);
 impl BehaviorTrace {

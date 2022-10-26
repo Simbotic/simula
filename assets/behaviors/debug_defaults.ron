@@ -1,0 +1,9 @@
+(
+    root:(
+        Sequence(()),
+        [
+            (DebugAction((fail:true))),
+            (DebugAction((fail:false, repeat:5))),
+        ]
+    )
+)
