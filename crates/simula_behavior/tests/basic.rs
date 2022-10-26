@@ -71,6 +71,7 @@ fn sequence_primitive_success() {
         message: "Hello, from DebugMessage0!".to_string(),
         fail: false,
         repeat: 1,
+        ..default()
     });
     debug_message_0.insert(Name::new("DebugMessage0"));
     let debug_message_0 = debug_message_0.id();
@@ -81,6 +82,7 @@ fn sequence_primitive_success() {
         message: "Hello, from DebugMessage1!".to_string(),
         fail: false,
         repeat: 1,
+        ..default()
     });
     debug_message_1.insert(Name::new("DebugMessage1"));
     let debug_message_1 = debug_message_1.id();
@@ -166,6 +168,7 @@ fn sequence_primitive_failure() {
         message: "Hello, from DebugMessage0 should succeed!".to_string(),
         fail: false,
         repeat: 1,
+        ..default()
     });
     debug_message_0.insert(Name::new("DebugMessage0"));
     let debug_message_0 = debug_message_0.id();
@@ -176,6 +179,7 @@ fn sequence_primitive_failure() {
         message: "Hello, from DebugMessage1 that should fail!".to_string(),
         fail: true,
         repeat: 1,
+        ..default()
     });
     debug_message_1.insert(Name::new("DebugMessage1"));
     let debug_message_1 = debug_message_1.id();
@@ -261,6 +265,7 @@ fn selector_primitive_success() {
         message: "Hello, from DebugMessage0!".to_string(),
         fail: false,
         repeat: 0,
+        ..default()
     });
     debug_message_0.insert(Name::new("DebugMessage0"));
     let debug_message_0 = debug_message_0.id();
@@ -271,6 +276,7 @@ fn selector_primitive_success() {
         message: "Hello, from DebugMessage1!".to_string(),
         fail: false,
         repeat: 0,
+        ..default()
     });
     debug_message_1.insert(Name::new("DebugMessage1"));
     let debug_message_1 = debug_message_1.id();
@@ -353,6 +359,7 @@ fn selector_primitive_failure() {
         message: "Hello, from DebugMessage0!".to_string(),
         fail: true,
         repeat: 0,
+        ..default()
     });
     debug_message_0.insert(Name::new("DebugMessage0"));
     let debug_message_0 = debug_message_0.id();
@@ -363,6 +370,7 @@ fn selector_primitive_failure() {
         message: "Hello, from DebugMessage1!".to_string(),
         fail: true,
         repeat: 0,
+        ..default()
     });
     debug_message_1.insert(Name::new("DebugMessage1"));
     let debug_message_1 = debug_message_1.id();
