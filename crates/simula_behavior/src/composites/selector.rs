@@ -39,7 +39,7 @@ pub fn run(
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
-            let mut done = true;
+            let mut should_fail = true;
             for (child_entity, child_parent, failure, success) in nodes.iter_many(children.iter()) {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
@@ -48,19 +48,32 @@ pub fn run(
                         } else if success.is_some() {
                             // Child succeeded, so we succeed
                             commands.entity(entity).insert(BehaviorSuccess);
+                            should_fail = false;
                             break;
                         } else {
-                            // Child is ready, pass on cursor and mark as running
-                            done = false;
+                            // Child is ready, pass on cursor
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
+                            should_fail = false;
                             break;
                         }
+                    } else {
+                        // Child is not ours, so we fail
+                        warn!("Child is not ours");
+                        commands.entity(entity).insert(BehaviorFailure);
+                        should_fail = true;
+                        break;
                     }
+                } else {
+                    // Child has no parent, so we fail
+                    warn!("Child has no parent, so we fail");
+                    commands.entity(entity).insert(BehaviorFailure);
+                    should_fail = true;
+                    break;
                 }
             }
             // If all children failed, complete with failure
-            if done {
+            if should_fail {
                 commands.entity(entity).insert(BehaviorFailure);
             }
         }

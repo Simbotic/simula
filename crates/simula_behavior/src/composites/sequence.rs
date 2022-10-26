@@ -44,32 +44,27 @@ pub fn run(
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
                         if failure.is_some() {
-                            println!("Child failed, so we fail");
                             // Child failed, so we fail
                             commands.entity(entity).insert(BehaviorFailure);
                             should_succeed = false;
                             break;
                         } else if success.is_some() {
-                            println!("Child succeeded, so we move to next child");
                             // Child succeeded, so we move to next child
                         } else {
-                            println!("Child is ready, pass on cursor and mark as running");
-                            // Child is ready, pass on cursor and mark as running
+                            // Child is ready, pass on cursor
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
                             should_succeed = false;
                             break;
                         }
-                    }
-                    else {
+                    } else {
                         // Child is not ours, so we fail
                         warn!("Child is not ours");
                         commands.entity(entity).insert(BehaviorFailure);
                         should_succeed = false;
                         break;
                     }
-                }
-                else {
+                } else {
                     // Child has no parent, so we fail
                     warn!("Child has no parent, so we fail");
                     commands.entity(entity).insert(BehaviorFailure);
@@ -79,7 +74,6 @@ pub fn run(
             }
             // If all children succeed, complete with success
             if should_succeed {
-                println!("All children succeeded, so we succeed");
                 commands.entity(entity).insert(BehaviorSuccess);
             }
         }
