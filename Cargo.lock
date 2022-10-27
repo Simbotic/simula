@@ -5462,6 +5462,7 @@ dependencies = [
  "simula_mission",
  "simula_net",
  "simula_viz",
+ "smallvec",
 ]
 
 [[package]]

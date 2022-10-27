@@ -5,12 +5,12 @@ use crate::{
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Reflect, Clone, Deserialize, Serialize)]
 pub enum Repeat {
     #[default]
     Forever,
     Times(u64),
-    UntilSucceed,
+    UntilFail,
 }
 
 /// Repeat a child until condition is met
@@ -69,9 +69,10 @@ pub fn run(
                                         commands.entity(entity).insert(BehaviorSuccess);
                                     }
                                 }
-                                // UntilSucceed, so we reset and repeat
-                                Repeat::UntilSucceed => {
-                                    commands.entity(entity).remove::<BehaviorRunning>();
+                                // Until fail, so we succeed
+                                Repeat::UntilFail => {
+                                    repeater.count = 0;
+                                    commands.entity(entity).insert(BehaviorSuccess);
                                 }
                             }
                         }
@@ -91,10 +92,9 @@ pub fn run(
                                         commands.entity(entity).insert(BehaviorSuccess);
                                     }
                                 }
-                                // UntilSucceed, so we succeed
-                                Repeat::UntilSucceed => {
-                                    repeater.count = 0;
-                                    commands.entity(entity).insert(BehaviorSuccess);
+                                // Until fail, so we reset and repeat
+                                Repeat::UntilFail => {
+                                    commands.entity(entity).remove::<BehaviorRunning>();
                                 }
                             }
                         }

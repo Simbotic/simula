@@ -60,6 +60,7 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
 
     // Create app
     let mut app = App::new();
+    app.add_plugin(bevy::time::TimePlugin::default());
     test_app(&mut app);
     let mut command_queue = CommandQueue::default();
     let mut commands = Commands::new(&mut command_queue, &app.world);

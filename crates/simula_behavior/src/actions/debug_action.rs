@@ -11,9 +11,9 @@ pub struct DebugAction {
     #[serde(default)]
     pub fail: bool,
     #[serde(default)]
-    pub repeat: u64,
+    pub duration: f64,
     #[serde(default)]
-    pub count: u64,
+    pub start: f64,
 }
 
 impl BehaviorInfo for DebugAction {
@@ -23,18 +23,19 @@ impl BehaviorInfo for DebugAction {
 }
 
 pub fn run(
+    time: Res<Time>,
     mut commands: Commands,
     mut debug_actions: Query<(Entity, &mut DebugAction, &mut BehaviorRunning), BehaviorRunQuery>,
 ) {
     for (entity, mut debug_action, mut running) in &mut debug_actions {
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            debug_action.count = 0;
+            debug_action.start = time.seconds_since_startup();
         }
 
-        if debug_action.repeat > 0 && debug_action.count < debug_action.repeat {
-            debug_action.count += 1;
-        } else {
+        let duration = time.seconds_since_startup() - debug_action.start;
+
+        if duration > debug_action.duration {
             if debug_action.fail {
                 commands.entity(entity).insert(BehaviorFailure);
             } else {
@@ -45,7 +46,7 @@ pub fn run(
         debug!(
             "[{}] RUNNING #{} {}",
             entity.id(),
-            debug_action.count,
+            duration,
             debug_action.message
         );
     }

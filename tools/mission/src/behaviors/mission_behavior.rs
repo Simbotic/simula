@@ -76,7 +76,6 @@ pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> Beha
                     BTNode(
                         MissionBehavior::DebugAction(DebugAction {
                             message: "Hello, from DebugMessage1!".to_string(),
-                            repeat: 5,
                             ..default()
                         }),
                         vec![],
