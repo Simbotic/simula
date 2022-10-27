@@ -3,9 +3,7 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use egui_extras::{Size, TableBuilder};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
 use simula_behavior::{
@@ -14,9 +12,7 @@ use simula_behavior::{
 };
 use simula_camera::orbitcam::*;
 use simula_mission::{
-    account::Account,
     asset::{Amount, Asset},
-    wallet::Wallet,
     MissionPlugin, WalletBuilder,
 };
 use simula_net::NetPlugin;
@@ -25,13 +21,16 @@ use simula_video::GifAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
-    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin, FollowUIVisibility},
+    follow_ui::{FollowUICamera, FollowUIPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
 
+use wallet_ui::WalletUIPlugin;
+
 mod behaviors;
 mod drag_and_drop;
+mod wallet_ui;
 use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -53,12 +52,6 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .insert_resource(SelectedWallet(0))
-    .insert_resource(ImageTextureIds {
-        time_icon: None,
-        energy_icon: None,
-        trust_icon: None,
-    })
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -74,20 +67,16 @@ fn main() {
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
     .add_plugin(DragAndDropPlugin)
+    .add_plugin(WalletUIPlugin)
     .register_type::<MissionToken>()
     .add_startup_system(setup)
-    .add_startup_system(initialize_images)
     .add_system(debug_info)
-    .add_system(increase_mission_time)
-    .add_system(wallet_ui_system);
+    .add_system(increase_mission_time);
 
     app.register_inspectable::<MissionToken>();
 
     app.run();
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct SelectedWallet(usize);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet2(usize);
@@ -101,145 +90,6 @@ pub enum MissionToken {
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
     Labor(Asset<1000, 3>),
-}
-
-fn wallet_ui_system(
-    mut egui_ctx: ResMut<EguiContext>,
-    wallets: Query<(&Wallet, &Children)>,
-    accounts: Query<(&Account, &Children)>,
-    assets: Query<&MissionToken>,
-    mut selected_wallet: ResMut<SelectedWallet>,
-    image_texture_ids: Res<ImageTextureIds>,
-    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<FollowPanel>>,
-) {
-    for (entity, follow_ui, visibility) in follow_uis.iter() {
-        let ui_pos = visibility.screen_pos;
-
-        let window_frame = egui::containers::Frame {
-            rounding: egui::Rounding {
-                nw: 6.0,
-                ne: 6.0,
-                sw: 6.0,
-                se: 6.0,
-            },
-            fill: egui::Color32::from_rgba_premultiplied(50, 0, 50, 50),
-            inner_margin: egui::style::Margin {
-                top: 10.0,
-                bottom: 10.0,
-                left: 10.0,
-                right: 10.0,
-            },
-            ..default()
-        };
-
-        egui::Window::new("Wallets")
-            .id(egui::Id::new(entity))
-            .default_width(200.0)
-            .resizable(true)
-            .frame(window_frame)
-            .collapsible(false)
-            .title_bar(false)
-            .vscroll(false)
-            .fixed_size(egui::Vec2::new(follow_ui.size.x, follow_ui.size.y))
-            .fixed_pos(egui::Pos2::new(ui_pos.x, ui_pos.y))
-            .drag_bounds(egui::Rect::EVERYTHING)
-            .show(egui_ctx.ctx_mut(), |ui| {
-                ui.style_mut().spacing = egui::style::Spacing {
-                    item_spacing: egui::vec2(5.0, 5.0),
-                    ..default()
-                };
-                let mut wallet_list: Vec<(String, &Children)> = vec![];
-                for (wallet, wallet_accounts) in wallets.iter() {
-                    let wallet_id_trimmed = wallet
-                        .wallet_id
-                        .to_string()
-                        .get(0..8)
-                        .unwrap_or_default()
-                        .to_string();
-                    wallet_list.push((wallet_id_trimmed, wallet_accounts));
-                }
-                egui::ComboBox::from_label("Select a wallet").show_index(
-                    ui,
-                    &mut selected_wallet.0,
-                    wallet_list.len(),
-                    |i| wallet_list[i].0.to_owned(),
-                );
-
-                egui::Grid::new("accounts_grid")
-                    .striped(false)
-                    .show(ui, |ui| {
-                        if !wallet_list[selected_wallet.0].1.is_empty() {
-                            ui.heading("Accounts");
-                            ui.end_row();
-                        } else {
-                            ui.heading("No accounts in selected wallet");
-                            ui.end_row();
-                        }
-                        for &wallet_account in wallet_list[selected_wallet.0].1.iter() {
-                            if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                                let account_id_trimmed = account
-                                    .account_id
-                                    .to_string()
-                                    .get(0..8)
-                                    .unwrap_or_default()
-                                    .to_string();
-                                ui.collapsing(account_id_trimmed.clone(), |ui| {
-                                    let mut asset_list: Vec<(
-                                        String,
-                                        i128,
-                                        Option<egui::TextureId>,
-                                    )> = vec![];
-                                    for &account_asset in account_assets.iter() {
-                                        if let Ok(asset) = assets.get(account_asset) {
-                                            let asset_name = asset.name();
-                                            let asset_value = asset.amount();
-                                            let asset_icon = asset.icon(&image_texture_ids);
-                                            asset_list.push((
-                                                asset_name.to_string(),
-                                                asset_value.0,
-                                                asset_icon,
-                                            ));
-                                        }
-                                    }
-                                    TableBuilder::new(ui)
-                                        .column(Size::remainder().at_least(100.0))
-                                        .column(Size::remainder().at_least(100.0))
-                                        .striped(false)
-                                        .header(20.0, |mut header| {
-                                            header.col(|ui| {
-                                                ui.heading(format!("Asset"));
-                                            });
-                                            header.col(|ui| {
-                                                ui.heading("Amount");
-                                            });
-                                        })
-                                        .body(|mut body| {
-                                            for asset in asset_list.iter() {
-                                                body.row(20.0, |mut row| {
-                                                    row.col(|ui| {
-                                                        ui.horizontal(|ui| {
-                                                            if let Some(icon) = asset.2 {
-                                                                ui.add(egui::widgets::Image::new(
-                                                                    icon,
-                                                                    [20.0, 20.0],
-                                                                ));
-                                                            }
-                                                            ui.label(asset.0.clone());
-                                                        });
-                                                    });
-                                                    row.col(|ui| {
-                                                        ui.label(asset.1.to_string());
-                                                    });
-                                                });
-                                            }
-                                        });
-                                });
-                            }
-                            ui.end_row();
-                        }
-                    });
-            });
-    }
 }
 
 fn setup(
@@ -518,23 +368,6 @@ fn setup(
         })
         .insert(FollowUICamera);
 
-    commands
-        .spawn()
-        .insert_bundle(TransformBundle {
-            local: Transform::from_xyz(2.0, 0.0, 2.0),
-            ..Default::default()
-        })
-        .insert(FollowUI {
-            min_distance: 0.1,
-            max_distance: 20.0,
-            min_height: -5.0,
-            max_height: 5.0,
-            max_view_angle: 45.0,
-            ..default()
-        })
-        .insert(FollowPanel)
-        .insert(Name::new("Follow UI: Shape"));
-
     //FPS ON SCREEN
     commands
         .spawn_bundle(
@@ -584,89 +417,11 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     }
 }
 
-pub struct Images {
-    time_icon: Handle<Image>,
-    trust_icon: Handle<Image>,
-    energy_icon: Handle<Image>,
-}
-
-pub struct ImageTextureIds {
-    time_icon: Option<egui::TextureId>,
-    trust_icon: Option<egui::TextureId>,
-    energy_icon: Option<egui::TextureId>,
-}
-
 fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) {
     for mut token in query.iter_mut() {
         match *token {
             MissionToken::Time(asset) => *token = MissionToken::Time(Asset(Amount(asset.0 .0 + 1))),
             _ => {}
-        }
-    }
-}
-
-impl FromWorld for Images {
-    fn from_world(world: &mut World) -> Self {
-        if let Some(asset_server) = world.get_resource_mut::<AssetServer>() {
-            Self {
-                time_icon: asset_server.load("../assets/mission/Balance.png"),
-                trust_icon: asset_server.load("../assets/mission/Money - Cash.png"),
-                energy_icon: asset_server.load("../assets/mission/Money - Coins.png"),
-            }
-        } else {
-            Self {
-                time_icon: Handle::default(),
-                trust_icon: Handle::default(),
-                energy_icon: Handle::default(),
-            }
-        }
-    }
-}
-
-fn initialize_images(
-    mut egui_ctx: ResMut<EguiContext>,
-    images: Local<Images>,
-    mut image_texture_ids: ResMut<ImageTextureIds>,
-) {
-    image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
-    image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
-    image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
-}
-
-trait AssetInfo {
-    fn name(&self) -> &'static str;
-    fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
-    fn amount(&self) -> Amount;
-}
-
-impl AssetInfo for MissionToken {
-    fn name(&self) -> &'static str {
-        match self {
-            MissionToken::None => "None",
-            MissionToken::Time(_) => "Time",
-            MissionToken::Trust(_) => "Trust",
-            MissionToken::Energy(_) => "Energy",
-            MissionToken::Labor(_) => "Labor",
-        }
-    }
-
-    fn icon(&self, image_texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId> {
-        match self {
-            MissionToken::Time(_) => image_texture_ids.time_icon,
-            MissionToken::Trust(_) => image_texture_ids.trust_icon,
-            MissionToken::Energy(_) => image_texture_ids.energy_icon,
-            MissionToken::Labor(_) => None,
-            MissionToken::None => None,
-        }
-    }
-
-    fn amount(&self) -> Amount {
-        match self {
-            MissionToken::None => 0.into(),
-            MissionToken::Time(asset) => asset.0,
-            MissionToken::Trust(asset) => asset.0,
-            MissionToken::Energy(asset) => asset.0,
-            MissionToken::Labor(asset) => asset.0,
         }
     }
 }
