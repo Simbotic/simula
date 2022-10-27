@@ -3832,7 +3832,6 @@ dependencies = [
  "bevy_egui",
  "egui",
  "egui_extras",
- "egui_node_graph",
  "enum-display-derive",
  "enum-iterator",
  "hex",
@@ -3847,6 +3846,7 @@ dependencies = [
  "simula_net",
  "simula_video",
  "simula_viz",
+ "ta",
 ]
 
 [[package]]
@@ -5489,6 +5489,7 @@ name = "simula_core"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-inspector-egui",
  "enum-display-derive",
  "enum-iterator",
  "oorandom",

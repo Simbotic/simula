@@ -5,9 +5,6 @@ use bevy::{
 };
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use egui_extras::{Size, TableBuilder};
-use ta::indicators::*;
-use std::time::Duration;
-use simula_core::signal::{SignalGenerator, SignalFunction};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
 use simula_behavior::{
@@ -15,6 +12,7 @@ use simula_behavior::{
     BehaviorPlugin, BehaviorTree,
 };
 use simula_camera::orbitcam::*;
+use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::{
     asset::{Amount, Asset},
     MissionPlugin, WalletBuilder,
@@ -29,6 +27,8 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
+use std::time::Duration;
+use ta::indicators::*;
 
 use wallet_ui::WalletUIPlugin;
 
@@ -56,12 +56,6 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .insert_resource(SelectedWallet(0))
-    .insert_resource(ImageTextureIds {
-        time_icon: None,
-        energy_icon: None,
-        trust_icon: None,
-    })
     .init_resource::<TimeDuration>()
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
@@ -83,7 +77,6 @@ fn main() {
     .add_startup_system(setup)
     .add_system(debug_info)
     .add_system(increase_mission_time)
-    .add_system(wallet_ui_system)
     .add_system(increase_time_with_signal)
     .add_system(indicator_mission_time);
 
@@ -446,102 +439,35 @@ pub struct TimeDuration {
 }
 
 fn increase_time_with_signal(
-    time_duration: Res<TimeDuration>, 
+    time_duration: Res<TimeDuration>,
     mut query: Query<&mut MissionToken>,
 ) {
     for mut token in query.iter_mut() {
-        let generate = 
-        SignalGenerator::sample(&mut SignalGenerator{
-            func: SignalFunction::Identity, 
-            amplitude: 1.0,
-            frequency: 1.0,
-            ..default()
-        }, time_duration.time);
+        let generate = SignalGenerator::sample(
+            &mut SignalGenerator {
+                func: SignalFunction::Identity,
+                amplitude: 1.0,
+                frequency: 1.0,
+                ..default()
+            },
+            time_duration.time,
+        );
         let generate = generate.round() as i128;
         match *token {
-            MissionToken::Time(asset) => 
-            *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
+            MissionToken::Time(asset) => {
+                *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate)))
+            }
             _ => {}
         }
     }
 }
 
-impl FromWorld for Images {
-    fn from_world(world: &mut World) -> Self {
-        if let Some(asset_server) = world.get_resource_mut::<AssetServer>() {
-            Self {
-                time_icon: asset_server.load("../assets/mission/Balance.png"),
-                trust_icon: asset_server.load("../assets/mission/Money - Cash.png"),
-                energy_icon: asset_server.load("../assets/mission/Money - Coins.png"),
-            }
-        } else {
-            Self {
-                time_icon: Handle::default(),
-                trust_icon: Handle::default(),
-                energy_icon: Handle::default(),
-            }
-        }
-    }
-}
-
-fn initialize_images(
-    mut egui_ctx: ResMut<EguiContext>,
-    images: Local<Images>,
-    mut image_texture_ids: ResMut<ImageTextureIds>,
-) {
-    image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
-    image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
-    image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
-}
-
-trait AssetInfo {
-    fn name(&self) -> &'static str;
-    fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
-    fn amount(&self) -> Amount;
-}
-
-impl AssetInfo for MissionToken {
-    fn name(&self) -> &'static str {
-        match self {
-            MissionToken::None => "None",
-            MissionToken::Time(_) => "Time",
-            MissionToken::Trust(_) => "Trust",
-            MissionToken::Energy(_) => "Energy",
-            MissionToken::Labor(_) => "Labor",
-        }
-    }
-
-    fn icon(&self, image_texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId> {
-        match self {
-            MissionToken::Time(_) => image_texture_ids.time_icon,
-            MissionToken::Trust(_) => image_texture_ids.trust_icon,
-            MissionToken::Energy(_) => image_texture_ids.energy_icon,
-            MissionToken::Labor(_) => None,
-            MissionToken::None => None,
-        }
-    }
-
-    fn amount(&self) -> Amount {
-        match self {
-            MissionToken::None => 0.into(),
-            MissionToken::Time(asset) => asset.0,
-            MissionToken::Trust(asset) => asset.0,
-            MissionToken::Energy(asset) => asset.0,
-            MissionToken::Labor(asset) => asset.0,
-        }
-    }
-}
-
-fn indicator_mission_time(
-    _time: Res<Time>,
-    mut assets: Query<&mut MissionToken>,
-) { 
+fn indicator_mission_time(_time: Res<Time>, mut assets: Query<&mut MissionToken>) {
     for asset in assets.iter_mut() {
         let asset_value = match *asset {
             MissionToken::Time(asset) => asset.0 .0,
-            _ => default()
+            _ => default(),
         };
-        let _time_indicator = 
-            ExponentialMovingAverage::new(asset_value as usize);
+        let _time_indicator = ExponentialMovingAverage::new(asset_value as usize);
     }
 }
