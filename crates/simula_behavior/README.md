@@ -33,9 +33,9 @@ Let the behavior system know how to spawn behavior nodes. Usually the following 
 impl BehaviorSpawner for MyBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
-            MyBehavior::DebugAction(action) => BehaviorInfo::spawn_with(commands, action),
-            MyBehavior::Selector(selector) => BehaviorInfo::spawn_with(commands, selector),
-            MyBehavior::Sequence(sequence) => BehaviorInfo::spawn_with(commands, sequence),
+            MyBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }
@@ -53,6 +53,7 @@ impl Plugin for MyBehaviorPlugin {
             // Add your new behavior asset to the plugin
             .add_asset::<BehaviorAsset<MyBehavior>>()
             .init_asset_loader::<BehaviorAssetLoader<MyBehavior>>()
+            .add_system(async_loader::<MyBehavior>)
             // Add any custom behavior nodes 
             .add_system(my_behavior::dummy_action::run)
             .add_system(my_behavior::dummy_flipper::run);
@@ -63,11 +64,14 @@ impl Plugin for MyBehaviorPlugin {
 ### Creating Behaviors
 
 From File
+
 ```
 let document: Handle<BehaviorAsset<MissionBehavior>> = asset_server.load("my_behavior_test.bht.ron");
+let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
 From code
+
 ```
 let document = BehaviorDocument {
     root: BTNode(
@@ -97,9 +101,11 @@ let document = BehaviorDocument {
         )],
     ),
 };
+let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
 From text
+
 ```
 let data_str = r#"
     (root:(
@@ -111,14 +117,21 @@ let data_str = r#"
     ))
 "#;
 let document = ron::from_str::<BehaviorDocument<MyBehavior>>(data_str);
+let behavior = BehaviorTree::from_document(None, commands, &document);
 ```
 
+
 ## Instantiating and Start Behaviors
+
 ```
 // Generate all entities with their behavior components
-let root_entity = spawn_tree(None, &mut commands, &document.root);
+let behavior = BehaviorTree::from_document(None, commands, &document);
+
 // Set cursor at root, so it starts running
-commands.entity(root_entity).insert(BehaviorCursor);
+commands.entity(behavior.root).insert(BehaviorCursor);
+
+// New entity to organize behavior. Inserting the behavior component into a new entity and pushing the tree as child is optional, just for organization purposes.
+commands.spawn().insert(behavior).push_children(&[behavior.root]);
 ```
 
 ## Custom Behavior Node
@@ -134,6 +147,7 @@ pub struct DebugAction {
 ```
 
 `impl BehaviorInfo` to aid in debug and tools.
+
 ```
 impl BehaviorInfo for DebugAction {
     const TYPE: BehaviorType = BehaviorType::Action;
@@ -143,6 +157,7 @@ impl BehaviorInfo for DebugAction {
 ```
 
 Create a system as you would any other ECS system. Use the `BehaviorRunQuery` query filter to let the Behavior System take control. Once your action is done, insert a `BehaviorSuccess` component.
+
 ```
 pub fn run(
     mut commands: Commands,
@@ -161,4 +176,10 @@ pub fn run(
         }
     }
 }
+```
+
+Add your custom behavior node to app systems
+
+```
+app.add_system(debug_action::run)
 ```

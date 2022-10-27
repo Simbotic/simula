@@ -1,7 +1,7 @@
 (root:(
-    Repeater((repeat:Times(2), repeated:0)),
+    Repeater((repeat:Times(2))),
     [(Sequence(()),[
-        (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)),[]),
-        (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)),[])
+        (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
+        (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)))
     ])]
 ))

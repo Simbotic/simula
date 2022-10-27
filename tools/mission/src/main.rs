@@ -1,3 +1,4 @@
+use behaviors::mission_behavior;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -5,8 +6,12 @@ use bevy::{
 use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use egui_extras::{Size, TableBuilder};
+use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
-use simula_behavior::{editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorPlugin};
+use simula_behavior::{
+    editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorAsset, BehaviorCursor,
+    BehaviorPlugin, BehaviorTree,
+};
 use simula_camera::orbitcam::*;
 use simula_mission::{
     account::Account,
@@ -65,6 +70,7 @@ fn main() {
     .add_plugin(GridPlugin)
     .add_plugin(VideoPlugin)
     .add_plugin(MissionPlugin)
+    .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
     .add_plugin(DragAndDropPlugin)
@@ -108,15 +114,40 @@ fn wallet_ui_system(
 ) {
     for (entity, follow_ui, visibility) in follow_uis.iter() {
         let ui_pos = visibility.screen_pos;
+
+        let window_frame = egui::containers::Frame {
+            rounding: egui::Rounding {
+                nw: 6.0,
+                ne: 6.0,
+                sw: 6.0,
+                se: 6.0,
+            },
+            fill: egui::Color32::from_rgba_premultiplied(50, 0, 50, 50),
+            inner_margin: egui::style::Margin {
+                top: 10.0,
+                bottom: 10.0,
+                left: 10.0,
+                right: 10.0,
+            },
+            ..default()
+        };
+
         egui::Window::new("Wallets")
             .id(egui::Id::new(entity))
             .default_width(200.0)
             .resizable(true)
-            .vscroll(true)
+            .frame(window_frame)
+            .collapsible(false)
+            .title_bar(false)
+            .vscroll(false)
             .fixed_size(egui::Vec2::new(follow_ui.size.x, follow_ui.size.y))
             .fixed_pos(egui::Pos2::new(ui_pos.x, ui_pos.y))
             .drag_bounds(egui::Rect::EVERYTHING)
             .show(egui_ctx.ctx_mut(), |ui| {
+                ui.style_mut().spacing = egui::style::Spacing {
+                    item_spacing: egui::vec2(5.0, 5.0),
+                    ..default()
+                };
                 let mut wallet_list: Vec<(String, &Children)> = vec![];
                 for (wallet, wallet_accounts) in wallets.iter() {
                     let wallet_id_trimmed = wallet
@@ -135,7 +166,7 @@ fn wallet_ui_system(
                 );
 
                 egui::Grid::new("accounts_grid")
-                    .striped(true)
+                    .striped(false)
                     .show(ui, |ui| {
                         if !wallet_list[selected_wallet.0].1.is_empty() {
                             ui.heading("Accounts");
@@ -160,36 +191,12 @@ fn wallet_ui_system(
                                     )> = vec![];
                                     for &account_asset in account_assets.iter() {
                                         if let Ok(asset) = assets.get(account_asset) {
-                                            let asset_name = match asset {
-                                                MissionToken::Time(_) => "Time",
-                                                MissionToken::Trust(_) => "Trust",
-                                                MissionToken::Energy(_) => "Energy",
-                                                MissionToken::Labor(_) => "Labor",
-                                                MissionToken::None => "None",
-                                            };
-                                            let asset_value = match asset {
-                                                MissionToken::Time(asset) => asset.0 .0,
-                                                MissionToken::Trust(asset) => asset.0 .0,
-                                                MissionToken::Energy(asset) => asset.0 .0,
-                                                MissionToken::Labor(asset) => asset.0 .0,
-                                                MissionToken::None => 0,
-                                            };
-                                            let asset_icon = match asset {
-                                                MissionToken::Time(_) => {
-                                                    image_texture_ids.time_icon
-                                                }
-                                                MissionToken::Trust(_) => {
-                                                    image_texture_ids.trust_icon
-                                                }
-                                                MissionToken::Energy(_) => {
-                                                    image_texture_ids.energy_icon
-                                                }
-                                                MissionToken::Labor(_) => None,
-                                                MissionToken::None => None,
-                                            };
+                                            let asset_name = asset.name();
+                                            let asset_value = asset.amount();
+                                            let asset_icon = asset.icon(&image_texture_ids);
                                             asset_list.push((
                                                 asset_name.to_string(),
-                                                asset_value,
+                                                asset_value.0,
                                                 asset_icon,
                                             ));
                                         }
@@ -197,7 +204,7 @@ fn wallet_ui_system(
                                     TableBuilder::new(ui)
                                         .column(Size::remainder().at_least(100.0))
                                         .column(Size::remainder().at_least(100.0))
-                                        .striped(true)
+                                        .striped(false)
                                         .header(20.0, |mut header| {
                                             header.col(|ui| {
                                                 ui.heading(format!("Asset"));
@@ -346,7 +353,7 @@ fn setup(
         })
         .build(&mut commands);
 
-    let agent_decision_graph = commands
+    let agent_behavior_graph = commands
         .spawn()
         .insert(BehaviorEditorState {
             show: true,
@@ -419,13 +426,41 @@ fn setup(
         })
         .id();
 
+    // Build Agent 001
+    let behavior = mission_behavior::create_from_data(None, &mut commands);
+    if let Some(root) = behavior.root {
+        commands.entity(root).insert(BehaviorCursor);
+    }
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[agent_wallet, agent_decision_graph, agent_body])
+        .push_children(&[
+            agent_wallet,
+            agent_behavior_graph,
+            agent_body,
+            behavior.root.unwrap(),
+        ])
+        .insert(behavior)
         .insert(Name::new("Agent: 001"));
+
+    // Build Agent 002
+    let document: Handle<BehaviorAsset<mission_behavior::MissionBehavior>> =
+        asset_server.load("behaviors/debug_sequence.bht.ron");
+    println!("Document: {:?}", document);
+    let behavior = BehaviorTree::from_asset(None, &mut commands, document);
+    if let Some(root) = behavior.root {
+        commands.entity(root).insert(BehaviorCursor);
+    }
+    commands
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+            ..default()
+        })
+        .push_children(&[_agent_wallet_4, behavior.root.unwrap()])
+        .insert(behavior)
+        .insert(Name::new("Agent: 002"));
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -596,4 +631,42 @@ fn initialize_images(
     image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
     image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
     image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
+}
+
+trait AssetInfo {
+    fn name(&self) -> &'static str;
+    fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
+    fn amount(&self) -> Amount;
+}
+
+impl AssetInfo for MissionToken {
+    fn name(&self) -> &'static str {
+        match self {
+            MissionToken::None => "None",
+            MissionToken::Time(_) => "Time",
+            MissionToken::Trust(_) => "Trust",
+            MissionToken::Energy(_) => "Energy",
+            MissionToken::Labor(_) => "Labor",
+        }
+    }
+
+    fn icon(&self, image_texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId> {
+        match self {
+            MissionToken::Time(_) => image_texture_ids.time_icon,
+            MissionToken::Trust(_) => image_texture_ids.trust_icon,
+            MissionToken::Energy(_) => image_texture_ids.energy_icon,
+            MissionToken::Labor(_) => None,
+            MissionToken::None => None,
+        }
+    }
+
+    fn amount(&self) -> Amount {
+        match self {
+            MissionToken::None => 0.into(),
+            MissionToken::Time(asset) => asset.0,
+            MissionToken::Trust(asset) => asset.0,
+            MissionToken::Energy(asset) => asset.0,
+            MissionToken::Labor(asset) => asset.0,
+        }
+    }
 }

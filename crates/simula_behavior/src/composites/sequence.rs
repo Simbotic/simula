@@ -1,6 +1,6 @@
 use crate::{
-    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
-    BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
+    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
+    BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -21,46 +21,53 @@ impl BehaviorInfo for Sequence {
 pub fn run(
     mut commands: Commands,
     sequences: Query<(Entity, &BehaviorChildren), (With<Sequence>, BehaviorRunQuery)>,
-    nodes: Query<
-        (
-            Entity,
-            &BehaviorParent,
-            Option<&BehaviorFailure>,
-            Option<&BehaviorSuccess>,
-        ),
-        (
-            With<BehaviorNode>,
-            Without<BehaviorCursor>,
-            Without<BehaviorRunning>,
-        ),
-    >,
+    nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
     for (entity, children) in &sequences {
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
-            let mut done = true;
-            for (child_entity, child_parent, failure, success) in nodes.iter_many(children.iter()) {
+            let mut should_succeed = true;
+            for BehaviorChildQueryItem {
+                child_entity,
+                child_parent,
+                child_failure,
+                child_success,
+            } in nodes.iter_many(children.iter())
+            {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
-                        if failure.is_some() {
+                        if child_failure.is_some() {
                             // Child failed, so we fail
                             commands.entity(entity).insert(BehaviorFailure);
+                            should_succeed = false;
                             break;
-                        } else if success.is_some() {
+                        } else if child_success.is_some() {
                             // Child succeeded, so we move to next child
                         } else {
-                            // Child is ready, pass on cursor and mark as running
-                            done = false;
+                            // Child is ready, pass on cursor
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
+                            should_succeed = false;
                             break;
                         }
+                    } else {
+                        // Child is not ours, so we fail
+                        warn!("Child is not ours");
+                        commands.entity(entity).insert(BehaviorFailure);
+                        should_succeed = false;
+                        break;
                     }
+                } else {
+                    // Child has no parent, so we fail
+                    warn!("Child has no parent, so we fail");
+                    commands.entity(entity).insert(BehaviorFailure);
+                    should_succeed = false;
+                    break;
                 }
             }
             // If all children succeed, complete with success
-            if done {
+            if should_succeed {
                 commands.entity(entity).insert(BehaviorSuccess);
             }
         }
