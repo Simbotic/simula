@@ -445,19 +445,22 @@ fn increase_time_with_signal(
     for mut token in query.iter_mut() {
         let generate = SignalGenerator::sample(
             &mut SignalGenerator {
-                func: SignalFunction::Identity,
+                func: SignalFunction::Pulse,
                 amplitude: 1.0,
                 frequency: 1.0,
+                phase: 1.0,
+                offset: 1.0,
+                invert: false,
+                seed: 1.0,
                 ..default()
             },
             time_duration.time,
         );
         let generate = generate.round() as i128;
         match *token {
-            MissionToken::Time(asset) => {
-                *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate)))
-            }
-            _ => {}
+            MissionToken::Time(asset) => 
+                *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
+                _ => {}
         }
     }
 }
