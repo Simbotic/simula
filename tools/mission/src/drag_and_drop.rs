@@ -222,22 +222,30 @@ pub fn drag_and_drop(
                     if ui.input().pointer.any_released() {
                         // check the release
 
-                        if let Ok(asset) = assets.get_mut(*source_asset) {
+                        if let Ok(mut asset) = assets.get_mut(*source_asset) {
                             // we remove the dragged element
                             match *asset {
                                 MissionToken::Energy(value) => {
                                     mission_tuple = ("ENERGY".to_string(), value.0 .0);
-                                    commands.entity(*source_asset).despawn();
+                                    *asset = MissionToken::Energy(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
                                 }
                                 MissionToken::Labor(value) => {
                                     mission_tuple = ("LABOR".to_string(), value.0 .0);
-                                    commands.entity(*source_asset).despawn();
+                                    *asset = MissionToken::Labor(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
                                 }
                                 MissionToken::Trust(value) => {
                                     mission_tuple = ("TRUST".to_string(), value.0 .0);
-                                    commands.entity(*source_asset).despawn();
+                                    *asset = MissionToken::Trust(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
                                 }
-                                _ => {}
+                                MissionToken::Time(value) => {
+                                    mission_tuple = ("TIME".to_string(), value.0 .0);
+                                    *asset = MissionToken::Time(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
+                                }
+                                MissionToken::None => {}
                             }
                         }
 
@@ -272,7 +280,15 @@ pub fn drag_and_drop(
                                                 asset_exists = true;
                                             }
                                         }
-                                        _ => {}
+                                        MissionToken::Time(value) => {
+                                            if mission_tuple.clone().0 == "TIME" {
+                                                *asset = MissionToken::Time(Asset(Amount(
+                                                    value.0 .0 + mission_tuple.1,
+                                                )));
+                                                asset_exists = true;
+                                            }
+                                        }
+                                        MissionToken::None => {}
                                     }
                                 }
                             }
