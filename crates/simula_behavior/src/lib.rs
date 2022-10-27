@@ -3,7 +3,7 @@ use asset::{BTNode, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use bevy_inspector_egui::Inspectable;
 use composites::*;
-use decorators::repeater;
+use decorators::*;
 use std::fmt::Debug;
 
 pub use crate::asset::{BehaviorAsset, BehaviorDocument};
@@ -64,6 +64,8 @@ impl Plugin for BehaviorPlugin {
             .add_system(sequence::run)
             .add_system(selector::run)
             .add_system(repeater::run)
+            .add_system(inverter::run)
+            .add_system(succeeder::run)
             .add_system(debug_action::run);
     }
 }

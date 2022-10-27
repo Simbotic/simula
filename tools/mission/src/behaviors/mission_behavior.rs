@@ -30,6 +30,7 @@ pub enum MissionBehavior {
     Sequence(Sequence),
     Repeater(Repeater),
     Inverter(Inverter),
+    Succeeder(Succeeder),
     AgentRest(behaviors::agent_rest::AgentRest),
     AgentWork(behaviors::agent_work::AgentWork),
 }
@@ -48,6 +49,7 @@ impl BehaviorSpawner for MissionBehavior {
             MissionBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Succeeder(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::AgentRest(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::AgentWork(data) => BehaviorInfo::spawn_with(commands, data),
         }
