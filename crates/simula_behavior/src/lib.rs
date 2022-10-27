@@ -66,6 +66,7 @@ impl Plugin for BehaviorPlugin {
             .add_system(repeater::run)
             .add_system(inverter::run)
             .add_system(succeeder::run)
+            .add_system(delay::run)
             .add_system(debug_action::run);
     }
 }

@@ -20,6 +20,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(repeater::run);
     app.add_system(inverter::run);
     app.add_system(succeeder::run);
+    app.add_system(delay::run);
     app.add_system(debug_action::run);
     app.init_resource::<BehaviorTrace>();
     app
@@ -34,6 +35,7 @@ pub enum TestBehavior {
     Repeater(Repeater),
     Inverter(Inverter),
     Succeeder(Succeeder),
+    Delay(Delay),
 }
 
 impl Default for TestBehavior {
@@ -51,6 +53,7 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
             TestBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
             TestBehavior::Succeeder(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Delay(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }
