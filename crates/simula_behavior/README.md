@@ -42,7 +42,7 @@ impl BehaviorSpawner for MyBehavior {
 ```
 
 ### Behavior Plugin
-Each behavior system should be contained in a plugin. The custom behavior asset and any new custom behavior nodes should be added here.
+Each behavior system should be contained in a plugin. The custom behavior async_loader and any new custom behavior nodes should be added here.
 
 ```
 pub struct MyBehaviorPlugin;
@@ -51,8 +51,6 @@ impl Plugin for MyBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app
             // Add your new behavior asset to the plugin
-            .add_asset::<BehaviorAsset<MyBehavior>>()
-            .init_asset_loader::<BehaviorAssetLoader<MyBehavior>>()
             .add_system(async_loader::<MyBehavior>)
             // Add any custom behavior nodes 
             .add_system(my_behavior::dummy_action::run)
@@ -63,11 +61,11 @@ impl Plugin for MyBehaviorPlugin {
 
 ### Creating Behaviors
 
-From File
+From asset
 
 ```
-let document: Handle<BehaviorAsset<MissionBehavior>> = asset_server.load("my_behavior_test.bht.ron");
-let behavior = BehaviorTree::from_document(None, commands, &document);
+let document: Handle<BehaviorAsset> = asset_server.load("my_behavior_test.bht.ron");
+let behavior = BehaviorTree::from_asset::<MissionBehavior>(None, commands, &document);
 ```
 
 From code
