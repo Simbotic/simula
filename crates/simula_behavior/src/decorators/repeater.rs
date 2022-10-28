@@ -1,11 +1,8 @@
-use crate::{
-    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-    BehaviorCursor, BehaviorInfo, BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub enum Repeat {
     #[default]
     Forever,
@@ -14,7 +11,7 @@ pub enum Repeat {
 }
 
 /// Repeat a child until condition is met
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct Repeater {
     pub repeat: Repeat,
     #[serde(default)]

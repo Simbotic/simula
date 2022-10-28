@@ -1,7 +1,4 @@
-use crate::{
-    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-    BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -10,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// succeeds will call the second, and so on down the list of children. If any child
 /// fails it will immediately return failure to the parent. If the last child in the
 /// sequence succeeds, then the sequence will return success to its parent.
-#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct Sequence {
     #[serde(default)]
     random: bool,

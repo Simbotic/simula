@@ -51,7 +51,7 @@ impl Plugin for MyBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app
             // Add your new behavior asset to the plugin
-            .add_system(async_loader::<MyBehavior>)
+            .add_system(behavior_loader::<MyBehavior>)
             // Add any custom behavior nodes 
             .add_system(my_behavior::dummy_action::run)
             .add_system(my_behavior::dummy_flipper::run);

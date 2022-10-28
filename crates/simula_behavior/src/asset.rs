@@ -58,7 +58,7 @@ where
     pub phantom: std::marker::PhantomData<T>,
 }
 
-pub fn async_loader<T>(
+pub fn behavior_loader<T>(
     mut commands: Commands,
     loaded_assets: Res<Assets<BehaviorAsset>>,
     queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,

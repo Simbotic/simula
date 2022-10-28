@@ -1,7 +1,4 @@
-use crate::{
-    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-    BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// actually returned. These are useful in cases where you want to process a branch
 /// of a tree where a failure is expected or anticipated, but you don’t want to
 /// abandon processing of a sequence that branch sits on.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct Succeeder;
 
 impl BehaviorInfo for Succeeder {
