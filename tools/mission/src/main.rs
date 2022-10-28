@@ -303,10 +303,13 @@ fn setup(
         .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
-    let document: Handle<BehaviorAsset<mission_behavior::MissionBehavior>> =
-        asset_server.load("behaviors/debug_sequence.bht.ron");
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
     println!("Document: {:?}", document);
-    let behavior = BehaviorTree::from_asset(None, &mut commands, document);
+    let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
+        None,
+        &mut commands,
+        document,
+    );
     if let Some(root) = behavior.root {
         commands.entity(root).insert(BehaviorCursor);
     }

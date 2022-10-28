@@ -14,8 +14,6 @@ pub struct MissionBehaviorPlugin;
 impl Plugin for MissionBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
-            .add_asset::<BehaviorAsset<MissionBehavior>>()
-            .init_asset_loader::<BehaviorAssetLoader<MissionBehavior>>()
             .add_system(async_loader::<MissionBehavior>)
             .add_system(behaviors::agent_rest::run)
             .add_system(behaviors::agent_work::run);

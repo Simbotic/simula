@@ -1,5 +1,5 @@
 use actions::*;
-use asset::{BTNode, BehaviorAssetLoading};
+use asset::{BTNode, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use bevy_inspector_egui::Inspectable;
 use composites::*;
@@ -58,6 +58,8 @@ impl Plugin for BehaviorPlugin {
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
+            .add_asset::<BehaviorAsset>()
+            .init_asset_loader::<BehaviorAssetLoader>()
             .add_system(editor::egui_update)
             .add_system(complete_behavior)
             .add_system(start_behavior)
@@ -159,14 +161,18 @@ impl BehaviorTree {
     pub fn from_asset<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
-        document: Handle<BehaviorAsset<T>>,
+        document: Handle<BehaviorAsset>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + Debug,
     {
         let entity = commands
             .spawn()
-            .insert(BehaviorAssetLoading { document, parent })
+            .insert(BehaviorAssetLoading::<T> {
+                document,
+                parent,
+                ..default()
+            })
             .id();
         Self { root: Some(entity) }
     }
