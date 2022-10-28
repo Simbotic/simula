@@ -184,16 +184,16 @@ fn wallet_creation_window(
                 add_wallet(&mut commands);
             });
             ui.small_button("normal Follow Window").on_hover_text("display follow window").clicked().then(|| {
-                create_wallet_ui(&mut commands, WalletUIType::Follow, DefaultWalletUI);
+                create_wallet_ui(&mut commands, DefaultWalletUI);
             });
             ui.small_button("normal Tool Window").on_hover_text("display tool window").clicked().then(|| {
-                create_wallet_ui(&mut commands, WalletUIType::Tool, DefaultWalletUI);
+                create_wallet_ui(&mut commands, DefaultWalletUI);
             });
             ui.small_button("cool Follow Window").on_hover_text("display follow window").clicked().then(|| {
-                create_wallet_ui(&mut commands, WalletUIType::Follow, MyCoolInGameWalletUI);
+                create_wallet_ui(&mut commands, MyCoolInGameWalletUI);
             });
             ui.small_button("cool Tool Window").on_hover_text("display tool window").clicked().then(|| {
-                create_wallet_ui(&mut commands, WalletUIType::Tool, MyCoolInGameWalletUI);
+                create_wallet_ui(&mut commands, MyCoolInGameWalletUI);
             });
         });
 }
@@ -279,7 +279,7 @@ impl AssetInfo for MissionToken {
 
 
 #[derive(Component)]
-struct WalletUI(WalletUIType);
+struct WalletUI;
 
 // Mark wallet to be used with FollowUI
 #[derive(Component)]
@@ -301,6 +301,9 @@ enum WalletUIResponse {
 }
 
 trait WalletUIOptions {
+    fn insert(entity: Entity, commands: &mut Commands) {
+        commands.entity(entity).insert(WalletUITool);
+    }
     fn titlebar(ui: &mut egui::Ui) -> Option<WalletUIResponse> {
         let mut response: Option<WalletUIResponse> = None;
         ui.horizontal(|ui| {
@@ -355,6 +358,9 @@ impl WalletUIOptions for DefaultWalletUI{}
 struct MyCoolInGameWalletUI;
 
 impl WalletUIOptions for MyCoolInGameWalletUI {
+    fn insert(entity: Entity, commands: &mut Commands) {
+        commands.entity(entity).insert(WalletUIFollow);
+    }
     fn titlebar(ui: &mut egui::Ui) -> Option<WalletUIResponse> {
         let mut response: Option<WalletUIResponse> = None;
         ui.horizontal(|ui| {
@@ -442,19 +448,19 @@ fn wallet_ui_draw<T: WalletUIOptions + Component>(
 
         let mut show = true;
 
-        match wallet_type.0 {
-            WalletUIType::Follow => {
-                if let Some(pos) = ui_pos {
-                    if let Some(fixed_pos) = T::fixed_pos(pos.x, pos.y) {
-                        window = window.fixed_pos(fixed_pos);
-                    };
-                }
-                if follow_uis.iter().len() == 0 {
-                    show = false;
-                }
-            }
-            _ => {}
-        }
+        // match wallet_type.0 {
+        //     WalletUIType::Follow => {
+        //         if let Some(pos) = ui_pos {
+        //             if let Some(fixed_pos) = T::fixed_pos(pos.x, pos.y) {
+        //                 window = window.fixed_pos(fixed_pos);
+        //             };
+        //         }
+        //         if follow_uis.iter().len() == 0 {
+        //             show = false;
+        //         }
+        //     }
+        //     _ => {}
+        // }
 
         if show {
             window
@@ -481,7 +487,6 @@ fn wallet_ui_draw<T: WalletUIOptions + Component>(
                     }
     
                     T::wallet_selector(ui, &mut selected_wallet.0, wallet_list.len(), |i| wallet_list[i].0.to_owned())
-    
                 });
         }
         
@@ -526,25 +531,14 @@ fn add_wallet(commands: &mut Commands) {
 }
 
 fn create_wallet_ui<T: WalletUIOptions + Component>(
-    commands: &mut Commands, 
-    wallet_type: WalletUIType, 
+    commands: &mut Commands,
     configuration: T,
 ) {
     let entity = commands
         .spawn()
+        .insert(WalletUI)
         .insert(configuration)
         .id();
     
-    match wallet_type {
-        WalletUIType::Follow => {
-            commands.entity(entity)
-                .insert(WalletUIFollow)
-                .insert(WalletUI(WalletUIType::Follow));
-        }
-        WalletUIType::Tool => {
-            commands.entity(entity)
-            .insert(WalletUITool)
-            .insert(WalletUI(WalletUIType::Tool));
-        }
-    }
+    T::insert(entity, commands)
 }
