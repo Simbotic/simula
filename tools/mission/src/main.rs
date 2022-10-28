@@ -4,13 +4,9 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use egui_extras::{Size, TableBuilder};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
-use simula_behavior::{
-    editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorAsset, BehaviorCursor,
-    BehaviorPlugin, BehaviorTree,
-};
+use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::{
@@ -105,6 +101,7 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -212,11 +209,11 @@ fn setup(
 
     let agent_behavior_graph = commands
         .spawn()
-        .insert(BehaviorEditorState {
-            show: true,
-            ..default()
-        })
-        .insert(BehaviorGraphState::default())
+        // .insert(BehaviorEditorState {
+        //     show: true,
+        //     ..default()
+        // })
+        // .insert(BehaviorGraphState::default())
         .with_children(|_parent| {
             // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
             // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
@@ -303,10 +300,14 @@ fn setup(
         .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
-    let document: Handle<BehaviorAsset<mission_behavior::MissionBehavior>> =
-        asset_server.load("behaviors/debug_sequence.bht.ron");
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
     println!("Document: {:?}", document);
-    let behavior = BehaviorTree::from_asset(None, &mut commands, document);
+    let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
+        None,
+        &mut commands,
+        document,
+    );
+    behavior_inspector.behavior_root = behavior.root;
     if let Some(root) = behavior.root {
         commands.entity(root).insert(BehaviorCursor);
     }

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.8" }
+# bevy-inspector-egui = { path = "../../../simula-inspector" }
 bevy-inspector-egui = "0.13"
 serde = { version = "1.0", features = ["derive"] }
 enum-iterator = "1.2"

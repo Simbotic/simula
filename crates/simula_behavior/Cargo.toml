@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.8" }
+# bevy-inspector-egui = { path = "../../../simula-inspector" }
 bevy-inspector-egui = "0.13"
 
 simula_core = { path = "../../crates/simula_core" }

@@ -1,10 +1,8 @@
-use crate::{
-    BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct DebugAction {
     #[serde(default)]
     pub message: String,

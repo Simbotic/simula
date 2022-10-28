@@ -1,12 +1,9 @@
-use crate::{
-    BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-    BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Inverts result of their child node. Success becomes failure, and failure becomes success.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct Inverter;
 
 impl BehaviorInfo for Inverter {

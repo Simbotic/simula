@@ -1,19 +1,36 @@
 use actions::*;
-use asset::{BTNode, BehaviorAssetLoading};
+use asset::{BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading, BehaviorDocument};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
-use bevy_inspector_egui::Inspectable;
+use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use composites::*;
 use decorators::*;
+use inspector::BehaviorInspectorPlugin;
 use std::fmt::Debug;
-
-pub use crate::asset::{BehaviorAsset, BehaviorDocument};
 
 pub mod actions;
 pub mod asset;
 pub mod composites;
 pub mod decorators;
-pub mod editor;
+pub mod inspector;
 pub mod test;
+
+pub mod prelude {
+    pub use crate::actions::*;
+    pub use crate::asset::{
+        behavior_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading,
+        BehaviorDocument,
+    };
+    pub use crate::composites::*;
+    pub use crate::decorators::*;
+    pub use crate::inspector::BehaviorInspector;
+    pub use crate::{
+        BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
+        BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorParent, BehaviorPlugin,
+        BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess, BehaviorTree,
+        BehaviorType,
+    };
+    pub use bevy_inspector_egui::{Inspectable, RegisterInspectable};
+}
 
 pub struct BehaviorPlugin;
 
@@ -53,12 +70,27 @@ pub trait BehaviorSpawner {
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<editor::BehaviorGraphState>()
-            .register_type::<editor::BehaviorEditorState>()
+        app.add_plugin(BehaviorInspectorPlugin)
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
-            .add_system(editor::egui_update)
+            .register_type::<BehaviorCursor>()
+            .register_type::<DebugAction>()
+            .register_type::<Delay>()
+            .register_type::<Selector>()
+            .register_type::<Sequence>()
+            .register_type::<Inverter>()
+            .register_type::<Repeater>()
+            .register_type::<Succeeder>()
+            .register_inspectable::<DebugAction>()
+            .register_inspectable::<Delay>()
+            .register_inspectable::<Selector>()
+            .register_inspectable::<Sequence>()
+            .register_inspectable::<Inverter>()
+            .register_inspectable::<Repeater>()
+            .register_inspectable::<Succeeder>()
+            .add_asset::<BehaviorAsset>()
+            .init_asset_loader::<BehaviorAssetLoader>()
             .add_system(complete_behavior)
             .add_system(start_behavior)
             .add_system(sequence::run)
@@ -119,7 +151,7 @@ pub enum BehaviorType {
 /// A component to provide static behavior node info
 pub trait BehaviorInfo
 where
-    Self: Reflect + Component + Clone + Default + Sized + 'static,
+    Self: Inspectable + Reflect + Component + Clone + Default + Sized + 'static,
 {
     const TYPE: BehaviorType;
     const NAME: &'static str;
@@ -159,14 +191,18 @@ impl BehaviorTree {
     pub fn from_asset<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
-        document: Handle<BehaviorAsset<T>>,
+        document: Handle<BehaviorAsset>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + Debug,
     {
         let entity = commands
             .spawn()
-            .insert(BehaviorAssetLoading { document, parent })
+            .insert(BehaviorAssetLoading::<T> {
+                document,
+                parent,
+                ..default()
+            })
             .id();
         Self { root: Some(entity) }
     }

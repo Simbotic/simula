@@ -1,22 +1,14 @@
 use crate::behaviors;
 use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
-use simula_behavior::{
-    actions::*,
-    asset::{async_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument},
-    composites::*,
-    decorators::*,
-    BehaviorInfo, BehaviorSpawner, BehaviorTree,
-};
+use simula_behavior::prelude::*;
 
 pub struct MissionBehaviorPlugin;
 
 impl Plugin for MissionBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
-            .add_asset::<BehaviorAsset<MissionBehavior>>()
-            .init_asset_loader::<BehaviorAssetLoader<MissionBehavior>>()
-            .add_system(async_loader::<MissionBehavior>)
+            .add_system(behavior_loader::<MissionBehavior>)
             .add_system(behaviors::agent_rest::run)
             .add_system(behaviors::agent_work::run);
     }
