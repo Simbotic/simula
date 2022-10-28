@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::*,
+    prelude::*
 };
 use bevy_egui::{
     egui,
@@ -28,6 +28,7 @@ impl Plugin for WalletUIPlugin {
                 time_icon: None,
                 energy_icon: None,
                 trust_icon: None,
+                labor_icon: None,
             })    
             .add_startup_system(initialize_images)
             .add_system(wallet_creation_window)
@@ -40,7 +41,7 @@ impl Plugin for WalletUIPlugin {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet(usize);
 
-fn wallet_ui_system(
+fn _wallet_ui_system(
     mut egui_ctx: ResMut<EguiContext>,
     wallets: Query<(&Wallet, &Children)>,
     accounts: Query<(&Account, &Children)>,
@@ -206,12 +207,14 @@ impl FromWorld for Images {
                 time_icon: asset_server.load("../assets/mission/Balance.png"),
                 trust_icon: asset_server.load("../assets/mission/Money - Cash.png"),
                 energy_icon: asset_server.load("../assets/mission/Money - Coins.png"),
+                labor_icon: asset_server.load("../assets/mission/labor-icon.png")
             }
         } else {
             Self {
                 time_icon: Handle::default(),
                 trust_icon: Handle::default(),
                 energy_icon: Handle::default(),
+                labor_icon: Handle::default()
             }
         }
     }
@@ -221,12 +224,14 @@ pub struct Images {
     time_icon: Handle<Image>,
     trust_icon: Handle<Image>,
     energy_icon: Handle<Image>,
+    labor_icon: Handle<Image>
 }
 
 pub struct ImageTextureIds {
     time_icon: Option<egui::TextureId>,
     trust_icon: Option<egui::TextureId>,
     energy_icon: Option<egui::TextureId>,
+    labor_icon: Option<egui::TextureId>,
 }
 
 fn initialize_images(
@@ -237,12 +242,33 @@ fn initialize_images(
     image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
     image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
     image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
+    image_texture_ids.labor_icon = Some(egui_ctx.add_image(images.labor_icon.clone()));
 }
-
-trait AssetInfo {
+pub trait AssetInfo {
     fn name(&self) -> &'static str;
     fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
     fn amount(&self) -> Amount;
+    fn is_draggable(&self) -> bool;
+    fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>){
+        ui.horizontal(|ui| {
+            if let Some(icon) = self.icon(&texture_ids){
+                ui.add(egui::widgets::Image::new(
+                    icon,
+                    [20.0, 20.0],
+                ));
+            }
+            let label = egui::Label::new(format!(
+                "{}: {}",
+                self.name(), self.amount().0
+            ));
+            if self.is_draggable(){
+                ui.add(label.sense(egui::Sense::click()));
+                
+            }else{
+                ui.add(label);
+            }
+        });
+    }
 }
 
 impl AssetInfo for MissionToken {
@@ -261,7 +287,7 @@ impl AssetInfo for MissionToken {
             MissionToken::Time(_) => image_texture_ids.time_icon,
             MissionToken::Trust(_) => image_texture_ids.trust_icon,
             MissionToken::Energy(_) => image_texture_ids.energy_icon,
-            MissionToken::Labor(_) => None,
+            MissionToken::Labor(_) => image_texture_ids.labor_icon,
             MissionToken::None => None,
         }
     }
@@ -273,6 +299,77 @@ impl AssetInfo for MissionToken {
             MissionToken::Trust(asset) => asset.0,
             MissionToken::Energy(asset) => asset.0,
             MissionToken::Labor(asset) => asset.0,
+        }
+    }
+
+    fn is_draggable(&self) -> bool {
+        match self {
+            MissionToken::None => false,
+            MissionToken::Time(_) => false,
+            MissionToken::Trust(_) => true,
+            MissionToken::Energy(_) => true,
+            MissionToken::Labor(_) => true,
+        }
+    }
+
+    fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>) {
+        match self {
+            MissionToken::None => {},
+            MissionToken::Time(_) => {
+                ui.horizontal(|ui| {
+                    if let Some(icon) = self.icon(&texture_ids){
+                        ui.add(egui::widgets::Image::new(
+                            icon,
+                            [20.0, 20.0],
+                        ));
+                    }
+
+                    let label = egui::Label::new(format!(
+                        ": {}",self.amount().0
+                    ));
+
+                    if self.is_draggable(){
+                        ui.add(label.sense(egui::Sense::click()));
+                        
+                    }else{
+                        ui.add(label);
+                    }
+                });
+            },
+            MissionToken::Trust(_) => {
+                if let Some(icon) = self.icon(&texture_ids){
+                    ui.add(egui::widgets::Image::new(
+                        icon,
+                        [20.0, 20.0],
+                    ));
+                }
+            },
+            MissionToken::Energy(_) => {
+                ui.add(egui::widgets::SelectableLabel::new(true,format!(
+                    "{}: {}",
+                    self.name(), self.amount().0
+                )));
+            },
+            MissionToken::Labor(_) => {
+                ui.vertical(|ui| {
+                    if let Some(icon) = self.icon(&texture_ids){
+                        ui.add(egui::widgets::Image::new(
+                            icon,
+                            [20.0, 20.0],
+                        ));
+                        let label = egui::widgets::Label::new(format!(
+                            "{}: {}",
+                            self.name(), self.amount().0
+                        ));
+                        if self.is_draggable(){
+                            ui.add(label.sense(egui::Sense::click()));
+                        }else{
+                            ui.add(label);
+                        }
+                    }
+                });
+
+            },
         }
     }
 }
@@ -296,8 +393,8 @@ enum WalletUIType {
 
 enum WalletUIResponse {
     CloseTitlebar,
-    ChooseWallet(Entity),
-    StartDrag(Entity),
+    _ChooseWallet(Entity),
+    _StartDrag(Entity),
 }
 
 trait WalletUIOptions {
@@ -480,7 +577,7 @@ fn create_wallet_ui<T: WalletUIOptions + Component>(commands: &mut Commands, wal
     }
 }
 
-fn add_follow_ui_panel(commands: &mut Commands) {
+fn _add_follow_ui_panel(commands: &mut Commands) {
     commands
         .spawn()
         .insert_bundle(TransformBundle {

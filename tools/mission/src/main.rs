@@ -133,76 +133,6 @@ fn setup(
         })
         .build(&mut commands);
 
-    let _agent_wallet_2 = WalletBuilder::<MissionToken>::default()
-        .id("e75b980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("8d61c19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(2000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(500.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(6900.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("fde4354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(50.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(750.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(0.into()));
-                });
-        })
-        .build(&mut commands);
-
-    let _agent_wallet_3 = WalletBuilder::<MissionToken>::default()
-        .id("e75d880182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("7d61d19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(3000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(800000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(10500.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("ffe4454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(650.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(15000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(10.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(100.into()));
-                });
-        })
-        .build(&mut commands);
-
-    let _agent_wallet_4 = WalletBuilder::<MissionToken>::default()
-        .id("d76a990182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account.id("fde3454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c");
-        })
-        .build(&mut commands);
-
     let agent_behavior_graph = commands
         .spawn()
         .insert(BehaviorEditorState {
@@ -308,7 +238,6 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[_agent_wallet_4, behavior.root.unwrap()])
         .insert(behavior)
         .insert(Name::new("Agent: 002"));
 

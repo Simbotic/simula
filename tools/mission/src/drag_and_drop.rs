@@ -1,4 +1,4 @@
-use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut};
+use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res};
 use bevy_egui::{egui::*, EguiContext};
 use simula_mission::{
     account::Account,
@@ -6,9 +6,11 @@ use simula_mission::{
     wallet::Wallet,
 };
 
-use crate::MissionToken;
+use crate::{MissionToken, wallet_ui::AssetInfo};
 
 pub struct DragAndDropPlugin;
+
+use crate::wallet_ui::ImageTextureIds;
 
 impl Plugin for DragAndDropPlugin {
     fn build(&self, app: &mut App) {
@@ -110,6 +112,7 @@ pub fn drag_and_drop(
     accounts: Query<(&mut Account, &Children)>,
     mut assets: Query<&mut MissionToken>,
     mut commands: Commands,
+    image_texture_ids: Res<ImageTextureIds>,
 ) {
     egui::Window::new("Transfer assets")
         .open(&mut true)
@@ -163,36 +166,18 @@ pub fn drag_and_drop(
                                     // iterate assets
 
                                     if let Ok(asset) = assets.get(*asset_entity) {
-                                        let asset_name = match asset {
-                                            MissionToken::Time(_) => "Time",
-                                            MissionToken::Trust(_) => "Trust",
-                                            MissionToken::Energy(_) => "Energy",
-                                            MissionToken::Labor(_) => "Labor",
-                                            MissionToken::None => "None",
-                                        };
-
-                                        let asset_value = match asset {
-                                            MissionToken::Time(asset) => asset.0 .0,
-                                            MissionToken::Trust(asset) => asset.0 .0,
-                                            MissionToken::Energy(asset) => asset.0 .0,
-                                            MissionToken::Labor(asset) => asset.0 .0,
-                                            MissionToken::None => 0,
-                                        };
-
                                         let item_id = Id::new(id_source)
                                             .with(wallet_idx)
                                             .with(account_idx)
                                             .with(asset_idx); // we create an id with all index
 
-                                        drag_source(ui, item_id, |ui| {
-                                            ui.add(
-                                                Label::new(format!(
-                                                    "{}: {}",
-                                                    asset_name, asset_value
-                                                ))
-                                                .sense(Sense::click()),
-                                            ); //we make the asset dragable
-                                        });
+                                        if asset.is_draggable(){
+                                            drag_source(ui, item_id, |ui| { //we make the asset dragable
+                                                asset.render(ui, &image_texture_ids);
+                                            });
+                                        }else{
+                                            asset.render(ui, &image_texture_ids);
+                                        }
 
                                         if ui.memory().is_being_dragged(item_id) {
                                             source_asset = Some(asset_entity); // we now know which asset is being dragged
