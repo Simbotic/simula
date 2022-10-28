@@ -1,10 +1,10 @@
 use actions::*;
 use asset::{BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading, BehaviorDocument};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
-use bevy_inspector_egui::Inspectable;
-use bevy_inspector_egui::RegisterInspectable;
+use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use composites::*;
 use decorators::*;
+use inspector::BehaviorInspectorPlugin;
 use std::fmt::Debug;
 
 pub mod actions;
@@ -22,14 +22,14 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::{BehaviorInspector, BehaviorInspectorPlugin};
+    pub use crate::inspector::BehaviorInspector;
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorParent, BehaviorPlugin,
         BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess, BehaviorTree,
         BehaviorType,
     };
-    pub use bevy_inspector_egui::Inspectable;
+    pub use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 }
 
 pub struct BehaviorPlugin;
@@ -70,9 +70,7 @@ pub trait BehaviorSpawner {
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // .register_type::<editor_old::BehaviorGraphState>()
-            // .register_type::<editor_old::BehaviorEditorState>()
+        app.add_plugin(BehaviorInspectorPlugin)
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
@@ -93,7 +91,6 @@ impl Plugin for BehaviorPlugin {
             .register_inspectable::<Succeeder>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
-            // .add_system(editor_old::egui_update)
             .add_system(complete_behavior)
             .add_system(start_behavior)
             .add_system(sequence::run)

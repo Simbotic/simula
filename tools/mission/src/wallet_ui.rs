@@ -40,7 +40,7 @@ impl Plugin for WalletUIPlugin {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet(usize);
 
-fn wallet_ui_system(
+fn _wallet_ui_system(
     mut egui_ctx: ResMut<EguiContext>,
     wallets: Query<(&Wallet, &Children)>,
     accounts: Query<(&Account, &Children)>,
@@ -296,8 +296,8 @@ enum WalletUIType {
 
 enum WalletUIResponse {
     CloseTitlebar,
-    ChooseWallet(Entity),
-    StartDrag(Entity),
+    // ChooseWallet(Entity),
+    // StartDrag(Entity),
 }
 
 trait WalletUIOptions {
@@ -392,7 +392,6 @@ fn wallet_ui_draw<T: WalletUIOptions + Component>(
                         WalletUIResponse::CloseTitlebar => {
                             commands.entity(entity).despawn();
                         }
-                        _ => {}
                     }
                 }
 
@@ -480,7 +479,7 @@ fn create_wallet_ui<T: WalletUIOptions + Component>(commands: &mut Commands, wal
     }
 }
 
-fn add_follow_ui_panel(commands: &mut Commands) {
+fn _add_follow_ui_panel(commands: &mut Commands) {
     commands
         .spawn()
         .insert_bundle(TransformBundle {

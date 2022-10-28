@@ -4,7 +4,6 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
-use egui_extras::{Size, TableBuilder};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
@@ -57,7 +56,6 @@ fn main() {
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
-    .add_plugin(BehaviorInspectorPlugin)
     .add_plugin(ActionPlugin)
     .add_plugin(FrameTimeDiagnosticsPlugin::default())
     .add_plugin(OrbitCameraPlugin)
