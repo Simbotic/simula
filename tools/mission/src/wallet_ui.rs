@@ -279,7 +279,7 @@ impl AssetInfo for MissionToken {
 
 
 #[derive(Component)]
-struct WalletUI;
+struct WalletUI(WalletUIType);
 
 // Mark wallet to be used with FollowUI
 #[derive(Component)]
@@ -319,6 +319,30 @@ trait WalletUIOptions {
     }
     fn window_frame() -> Option<egui::containers::Frame> {
         None
+    }
+    fn fixed_size(x: f32, y: f32) -> Option<egui::Vec2> {
+        None
+    }
+    fn fixed_pos(x: f32, y: f32) -> Option<egui::Pos2> {
+        Some(egui::Pos2::new(x, y))
+    }
+    fn collapsible() -> bool {
+        false
+    }
+    fn vscroll() -> bool {
+        false
+    }
+    fn resizable() -> bool {
+        false
+    }
+    fn drag_bounds() -> Option<egui::Rect> {
+        None
+    }
+    fn show_title_bar() -> bool {
+        true
+    }
+    fn wallet_title() -> &'static str {
+        "Wallets"
     }
 }
 
@@ -365,51 +389,103 @@ impl WalletUIOptions for MyCoolInGameWalletUI {
             ..default()
         })
     }
+    fn fixed_size(x: f32, y: f32) -> Option<egui::Vec2> {
+        Some(egui::Vec2::new(x, y))
+    }
+    fn fixed_pos(x: f32, y: f32) -> Option<egui::Pos2> {
+        Some(egui::Pos2::new(x, y+2.0))
+    }
+    fn show_title_bar() -> bool {
+        false
+    }
 }
 
 fn wallet_ui_draw<T: WalletUIOptions + Component>(
     mut commands: Commands,
     wallets: Query<(&Wallet, &Children)>,
     mut egui_context: ResMut<EguiContext>,
-    mut wallet_ui: Query<(Entity, &mut WalletUI, &mut T)>,
+    mut wallet_ui: Query<(Entity, &WalletUI, &mut T)>,
     mut selected_wallet: ResMut<SelectedWallet>,
+    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<FollowPanel>>,
 ) {
-    for (entity, _, _) in wallet_ui.iter_mut() {
+    
+    let mut ui_pos = None;
+    let mut ui_size = None;
+    for (entity, follow_ui, visibility) in follow_uis.iter() {
+        ui_pos = Some(visibility.screen_pos);
+        ui_size = Some(follow_ui.size);
+    }
 
-        let mut window = egui::Window::new("Wallet window")
+    for (entity, wallet_type, _) in wallet_ui.iter_mut() {
+
+        let mut window = egui::Window::new(T::wallet_title())
             .id(egui::Id::new(entity));
+            
+        window = window.title_bar(T::show_title_bar());
+        window = window.collapsible(T::collapsible());
+        window = window.vscroll(T::vscroll());
+        window = window.resizable(T::resizable());
 
         if let Some(frame) = T::window_frame() {
             window = window.frame(frame);
         };
 
-        window
-            .collapsible(false)
-            .title_bar(true)
-            .show(egui_context.ctx_mut(), |ui| {
-                if let Some(response) = T::titlebar(ui) {
-                    match response {
-                        WalletUIResponse::CloseTitlebar => {
-                            commands.entity(entity).despawn();
+        if let Some(drag_bounds) = T::drag_bounds() {
+            window = window.drag_bounds(drag_bounds);
+        };
+
+        if let Some(size) = ui_size {
+            if let Some(fixed_size) = T::fixed_size(size.x, size.y) {
+                window = window.fixed_size(fixed_size);
+            };
+        }
+
+        let mut show = true;
+
+        match wallet_type.0 {
+            WalletUIType::Follow => {
+                if let Some(pos) = ui_pos {
+                    if let Some(fixed_pos) = T::fixed_pos(pos.x, pos.y) {
+                        window = window.fixed_pos(fixed_pos);
+                    };
+                }
+                if follow_uis.iter().len() == 0 {
+                    show = false;
+                }
+            }
+            _ => {}
+        }
+
+        if show {
+            window
+                .collapsible(false)
+                .show(egui_context.ctx_mut(), |ui| {
+                    if let Some(response) = T::titlebar(ui) {
+                        match response {
+                            WalletUIResponse::CloseTitlebar => {
+                                commands.entity(entity).despawn();
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
-                }
-
-                let mut wallet_list: Vec<(String, &Children)> = vec![];
-                for (wallet, wallet_accounts) in wallets.iter() {
-                    let wallet_id_trimmed = wallet
-                        .wallet_id
-                        .to_string()
-                        .get(0..8)
-                        .unwrap_or_default()
-                        .to_string();
-                    wallet_list.push((wallet_id_trimmed, wallet_accounts));
-                }
-
-                T::wallet_selector(ui, &mut selected_wallet.0, wallet_list.len(), |i| wallet_list[i].0.to_owned())
-
-            });
+    
+                    let mut wallet_list: Vec<(String, &Children)> = vec![];
+                    for (wallet, wallet_accounts) in wallets.iter() {
+                        let wallet_id_trimmed = wallet
+                            .wallet_id
+                            .to_string()
+                            .get(0..8)
+                            .unwrap_or_default()
+                            .to_string();
+                        wallet_list.push((wallet_id_trimmed, wallet_accounts));
+                    }
+    
+                    T::wallet_selector(ui, &mut selected_wallet.0, wallet_list.len(), |i| wallet_list[i].0.to_owned())
+    
+                });
+        }
+        
+            
     }
 }
 
@@ -449,52 +525,26 @@ fn add_wallet(commands: &mut Commands) {
         .build(commands);
 }
 
-fn create_wallet_ui<T: WalletUIOptions + Component>(commands: &mut Commands, wallet_type: WalletUIType, configuration: T) {
+fn create_wallet_ui<T: WalletUIOptions + Component>(
+    commands: &mut Commands, 
+    wallet_type: WalletUIType, 
+    configuration: T,
+) {
     let entity = commands
         .spawn()
-        .insert(WalletUI)
         .insert(configuration)
         .id();
     
     match wallet_type {
         WalletUIType::Follow => {
             commands.entity(entity)
-                .insert_bundle(TransformBundle {
-                    local: Transform::from_xyz(2.0, 0.0, 2.0),
-                    ..Default::default()
-                })
-                .insert(FollowUI {
-                    min_distance: 0.1,
-                    max_distance: 20.0,
-                    min_height: -5.0,
-                    max_height: 5.0,
-                    max_view_angle: 45.0,
-                    ..default()
-                })
                 .insert(WalletUIFollow)
-                .insert(FollowPanel);
+                .insert(WalletUI(WalletUIType::Follow));
         }
         WalletUIType::Tool => {
-            commands.entity(entity).insert(WalletUITool);
+            commands.entity(entity)
+            .insert(WalletUITool)
+            .insert(WalletUI(WalletUIType::Tool));
         }
     }
-}
-
-fn add_follow_ui_panel(commands: &mut Commands) {
-    commands
-        .spawn()
-        .insert_bundle(TransformBundle {
-            local: Transform::from_xyz(2.0, 0.0, 2.0),
-            ..Default::default()
-        })
-        .insert(FollowUI {
-            min_distance: 0.1,
-            max_distance: 20.0,
-            min_height: -5.0,
-            max_height: 5.0,
-            max_view_angle: 45.0,
-            ..default()
-        })
-        .insert(FollowPanel)
-        .insert(Name::new("Follow UI: Shape"));
 }

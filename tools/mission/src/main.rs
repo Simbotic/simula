@@ -21,7 +21,7 @@ use simula_video::GifAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
-    follow_ui::{FollowUICamera, FollowUIPlugin},
+    follow_ui::{FollowUICamera, FollowUIPlugin, FollowUI},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
@@ -232,6 +232,15 @@ fn setup(
             transform: Transform::from_translation(video_position).with_rotation(video_rotation),
             ..default()
         })
+        .insert(FollowUI {
+            min_distance: 0.1,
+            max_distance: 20.0,
+            min_height: -5.0,
+            max_height: 5.0,
+            max_view_angle: 45.0,
+            ..default()
+        })
+        .insert(FollowPanel)
         .with_children(|parent| {
             let mut child = parent.spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
