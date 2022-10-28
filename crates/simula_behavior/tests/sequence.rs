@@ -7,9 +7,9 @@ fn sequence_single_success() {
         root:(
             Sequence(()), 
             [
-                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0))),
+                (DebugAction((message:"Hello, from DebugMessage0!"))),
+                (DebugAction((message:"Hello, from DebugMessage1!"))),
+                (DebugAction((message:"Hello, from DebugMessage2!"))),
             ],
         )
     )
@@ -36,9 +36,9 @@ fn sequence_single_failure() {
         root:(
             Sequence(()), 
             [
-                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0))),
+                (DebugAction((message:"Hello, from DebugMessage0!"))),
+                (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
+                (DebugAction((message:"Hello, from DebugMessage2!"))),
             ],
         )
     )
@@ -69,14 +69,14 @@ fn sequence_nested_success() {
                         (
                             Sequence(()),
                             [
-                                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
+                                (DebugAction((message:"Hello, from DebugMessage0!"))),
                             ]
                         ),
                         (
                             Sequence(()),
                             [
-                                (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0))),
-                                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0))),
+                                (DebugAction((message:"Hello, from DebugMessage1!"))),
+                                (DebugAction((message:"Hello, from DebugMessage2!"))),
                             ]
                         )
                     ]
@@ -119,14 +119,14 @@ fn sequence_nested_failure() {
                         (
                             Sequence(()),
                             [
-                                (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
+                                (DebugAction((message:"Hello, from DebugMessage0!"))),
                             ]
                         ),
                         (
                             Sequence(()),
                             [
-                                (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0))),
-                                (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0))),
+                                (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
+                                (DebugAction((message:"Hello, from DebugMessage2!"))),
                             ]
                         )
                     ]
@@ -167,14 +167,14 @@ fn sequence_nested_selector_success() {
                         (
                             Selector(()),
                             [
-                                (DebugAction((message:"Unlocked the doors!", fail:false, repeat:0))),
+                                (DebugAction((message:"Unlocked the doors!"))),
                             ]
                         ),
                         (
                             Sequence(()),
                             [
-                                (DebugAction((message:"Closed doors!", fail:false, repeat:0))),
-                                (DebugAction((message:"Go to selected door!", fail:false, repeat:0))),
+                                (DebugAction((message:"Closed doors!"))),
+                                (DebugAction((message:"Go to selected door!"))),
                             ]
                         )
                     ]

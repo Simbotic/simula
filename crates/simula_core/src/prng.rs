@@ -1,6 +1,6 @@
 use oorandom::Rand32;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Prng {
     rng: Rand32,
 }
@@ -10,6 +10,10 @@ impl Prng {
         Prng {
             rng: Rand32::new(seed),
         }
+    }
+
+    pub fn rand_u32(&mut self) -> u32 {
+        self.rng.rand_u32()
     }
 
     pub fn rand_float(&mut self) -> f32 {

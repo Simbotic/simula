@@ -7,8 +7,8 @@ fn inverter_sequence_success() {
         root:(
             Inverter(()),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)))
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                    (DebugAction((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )
@@ -33,8 +33,8 @@ fn inverter_sequence_failure() {
         root:(
             Inverter(()),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)))
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:false))),
+                    (DebugAction((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )

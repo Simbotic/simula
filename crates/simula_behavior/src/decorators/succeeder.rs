@@ -2,22 +2,25 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Inverts result of their child node. Success becomes failure, and failure becomes success.
+/// A succeeder will always return success, irrespective of what the child node
+/// actually returned. These are useful in cases where you want to process a branch
+/// of a tree where a failure is expected or anticipated, but you don’t want to
+/// abandon processing of a sequence that branch sits on.
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
-pub struct Inverter;
+pub struct Succeeder;
 
-impl BehaviorInfo for Inverter {
+impl BehaviorInfo for Succeeder {
     const TYPE: BehaviorType = BehaviorType::Decorator;
-    const NAME: &'static str = "Inverter";
-    const DESC: &'static str = "Inverts result of child node";
+    const NAME: &'static str = "Succeeder";
+    const DESC: &'static str = "A succeeder will always return success";
 }
 
 pub fn run(
     mut commands: Commands,
-    mut inverters: Query<(Entity, &BehaviorChildren), (With<Inverter>, BehaviorRunQuery)>,
+    mut succeeders: Query<(Entity, &BehaviorChildren), (With<Succeeder>, BehaviorRunQuery)>,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, children) in &mut inverters {
+    for (entity, children) in &mut succeeders {
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
@@ -38,9 +41,9 @@ pub fn run(
                         if child_failure.is_some() {
                             commands.entity(entity).insert(BehaviorSuccess);
                         }
-                        // Child succeeded, so we fail
+                        // Child succeeded, so we succeed
                         else if child_success.is_some() {
-                            commands.entity(entity).insert(BehaviorFailure);
+                            commands.entity(entity).insert(BehaviorSuccess);
                         }
                         // Child is ready, pass on cursor
                         else {

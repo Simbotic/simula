@@ -1,22 +1,14 @@
 use crate::behaviors;
 use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
-use simula_behavior::{
-    actions::*,
-    asset::{async_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument},
-    composites::*,
-    decorators::*,
-    BehaviorInfo, BehaviorSpawner, BehaviorTree,
-};
+use simula_behavior::prelude::*;
 
 pub struct MissionBehaviorPlugin;
 
 impl Plugin for MissionBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
-            .add_asset::<BehaviorAsset<MissionBehavior>>()
-            .init_asset_loader::<BehaviorAssetLoader<MissionBehavior>>()
-            .add_system(async_loader::<MissionBehavior>)
+            .add_system(behavior_loader::<MissionBehavior>)
             .add_system(behaviors::agent_rest::run)
             .add_system(behaviors::agent_work::run);
     }
@@ -30,6 +22,8 @@ pub enum MissionBehavior {
     Sequence(Sequence),
     Repeater(Repeater),
     Inverter(Inverter),
+    Succeeder(Succeeder),
+    Delay(Delay),
     AgentRest(behaviors::agent_rest::AgentRest),
     AgentWork(behaviors::agent_work::AgentWork),
 }
@@ -48,6 +42,8 @@ impl BehaviorSpawner for MissionBehavior {
             MissionBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Succeeder(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Delay(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::AgentRest(data) => BehaviorInfo::spawn_with(commands, data),
             MissionBehavior::AgentWork(data) => BehaviorInfo::spawn_with(commands, data),
         }
@@ -76,7 +72,6 @@ pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> Beha
                     BTNode(
                         MissionBehavior::DebugAction(DebugAction {
                             message: "Hello, from DebugMessage1!".to_string(),
-                            repeat: 5,
                             ..default()
                         }),
                         vec![],

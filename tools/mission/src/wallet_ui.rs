@@ -489,7 +489,6 @@ fn wallet_ui_draw<T: WalletUIOptions + Component>(
                         WalletUIResponse::CloseTitlebar => {
                             commands.entity(entity).despawn();
                         }
-                        _ => {}
                     }
                 }
 

@@ -7,9 +7,9 @@ fn selector_single_success() {
         root:(
             Selector(()), 
             [
-                (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage2!", fail:true, repeat:0))),
+                (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                (DebugAction((message:"Hello, from DebugMessage1!"))),
+                (DebugAction((message:"Hello, from DebugMessage2!", fail:true))),
             ],
         )
     )
@@ -34,9 +34,9 @@ fn selector_single_failure() {
         root:(
             Selector(()), 
             [
-                (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0))),
-                (DebugAction((message:"Hello, from DebugMessage2!", fail:true, repeat:0))),
+                (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
+                (DebugAction((message:"Hello, from DebugMessage2!", fail:true))),
             ],
         )
     )
@@ -65,13 +65,13 @@ fn selector_nested_success() {
             [
                 (Selector(()),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:0))),
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                    (DebugAction((message:"Hello, from DebugMessage1!"))),
                 ]),
                 (Selector(()),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true, repeat:0))),
+                    (DebugAction((message:"Hello, from DebugMessage2!"))),
+                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true))),
                 ]),
             ],
         )
@@ -101,13 +101,13 @@ fn selector_nested_fail_first_then_success() {
             [
                 (Selector(()),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0))),
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                    (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
                 ]),
                 (Selector(()),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage2!", fail:false, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true, repeat:0))),
+                    (DebugAction((message:"Hello, from DebugMessage2!"))),
+                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true))),
                 ]),
             ],
         )
@@ -141,13 +141,13 @@ fn selector_nested_failure() {
             [
                 (Selector(()),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:true, repeat:0))),
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                    (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
                 ]),
                 (Selector(()),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage2!", fail:true, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true, repeat:0))),
+                    (DebugAction((message:"Hello, from DebugMessage2!", fail:true))),
+                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true))),
                 ]),
             ],
         )

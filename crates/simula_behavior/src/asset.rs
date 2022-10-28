@@ -18,33 +18,26 @@ pub struct BehaviorDocument<T: Default> {
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
-pub struct BehaviorAsset<T>
-where
-    T: Default + Debug,
-{
+pub struct BehaviorAsset {
     pub path: String,
-    pub document: BehaviorDocument<T>,
+    pub document: String,
 }
 
 #[derive(Default)]
-pub struct BehaviorAssetLoader<T>(std::marker::PhantomData<T>);
+pub struct BehaviorAssetLoader;
 
-impl<T> AssetLoader for BehaviorAssetLoader<T>
-where
-    T: Sync + Send + 'static + Default + Debug + TypeUuid + for<'de> Deserialize<'de>,
-{
+impl AssetLoader for BehaviorAssetLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
-            let document: BehaviorDocument<T> = ron::de::from_bytes(&bytes)?;
-            let asset = BehaviorAsset::<T> {
+            let asset = BehaviorAsset {
                 path: load_context.path().display().to_string(),
-                document,
+                document: std::str::from_utf8(bytes).unwrap_or_default().to_string(),
             };
-            println!("WWWWWWWWWW   Loaded asset: {:?}", asset);
+            println!("KUKUKUKU   Loaded asset: {:?}", asset);
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })
@@ -55,25 +48,34 @@ where
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct BehaviorAssetLoading<T>
 where
     T: TypeUuid + Send + Sync + 'static + Default + Debug,
 {
-    pub document: Handle<BehaviorAsset<T>>,
+    pub document: Handle<BehaviorAsset>,
     pub parent: Option<Entity>,
+    pub phantom: std::marker::PhantomData<T>,
 }
 
-pub fn async_loader<T>(
+pub fn behavior_loader<T>(
     mut commands: Commands,
-    loaded_assets: Res<Assets<BehaviorAsset<T>>>,
+    loaded_assets: Res<Assets<BehaviorAsset>>,
     queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
 ) where
-    T: BehaviorSpawner + TypeUuid + Send + Sync + 'static + Default + Debug,
+    T: BehaviorSpawner
+        + TypeUuid
+        + Send
+        + Sync
+        + 'static
+        + Default
+        + Debug
+        + for<'de> Deserialize<'de>,
 {
     for (entity, queued_asset) in queued_assets.iter() {
         if let Some(loaded_asset) = loaded_assets.get(&queued_asset.document) {
             let BehaviorAsset { document, .. } = loaded_asset;
+            let document: BehaviorDocument<T> = ron::de::from_str(&document).unwrap();
             let BehaviorDocument { root } = document;
             BehaviorTree::insert_tree::<T>(entity, queued_asset.parent, &mut commands, &root);
             commands.entity(entity).remove::<BehaviorAssetLoading<T>>();

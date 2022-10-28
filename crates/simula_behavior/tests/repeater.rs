@@ -33,7 +33,7 @@ fn repeater_nested() {
         root:(
             Repeater((repeat:Times(2))),
                 [(Repeater((repeat:Times(2))),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:2))),
+                    (DebugAction((message:"Hello, from DebugMessage0!"))),
                 ])]
         )
     )
@@ -69,8 +69,8 @@ fn repeater_sequence_success() {
         root:(
             Repeater((repeat:Times(2))),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)))
+                    (DebugAction((message:"Hello, from DebugMessage0!"))),
+                    (DebugAction((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )
@@ -104,8 +104,8 @@ fn repeater_sequence_failure() {
         root:(
             Repeater((repeat:Times(2))),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true, repeat:0))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)))
+                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
+                    (DebugAction((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )

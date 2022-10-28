@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_behavior::{BehaviorInfo, BehaviorRunQuery, BehaviorSuccess, BehaviorType};
+use simula_behavior::prelude::*;
 
-#[derive(Debug, Default, Component, Reflect, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Serialize, Deserialize, Inspectable)]
 pub struct AgentWork;
 
 impl BehaviorInfo for AgentWork {
