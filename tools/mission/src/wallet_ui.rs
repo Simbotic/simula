@@ -393,8 +393,8 @@ enum WalletUIType {
 
 enum WalletUIResponse {
     CloseTitlebar,
-    _ChooseWallet(Entity),
-    _StartDrag(Entity),
+    //ChooseWallet(Entity),
+    //StartDrag(Entity),
 }
 
 trait WalletUIOptions {
