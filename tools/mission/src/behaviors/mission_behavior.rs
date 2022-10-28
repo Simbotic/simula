@@ -3,7 +3,7 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::{
     actions::*,
-    asset::{async_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument},
+    asset::{async_loader, BTNode, BehaviorDocument},
     composites::*,
     decorators::*,
     BehaviorInfo, BehaviorSpawner, BehaviorTree,

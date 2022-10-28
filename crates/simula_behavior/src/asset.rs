@@ -3,7 +3,7 @@ use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
     reflect::TypeUuid,
-    utils::{BoxedFuture, Uuid},
+    utils::BoxedFuture,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
