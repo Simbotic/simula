@@ -7,8 +7,8 @@ fn inverter_sequence_success() {
         root:(
             Inverter(()),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                    (DebugAction((message:"Hello, from DebugMessage1!")))
+                    (Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    (Debug((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )
@@ -18,8 +18,8 @@ fn inverter_sequence_success() {
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED simula_behavior::decorators::inverter::Inverter",
         "[1] STARTED simula_behavior::composites::sequence::Sequence",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] FAILURE simula_behavior::actions::debug::Debug",
         "[1] FAILURE simula_behavior::composites::sequence::Sequence",
         "[0] SUCCESS simula_behavior::decorators::inverter::Inverter",
     ]);
@@ -33,8 +33,8 @@ fn inverter_sequence_failure() {
         root:(
             Inverter(()),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:false))),
-                    (DebugAction((message:"Hello, from DebugMessage1!")))
+                    (Debug((message:"Hello, from DebugMessage0!", fail:false))),
+                    (Debug((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )
@@ -44,10 +44,10 @@ fn inverter_sequence_failure() {
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED simula_behavior::decorators::inverter::Inverter",
         "[1] STARTED simula_behavior::composites::sequence::Sequence",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
+        "[3] STARTED simula_behavior::actions::debug::Debug",
+        "[3] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] SUCCESS simula_behavior::composites::sequence::Sequence",
         "[0] FAILURE simula_behavior::decorators::inverter::Inverter",
     ]);

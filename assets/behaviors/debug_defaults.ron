@@ -2,9 +2,9 @@
     root:(
         Sequence(()),
         [
-            (DebugAction((fail: true))),
-            (DebugAction((duration: 1.5))),
-            (DebugAction((message: "Hello World!"))),
+            (Debug((fail: true))),
+            (Debug((duration: 1.5))),
+            (Debug((message: "Hello World!"))),
         ]
     )
 )

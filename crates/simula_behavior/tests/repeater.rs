@@ -7,7 +7,7 @@ fn repeater_simple() {
         root:(
             Repeater((repeat:Times(2))),
                 [
-                    (DebugAction((message:"Hello, from DebugMessage0!"))),
+                    (Debug((message:"Hello, from DebugMessage0!"))),
                 ]
             )
         )
@@ -16,11 +16,11 @@ fn repeater_simple() {
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
-        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[1] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[1] STARTED simula_behavior::actions::debug::Debug",
+        "[1] SUCCESS simula_behavior::actions::debug::Debug",
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
-        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[1] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[1] STARTED simula_behavior::actions::debug::Debug",
+        "[1] SUCCESS simula_behavior::actions::debug::Debug",
         "[0] SUCCESS simula_behavior::decorators::repeater::Repeater",
     ]);
     assert_eq!(&trace, &expected_trace);
@@ -33,7 +33,7 @@ fn repeater_nested() {
         root:(
             Repeater((repeat:Times(2))),
                 [(Repeater((repeat:Times(2))),[
-                    (DebugAction((message:"Hello, from DebugMessage0!"))),
+                    (Debug((message:"Hello, from DebugMessage0!"))),
                 ])]
         )
     )
@@ -43,19 +43,19 @@ fn repeater_nested() {
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
         "[1] STARTED simula_behavior::decorators::repeater::Repeater",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] STARTED simula_behavior::decorators::repeater::Repeater",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] SUCCESS simula_behavior::decorators::repeater::Repeater",
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
         "[1] STARTED simula_behavior::decorators::repeater::Repeater",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] STARTED simula_behavior::decorators::repeater::Repeater",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] SUCCESS simula_behavior::decorators::repeater::Repeater",
         "[0] SUCCESS simula_behavior::decorators::repeater::Repeater",
     ]);
@@ -69,8 +69,8 @@ fn repeater_sequence_success() {
         root:(
             Repeater((repeat:Times(2))),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!"))),
-                    (DebugAction((message:"Hello, from DebugMessage1!")))
+                    (Debug((message:"Hello, from DebugMessage0!"))),
+                    (Debug((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )
@@ -80,17 +80,17 @@ fn repeater_sequence_success() {
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
         "[1] STARTED simula_behavior::composites::sequence::Sequence",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
+        "[3] STARTED simula_behavior::actions::debug::Debug",
+        "[3] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] SUCCESS simula_behavior::composites::sequence::Sequence",
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
         "[1] STARTED simula_behavior::composites::sequence::Sequence",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] SUCCESS simula_behavior::actions::debug::Debug",
+        "[3] STARTED simula_behavior::actions::debug::Debug",
+        "[3] SUCCESS simula_behavior::actions::debug::Debug",
         "[1] SUCCESS simula_behavior::composites::sequence::Sequence",
         "[0] SUCCESS simula_behavior::decorators::repeater::Repeater",
     ]);
@@ -104,8 +104,8 @@ fn repeater_sequence_failure() {
         root:(
             Repeater((repeat:Times(2))),
                 [(Sequence(()),[
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                    (DebugAction((message:"Hello, from DebugMessage1!")))
+                    (Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    (Debug((message:"Hello, from DebugMessage1!")))
                 ])]
         )
     )
@@ -115,13 +115,13 @@ fn repeater_sequence_failure() {
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
         "[1] STARTED simula_behavior::composites::sequence::Sequence",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] FAILURE simula_behavior::actions::debug::Debug",
         "[1] FAILURE simula_behavior::composites::sequence::Sequence",
         "[0] STARTED simula_behavior::decorators::repeater::Repeater",
         "[1] STARTED simula_behavior::composites::sequence::Sequence",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
+        "[2] STARTED simula_behavior::actions::debug::Debug",
+        "[2] FAILURE simula_behavior::actions::debug::Debug",
         "[1] FAILURE simula_behavior::composites::sequence::Sequence",
         "[0] SUCCESS simula_behavior::decorators::repeater::Repeater",
     ]);

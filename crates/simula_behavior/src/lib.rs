@@ -5,7 +5,6 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use composites::*;
 use decorators::*;
 use inspector::BehaviorInspectorPlugin;
-use std::fmt::Debug;
 
 pub mod actions;
 pub mod asset;
@@ -13,6 +12,7 @@ pub mod composites;
 pub mod decorators;
 pub mod inspector;
 pub mod test;
+pub mod color_hex_utils;
 
 pub mod prelude {
     pub use crate::actions::*;
@@ -22,7 +22,7 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::BehaviorInspector;
+    pub use crate::inspector::{BehaviorInspector};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorParent, BehaviorPlugin,
@@ -75,14 +75,14 @@ impl Plugin for BehaviorPlugin {
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
             .register_type::<BehaviorCursor>()
-            .register_type::<DebugAction>()
+            .register_type::<Debug>()
             .register_type::<Delay>()
             .register_type::<Selector>()
             .register_type::<Sequence>()
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
-            .register_inspectable::<DebugAction>()
+            .register_inspectable::<Debug>()
             .register_inspectable::<Delay>()
             .register_inspectable::<Selector>()
             .register_inspectable::<Sequence>()
@@ -99,7 +99,7 @@ impl Plugin for BehaviorPlugin {
             .add_system(inverter::run)
             .add_system(succeeder::run)
             .add_system(delay::run)
-            .add_system(debug_action::run);
+            .add_system(debug::run);
     }
 }
 
@@ -139,7 +139,7 @@ pub struct BehaviorParent(Option<Entity>);
 pub struct BehaviorChildren(Vec<Entity>);
 
 /// A component added to identify the type of a behavior node
-#[derive(Debug, Default, Reflect, Clone, Component, Inspectable)]
+#[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
 pub enum BehaviorType {
     #[default]
@@ -194,7 +194,7 @@ impl BehaviorTree {
         document: Handle<BehaviorAsset>,
     ) -> Self
     where
-        T: TypeUuid + Send + Sync + 'static + Default + Debug,
+        T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
     {
         let entity = commands
             .spawn()

@@ -307,7 +307,7 @@ fn setup(
         &mut commands,
         document,
     );
-    behavior_inspector.behavior_root = behavior.root;
+    behavior_inspector.select(behavior.root, "Agent: 001".into());
     if let Some(root) = behavior.root {
         commands.entity(root).insert(BehaviorCursor);
     }

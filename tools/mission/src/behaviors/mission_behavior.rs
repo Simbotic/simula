@@ -17,7 +17,7 @@ impl Plugin for MissionBehaviorPlugin {
 #[derive(Debug, Serialize, Deserialize, TypeUuid)]
 #[uuid = "5c3fbd4c-5359-11ed-9c5d-02a179e5df2b"]
 pub enum MissionBehavior {
-    DebugAction(DebugAction),
+    DebugAction(Debug),
     Selector(Selector),
     Sequence(Sequence),
     Repeater(Repeater),
@@ -30,7 +30,7 @@ pub enum MissionBehavior {
 
 impl Default for MissionBehavior {
     fn default() -> Self {
-        Self::DebugAction(DebugAction::default())
+        Self::DebugAction(Debug::default())
     }
 }
 
@@ -63,14 +63,14 @@ pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> Beha
                 MissionBehavior::Sequence(Sequence::default()),
                 vec![
                     BTNode(
-                        MissionBehavior::DebugAction(DebugAction {
+                        MissionBehavior::DebugAction(Debug {
                             message: "Hello, from DebugMessage0!".to_string(),
                             ..default()
                         }),
                         vec![],
                     ),
                     BTNode(
-                        MissionBehavior::DebugAction(DebugAction {
+                        MissionBehavior::DebugAction(Debug {
                             message: "Hello, from DebugMessage1!".to_string(),
                             ..default()
                         }),

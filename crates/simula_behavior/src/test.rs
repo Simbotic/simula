@@ -21,7 +21,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(inverter::run);
     app.add_system(succeeder::run);
     app.add_system(delay::run);
-    app.add_system(debug_action::run);
+    app.add_system(debug::run);
     app.init_resource::<BehaviorTrace>();
     app
 }
@@ -29,7 +29,7 @@ pub fn test_app(app: &mut App) -> &mut App {
 #[derive(Serialize, Deserialize, TypeUuid)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
 pub enum TestBehavior {
-    DebugAction(DebugAction),
+    Debug(Debug),
     Selector(Selector),
     Sequence(Sequence),
     Repeater(Repeater),
@@ -40,14 +40,14 @@ pub enum TestBehavior {
 
 impl Default for TestBehavior {
     fn default() -> Self {
-        Self::DebugAction(DebugAction::default())
+        Self::Debug(Debug::default())
     }
 }
 
 impl BehaviorSpawner for TestBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
-            TestBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Debug(data) => BehaviorInfo::spawn_with(commands, data),
             TestBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
             TestBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
             TestBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
