@@ -14,14 +14,14 @@ Create a Behavior enum with all behavior nodes to support. This enum will become
 #[derive(Serialize, Deserialize, TypeUuid)]
 #[uuid = "5c3fbd4c-5359-11ed-9c5d-02a179e5df2b"]
 pub enum MyBehavior {
-    DebugAction(DebugAction),
+    Debug(Debug),
     Selector(Selector),
-    Sequence(Sequence),
+    Sequencer(Sequencer),
 }
 
 impl Default for MyBehavior {
     fn default() -> Self {
-        Self::DebugAction(DebugAction::default())
+        Self::Debug(Debug::default())
     }
 }
 ```
@@ -33,9 +33,9 @@ Let the behavior system know how to spawn behavior nodes. Usually the following 
 impl BehaviorSpawner for MyBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
-            MyBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Debug(data) => BehaviorInfo::spawn_with(commands, data),
             MyBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
-            MyBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Sequencer(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }
@@ -65,7 +65,7 @@ From asset
 
 ```
 let document: Handle<BehaviorAsset> = asset_server.load("my_behavior_test.bht.ron");
-let behavior = BehaviorTree::from_asset::<MissionBehavior>(None, commands, &document);
+let behavior = BehaviorTree::from_asset::<MyBehavior>(None, commands, &document);
 ```
 
 From code
@@ -73,24 +73,27 @@ From code
 ```
 let document = BehaviorDocument {
     root: BTNode(
+        "Do a few times".to_string(),
         MyBehavior::Repeater(Repeater {
             repeat: Repeat::Times(2),
             ..default()
         }),
         vec![BTNode(
-            MyBehavior::Sequence(Sequence::default()),
+            "In this order".to_string(),
+            MyBehavior::Sequencer(Sequencer::default()),
             vec![
                 BTNode(
-                    MyBehavior::DebugAction(DebugAction {
+                    "An action".to_string(),
+                    MyBehavior::DebugAction(Debug {
                         message: "Hello, from DebugMessage0!".to_string(),
                         ..default()
                     }),
                     vec![],
                 ),
                 BTNode(
-                    MyBehavior::DebugAction(DebugAction {
+                    "Another action".to_string(),
+                    MyBehavior::DebugAction(Debug {
                         message: "Hello, from DebugMessage1!".to_string(),
-                        repeat: 5,
                         ..default()
                     }),
                     vec![],
@@ -107,11 +110,14 @@ From text
 ```
 let data_str = r#"
     (root:(
-        Repeater((repeat:Times(2), repeated:0)),
-        [(Sequence(()),[
-            (DebugAction((message:"Hello, from DebugMessage0!", fail:false, repeat:0)),[]),
-            (DebugAction((message:"Hello, from DebugMessage1!", fail:false, repeat:2)),[])
-        ])]
+        Succeeder(()), 
+        [
+            (Sequencer(()),
+            [
+                (Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                (Debug((message:"Hello, from DebugMessage1!"))),
+            ]),
+        ],
     ))
 "#;
 let document = ron::from_str::<BehaviorDocument<MyBehavior>>(data_str);
@@ -137,7 +143,7 @@ Create a Component as you would any other ECS component
 
 ```
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
-pub struct DebugAction {
+pub struct Debug {
     pub message: String,
     pub fail: bool,
     pub repeat: u8,
@@ -147,7 +153,7 @@ pub struct DebugAction {
 `impl BehaviorInfo` to aid in debug and tools.
 
 ```
-impl BehaviorInfo for DebugAction {
+impl BehaviorInfo for Debug {
     const TYPE: BehaviorType = BehaviorType::Action;
     const NAME: &'static str = "Debug Action";
     const DESC: &'static str = "Display a debug message and complete with success or failure";
@@ -159,7 +165,7 @@ Create a system as you would any other ECS system. Use the `BehaviorRunQuery` qu
 ```
 pub fn run(
     mut commands: Commands,
-    mut debug_actions: Query<(Entity, &mut DebugAction), BehaviorRunQuery>,
+    mut debug_actions: Query<(Entity, &mut Debug), BehaviorRunQuery>,
 ) {
     for (entity, mut debug_action) in &mut debug_actions {
         debug!("[{}] {}", debug_action.repeat, debug_action.message);

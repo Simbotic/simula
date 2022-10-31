@@ -5,10 +5,10 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use composites::*;
 use decorators::*;
 use inspector::BehaviorInspectorPlugin;
-use std::fmt::Debug;
 
 pub mod actions;
 pub mod asset;
+pub mod color_hex_utils;
 pub mod composites;
 pub mod decorators;
 pub mod inspector;
@@ -25,9 +25,9 @@ pub mod prelude {
     pub use crate::inspector::BehaviorInspector;
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorParent, BehaviorPlugin,
-        BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess, BehaviorTree,
-        BehaviorType,
+        BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
+        BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess,
+        BehaviorTree, BehaviorType,
     };
     pub use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 }
@@ -54,9 +54,13 @@ where
     fn default() -> Self {
         Self {
             behavior: T::default(),
-            node: BehaviorNode::default(),
+            node: BehaviorNode {
+                typ: T::TYPE,
+                name: T::NAME.to_string(),
+                desc: T::DESC.to_string(),
+            },
             typ: T::TYPE,
-            name: Name::new(std::any::type_name::<T>()),
+            name: Name::new(format!("Behavior: {}", T::NAME)),
             parent: BehaviorParent::default(),
             children: BehaviorChildren::default(),
         }
@@ -65,7 +69,7 @@ where
 
 /// How to spawn a behavior node
 pub trait BehaviorSpawner {
-    fn spawn_with(&self, commands: &mut EntityCommands);
+    fn insert(&self, commands: &mut EntityCommands);
 }
 
 impl Plugin for BehaviorPlugin {
@@ -75,17 +79,21 @@ impl Plugin for BehaviorPlugin {
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
             .register_type::<BehaviorCursor>()
-            .register_type::<DebugAction>()
+            .register_type::<Debug>()
             .register_type::<Delay>()
             .register_type::<Selector>()
-            .register_type::<Sequence>()
+            .register_type::<Sequencer>()
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
-            .register_inspectable::<DebugAction>()
+            .register_inspectable::<BehaviorSuccess>()
+            .register_inspectable::<BehaviorRunning>()
+            .register_inspectable::<BehaviorFailure>()
+            .register_inspectable::<BehaviorCursor>()
+            .register_inspectable::<Debug>()
             .register_inspectable::<Delay>()
             .register_inspectable::<Selector>()
-            .register_inspectable::<Sequence>()
+            .register_inspectable::<Sequencer>()
             .register_inspectable::<Inverter>()
             .register_inspectable::<Repeater>()
             .register_inspectable::<Succeeder>()
@@ -93,15 +101,21 @@ impl Plugin for BehaviorPlugin {
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_system(complete_behavior)
             .add_system(start_behavior)
-            .add_system(sequence::run)
+            .add_system(sequencer::run)
             .add_system(selector::run)
             .add_system(repeater::run)
             .add_system(inverter::run)
             .add_system(succeeder::run)
             .add_system(delay::run)
-            .add_system(debug_action::run);
+            .add_system(debug::run);
     }
 }
+
+/// A marker added to currently running behaviors
+#[derive(Default, Debug, Reflect, Clone, Component, Inspectable)]
+#[reflect(Component)]
+#[component(storage = "SparseSet")]
+pub struct BehaviorCursor;
 
 /// A marker added to entities that want to run a behavior
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
@@ -126,7 +140,11 @@ pub struct BehaviorFailure;
 /// A marker added to behavior node entities
 #[derive(Debug, Default, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
-pub struct BehaviorNode;
+pub struct BehaviorNode {
+    pub typ: BehaviorType,
+    pub name: String,
+    pub desc: String,
+}
 
 /// A component to point to the parent of a behavior node
 #[derive(Deref, Debug, Default, Reflect, Clone, Component)]
@@ -139,7 +157,7 @@ pub struct BehaviorParent(Option<Entity>);
 pub struct BehaviorChildren(Vec<Entity>);
 
 /// A component added to identify the type of a behavior node
-#[derive(Debug, Default, Reflect, Clone, Component, Inspectable)]
+#[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
 pub enum BehaviorType {
     #[default]
@@ -157,11 +175,11 @@ where
     const NAME: &'static str;
     const DESC: &'static str;
 
-    fn spawn(commands: &mut EntityCommands) {
+    fn insert(commands: &mut EntityCommands) {
         commands.insert_bundle(BehaviorBundle::<Self>::default());
     }
 
-    fn spawn_with(commands: &mut EntityCommands, data: &Self) {
+    fn insert_with(commands: &mut EntityCommands, data: &Self) {
         commands.insert_bundle(BehaviorBundle::<Self> {
             behavior: data.clone(),
             ..Default::default()
@@ -194,7 +212,7 @@ impl BehaviorTree {
         document: Handle<BehaviorAsset>,
     ) -> Self
     where
-        T: TypeUuid + Send + Sync + 'static + Default + Debug,
+        T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
     {
         let entity = commands
             .spawn()
@@ -239,9 +257,10 @@ impl BehaviorTree {
     where
         T: Default + BehaviorSpawner,
     {
-        let BTNode(node_type, nodes) = node;
+        let BTNode(name, node_type, nodes) = node;
         let mut entity_commands = commands.entity(entity);
-        node_type.spawn_with(&mut entity_commands);
+        node_type.insert(&mut entity_commands);
+        entity_commands.insert(Name::new(name.clone()));
         entity_commands.insert(BehaviorParent(parent));
         let children = nodes
             .iter()
@@ -265,12 +284,6 @@ impl BehaviorTree {
         entity
     }
 }
-
-/// A marker added to currently running behaviors
-#[derive(Default, Debug, Reflect, Clone, Component, Inspectable)]
-#[reflect(Component)]
-#[component(storage = "SparseSet")]
-pub struct BehaviorCursor;
 
 /// Query filter for running behaviors
 #[derive(WorldQuery)]

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct BTNode<T: Default>(pub T, #[serde(default)] pub Vec<BTNode<T>>);
+pub struct BTNode<T: Default>(pub String, pub T, #[serde(default)] pub Vec<BTNode<T>>);
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct BehaviorDocument<T: Default> {
@@ -37,7 +37,6 @@ impl AssetLoader for BehaviorAssetLoader {
                 path: load_context.path().display().to_string(),
                 document: std::str::from_utf8(bytes).unwrap_or_default().to_string(),
             };
-            println!("KUKUKUKU   Loaded asset: {:?}", asset);
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })

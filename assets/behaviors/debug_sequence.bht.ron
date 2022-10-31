@@ -1,9 +1,40 @@
 (
     root:(
-        Sequence(()),
+        "Loop forever",
+        Repeater((repeat:Forever)),
         [
-            (DebugAction((message:"Hello, from DebugMessage0!", duration: 1.0))),
-            (DebugAction((message:"Hello, from DebugMessage1!"))),
+            (
+                "Do in this order",
+                Sequencer(()),
+                [
+                    ("Do a thing", Debug((duration: 1.0))),
+                    ("Do another", Debug((duration: 3.0))),
+                    (
+                        "Do side work",
+                        Selector((random:true)),
+                        [
+                            ("A little side work", Debug((duration: 1.0))),
+                            ("Flip it", Inverter(()), [("Another side work", Debug((duration: 1.0)))]),
+                        ]
+                    ),
+                    (
+                        "Rest for bit",
+                        Selector((random:true)),
+                        [
+                            ("Browser", Debug((duration: 1.0))),
+                            ("Sleep", Debug((duration: 3.0))),
+                            (
+                                "Go on vaction",
+                                Sequencer(()),
+                                [
+                                    ("Sit on the beach", Debug((duration: 1.0))),
+                                    ("Go back to work", Debug((duration: 3.0))),
+                                ]
+                            ),
+                        ]
+                    ),
+                ]
+            ),
         ]
     )
 )

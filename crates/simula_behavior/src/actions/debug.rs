@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
-pub struct DebugAction {
+pub struct Debug {
     #[serde(default)]
     pub message: String,
     #[serde(default)]
@@ -14,16 +14,16 @@ pub struct DebugAction {
     pub start: f64,
 }
 
-impl BehaviorInfo for DebugAction {
+impl BehaviorInfo for Debug {
     const TYPE: BehaviorType = BehaviorType::Action;
-    const NAME: &'static str = "Debug Action";
+    const NAME: &'static str = "Debug";
     const DESC: &'static str = "Display a debug message and complete with success or failure";
 }
 
 pub fn run(
     time: Res<Time>,
     mut commands: Commands,
-    mut debug_actions: Query<(Entity, &mut DebugAction, &mut BehaviorRunning), BehaviorRunQuery>,
+    mut debug_actions: Query<(Entity, &mut Debug, &mut BehaviorRunning), BehaviorRunQuery>,
 ) {
     for (entity, mut debug_action, mut running) in &mut debug_actions {
         if !running.on_enter_handled {

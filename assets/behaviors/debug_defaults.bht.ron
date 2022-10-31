@@ -1,0 +1,11 @@
+(
+    root:(
+        "Simple sequence",
+        Sequencer(()),
+        [
+            ("Fail", Debug((fail: true))),
+            ("Take some time", Debug((duration: 1.5))),
+            ("Say hello", Debug((message: "Hello World!"))),
+        ]
+    )
+)

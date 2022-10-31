@@ -17,9 +17,9 @@ impl Plugin for MissionBehaviorPlugin {
 #[derive(Debug, Serialize, Deserialize, TypeUuid)]
 #[uuid = "5c3fbd4c-5359-11ed-9c5d-02a179e5df2b"]
 pub enum MissionBehavior {
-    DebugAction(DebugAction),
+    Debug(Debug),
     Selector(Selector),
-    Sequence(Sequence),
+    Sequencer(Sequencer),
     Repeater(Repeater),
     Inverter(Inverter),
     Succeeder(Succeeder),
@@ -30,22 +30,22 @@ pub enum MissionBehavior {
 
 impl Default for MissionBehavior {
     fn default() -> Self {
-        Self::DebugAction(DebugAction::default())
+        Self::Debug(Debug::default())
     }
 }
 
 impl BehaviorSpawner for MissionBehavior {
-    fn spawn_with(&self, commands: &mut EntityCommands) {
+    fn insert(&self, commands: &mut EntityCommands) {
         match self {
-            MissionBehavior::DebugAction(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::Succeeder(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::Delay(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::AgentRest(data) => BehaviorInfo::spawn_with(commands, data),
-            MissionBehavior::AgentWork(data) => BehaviorInfo::spawn_with(commands, data),
+            MissionBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::AgentRest(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::AgentWork(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 }
@@ -55,22 +55,26 @@ fn setup() {}
 pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> BehaviorTree {
     let document = BehaviorDocument {
         root: BTNode(
+            "Do a few times".to_string(),
             MissionBehavior::Repeater(Repeater {
                 repeat: Repeat::Times(2),
                 ..default()
             }),
             vec![BTNode(
-                MissionBehavior::Sequence(Sequence::default()),
+                "In this order".to_string(),
+                MissionBehavior::Sequencer(Sequencer::default()),
                 vec![
                     BTNode(
-                        MissionBehavior::DebugAction(DebugAction {
+                        "An action".to_string(),
+                        MissionBehavior::Debug(Debug {
                             message: "Hello, from DebugMessage0!".to_string(),
                             ..default()
                         }),
                         vec![],
                     ),
                     BTNode(
-                        MissionBehavior::DebugAction(DebugAction {
+                        "Another action".to_string(),
+                        MissionBehavior::Debug(Debug {
                             message: "Hello, from DebugMessage1!".to_string(),
                             ..default()
                         }),

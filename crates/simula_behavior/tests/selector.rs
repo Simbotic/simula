@@ -5,11 +5,12 @@ fn selector_single_success() {
     let behavior = r#"
     (
         root:(
-            Selector(()), 
+            "Select first successful action",
+            Selector(()),
             [
-                (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                (DebugAction((message:"Hello, from DebugMessage1!"))),
-                (DebugAction((message:"Hello, from DebugMessage2!", fail:true))),
+                ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
+                ("Do action 2", Debug((message:"Hello, from DebugMessage2!", fail:true))),
             ],
         )
     )
@@ -17,12 +18,12 @@ fn selector_single_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED simula_behavior::composites::selector::Selector",
-        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[1] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] SUCCESS simula_behavior::actions::debug_action::DebugAction",
-        "[0] SUCCESS simula_behavior::composites::selector::Selector",
+        "[0] STARTED Select first successful action",
+        "[1] STARTED Do action 0",
+        "[1] FAILURE Do action 0",
+        "[2] STARTED Do action 1",
+        "[2] SUCCESS Do action 1",
+        "[0] SUCCESS Select first successful action",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -32,11 +33,12 @@ fn selector_single_failure() {
     let behavior = r#"
     (
         root:(
-            Selector(()), 
+            "Select first successful action",
+            Selector(()),
             [
-                (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
-                (DebugAction((message:"Hello, from DebugMessage2!", fail:true))),
+                ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+                ("Do action 2", Debug((message:"Hello, from DebugMessage2!", fail:true))),
             ],
         )
     )
@@ -44,14 +46,14 @@ fn selector_single_failure() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED simula_behavior::composites::selector::Selector",
-        "[1] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[1] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[0] FAILURE simula_behavior::composites::selector::Selector",
+        "[0] STARTED Select first successful action",
+        "[1] STARTED Do action 0",
+        "[1] FAILURE Do action 0",
+        "[2] STARTED Do action 1",
+        "[2] FAILURE Do action 1",
+        "[3] STARTED Do action 2",
+        "[3] FAILURE Do action 2",
+        "[0] FAILURE Select first successful action",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -61,18 +63,25 @@ fn selector_nested_success() {
     let behavior = r#"
     (
         root:(
-            Selector(()), 
+            "Select first successful selector",
+            Selector(()),
             [
-                (Selector(()),
-                [
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                    (DebugAction((message:"Hello, from DebugMessage1!"))),
-                ]),
-                (Selector(()),
-                [
-                    (DebugAction((message:"Hello, from DebugMessage2!"))),
-                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true))),
-                ]),
+                (
+                    "Select first successful action",
+                    Selector(()),
+                    [
+                        ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                        ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
+                    ]
+                ),
+                (
+                    "Another select first successful action",
+                    Selector(()),
+                    [
+                        ("Do action 0", Debug((message:"Hello, from DebugMessage2!"))),
+                        ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
+                    ]
+                ),
             ],
         )
     )
@@ -80,14 +89,14 @@ fn selector_nested_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED simula_behavior::composites::selector::Selector",
-        "[1] STARTED simula_behavior::composites::selector::Selector",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] SUCCESS simula_behavior::actions::debug_action::DebugAction",
-        "[1] SUCCESS simula_behavior::composites::selector::Selector",
-        "[0] SUCCESS simula_behavior::composites::selector::Selector",
+        "[0] STARTED Select first successful selector",
+        "[1] STARTED Select first successful action",
+        "[2] STARTED Do action 0",
+        "[2] FAILURE Do action 0",
+        "[3] STARTED Do action 1",
+        "[3] SUCCESS Do action 1",
+        "[1] SUCCESS Select first successful action",
+        "[0] SUCCESS Select first successful selector",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -97,18 +106,25 @@ fn selector_nested_fail_first_then_success() {
     let behavior = r#"
     (
         root:(
-            Selector(()), 
+            "Select first successful selector",
+            Selector(()),
             [
-                (Selector(()),
-                [
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
-                ]),
-                (Selector(()),
-                [
-                    (DebugAction((message:"Hello, from DebugMessage2!"))),
-                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true))),
-                ]),
+                (
+                    "Select first successful action",
+                    Selector(()),
+                    [
+                        ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                        ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+                    ]
+                ),
+                (
+                    "Another select first successful",
+                    Selector(()),
+                    [
+                        ("Do action 0", Debug((message:"Hello, from DebugMessage2!"))),
+                        ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
+                    ]
+                ),
             ],
         )
     )
@@ -116,18 +132,18 @@ fn selector_nested_fail_first_then_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED simula_behavior::composites::selector::Selector",
-        "[1] STARTED simula_behavior::composites::selector::Selector",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[1] FAILURE simula_behavior::composites::selector::Selector",
-        "[4] STARTED simula_behavior::composites::selector::Selector",
-        "[5] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[5] SUCCESS simula_behavior::actions::debug_action::DebugAction",
-        "[4] SUCCESS simula_behavior::composites::selector::Selector",
-        "[0] SUCCESS simula_behavior::composites::selector::Selector",
+        "[0] STARTED Select first successful selector",
+        "[1] STARTED Select first successful action",
+        "[2] STARTED Do action 0",
+        "[2] FAILURE Do action 0",
+        "[3] STARTED Do action 1",
+        "[3] FAILURE Do action 1",
+        "[1] FAILURE Select first successful action",
+        "[4] STARTED Another select first successful",
+        "[5] STARTED Do action 0",
+        "[5] SUCCESS Do action 0",
+        "[4] SUCCESS Another select first successful",
+        "[0] SUCCESS Select first successful selector",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -137,18 +153,25 @@ fn selector_nested_failure() {
     let behavior = r#"
     (
         root:(
-            Selector(()), 
+            "Select first successful selector",
+            Selector(()),
             [
-                (Selector(()),
-                [
-                    (DebugAction((message:"Hello, from DebugMessage0!", fail:true))),
-                    (DebugAction((message:"Hello, from DebugMessage1!", fail:true))),
-                ]),
-                (Selector(()),
-                [
-                    (DebugAction((message:"Hello, from DebugMessage2!", fail:true))),
-                    (DebugAction((message:"Hello, from DebugMessage3!", fail:true))),
-                ]),
+                (
+                    "Select first successful action",
+                    Selector(()),
+                    [
+                        ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                        ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+                    ]
+                ),
+                (
+                    "Another select first successful",
+                    Selector(()),
+                    [
+                        ("Do action 0", Debug((message:"Hello, from DebugMessage2!", fail:true))),
+                        ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
+                    ]
+                ),
             ],
         )
     )
@@ -156,20 +179,20 @@ fn selector_nested_failure() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED simula_behavior::composites::selector::Selector",
-        "[1] STARTED simula_behavior::composites::selector::Selector",
-        "[2] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[2] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[3] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[3] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[1] FAILURE simula_behavior::composites::selector::Selector",
-        "[4] STARTED simula_behavior::composites::selector::Selector",
-        "[5] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[5] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[6] STARTED simula_behavior::actions::debug_action::DebugAction",
-        "[6] FAILURE simula_behavior::actions::debug_action::DebugAction",
-        "[4] FAILURE simula_behavior::composites::selector::Selector",
-        "[0] FAILURE simula_behavior::composites::selector::Selector",
+        "[0] STARTED Select first successful selector",
+        "[1] STARTED Select first successful action",
+        "[2] STARTED Do action 0",
+        "[2] FAILURE Do action 0",
+        "[3] STARTED Do action 1",
+        "[3] FAILURE Do action 1",
+        "[1] FAILURE Select first successful action",
+        "[4] STARTED Another select first successful",
+        "[5] STARTED Do action 0",
+        "[5] FAILURE Do action 0",
+        "[6] STARTED Do action 1",
+        "[6] FAILURE Do action 1",
+        "[4] FAILURE Another select first successful",
+        "[0] FAILURE Select first successful selector",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
