@@ -5,7 +5,7 @@ use bevy_egui::{
     egui,
     EguiContext,
 };
-use simula_mission::asset::Amount;
+use crate::asset::Amount;
 use crate::MissionToken;
 
 pub struct TokenUiPlugin;

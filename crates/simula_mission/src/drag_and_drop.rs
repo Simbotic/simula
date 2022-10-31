@@ -1,12 +1,12 @@
 use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res};
 use bevy_egui::{egui::*, EguiContext};
-use simula_mission::{
+use crate::{
     account::Account,
     asset::{Amount, Asset},
     wallet::Wallet,
 };
 
-use crate::{MissionToken, asset_ui::AssetInfo};
+use crate::{MissionToken};
 
 pub struct DragAndDropPlugin;
 
@@ -116,7 +116,7 @@ pub fn drag_and_drop(
     mut commands: Commands,
     image_texture_ids: Res<ImageTextureIds>,
 ) {
-    egui::Window::new("Transfer assets")
+    Window::new("Transfer assets")
         .open(&mut true)
         .default_size(vec2(256.0, 256.0))
         .vscroll(false)

@@ -12,6 +12,7 @@ use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::{
     asset::{Amount, Asset},
     MissionPlugin, WalletBuilder,
+    wallet::WalletUi
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -29,9 +30,7 @@ use ta::indicators::*;
 use wallet_ui::WalletUIPlugin;
 
 mod behaviors;
-mod drag_and_drop;
-mod wallet_ui;
-mod asset_ui;
+use crate::drag_and_drop;
 use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components

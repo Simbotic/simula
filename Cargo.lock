@@ -5489,9 +5489,12 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",
+ "egui_extras",
  "hex",
+ "rand 0.8.5",
  "ron",
  "serde",
+ "simula_viz",
  "ta",
 ]
 

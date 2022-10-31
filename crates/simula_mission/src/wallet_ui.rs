@@ -6,7 +6,7 @@ use bevy_egui::{
     EguiContext,
 };
 use egui_extras::{Size, TableBuilder};
-use simula_mission::{
+use crate::{
     account::Account,
     wallet::Wallet,
     WalletBuilder
@@ -14,7 +14,7 @@ use simula_mission::{
 use simula_viz::{
     follow_ui::{FollowUI, FollowUIVisibility},
 };
-use crate::{MissionToken, FollowPanel, asset_ui::{ImageTextureIds, AssetInfo, TokenUiPlugin}};
+use crate::{MissionToken, FollowPanel, asset_ui::{ImageTextureIds, TokenUiPlugin}};
 
 pub struct WalletUIPlugin;
 

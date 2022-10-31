@@ -10,6 +10,9 @@ pub mod asset;
 pub mod environment;
 pub mod game;
 pub mod wallet;
+pub mod drag_and_drop;
+pub mod wallet_ui;
+pub mod asset_ui;
 
 pub struct MissionPlugin;
 
