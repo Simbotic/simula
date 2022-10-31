@@ -97,38 +97,91 @@ impl Inspectable for BehaviorInspectorNode {
         let behavior_running = world.get::<BehaviorRunning>(entity);
         let behavior_failure = world.get::<BehaviorFailure>(entity);
         let behavior_success = world.get::<BehaviorSuccess>(entity);
+        let behavior_cursor = world.get::<BehaviorCursor>(entity);
 
-        // Node frame
-        egui::Frame::none()
-            .fill(egui::Color32::DARK_GRAY)
-            .rounding(Rounding::same(3.0))
-            .show(ui, |ui| {
+        let cursor_stroke = if behavior_cursor.is_some() {
+            egui::Stroke::new(1.0, egui::Color32::GREEN)
+        } else {
+            egui::Stroke::none()
+        };
+
+        ui.push_id(format!("bhtins-{}", entity.id()), |ui| {
+            ui.vertical(|ui| {
+                // Node frame
                 egui::Frame::none()
-                    .inner_margin(egui::Vec2::new(4.0, 1.0))
+                    .stroke(cursor_stroke)
+                    .fill(color_from_hex("#303030").unwrap())
                     .rounding(Rounding::same(3.0))
-                    .fill(titlebar_color(&behavior_node))
                     .show(ui, |ui| {
-                        // ui.scope(|ui| {
-                        //     ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
-                        //     ui.horizontal(|ui| {
-                        //         ui.label(behavior_name.to_string());
-                        //     });
-                        // });
-                        ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
-                        ui.horizontal(|ui| {
-                            ui.label(behavior_name.to_string());
+                        egui::Frame::none()
+                            .inner_margin(egui::Vec2::new(4.0, 1.0))
+                            .rounding(Rounding::same(3.0))
+                            .fill(titlebar_color(&behavior_node))
+                            .show(ui, |ui| {
+                                // ui.scope(|ui| {
+                                //     ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                                //     ui.horizontal(|ui| {
+                                //         ui.label(behavior_name.to_string());
+                                //     });
+                                // });
+                                ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        egui::RichText::new(behavior_name.to_string()).strong(),
+                                    );
+                                });
+                            });
+                        ui.horizontal_top(|ui| {
+                            let r = 3.0;
+                            let size = egui::Vec2::splat(2.0 * r + 5.0);
+                            let (rect, _response) =
+                                ui.allocate_at_least(size, egui::Sense::hover());
+                            if behavior_failure.is_some() {
+                                ui.painter()
+                                    .circle_filled(rect.center(), r, egui::Color32::RED);
+                            } else if behavior_success.is_some() {
+                                ui.painter().circle_filled(
+                                    rect.center(),
+                                    r,
+                                    egui::Color32::DARK_GREEN,
+                                );
+                            } else if behavior_running.is_some() {
+                                ui.painter()
+                                    .circle_filled(rect.center(), r, egui::Color32::GREEN);
+                            } else {
+                                ui.painter()
+                                    .circle_filled(rect.center(), r, egui::Color32::GRAY);
+                            }
+                            ui.label(egui::RichText::new(&behavior_node.name).small());
+                            // ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
+
+                            //     ui.label(behavior_node.name.to_string());
+                            // });
                         });
+
+                        ui.collapsing("", |ui| {
+                            if let Some(entity) = &mut self.entity {
+                                let attributes = EntityAttributes { despawnable: false };
+                                entity.ui(ui, attributes, context);
+                            }
+                        });
+
+
+
+                        // ui.set_min_height(200.0);
                     });
 
-                ui.collapsing("", |ui| {
-                    if let Some(entity) = &mut self.entity {
-                        let attributes = EntityAttributes { despawnable: false };
-                        entity.ui(ui, attributes, context);
-                    }
-                });
-
-                // ui.set_min_height(200.0);
+                    ui.horizontal(|ui| {
+                        for child in behavior_children.iter() {
+                            let mut child_node = BehaviorInspectorNode {
+                                entity: Some(*child),
+                            };
+                            let child_attributes = BehaviorInspectorNodeAttributes {};
+                            child_node.ui(ui, child_attributes, context);
+                        }
+                    });
             });
+        });
 
         // ui.style_mut().visuals.window_fill() = egui::Color32::from_rgb(0, 0, 0);
 

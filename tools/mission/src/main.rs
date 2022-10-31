@@ -301,7 +301,6 @@ fn setup(
 
     // Build Agent 002
     let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
-    println!("Document: {:?}", document);
     let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
         None,
         &mut commands,
