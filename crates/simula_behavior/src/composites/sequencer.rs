@@ -1,54 +1,75 @@
-use crate::{
-    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
-    BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
+use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use serde::{Deserialize, Serialize};
 
 /// A sequence will visit each child in order, starting with the first, and when that
 /// succeeds will call the second, and so on down the list of children. If any child
 /// fails it will immediately return failure to the parent. If the last child in the
 /// sequence succeeds, then the sequence will return success to its parent.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
-pub struct Sequence;
+#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
+pub struct Sequencer {
+    #[serde(default)]
+    random: bool,
+    #[serde(default)]
+    pub seed: u64,
+}
 
-impl BehaviorInfo for Sequence {
+impl Default for Sequencer {
+    fn default() -> Self {
+        Self {
+            random: false,
+            seed: rand::random(),
+        }
+    }
+}
+
+impl BehaviorInfo for Sequencer {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Sequence";
-    const DESC: &'static str = "Sequence behavior node";
+    const NAME: &'static str = "Sequencer";
+    const DESC: &'static str = "Sequencer behavior node";
 }
 
 pub fn run(
     mut commands: Commands,
-    sequences: Query<(Entity, &BehaviorChildren), (With<Sequence>, BehaviorRunQuery)>,
-    nodes: Query<
-        (
-            Entity,
-            &BehaviorParent,
-            Option<&BehaviorFailure>,
-            Option<&BehaviorSuccess>,
-        ),
-        (
-            With<BehaviorNode>,
-            Without<BehaviorCursor>,
-            Without<BehaviorRunning>,
-        ),
+    mut sequences: Query<
+        (Entity, &BehaviorChildren, &mut Sequencer),
+        (With<Sequencer>, BehaviorRunQuery),
     >,
+    nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, children) in &sequences {
+    for (entity, children, mut sequence) in &mut sequences {
+        // If sequence is random, shuffle the children, deterministically
+        let mut rng = StdRng::seed_from_u64(sequence.seed);
+        let mut random_children;
+        let children_iter = if sequence.random {
+            random_children = children.0.clone();
+            random_children.shuffle(&mut rng);
+            random_children.iter()
+        } else {
+            children.iter()
+        };
+
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
             let mut should_succeed = true;
-            for (child_entity, child_parent, failure, success) in nodes.iter_many(children.iter()) {
+            for BehaviorChildQueryItem {
+                child_entity,
+                child_parent,
+                child_failure,
+                child_success,
+            } in nodes.iter_many(children_iter)
+            {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
-                        if failure.is_some() {
+                        if child_failure.is_some() {
                             // Child failed, so we fail
                             commands.entity(entity).insert(BehaviorFailure);
+                            sequence.seed = rand::random();
                             should_succeed = false;
                             break;
-                        } else if success.is_some() {
+                        } else if child_success.is_some() {
                             // Child succeeded, so we move to next child
                         } else {
                             // Child is ready, pass on cursor
@@ -75,6 +96,7 @@ pub fn run(
             // If all children succeed, complete with success
             if should_succeed {
                 commands.entity(entity).insert(BehaviorSuccess);
+                sequence.seed = rand::random();
             }
         }
     }

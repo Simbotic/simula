@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::*,
+    prelude::*
 };
 use bevy_egui::{
     egui,
@@ -8,26 +8,20 @@ use bevy_egui::{
 use egui_extras::{Size, TableBuilder};
 use simula_mission::{
     account::Account,
-    asset::Amount,
     wallet::Wallet,
     WalletBuilder
 };
 use simula_viz::{
     follow_ui::{FollowUI, FollowUIVisibility},
 };
-use crate::{MissionToken, FollowPanel};
+use crate::{MissionToken, FollowPanel, token_ui::{ImageTextureIds, AssetInfo, TokenUiPlugin}};
 
 pub struct WalletUIPlugin;
 
 impl Plugin for WalletUIPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(ImageTextureIds {
-                time_icon: None,
-                energy_icon: None,
-                trust_icon: None,
-            })    
-            .add_startup_system(initialize_images)
+            .add_plugin(TokenUiPlugin)
             .add_system(wallet_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI>)
             .add_system(wallet_ui_draw::<MyCoolInGameWalletUI>);
@@ -58,86 +52,6 @@ fn wallet_creation_window(
         });
 }
 
-
-impl FromWorld for Images {
-    fn from_world(world: &mut World) -> Self {
-        if let Some(asset_server) = world.get_resource_mut::<AssetServer>() {
-            Self {
-                time_icon: asset_server.load("../assets/mission/Balance.png"),
-                trust_icon: asset_server.load("../assets/mission/Money - Cash.png"),
-                energy_icon: asset_server.load("../assets/mission/Money - Coins.png"),
-            }
-        } else {
-            Self {
-                time_icon: Handle::default(),
-                trust_icon: Handle::default(),
-                energy_icon: Handle::default(),
-            }
-        }
-    }
-}
-
-pub struct Images {
-    time_icon: Handle<Image>,
-    trust_icon: Handle<Image>,
-    energy_icon: Handle<Image>,
-}
-
-pub struct ImageTextureIds {
-    time_icon: Option<egui::TextureId>,
-    trust_icon: Option<egui::TextureId>,
-    energy_icon: Option<egui::TextureId>,
-}
-
-fn initialize_images(
-    mut egui_ctx: ResMut<EguiContext>,
-    images: Local<Images>,
-    mut image_texture_ids: ResMut<ImageTextureIds>,
-) {
-    image_texture_ids.trust_icon = Some(egui_ctx.add_image(images.trust_icon.clone()));
-    image_texture_ids.time_icon = Some(egui_ctx.add_image(images.time_icon.clone()));
-    image_texture_ids.energy_icon = Some(egui_ctx.add_image(images.energy_icon.clone()));
-}
-
-trait AssetInfo {
-    fn name(&self) -> &'static str;
-    fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
-    fn amount(&self) -> Amount;
-}
-
-impl AssetInfo for MissionToken {
-    fn name(&self) -> &'static str {
-        match self {
-            MissionToken::None => "None",
-            MissionToken::Time(_) => "Time",
-            MissionToken::Trust(_) => "Trust",
-            MissionToken::Energy(_) => "Energy",
-            MissionToken::Labor(_) => "Labor",
-        }
-    }
-
-    fn icon(&self, image_texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId> {
-        match self {
-            MissionToken::Time(_) => image_texture_ids.time_icon,
-            MissionToken::Trust(_) => image_texture_ids.trust_icon,
-            MissionToken::Energy(_) => image_texture_ids.energy_icon,
-            MissionToken::Labor(_) => None,
-            MissionToken::None => None,
-        }
-    }
-    
-    fn amount(&self) -> Amount {
-        match self {
-            MissionToken::None => 0.into(),
-            MissionToken::Time(asset) => asset.0,
-            MissionToken::Trust(asset) => asset.0,
-            MissionToken::Energy(asset) => asset.0,
-            MissionToken::Labor(asset) => asset.0,
-        }
-    }
-}
-
-
 #[derive(Component)]
 struct WalletUI;
 
@@ -151,8 +65,8 @@ struct WalletUITool;
 
 enum WalletUIResponse {
     CloseTitlebar,
-    ChooseWallet(Entity),
-    StartDrag(Entity),
+    //ChooseWallet(Entity),
+    //StartDrag(Entity),
 }
 
 trait WalletUIOptions { 
@@ -272,22 +186,30 @@ impl WalletUIOptions for DefaultWalletUI{
                                 });
                             })
                             .body(|mut body| {
+                                for &account_asset in account_assets.iter() {
+                                    if let Ok(asset) = assets.get(account_asset) {
+                                        let asset_name = asset.name();
+                                        let asset_value = asset.amount();
+                                        let asset_icon = asset.icon(&image_texture_ids);
+                                        asset_list.push((asset_name.to_string(), asset_value.0, asset_icon));
+                                    }
+                                }
                                 for asset in asset_list.iter() {
                                     body.row(20.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.horizontal(|ui| {
-                                                if let Some(icon) = asset.2 {
-                                                    ui.add(egui::widgets::Image::new(
-                                                        icon,
-                                                        [20.0, 20.0],
-                                                    ));
-                                                }
-                                                ui.label(asset.0.clone());   
-                                            });
-                                        });
-                                        row.col(|ui| {
-                                            ui.label(asset.1.to_string());
-                                        });
+                                       row.col(|ui| {
+                                           ui.horizontal(|ui| {
+                                               if let Some(icon) = asset.2 {
+                                                   ui.add(egui::widgets::Image::new(
+                                                       icon,
+                                                       [20.0, 20.0],
+                                                   ));
+                                               }
+                                               ui.label(asset.0.clone());   
+                                           });
+                                       });
+                                       row.col(|ui| {
+                                           ui.label(asset.1.to_string());
+                                       });
                                     });
                                 }
                             });
@@ -489,7 +411,6 @@ fn wallet_ui_draw<T: WalletUIOptions + Component>(
                         WalletUIResponse::CloseTitlebar => {
                             commands.entity(entity).despawn();
                         }
-                        _ => {}
                     }
                 }
                 options.wallet_selector(ui, &wallets);

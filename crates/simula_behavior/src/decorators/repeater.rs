@@ -1,24 +1,21 @@
-use crate::{
-    BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
-    BehaviorRunQuery, BehaviorRunning, BehaviorSuccess, BehaviorType,
-};
+use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub enum Repeat {
     #[default]
     Forever,
     Times(u64),
-    UntilSucceed,
-    UntilFailure,
+    UntilFail,
 }
 
 /// Repeat a child until condition is met
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct Repeater {
     pub repeat: Repeat,
-    pub repeated: u64,
+    #[serde(default)]
+    pub count: u64,
 }
 
 impl BehaviorInfo for Repeater {
@@ -33,18 +30,7 @@ pub fn run(
         (Entity, &BehaviorChildren, &mut Repeater),
         (With<Repeater>, BehaviorRunQuery),
     >,
-    nodes: Query<
-        (
-            &BehaviorParent,
-            Option<&BehaviorFailure>,
-            Option<&BehaviorSuccess>,
-        ),
-        (
-            With<BehaviorNode>,
-            Without<BehaviorCursor>,
-            Without<BehaviorRunning>,
-        ),
-    >,
+    nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
     for (entity, children, mut repeater) in &mut repeaters {
         if children.is_empty() {
@@ -54,11 +40,17 @@ pub fn run(
                 warn!("Has more than one child, only the first will be used");
             }
             let child_entity = children[0]; // Safe because we checked for empty
-            if let Ok((parent, failure, success)) = nodes.get(child_entity) {
-                if let Some(parent) = **parent {
-                    if entity == parent {
+            if let Ok(BehaviorChildQueryItem {
+                child_entity,
+                child_parent,
+                child_failure,
+                child_success,
+            }) = nodes.get(child_entity)
+            {
+                if let Some(child_parent) = **child_parent {
+                    if entity == child_parent {
                         // Child failed
-                        if failure.is_some() {
+                        if child_failure.is_some() {
                             match repeater.repeat {
                                 // Forever, so we reset and repeat
                                 Repeat::Forever => {
@@ -67,26 +59,22 @@ pub fn run(
                                 // Times, so we check if we have reached the limit
                                 Repeat::Times(times) => {
                                     // Repeat until we reach the limit
-                                    if repeater.repeated < times {
+                                    if times > 0 && repeater.count < times {
                                         commands.entity(entity).remove::<BehaviorRunning>();
                                     } else {
-                                        repeater.repeated = 0;
+                                        repeater.count = 0;
                                         commands.entity(entity).insert(BehaviorSuccess);
                                     }
                                 }
-                                // UntilSucceed, so we reset and repeat
-                                Repeat::UntilSucceed => {
-                                    commands.entity(entity).remove::<BehaviorRunning>();
-                                }
-                                // UntilFailure, so we succeed
-                                Repeat::UntilFailure => {
-                                    repeater.repeated = 0;
+                                // Until fail, so we succeed
+                                Repeat::UntilFail => {
+                                    repeater.count = 0;
                                     commands.entity(entity).insert(BehaviorSuccess);
                                 }
                             }
                         }
                         // Child succeeded
-                        else if success.is_some() {
+                        else if child_success.is_some() {
                             match repeater.repeat {
                                 // Forever, so we reset and repeat
                                 Repeat::Forever => {
@@ -94,27 +82,23 @@ pub fn run(
                                 }
                                 // Times, so we check if we have reached the limit
                                 Repeat::Times(times) => {
-                                    if repeater.repeated < times {
+                                    if times > 0 && repeater.count < times {
                                         commands.entity(entity).remove::<BehaviorRunning>();
                                     } else {
-                                        repeater.repeated = 0;
+                                        repeater.count = 0;
                                         commands.entity(entity).insert(BehaviorSuccess);
                                     }
                                 }
-                                // UntilSucceed, so we succeed
-                                Repeat::UntilSucceed => {
-                                    repeater.repeated = 0;
-                                    commands.entity(entity).insert(BehaviorSuccess);
-                                }
-                                // UntilFailure, so we reset and repeat
-                                Repeat::UntilFailure => {
+                                // Until fail, so we reset and repeat
+                                Repeat::UntilFail => {
                                     commands.entity(entity).remove::<BehaviorRunning>();
                                 }
                             }
                         }
                         // Child is ready, pass on cursor
                         else {
-                            repeater.repeated += 1;
+                            repeater.count += 1;
+                            debug!("[{}] RUNNING #{}", entity.id(), repeater.count,);
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
                         }

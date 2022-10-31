@@ -6,11 +6,9 @@ use bevy::{
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
-use simula_behavior::{
-    editor::BehaviorEditorState, editor::BehaviorGraphState, BehaviorAsset, BehaviorCursor,
-    BehaviorPlugin, BehaviorTree,
-};
+use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
+use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::{
     asset::{Amount, Asset},
     MissionPlugin, WalletBuilder,
@@ -25,12 +23,15 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
+use std::time::Duration;
+use ta::indicators::*;
 
 use wallet_ui::WalletUIPlugin;
 
 mod behaviors;
 mod drag_and_drop;
 mod wallet_ui;
+mod token_ui;
 use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -52,6 +53,7 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+    .insert_resource(TimeDuration{time: Duration::default()})
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -69,11 +71,15 @@ fn main() {
     .add_plugin(DragAndDropPlugin)
     .add_plugin(WalletUIPlugin)
     .register_type::<MissionToken>()
+    .register_type::<SignalGenerator>()
     .add_startup_system(setup)
     .add_system(debug_info)
-    .add_system(increase_mission_time);
+    .add_system(increase_mission_time)
+    .add_system(increase_time_with_signal)
+    .add_system(indicator_mission_time);
 
     app.register_inspectable::<MissionToken>();
+    app.register_inspectable::<SignalFunction>();
 
     app.run();
 }
@@ -98,6 +104,7 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -133,83 +140,13 @@ fn setup(
         })
         .build(&mut commands);
 
-    let _agent_wallet_2 = WalletBuilder::<MissionToken>::default()
-        .id("e75b980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("8d61c19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(2000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(500.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(6900.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("fde4354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(50.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(750.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(0.into()));
-                });
-        })
-        .build(&mut commands);
-
-    let _agent_wallet_3 = WalletBuilder::<MissionToken>::default()
-        .id("e75d880182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("7d61d19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(3000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(800000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(10500.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("ffe4454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(650.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(15000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(10.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(100.into()));
-                });
-        })
-        .build(&mut commands);
-
-    let _agent_wallet_4 = WalletBuilder::<MissionToken>::default()
-        .id("d76a990182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account.id("fde3454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c");
-        })
-        .build(&mut commands);
-
     let agent_behavior_graph = commands
         .spawn()
-        .insert(BehaviorEditorState {
-            show: true,
-            ..default()
-        })
-        .insert(BehaviorGraphState::default())
+        // .insert(BehaviorEditorState {
+        //     show: true,
+        //     ..default()
+        // })
+        // .insert(BehaviorGraphState::default())
         .with_children(|_parent| {
             // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
             // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
@@ -305,21 +242,26 @@ fn setup(
         .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
-    let document: Handle<BehaviorAsset<mission_behavior::MissionBehavior>> =
-        asset_server.load("behaviors/debug_sequence.bht.ron");
-    println!("Document: {:?}", document);
-    let behavior = BehaviorTree::from_asset(None, &mut commands, document);
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
+    let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
+        None,
+        &mut commands,
+        document,
+    );
     if let Some(root) = behavior.root {
         commands.entity(root).insert(BehaviorCursor);
     }
-    commands
+    let agent_id = commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[_agent_wallet_4, behavior.root.unwrap()])
         .insert(behavior)
-        .insert(Name::new("Agent: 002"));
+        .insert(Name::new("Agent: 002"))
+        .id();
+
+    behavior_inspector.select(agent_id, "Agent: 002".into());
+    behavior_inspector.unselect();
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -407,6 +349,17 @@ fn setup(
             }),
         )
         .insert(FpsText);
+        commands.spawn()
+            .insert( SignalGenerator {
+                func: SignalFunction::Pulse,
+                amplitude: 1.0,
+                frequency: 1.0,
+                phase: 1.0,
+                offset: 1.0,
+                invert: false,
+                ..default()
+            })
+            .insert(Name::new("Signal Generator"));
 }
 
 #[derive(Component)]
@@ -432,5 +385,41 @@ fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) 
             MissionToken::Time(asset) => *token = MissionToken::Time(Asset(Amount(asset.0 .0 + 1))),
             _ => {}
         }
+    }
+}
+
+#[derive(Default)]
+pub struct TimeDuration {
+    time: Duration,
+}
+
+fn increase_time_with_signal(
+    mut generator_mission: Query<&mut SignalGenerator>,
+    time_duration: Res<TimeDuration>,
+    mut query: Query<&mut MissionToken>,
+) {
+    for mut token in query.iter_mut() {
+        for mut signal_generator in generator_mission.iter_mut() {
+            let generate = SignalGenerator::sample(
+                &mut signal_generator, 
+                time_duration.time,
+            );
+            let generate = generate.round() as i128;
+            match *token {
+                MissionToken::Time(asset) => 
+                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
+                    _ => {}
+            }
+        }
+    }
+}
+
+fn indicator_mission_time(_time: Res<Time>, mut assets: Query<&mut MissionToken>) {
+    for asset in assets.iter_mut() {
+        let asset_value = match *asset {
+            MissionToken::Time(asset) => asset.0 .0,
+            _ => default(),
+        };
+        let _time_indicator = ExponentialMovingAverage::new(asset_value as usize);
     }
 }

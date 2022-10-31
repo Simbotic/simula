@@ -1,4 +1,4 @@
-use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut};
+use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res};
 use bevy_egui::{egui::*, EguiContext};
 use simula_mission::{
     account::Account,
@@ -6,9 +6,11 @@ use simula_mission::{
     wallet::Wallet,
 };
 
-use crate::MissionToken;
+use crate::{MissionToken, token_ui::AssetInfo};
 
 pub struct DragAndDropPlugin;
+
+use crate::token_ui::ImageTextureIds;
 
 impl Plugin for DragAndDropPlugin {
     fn build(&self, app: &mut App) {
@@ -110,6 +112,7 @@ pub fn drag_and_drop(
     accounts: Query<(&mut Account, &Children)>,
     mut assets: Query<&mut MissionToken>,
     mut commands: Commands,
+    image_texture_ids: Res<ImageTextureIds>,
 ) {
     egui::Window::new("Transfer assets")
         .open(&mut true)
@@ -163,36 +166,18 @@ pub fn drag_and_drop(
                                     // iterate assets
 
                                     if let Ok(asset) = assets.get(*asset_entity) {
-                                        let asset_name = match asset {
-                                            MissionToken::Time(_) => "Time",
-                                            MissionToken::Trust(_) => "Trust",
-                                            MissionToken::Energy(_) => "Energy",
-                                            MissionToken::Labor(_) => "Labor",
-                                            MissionToken::None => "None",
-                                        };
-
-                                        let asset_value = match asset {
-                                            MissionToken::Time(asset) => asset.0 .0,
-                                            MissionToken::Trust(asset) => asset.0 .0,
-                                            MissionToken::Energy(asset) => asset.0 .0,
-                                            MissionToken::Labor(asset) => asset.0 .0,
-                                            MissionToken::None => 0,
-                                        };
-
                                         let item_id = Id::new(id_source)
                                             .with(wallet_idx)
                                             .with(account_idx)
                                             .with(asset_idx); // we create an id with all index
 
-                                        drag_source(ui, item_id, |ui| {
-                                            ui.add(
-                                                Label::new(format!(
-                                                    "{}: {}",
-                                                    asset_name, asset_value
-                                                ))
-                                                .sense(Sense::click()),
-                                            ); //we make the asset dragable
-                                        });
+                                        if asset.is_draggable(){
+                                            drag_source(ui, item_id, |ui| { //we make the asset dragable
+                                                asset.render(ui, &image_texture_ids);
+                                            });
+                                        }else{
+                                            asset.render(ui, &image_texture_ids);
+                                        }
 
                                         if ui.memory().is_being_dragged(item_id) {
                                             source_asset = Some(asset_entity); // we now know which asset is being dragged
@@ -222,22 +207,30 @@ pub fn drag_and_drop(
                     if ui.input().pointer.any_released() {
                         // check the release
 
-                        if let Ok(asset) = assets.get_mut(*source_asset) {
+                        if let Ok(mut asset) = assets.get_mut(*source_asset) {
                             // we remove the dragged element
                             match *asset {
                                 MissionToken::Energy(value) => {
                                     mission_tuple = ("ENERGY".to_string(), value.0 .0);
-                                    commands.entity(*source_asset).despawn();
+                                    *asset = MissionToken::Energy(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
                                 }
                                 MissionToken::Labor(value) => {
                                     mission_tuple = ("LABOR".to_string(), value.0 .0);
-                                    commands.entity(*source_asset).despawn();
+                                    *asset = MissionToken::Labor(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
                                 }
                                 MissionToken::Trust(value) => {
                                     mission_tuple = ("TRUST".to_string(), value.0 .0);
-                                    commands.entity(*source_asset).despawn();
+                                    *asset = MissionToken::Trust(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
                                 }
-                                _ => {}
+                                MissionToken::Time(value) => {
+                                    mission_tuple = ("TIME".to_string(), value.0 .0);
+                                    *asset = MissionToken::Time(Asset(Amount(0.into())))
+                                    //commands.entity(*source_asset).despawn();
+                                }
+                                MissionToken::None => {}
                             }
                         }
 
@@ -272,7 +265,15 @@ pub fn drag_and_drop(
                                                 asset_exists = true;
                                             }
                                         }
-                                        _ => {}
+                                        MissionToken::Time(value) => {
+                                            if mission_tuple.clone().0 == "TIME" {
+                                                *asset = MissionToken::Time(Asset(Amount(
+                                                    value.0 .0 + mission_tuple.1,
+                                                )));
+                                                asset_exists = true;
+                                            }
+                                        }
+                                        MissionToken::None => {}
                                     }
                                 }
                             }
