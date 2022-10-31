@@ -21,17 +21,12 @@ pub struct WalletUIPlugin;
 impl Plugin for WalletUIPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(SelectedWallet(0))
             .add_plugin(TokenUiPlugin)
             .add_system(wallet_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI>)
             .add_system(wallet_ui_draw::<MyCoolInGameWalletUI>);
-            // .add_system(wallet_ui_system);
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Component)]
-pub struct SelectedWallet(usize);
 
 fn wallet_creation_window(
     mut commands: Commands,
@@ -393,7 +388,6 @@ fn wallet_ui_draw<T: WalletUIOptions + Component>(
         }
 
         window
-            .collapsible(false)
             .show(egui_context.ctx_mut(), |ui| {
                 if let Some(response) = T::titlebar(ui) {
                     match response {
