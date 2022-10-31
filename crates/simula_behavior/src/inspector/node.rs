@@ -62,7 +62,7 @@ impl Inspectable for BehaviorInspectorNode {
         let behavior_cursor = world.get::<BehaviorCursor>(entity);
 
         let cursor_stroke = if behavior_cursor.is_some() {
-            egui::Stroke::new(1.0, egui::Color32::GREEN)
+            egui::Stroke::new(2.0, color_from_hex("#FF00FF").unwrap())
         } else {
             egui::Stroke::none()
         };
