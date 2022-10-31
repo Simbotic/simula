@@ -54,7 +54,7 @@ fn main() {
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
     .init_resource::<TimeDuration>()
     .add_plugins(DefaultPlugins)
-    // .add_plugin(NetPlugin)
+    .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
     .add_plugin(ActionPlugin)
     .add_plugin(FrameTimeDiagnosticsPlugin::default())
