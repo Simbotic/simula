@@ -53,7 +53,7 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .init_resource::<TimeDuration>()
+    .insert_resource(TimeDuration{time: Duration::default()})
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -71,6 +71,7 @@ fn main() {
     .add_plugin(DragAndDropPlugin)
     .add_plugin(WalletUIPlugin)
     .register_type::<MissionToken>()
+    .register_type::<SignalGenerator>()
     .add_startup_system(setup)
     .add_system(debug_info)
     .add_system(increase_mission_time)
@@ -78,6 +79,7 @@ fn main() {
     .add_system(indicator_mission_time);
 
     app.register_inspectable::<MissionToken>();
+    app.register_inspectable::<SignalFunction>();
 
     app.run();
 }
@@ -347,6 +349,17 @@ fn setup(
             }),
         )
         .insert(FpsText);
+        commands.spawn()
+            .insert( SignalGenerator {
+                func: SignalFunction::Pulse,
+                amplitude: 1.0,
+                frequency: 1.0,
+                phase: 1.0,
+                offset: 1.0,
+                invert: false,
+                ..default()
+            })
+            .insert(Name::new("Signal Generator"));
 }
 
 #[derive(Component)]
@@ -381,25 +394,22 @@ pub struct TimeDuration {
 }
 
 fn increase_time_with_signal(
+    mut generator_mission: Query<&mut SignalGenerator>,
     time_duration: Res<TimeDuration>,
     mut query: Query<&mut MissionToken>,
 ) {
     for mut token in query.iter_mut() {
-        let generate = SignalGenerator::sample(
-            &mut SignalGenerator {
-                func: SignalFunction::Identity,
-                amplitude: 1.0,
-                frequency: 1.0,
-                ..default()
-            },
-            time_duration.time,
-        );
-        let generate = generate.round() as i128;
-        match *token {
-            MissionToken::Time(asset) => {
-                *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate)))
+        for mut signal_generator in generator_mission.iter_mut() {
+            let generate = SignalGenerator::sample(
+                &mut signal_generator, 
+                time_duration.time,
+            );
+            let generate = generate.round() as i128;
+            match *token {
+                MissionToken::Time(asset) => 
+                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
+                    _ => {}
             }
-            _ => {}
         }
     }
 }
