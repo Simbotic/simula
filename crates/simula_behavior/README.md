@@ -16,7 +16,7 @@ Create a Behavior enum with all behavior nodes to support. This enum will become
 pub enum MyBehavior {
     Debug(Debug),
     Selector(Selector),
-    Sequence(Sequence),
+    Sequencer(Sequencer),
 }
 
 impl Default for MyBehavior {
@@ -35,7 +35,7 @@ impl BehaviorSpawner for MyBehavior {
         match self {
             MyBehavior::Debug(data) => BehaviorInfo::spawn_with(commands, data),
             MyBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
-            MyBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
+            MyBehavior::Sequencer(data) => BehaviorInfo::spawn_with(commands, data),
         }
     }
 }
@@ -80,7 +80,7 @@ let document = BehaviorDocument {
         }),
         vec![BTNode(
             "In this order".to_string(),
-            MyBehavior::Sequence(Sequence::default()),
+            MyBehavior::Sequencer(Sequencer::default()),
             vec![
                 BTNode(
                     "An action".to_string(),
@@ -112,7 +112,7 @@ let data_str = r#"
     (root:(
         Succeeder(()), 
         [
-            (Sequence(()),
+            (Sequencer(()),
             [
                 (Debug((message:"Hello, from DebugMessage0!", fail:true))),
                 (Debug((message:"Hello, from DebugMessage1!"))),

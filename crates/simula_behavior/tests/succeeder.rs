@@ -10,7 +10,7 @@ fn succeeder_success() {
             [
                 (
                     "Do a few things",
-                    Sequence(()),
+                    Sequencer(()),
                     [
                         ("Do an action", Debug((message:"Hello, from DebugMessage0!", fail:true))),
                         ("Do another action", Debug((message:"Hello, from DebugMessage1!"))),

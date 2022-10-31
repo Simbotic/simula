@@ -3,7 +3,7 @@
     Repeater((repeat:Times(2))),
     [(
         "Do in order",
-        Sequence(()),[
+        Sequencer(()),[
         ("Say hi", Debug((message:"Hello, from DebugMessage0!"))),
         ("Say hi again", Debug((message:"Hello, from DebugMessage1!")))
     ])]

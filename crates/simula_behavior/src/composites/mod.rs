@@ -1,5 +1,5 @@
-pub mod sequence;
 pub mod selector;
+pub mod sequencer;
 
-pub use sequence::*;
 pub use selector::*;
+pub use sequencer::*;

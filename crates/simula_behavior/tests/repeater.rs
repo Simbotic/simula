@@ -79,8 +79,8 @@ fn repeater_sequence_success() {
             "Do a few times",
             Repeater((repeat:Times(2))),
                 [(
-                    "Sequence of two actions",
-                    Sequence(()),
+                    "Sequencer of two actions",
+                    Sequencer(()),
                     [
                         ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
                         ("Do another action", Debug((message:"Hello, from DebugMessage1!")))
@@ -93,19 +93,19 @@ fn repeater_sequence_success() {
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED Do a few times",
-        "[1] STARTED Sequence of two actions",
+        "[1] STARTED Sequencer of two actions",
         "[2] STARTED Do an action",
         "[2] SUCCESS Do an action",
         "[3] STARTED Do another action",
         "[3] SUCCESS Do another action",
-        "[1] SUCCESS Sequence of two actions",
+        "[1] SUCCESS Sequencer of two actions",
         "[0] STARTED Do a few times",
-        "[1] STARTED Sequence of two actions",
+        "[1] STARTED Sequencer of two actions",
         "[2] STARTED Do an action",
         "[2] SUCCESS Do an action",
         "[3] STARTED Do another action",
         "[3] SUCCESS Do another action",
-        "[1] SUCCESS Sequence of two actions",
+        "[1] SUCCESS Sequencer of two actions",
         "[0] SUCCESS Do a few times",
     ]);
     assert_eq!(&trace, &expected_trace);
@@ -119,8 +119,8 @@ fn repeater_sequence_failure() {
             "Do a few times",
             Repeater((repeat:Times(2))),
                 [(
-                    "Sequence of a few actions",
-                    Sequence(()),
+                    "Sequencer of a few actions",
+                    Sequencer(()),
                     [
                         ("Do an action", Debug((message:"Hello, from DebugMessage0!", fail:true))),
                         ("Do another action", Debug((message:"Hello, from DebugMessage1!")))
@@ -134,15 +134,15 @@ fn repeater_sequence_failure() {
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
         "[0] STARTED Do a few times",
-        "[1] STARTED Sequence of a few actions",
+        "[1] STARTED Sequencer of a few actions",
         "[2] STARTED Do an action",
         "[2] FAILURE Do an action",
-        "[1] FAILURE Sequence of a few actions",
+        "[1] FAILURE Sequencer of a few actions",
         "[0] STARTED Do a few times",
-        "[1] STARTED Sequence of a few actions",
+        "[1] STARTED Sequencer of a few actions",
         "[2] STARTED Do an action",
         "[2] FAILURE Do an action",
-        "[1] FAILURE Sequence of a few actions",
+        "[1] FAILURE Sequencer of a few actions",
         "[0] SUCCESS Do a few times",
     ]);
     assert_eq!(&trace, &expected_trace);

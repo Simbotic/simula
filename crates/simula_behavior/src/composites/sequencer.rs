@@ -8,14 +8,14 @@ use serde::{Deserialize, Serialize};
 /// fails it will immediately return failure to the parent. If the last child in the
 /// sequence succeeds, then the sequence will return success to its parent.
 #[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
-pub struct Sequence {
+pub struct Sequencer {
     #[serde(default)]
     random: bool,
     #[serde(default)]
     pub seed: u64,
 }
 
-impl Default for Sequence {
+impl Default for Sequencer {
     fn default() -> Self {
         Self {
             random: false,
@@ -24,17 +24,17 @@ impl Default for Sequence {
     }
 }
 
-impl BehaviorInfo for Sequence {
+impl BehaviorInfo for Sequencer {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Sequence";
-    const DESC: &'static str = "Sequence behavior node";
+    const NAME: &'static str = "Sequencer";
+    const DESC: &'static str = "Sequencer behavior node";
 }
 
 pub fn run(
     mut commands: Commands,
     mut sequences: Query<
-        (Entity, &BehaviorChildren, &mut Sequence),
-        (With<Sequence>, BehaviorRunQuery),
+        (Entity, &BehaviorChildren, &mut Sequencer),
+        (With<Sequencer>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {

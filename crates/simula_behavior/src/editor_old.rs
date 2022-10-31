@@ -78,7 +78,7 @@ pub enum BehaviorNodeTemplate {
     VectorTimesScalar,
     // AddVector,
     // SubtractVector,
-    Sequence,
+    Sequencer,
     Selector,
     Action,
 }
@@ -150,7 +150,7 @@ impl NodeTemplateTrait for BehaviorNodeTemplate {
             // MyNodeTemplate::AddVector => "Vector add",
             // MyNodeTemplate::SubtractVector => "Vector subtract",
             BehaviorNodeTemplate::VectorTimesScalar => "Vector times scalar",
-            BehaviorNodeTemplate::Sequence => "Sequence",
+            BehaviorNodeTemplate::Sequencer => "Sequencer",
             BehaviorNodeTemplate::Selector => "Selector",
             BehaviorNodeTemplate::Action => "Action",
         }
@@ -262,7 +262,7 @@ impl NodeTemplateTrait for BehaviorNodeTemplate {
             //     input_scalar(graph, "value");
             //     output_scalar(graph, "out");
             // }
-            BehaviorNodeTemplate::Sequence => {
+            BehaviorNodeTemplate::Sequencer => {
                 graph.add_input_param(
                     node_id,
                     "".to_string(),
@@ -318,7 +318,7 @@ impl NodeTemplateIter for AllMyNodeTemplates {
             // MyNodeTemplate::AddVector,
             // MyNodeTemplate::SubtractVector,
             BehaviorNodeTemplate::VectorTimesScalar,
-            BehaviorNodeTemplate::Sequence,
+            BehaviorNodeTemplate::Sequencer,
             BehaviorNodeTemplate::Selector,
             BehaviorNodeTemplate::Action,
         ]
@@ -373,7 +373,7 @@ impl NodeDataTrait for BehaviorNodeData {
     ) -> Option<egui::Color32> {
         let template = graph.nodes[node_id].user_data.template;
         match template {
-            BehaviorNodeTemplate::Sequence => color_hex_utils::color_from_hex("#328900").ok(),
+            BehaviorNodeTemplate::Sequencer => color_hex_utils::color_from_hex("#328900").ok(),
             BehaviorNodeTemplate::Selector => color_hex_utils::color_from_hex("#EE0000").ok(),
             BehaviorNodeTemplate::Action => color_hex_utils::color_from_hex("#0085D4").ok(),
             BehaviorNodeTemplate::VectorTimesScalar => {

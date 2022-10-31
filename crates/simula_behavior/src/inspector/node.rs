@@ -38,7 +38,7 @@ fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
     } else if behavior.typ == BehaviorType::Composite {
         if behavior.name == "Selector" {
             color_from_hex("#CC0100").unwrap()
-        } else if behavior.name == "Sequence" {
+        } else if behavior.name == "Sequencer" {
             color_from_hex("#36980D").unwrap()
         } else {
             color_from_hex("#F3F342").unwrap()

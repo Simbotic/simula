@@ -19,7 +19,7 @@ impl Plugin for MissionBehaviorPlugin {
 pub enum MissionBehavior {
     Debug(Debug),
     Selector(Selector),
-    Sequence(Sequence),
+    Sequencer(Sequencer),
     Repeater(Repeater),
     Inverter(Inverter),
     Succeeder(Succeeder),
@@ -39,7 +39,7 @@ impl BehaviorSpawner for MissionBehavior {
         match self {
             MissionBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
-            MissionBehavior::Sequence(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
@@ -62,7 +62,7 @@ pub fn create_from_data(parent: Option<Entity>, commands: &mut Commands) -> Beha
             }),
             vec![BTNode(
                 "In this order".to_string(),
-                MissionBehavior::Sequence(Sequence::default()),
+                MissionBehavior::Sequencer(Sequencer::default()),
                 vec![
                     BTNode(
                         "An action".to_string(),

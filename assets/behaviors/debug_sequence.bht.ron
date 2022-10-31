@@ -1,7 +1,7 @@
 (
     root:(
         "Do in this order",
-        Sequence(()),
+        Sequencer(()),
         [
             ("Do a thing", Debug((message:"Hello, from DebugMessage0!", duration: 1.0))),
             ("Do another", Debug((message:"Hello, from DebugMessage1!"))),
