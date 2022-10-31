@@ -31,7 +31,7 @@ use wallet_ui::WalletUIPlugin;
 mod behaviors;
 mod drag_and_drop;
 mod wallet_ui;
-mod token_ui;
+mod asset_ui;
 use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components

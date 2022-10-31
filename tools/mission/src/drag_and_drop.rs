@@ -6,11 +6,13 @@ use simula_mission::{
     wallet::Wallet,
 };
 
-use crate::{MissionToken, token_ui::AssetInfo};
+use crate::{MissionToken, asset_ui::AssetInfo};
 
 pub struct DragAndDropPlugin;
 
-use crate::token_ui::ImageTextureIds;
+use crate::asset_ui::ImageTextureIds;
+
+use crate::wallet_ui::{trim_account, trim_wallet};
 
 impl Plugin for DragAndDropPlugin {
     fn build(&self, app: &mut App) {
@@ -130,15 +132,7 @@ pub fn drag_and_drop(
 
                     let ui = &mut uis[wallet_idx]; // our current column, index comes from the iteration of wallets
 
-                    let wallet_id_trimmed = wallet
-                        .0
-                        .wallet_id
-                        .to_string()
-                        .get(0..8)
-                        .unwrap_or_default()
-                        .to_string();
-
-                    ui.add(Label::new(format!("Wallet: {}", wallet_id_trimmed)));
+                    ui.add(Label::new(format!("Wallet: {}", trim_wallet(wallet.0))));
 
                     let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
 
@@ -153,14 +147,7 @@ pub fn drag_and_drop(
                             if let Ok((account, account_assets)) = accounts.get(*account) {
                                 // obtain al the assets from the current account
 
-                                let account_id_trimmed = account
-                                    .account_id
-                                    .to_string()
-                                    .get(0..8)
-                                    .unwrap_or_default()
-                                    .to_string();
-
-                                ui.add(Label::new(account_id_trimmed));
+                                ui.add(Label::new(trim_account(account)));
 
                                 for (asset_idx, asset_entity) in account_assets.iter().enumerate() {
                                     // iterate assets

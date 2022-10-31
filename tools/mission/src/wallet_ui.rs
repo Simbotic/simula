@@ -14,7 +14,7 @@ use simula_mission::{
 use simula_viz::{
     follow_ui::{FollowUI, FollowUIVisibility},
 };
-use crate::{MissionToken, FollowPanel, token_ui::{ImageTextureIds, AssetInfo, TokenUiPlugin}};
+use crate::{MissionToken, FollowPanel, asset_ui::{ImageTextureIds, AssetInfo, TokenUiPlugin}};
 
 pub struct WalletUIPlugin;
 
@@ -126,13 +126,7 @@ impl WalletUIOptions for DefaultWalletUI{
     fn wallet_selector(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
-            let wallet_id_trimmed = wallet
-                .wallet_id
-                .to_string()
-                .get(0..8)
-                .unwrap_or_default()
-                .to_string();
-            wallet_list.push((wallet_id_trimmed, wallet_accounts));
+            wallet_list.push((trim_wallet(wallet), wallet_accounts));
         }
         egui::ComboBox::from_label("Select a wallet").show_index(
             ui,
@@ -144,13 +138,7 @@ impl WalletUIOptions for DefaultWalletUI{
     fn wallets(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&MissionToken>, image_texture_ids: &Res<ImageTextureIds>) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
-            let wallet_id_trimmed = wallet
-                .wallet_id
-                .to_string()
-                .get(0..8)
-                .unwrap_or_default()
-                .to_string();
-            wallet_list.push((wallet_id_trimmed, wallet_accounts));
+            wallet_list.push((trim_wallet(wallet), wallet_accounts));
         }
 
         egui::Grid::new("accounts_grid").striped(false).show(ui, |ui| {
@@ -163,12 +151,7 @@ impl WalletUIOptions for DefaultWalletUI{
             }
             for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
                 if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                    let account_id_trimmed = account.account_id
-                            .to_string()
-                            .get(0..8)
-                            .unwrap_or_default()
-                            .to_string();
-                    ui.collapsing(account_id_trimmed.clone(), |ui| {
+                    ui.collapsing(trim_account(account), |ui| {
                         let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> = vec![];
                         for &account_asset in account_assets.iter() {
                             if let Ok(asset) = assets.get(account_asset) {
@@ -472,4 +455,19 @@ fn create_wallet_ui<T: WalletUIOptions + Component>(
         .id();
     
     T::insert(entity, commands)
+}
+
+fn trim_id(id: String)-> String{
+    id
+        .get(0..8)
+        .unwrap_or_default()
+        .to_string()
+}
+
+pub fn trim_wallet(wallet: &Wallet)-> String{
+    trim_id(wallet.wallet_id.to_string())
+}
+
+pub fn trim_account(account: &Account)->String{
+    trim_id(account.account_id.to_string())
 }
