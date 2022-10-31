@@ -320,6 +320,7 @@ fn setup(
         .id();
 
     behavior_inspector.select(agent_id, "Agent: 002".into());
+    behavior_inspector.unselect();
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
