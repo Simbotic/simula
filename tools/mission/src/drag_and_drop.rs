@@ -6,11 +6,11 @@ use simula_mission::{
     wallet::Wallet,
 };
 
-use crate::{MissionToken, wallet_ui::AssetInfo};
+use crate::{MissionToken, token_ui::AssetInfo};
 
 pub struct DragAndDropPlugin;
 
-use crate::wallet_ui::ImageTextureIds;
+use crate::token_ui::ImageTextureIds;
 
 impl Plugin for DragAndDropPlugin {
     fn build(&self, app: &mut App) {
