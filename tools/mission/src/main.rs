@@ -19,7 +19,7 @@ use simula_video::GifAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
-    follow_ui::{FollowUICamera, FollowUIPlugin},
+    follow_ui::{FollowUICamera, FollowUIPlugin, FollowUI},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
@@ -31,6 +31,7 @@ use wallet_ui::WalletUIPlugin;
 mod behaviors;
 mod drag_and_drop;
 mod wallet_ui;
+mod token_ui;
 use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -137,76 +138,6 @@ fn setup(
         })
         .build(&mut commands);
 
-    let _agent_wallet_2 = WalletBuilder::<MissionToken>::default()
-        .id("e75b980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("8d61c19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(2000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(500.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(6900.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("fde4354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(50.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(750.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(0.into()));
-                });
-        })
-        .build(&mut commands);
-
-    let _agent_wallet_3 = WalletBuilder::<MissionToken>::default()
-        .id("e75d880182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("7d61d19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(3000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(800000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(10500.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("ffe4454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(650.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(15000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(10.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(100.into()));
-                });
-        })
-        .build(&mut commands);
-
-    let _agent_wallet_4 = WalletBuilder::<MissionToken>::default()
-        .id("d76a990182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account.id("fde3454e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c");
-        })
-        .build(&mut commands);
-
     let agent_behavior_graph = commands
         .spawn()
         // .insert(BehaviorEditorState {
@@ -236,6 +167,15 @@ fn setup(
             transform: Transform::from_translation(video_position).with_rotation(video_rotation),
             ..default()
         })
+        .insert(FollowUI {
+            min_distance: 0.1,
+            max_distance: 20.0,
+            min_height: -5.0,
+            max_height: 5.0,
+            max_view_angle: 45.0,
+            ..default()
+        })
+        .insert(FollowPanel)
         .with_children(|parent| {
             let mut child = parent.spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
@@ -314,7 +254,6 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[_agent_wallet_4, behavior.root.unwrap()])
         .insert(behavior)
         .insert(Name::new("Agent: 002"))
         .id();
