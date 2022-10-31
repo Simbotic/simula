@@ -1,9 +1,10 @@
 (
     root:(
+        "Do in this order",
         Sequence(()),
         [
-            (DebugAction((message:"Hello, from DebugMessage0!", duration: 1.0))),
-            (DebugAction((message:"Hello, from DebugMessage1!"))),
+            ("Do a thing", Debug((message:"Hello, from DebugMessage0!", duration: 1.0))),
+            ("Do another", Debug((message:"Hello, from DebugMessage1!"))),
         ]
     )
 )

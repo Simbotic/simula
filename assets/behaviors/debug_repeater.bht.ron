@@ -1,7 +1,10 @@
 (root:(
+    "Do a few times",
     Repeater((repeat:Times(2))),
-    [(Sequence(()),[
-        (Debug((message:"Hello, from DebugMessage0!"))),
-        (Debug((message:"Hello, from DebugMessage1!")))
+    [(
+        "Do in order",
+        Sequence(()),[
+        ("Say hi", Debug((message:"Hello, from DebugMessage0!"))),
+        ("Say hi again", Debug((message:"Hello, from DebugMessage1!")))
     ])]
 ))

@@ -8,11 +8,11 @@ use inspector::BehaviorInspectorPlugin;
 
 pub mod actions;
 pub mod asset;
+pub mod color_hex_utils;
 pub mod composites;
 pub mod decorators;
 pub mod inspector;
 pub mod test;
-pub mod color_hex_utils;
 
 pub mod prelude {
     pub use crate::actions::*;
@@ -22,12 +22,12 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::{BehaviorInspector};
+    pub use crate::inspector::BehaviorInspector;
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorParent, BehaviorPlugin,
-        BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess, BehaviorTree,
-        BehaviorType,
+        BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
+        BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess,
+        BehaviorTree, BehaviorType,
     };
     pub use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 }
@@ -54,9 +54,13 @@ where
     fn default() -> Self {
         Self {
             behavior: T::default(),
-            node: BehaviorNode::default(),
+            node: BehaviorNode {
+                typ: T::TYPE,
+                name: T::NAME.to_string(),
+                desc: T::DESC.to_string(),
+            },
             typ: T::TYPE,
-            name: Name::new(std::any::type_name::<T>()),
+            name: Name::new(format!("Behavior: {}", T::NAME)),
             parent: BehaviorParent::default(),
             children: BehaviorChildren::default(),
         }
@@ -65,7 +69,7 @@ where
 
 /// How to spawn a behavior node
 pub trait BehaviorSpawner {
-    fn spawn_with(&self, commands: &mut EntityCommands);
+    fn insert(&self, commands: &mut EntityCommands);
 }
 
 impl Plugin for BehaviorPlugin {
@@ -82,6 +86,10 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
+            .register_inspectable::<BehaviorSuccess>()
+            .register_inspectable::<BehaviorRunning>()
+            .register_inspectable::<BehaviorFailure>()
+            .register_inspectable::<BehaviorCursor>()
             .register_inspectable::<Debug>()
             .register_inspectable::<Delay>()
             .register_inspectable::<Selector>()
@@ -126,7 +134,11 @@ pub struct BehaviorFailure;
 /// A marker added to behavior node entities
 #[derive(Debug, Default, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
-pub struct BehaviorNode;
+pub struct BehaviorNode {
+    pub typ: BehaviorType,
+    pub name: String,
+    pub desc: String,
+}
 
 /// A component to point to the parent of a behavior node
 #[derive(Deref, Debug, Default, Reflect, Clone, Component)]
@@ -157,11 +169,11 @@ where
     const NAME: &'static str;
     const DESC: &'static str;
 
-    fn spawn(commands: &mut EntityCommands) {
+    fn insert(commands: &mut EntityCommands) {
         commands.insert_bundle(BehaviorBundle::<Self>::default());
     }
 
-    fn spawn_with(commands: &mut EntityCommands, data: &Self) {
+    fn insert_with(commands: &mut EntityCommands, data: &Self) {
         commands.insert_bundle(BehaviorBundle::<Self> {
             behavior: data.clone(),
             ..Default::default()
@@ -239,9 +251,10 @@ impl BehaviorTree {
     where
         T: Default + BehaviorSpawner,
     {
-        let BTNode(node_type, nodes) = node;
+        let BTNode(name, node_type, nodes) = node;
         let mut entity_commands = commands.entity(entity);
-        node_type.spawn_with(&mut entity_commands);
+        node_type.insert(&mut entity_commands);
+        entity_commands.insert(Name::new(name.clone()));
         entity_commands.insert(BehaviorParent(parent));
         let children = nodes
             .iter()

@@ -1,8 +1,8 @@
 use crate::{
     color_hex_utils::color_from_hex, BehaviorChildQuery, BehaviorChildQueryFilter,
     BehaviorChildQueryItem, BehaviorChildren, BehaviorCursor, BehaviorFailure, BehaviorInfo,
-    BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSpawner,
-    BehaviorSuccess, BehaviorTree, BehaviorType,
+    BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
+    BehaviorSpawner, BehaviorSuccess, BehaviorTree, BehaviorType,
 };
 use bevy::{ecs::component::ComponentId, prelude::*};
 use bevy_inspector_egui::{
@@ -32,22 +32,55 @@ pub struct BehaviorInspectorNode {
     pub entity: Option<Entity>,
 }
 
-fn titlebar_color<T>(info: &T) -> egui::Color32
-where
-    T: BehaviorInfo,
-{
-    if T::TYPE == BehaviorType::Action {
-        color_from_hex("#3f3f3f").unwrap()
-    } else if T::TYPE == BehaviorType::Composite {
-        color_from_hex("#3f3f3f").unwrap()
-    } else if T::TYPE == BehaviorType::Decorator {
-        color_from_hex("#3f3f3f").unwrap()
+fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
+    if behavior.typ == BehaviorType::Action {
+        color_from_hex("#4284F3").unwrap()
+    } else if behavior.typ == BehaviorType::Composite {
+        if behavior.name == "Selector" {
+            color_from_hex("#CC0100").unwrap()
+        } else if behavior.name == "Sequence" {
+            color_from_hex("#36980D").unwrap()
+        } else {
+            color_from_hex("#F3F342").unwrap()
+        }
+    } else if behavior.typ == BehaviorType::Decorator {
+        color_from_hex("#ACA000").unwrap()
     } else {
         color_from_hex("#3f3f3f").unwrap()
     }
 }
 
+fn behavior_nodes(
+    world: &mut World,
+) -> QueryState<
+    (
+        Entity,
+        &BehaviorNode,
+        &BehaviorChildren,
+        Option<&BehaviorRunning>,
+        Option<&BehaviorFailure>,
+        Option<&BehaviorSuccess>,
+    ),
+    With<BehaviorNode>,
+> {
+    world.query_filtered::<(
+        Entity,
+        &BehaviorNode,
+        &BehaviorChildren,
+        Option<&BehaviorRunning>,
+        Option<&BehaviorFailure>,
+        Option<&BehaviorSuccess>,
+    ), With<BehaviorNode>>()
+}
 
+macro_rules! some_or_return {
+    ( $e:expr ) => {
+        match $e {
+            Some(x) => x,
+            None => return false,
+        }
+    };
+}
 
 impl Inspectable for BehaviorInspectorNode {
     type Attributes = BehaviorInspectorNodeAttributes;
@@ -55,15 +88,15 @@ impl Inspectable for BehaviorInspectorNode {
     fn ui(&mut self, ui: &mut egui::Ui, options: Self::Attributes, context: &mut Context) -> bool {
         let mut changed = false;
 
-        // let info = if let Some(entity) = self.entity {
-        //     if let Ok(info) = context.world().get::<BehaviorInfo>(entity) {
-        //         info
-        //     } else {
-        //         return changed;
-        //     }
-        // } else {
-        //     return changed;
-        // };
+        let entity = some_or_return!(self.entity);
+        let world = some_or_return!(unsafe { context.world_mut() });
+        let behavior_name = some_or_return!(world.get::<Name>(entity));
+        let behavior_node = some_or_return!(world.get::<BehaviorNode>(entity));
+        let behavior_children = some_or_return!(world.get::<BehaviorChildren>(entity));
+
+        let behavior_running = world.get::<BehaviorRunning>(entity);
+        let behavior_failure = world.get::<BehaviorFailure>(entity);
+        let behavior_success = world.get::<BehaviorSuccess>(entity);
 
         // Node frame
         egui::Frame::none()
@@ -73,14 +106,21 @@ impl Inspectable for BehaviorInspectorNode {
                 egui::Frame::none()
                     .inner_margin(egui::Vec2::new(4.0, 1.0))
                     .rounding(Rounding::same(3.0))
-                    .fill(egui::Color32::RED)
+                    .fill(titlebar_color(&behavior_node))
                     .show(ui, |ui| {
+                        // ui.scope(|ui| {
+                        //     ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                        //     ui.horizontal(|ui| {
+                        //         ui.label(behavior_name.to_string());
+                        //     });
+                        // });
+                        ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
                         ui.horizontal(|ui| {
-                            ui.label("Behavior");
+                            ui.label(behavior_name.to_string());
                         });
                     });
 
-                ui.collapsing("Entity", |ui| {
+                ui.collapsing("", |ui| {
                     if let Some(entity) = &mut self.entity {
                         let attributes = EntityAttributes { despawnable: false };
                         entity.ui(ui, attributes, context);

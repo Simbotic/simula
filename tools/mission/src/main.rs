@@ -54,7 +54,7 @@ fn main() {
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
     .init_resource::<TimeDuration>()
     .add_plugins(DefaultPlugins)
-    .add_plugin(NetPlugin)
+    // .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
     .add_plugin(ActionPlugin)
     .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -307,18 +307,20 @@ fn setup(
         &mut commands,
         document,
     );
-    behavior_inspector.select(behavior.root, "Agent: 001".into());
     if let Some(root) = behavior.root {
         commands.entity(root).insert(BehaviorCursor);
     }
-    commands
+    let agent_id = commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
         .push_children(&[_agent_wallet_4, behavior.root.unwrap()])
         .insert(behavior)
-        .insert(Name::new("Agent: 002"));
+        .insert(Name::new("Agent: 002"))
+        .id();
+
+    behavior_inspector.select(agent_id, "Agent: 002".into());
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);

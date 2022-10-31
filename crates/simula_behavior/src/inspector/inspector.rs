@@ -21,8 +21,11 @@ pub struct BehaviorInspector {
 }
 
 impl BehaviorInspector {
-    pub fn select(&mut self, entity: Option<Entity>, name: String) {
-        self.selected = BehaviorInspectorItem { entity, name };
+    pub fn select(&mut self, entity: Entity, name: String) {
+        self.selected = BehaviorInspectorItem {
+            entity: Some(entity),
+            name,
+        };
     }
 
     pub fn unselect(&mut self) {
@@ -54,30 +57,36 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
     format!("{}{}", entity, item.name)
 }
 
+macro_rules! some_or_return {
+    ( $e:expr ) => {
+        match $e {
+            Some(x) => x,
+            None => return false,
+        }
+    };
+}
+
 impl Inspectable for BehaviorInspector {
     type Attributes = BehaviorInspectorAttributes;
 
     fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
         let mut changed = false;
 
+        let world = some_or_return!(unsafe { context.world_mut() });
+
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&self.selected))
             .show_ui(ui, |ui| {
                 let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
-                    let world = unsafe { context.world_mut() };
-                    if let Some(world) = world {
-                        let mut behavior_trees =
-                            world.query_filtered::<(Entity, Option<&Name>), With<BehaviorTree>>();
-                        behavior_trees
-                            .iter(world)
-                            .map(|(entity, name)| BehaviorInspectorItem {
-                                entity: Some(entity),
-                                name: name.unwrap_or(&Name::new("")).to_string(),
-                            })
-                            .collect::<Vec<_>>()
-                    } else {
-                        Vec::new()
-                    }
+                    let mut behavior_trees =
+                        world.query_filtered::<(Entity, Option<&Name>), With<BehaviorTree>>();
+                    behavior_trees
+                        .iter(world)
+                        .map(|(entity, name)| BehaviorInspectorItem {
+                            entity: Some(entity),
+                            name: name.unwrap_or(&Name::new("")).to_string(),
+                        })
+                        .collect::<Vec<_>>()
                 };
                 selectable_behaviors.insert(0, BehaviorInspectorItem::default());
                 for selectable_behavior in selectable_behaviors {
@@ -98,8 +107,9 @@ impl Inspectable for BehaviorInspector {
             name,
         } = &self.selected
         {
+            let behavior_tree = some_or_return!(world.get::<BehaviorTree>(*entity));
             let mut node = BehaviorInspectorNode {
-                entity: Some(*entity),
+                entity: behavior_tree.root,
             };
             egui::Window::new(format!("Behavior: {}", name))
                 .title_bar(true)

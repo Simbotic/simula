@@ -45,15 +45,15 @@ impl Default for TestBehavior {
 }
 
 impl BehaviorSpawner for TestBehavior {
-    fn spawn_with(&self, commands: &mut EntityCommands) {
+    fn insert(&self, commands: &mut EntityCommands) {
         match self {
-            TestBehavior::Debug(data) => BehaviorInfo::spawn_with(commands, data),
-            TestBehavior::Selector(data) => BehaviorInfo::spawn_with(commands, data),
-            TestBehavior::Sequence(data) => BehaviorInfo::spawn_with(commands, data),
-            TestBehavior::Repeater(data) => BehaviorInfo::spawn_with(commands, data),
-            TestBehavior::Inverter(data) => BehaviorInfo::spawn_with(commands, data),
-            TestBehavior::Succeeder(data) => BehaviorInfo::spawn_with(commands, data),
-            TestBehavior::Delay(data) => BehaviorInfo::spawn_with(commands, data),
+            TestBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Sequence(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 }
@@ -63,6 +63,7 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
     let document = ron::from_str::<BehaviorDocument<TestBehavior>>(behavior);
     assert!(document.is_ok());
     let document = document.unwrap();
+    // println!("Loaded behavior tree: \n{:#?}", ron::ser::to_string_pretty(&document, Default::default()).unwrap());
 
     // Create app
     let mut app = App::new();
