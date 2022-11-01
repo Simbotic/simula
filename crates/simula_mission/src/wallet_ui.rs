@@ -9,22 +9,22 @@ use egui_extras::{Size, TableBuilder};
 use crate::{
     account::Account,
     wallet::Wallet,
-    WalletBuilder
+    WalletBuilder, asset_ui::AssetInfo
 };
 use simula_viz::{
     follow_ui::{FollowUI, FollowUIVisibility},
 };
-use crate::{MissionToken, FollowPanel, asset_ui::{ImageTextureIds, TokenUiPlugin}};
+use crate::{asset_ui::{ImageTextureIds, TokenUiPlugin}};
 
-pub struct WalletUIPlugin;
+pub struct WalletUIPlugin<T: Component + AssetInfo>(pub T);
 
-impl Plugin for WalletUIPlugin {
+impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     fn build(&self, app: &mut App) {
         app
             .add_plugin(TokenUiPlugin)
             .add_system(wallet_creation_window)
-            .add_system(wallet_ui_draw::<DefaultWalletUI>)
-            .add_system(wallet_ui_draw::<MyCoolInGameWalletUI>);
+            .add_system(wallet_ui_draw::<DefaultWalletUI, T>)
+            .add_system(wallet_ui_draw::<MyCoolInGameWalletUI, T>);
     }
 }
 
@@ -40,9 +40,9 @@ fn wallet_creation_window(
         .vscroll(false)
         .drag_bounds(egui::Rect::EVERYTHING)
         .show(egui_ctx.ctx_mut(), |ui| {
-            ui.small_button("Create wallet").on_hover_text("generate wallet").clicked().then(|| {
-                add_wallet(&mut commands);
-            });
+            // // // // // ui.small_button("Create wallet").on_hover_text("generate wallet").clicked().then(|| {
+            // // // // //     add_wallet(&mut commands);
+            // // // // // });
             ui.small_button("normal Window").on_hover_text("display window").clicked().then(|| {
                 create_wallet_ui(&mut commands, DefaultWalletUI{selected_wallet: 0});
             });
@@ -109,7 +109,7 @@ trait WalletUIOptions {
     fn wallet_title() -> &'static str {
         "Wallets"
     }
-    fn wallets(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&MissionToken>, image_texture_ids: &Res<ImageTextureIds>);
+    fn wallets<T: Component + AssetInfo>(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&T>, image_texture_ids: &Res<ImageTextureIds>);
 }
 
 #[derive(Component)]
@@ -130,7 +130,7 @@ impl WalletUIOptions for DefaultWalletUI{
             |i| wallet_list[i].0.to_owned(),
         );
     }
-    fn wallets(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&MissionToken>, image_texture_ids: &Res<ImageTextureIds>) {
+    fn wallets<T: Component + AssetInfo>(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&T>, image_texture_ids: &Res<ImageTextureIds>) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
             wallet_list.push((trim_wallet(wallet), wallet_accounts));
@@ -266,7 +266,7 @@ impl WalletUIOptions for MyCoolInGameWalletUI {
     fn show_title_bar() -> bool {
         false
     }
-    fn wallets(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&MissionToken>, image_texture_ids: &Res<ImageTextureIds>) {
+    fn wallets<T: Component + AssetInfo>(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&T>, image_texture_ids: &Res<ImageTextureIds>) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
             let wallet_id_trimmed = wallet
@@ -343,14 +343,14 @@ impl WalletUIOptions for MyCoolInGameWalletUI {
     }
 }
 
-fn wallet_ui_draw<T: WalletUIOptions + Component>(
+fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
     mut commands: Commands,
     wallets: Query<(&Wallet, &Children)>,
     accounts: Query<(&Account, &Children)>,
-    assets: Query<&MissionToken>,
+    assets: Query<&U>,
     mut egui_context: ResMut<EguiContext>,
     mut wallet_ui: Query<(Entity, &mut T), With<WalletUI>>,
-    follow_uis: Query<(&FollowUI, &FollowUIVisibility), With<FollowPanel>>,
+    follow_uis: Query<(&FollowUI, &FollowUIVisibility)/*, With<FollowPanel>*/>,
     image_texture_ids: Res<ImageTextureIds>,
 ) {
     
@@ -406,37 +406,37 @@ fn gen_id() -> String {
     format!("{:0<64x}", rand::random::<u128>())
 }
 
-fn add_wallet(commands: &mut Commands) {
-    WalletBuilder::<MissionToken>::default()
-        .id(gen_id().as_str())
-        .with_account(|account| {
-            account
-                .id(gen_id().as_str())
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id(gen_id().as_str())
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()));
-                });
-        })
-        .build(commands);
-}
+// // // // // fn add_wallet<T>(commands: &mut Commands) {
+// // // // //     WalletBuilder::<T>::default()
+// // // // //         .id(gen_id().as_str())
+// // // // //         .with_account(|account| {
+// // // // //             account
+// // // // //                 .id(gen_id().as_str())
+// // // // //                 .with_asset(|asset| {
+// // // // //                     asset.amount(T::Energy(10000.into()));
+// // // // //                 })
+// // // // //                 .with_asset(|asset| {
+// // // // //                     asset.amount(T::Trust(200.into()));
+// // // // //                 })
+// // // // //                 .with_asset(|asset| {
+// // // // //                     asset.amount(T::Time(1000.into()));
+// // // // //                 });
+// // // // //         })
+// // // // //         .with_account(|account| {
+// // // // //             account
+// // // // //                 .id(gen_id().as_str())
+// // // // //                 .with_asset(|asset| {
+// // // // //                     asset.amount(T::Energy(99999.into()));
+// // // // //                 })
+// // // // //                 .with_asset(|asset| {
+// // // // //                     asset.amount(T::Trust(99999.into()));
+// // // // //                 })
+// // // // //                 .with_asset(|asset| {
+// // // // //                     asset.amount(T::Time(99999.into()));
+// // // // //                 });
+// // // // //         })
+// // // // //         .build(commands);
+// // // // // }
 
 fn create_wallet_ui<T: WalletUIOptions + Component>(
     commands: &mut Commands,
