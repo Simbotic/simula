@@ -31,9 +31,7 @@ pub fn run(
             debug_action.start = time.seconds_since_startup();
             debug!("[{}] RUNNING {}", entity.id(), debug_action.message);
         }
-
         let duration = time.seconds_since_startup() - debug_action.start;
-
         if duration > debug_action.duration {
             if debug_action.fail {
                 commands.entity(entity).insert(BehaviorFailure);

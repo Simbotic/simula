@@ -58,6 +58,7 @@ where
                 typ: T::TYPE,
                 name: T::NAME.to_string(),
                 desc: T::DESC.to_string(),
+                tree: None,
             },
             typ: T::TYPE,
             name: Name::new(format!("Behavior: {}", T::NAME)),
@@ -75,6 +76,8 @@ pub trait BehaviorSpawner {
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(BehaviorInspectorPlugin)
+            .register_type::<BehaviorTree>()
+            .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
@@ -86,6 +89,8 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
+            .register_inspectable::<BehaviorTree>()
+            .register_inspectable::<BehaviorNode>()
             .register_inspectable::<BehaviorSuccess>()
             .register_inspectable::<BehaviorRunning>()
             .register_inspectable::<BehaviorFailure>()
@@ -101,6 +106,7 @@ impl Plugin for BehaviorPlugin {
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_system(complete_behavior)
             .add_system(start_behavior)
+            .add_system_to_stage(CoreStage::PostUpdate, update_behavior)
             .add_system(sequencer::run)
             .add_system(selector::run)
             .add_system(repeater::run)
@@ -144,6 +150,7 @@ pub struct BehaviorNode {
     pub typ: BehaviorType,
     pub name: String,
     pub desc: String,
+    pub tree: Option<Entity>,
 }
 
 /// A component to point to the parent of a behavior node
@@ -339,7 +346,7 @@ impl BehaviorTrace {
 }
 
 /// Process completed behaviors, pass cursor to parent
-pub fn complete_behavior(
+fn complete_behavior(
     mut commands: Commands,
     mut dones: Query<
         (
@@ -353,7 +360,7 @@ pub fn complete_behavior(
     >,
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
-    for (entity, success, failure, parent, name) in dones.iter_mut() {
+    for (entity, success, failure, parent, name) in &mut dones {
         let state = if success.is_some() {
             "SUCCESS"
         } else if failure.is_some() {
@@ -380,13 +387,13 @@ pub fn complete_behavior(
 }
 
 /// Process ready behaviors, start them
-pub fn start_behavior(
+fn start_behavior(
     mut commands: Commands,
     mut ready: Query<(Entity, &BehaviorChildren, &Name), BehaviorReadyQuery>,
     nodes: Query<Entity, (With<BehaviorNode>, Without<BehaviorCursor>)>,
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
-    for (entity, children, name) in ready.iter_mut() {
+    for (entity, children, name) in &mut ready {
         // Reset all children
         // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
         for entity in nodes.iter_many(children.iter()) {
@@ -399,5 +406,38 @@ pub fn start_behavior(
             trace.push(format!("[{}] STARTED {}", entity.id(), name.to_string(),));
         }
         commands.entity(entity).insert(BehaviorRunning::default());
+    }
+}
+
+fn update_behavior(
+    trees: Query<(Entity, &BehaviorTree)>,
+    mut behaviors: Query<
+        (Entity, &BehaviorChildren, &mut BehaviorNode),
+        (Without<BehaviorTree>, Added<BehaviorNode>),
+    >,
+) {
+    for (tree_entity, tree) in &trees {
+        if let Some(root) = tree.root {
+            set_tree_entity_recursively(&mut behaviors, tree_entity, root);
+        }
+    }
+}
+
+fn set_tree_entity_recursively(
+    behaviors: &mut Query<
+        (Entity, &BehaviorChildren, &mut BehaviorNode),
+        (Without<BehaviorTree>, Added<BehaviorNode>),
+    >,
+    tree_entity: Entity,
+    entity: Entity,
+) {
+    let children = if let Ok((_entity, children, mut node)) = behaviors.get_mut(entity) {
+        node.tree = Some(tree_entity);
+        children.iter().copied().collect::<Vec<Entity>>()
+    } else {
+        vec![]
+    };
+    for child in children {
+        set_tree_entity_recursively(behaviors, tree_entity, child);
     }
 }
