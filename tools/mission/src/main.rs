@@ -3,6 +3,10 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
+use bevy_egui::{
+    egui,
+    EguiContext,
+};
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
@@ -12,7 +16,9 @@ use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::{
     asset::{Amount, Asset},
     MissionPlugin, WalletBuilder,
-    wallet::WalletUi
+    wallet_ui::WalletUIPlugin,
+    drag_and_drop::DragAndDropPlugin,
+    asset_ui::{AssetInfo, MissionToken},
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -27,11 +33,7 @@ use simula_viz::{
 use std::time::Duration;
 use ta::indicators::*;
 
-use wallet_ui::WalletUIPlugin;
-
 mod behaviors;
-use crate::drag_and_drop;
-use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -68,16 +70,17 @@ fn main() {
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
     .add_plugin(DragAndDropPlugin)
-    .add_plugin(WalletUIPlugin)
+    .add_plugin(WalletUIPlugin(MissionToken::None))
     .register_type::<MissionToken>()
     .register_type::<SignalGenerator>()
     .add_startup_system(setup)
     .add_system(debug_info)
     .add_system(increase_mission_time)
     .add_system(increase_time_with_signal)
-    .add_system(indicator_mission_time);
+    .add_system(indicator_mission_time)
+    .add_system(wallet_creation_window);
 
-    app.register_inspectable::<MissionToken>();
+    // app.register_inspectable::<MissionToken>();
     app.register_inspectable::<SignalFunction>();
 
     app.run();
@@ -86,16 +89,16 @@ fn main() {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet2(usize);
 
-#[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
-#[reflect(Component)]
-pub enum MissionToken {
-    #[default]
-    None,
-    Time(Asset<1000, 0>),
-    Trust(Asset<1000, 1>),
-    Energy(Asset<1000, 2>),
-    Labor(Asset<1000, 3>),
-}
+// #[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
+// #[reflect(Component)]
+// pub enum MissionToken {
+//     #[default]
+//     None,
+//     Time(Asset<1000, 0>),
+//     Trust(Asset<1000, 1>),
+//     Energy(Asset<1000, 2>),
+//     Labor(Asset<1000, 3>),
+// }
 
 fn setup(
     mut commands: Commands,
@@ -168,15 +171,24 @@ fn setup(
             transform: Transform::from_translation(video_position).with_rotation(video_rotation),
             ..default()
         })
-        .insert(FollowUI {
-            min_distance: 0.1,
-            max_distance: 20.0,
-            min_height: -5.0,
-            max_height: 5.0,
-            max_view_angle: 45.0,
-            ..default()
+        .with_children(|parent| {
+            let mut child = parent.spawn_bundle(SpatialBundle {
+                transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
+                ..default()
+            });
+            child.insert(
+                FollowUI {
+                    min_distance: 0.1,
+                    max_distance: 20.0,
+                    min_height: -5.0,
+                    max_height: 5.0,
+                    max_view_angle: 45.0,
+                    ..default()
+                }
+            )
+            .insert(Name::new("Follow UI Robot"));
+            // .insert(FollowPanel)
         })
-        .insert(FollowPanel)
         .with_children(|parent| {
             let mut child = parent.spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
@@ -421,4 +433,58 @@ fn indicator_mission_time(_time: Res<Time>, mut assets: Query<&mut MissionToken>
         };
         let _time_indicator = ExponentialMovingAverage::new(asset_value as usize);
     }
+}
+
+fn wallet_creation_window(
+    mut commands: Commands,
+    mut egui_ctx: ResMut<EguiContext>,
+) {
+    egui::Window::new("Wallet Creation")
+        .default_width(200.0)
+        .resizable(true)
+        .collapsible(false)
+        .title_bar(true)
+        .vscroll(false)
+        .drag_bounds(egui::Rect::EVERYTHING)
+        .show(egui_ctx.ctx_mut(), |ui| {
+            ui.small_button("Create Wallet").on_hover_text("generate wallet").clicked().then(|| {
+                add_wallet(&mut commands);
+            });
+        });
+}
+
+fn gen_id() -> String {
+    format!("{:0<64x}", rand::random::<u128>())
+}
+
+fn add_wallet(commands: &mut Commands) {
+    WalletBuilder::<MissionToken>::default()
+        .id(gen_id().as_str())
+        .with_account(|account| {
+            account
+                .id(gen_id().as_str())
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(10000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(200.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(1000.into()));
+                });
+        })
+        .with_account(|account| {
+            account
+                .id(gen_id().as_str())
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(99999.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(99999.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(99999.into()));
+                });
+        })
+        .build(commands);
 }

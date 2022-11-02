@@ -9,7 +9,7 @@ use egui_extras::{Size, TableBuilder};
 use crate::{
     account::Account,
     wallet::Wallet,
-    WalletBuilder, asset_ui::AssetInfo
+    asset_ui::AssetInfo
 };
 use simula_viz::{
     follow_ui::{FollowUI, FollowUIVisibility},
@@ -22,17 +22,17 @@ impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     fn build(&self, app: &mut App) {
         app
             .add_plugin(TokenUiPlugin)
-            .add_system(wallet_creation_window)
+            .add_system(wallet_ui_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI, T>)
-            .add_system(wallet_ui_draw::<MyCoolInGameWalletUI, T>);
+            .add_system(wallet_ui_draw::<GameWalletUI, T>);
     }
 }
 
-fn wallet_creation_window(
+fn wallet_ui_creation_window(
     mut commands: Commands,
     mut egui_ctx: ResMut<EguiContext>,
 ) {
-    egui::Window::new("Creation Panel")
+    egui::Window::new("Wallet UI Creation")
         .default_width(200.0)
         .resizable(true)
         .collapsible(false)
@@ -40,14 +40,11 @@ fn wallet_creation_window(
         .vscroll(false)
         .drag_bounds(egui::Rect::EVERYTHING)
         .show(egui_ctx.ctx_mut(), |ui| {
-            // // // // // ui.small_button("Create wallet").on_hover_text("generate wallet").clicked().then(|| {
-            // // // // //     add_wallet(&mut commands);
-            // // // // // });
-            ui.small_button("normal Window").on_hover_text("display window").clicked().then(|| {
+            ui.small_button("Default Window").on_hover_text("display window").clicked().then(|| {
                 create_wallet_ui(&mut commands, DefaultWalletUI{selected_wallet: 0});
             });
-            ui.small_button("cool Window").on_hover_text("display window").clicked().then(|| {
-                create_wallet_ui(&mut commands, MyCoolInGameWalletUI{selected_wallet: 0});
+            ui.small_button("Game Window").on_hover_text("display window").clicked().then(|| {
+                create_wallet_ui(&mut commands, GameWalletUI{selected_wallet: 0});
             });
         });
 }
@@ -205,18 +202,18 @@ impl WalletUIOptions for DefaultWalletUI{
 }
 
 #[derive(Component)]
-struct MyCoolInGameWalletUI {
+struct GameWalletUI {
     selected_wallet: usize,
 }
 
-impl WalletUIOptions for MyCoolInGameWalletUI {
+impl WalletUIOptions for GameWalletUI {
     fn insert(entity: Entity, commands: &mut Commands) {
         commands.entity(entity).insert(WalletUIFollow);
     }
     fn titlebar(ui: &mut egui::Ui) -> Option<WalletUIResponse> {
         let mut response: Option<WalletUIResponse> = None;
         ui.horizontal(|ui| {
-            ui.label("My Cool In Game Wallet");
+            ui.label("Game Wallet");
             response = ui.button("x").clicked().then(|| WalletUIResponse::CloseTitlebar);
         });
         response
@@ -232,7 +229,7 @@ impl WalletUIOptions for MyCoolInGameWalletUI {
                 .to_string();
             wallet_list.push((wallet_id_trimmed, wallet_accounts));
         }
-        egui::ComboBox::from_label("Select a cool wallet").show_index(
+        egui::ComboBox::from_label("Select a game wallet").show_index(
             ui,
             &mut self.selected_wallet,
             wallet_list.len(),
@@ -401,42 +398,6 @@ fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
             });
     }
 }
-
-fn gen_id() -> String {
-    format!("{:0<64x}", rand::random::<u128>())
-}
-
-// // // // // fn add_wallet<T>(commands: &mut Commands) {
-// // // // //     WalletBuilder::<T>::default()
-// // // // //         .id(gen_id().as_str())
-// // // // //         .with_account(|account| {
-// // // // //             account
-// // // // //                 .id(gen_id().as_str())
-// // // // //                 .with_asset(|asset| {
-// // // // //                     asset.amount(T::Energy(10000.into()));
-// // // // //                 })
-// // // // //                 .with_asset(|asset| {
-// // // // //                     asset.amount(T::Trust(200.into()));
-// // // // //                 })
-// // // // //                 .with_asset(|asset| {
-// // // // //                     asset.amount(T::Time(1000.into()));
-// // // // //                 });
-// // // // //         })
-// // // // //         .with_account(|account| {
-// // // // //             account
-// // // // //                 .id(gen_id().as_str())
-// // // // //                 .with_asset(|asset| {
-// // // // //                     asset.amount(T::Energy(99999.into()));
-// // // // //                 })
-// // // // //                 .with_asset(|asset| {
-// // // // //                     asset.amount(T::Trust(99999.into()));
-// // // // //                 })
-// // // // //                 .with_asset(|asset| {
-// // // // //                     asset.amount(T::Time(99999.into()));
-// // // // //                 });
-// // // // //         })
-// // // // //         .build(commands);
-// // // // // }
 
 fn create_wallet_ui<T: WalletUIOptions + Component>(
     commands: &mut Commands,

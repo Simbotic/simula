@@ -1,4 +1,4 @@
-use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res};
+use bevy::prelude::{Component, App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res};
 use bevy_egui::{egui::*, EguiContext};
 use crate::{
     account::Account,
@@ -6,8 +6,16 @@ use crate::{
     wallet::Wallet,
 };
 
-use crate::{MissionToken};
-
+// use crate::{MissionToken};
+#[derive(Debug, Default, Component, Clone, PartialEq)]
+pub enum MissionToken {
+    #[default]
+    None,
+    Time(Asset<1000, 0>),
+    Trust(Asset<1000, 1>),
+    Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
+}
 pub struct DragAndDropPlugin;
 
 use crate::asset_ui::ImageTextureIds;
@@ -16,7 +24,7 @@ use crate::wallet_ui::{trim_account, trim_wallet};
 
 impl Plugin for DragAndDropPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(drag_and_drop);
+        // app.add_system(drag_and_drop);
     }
 }
 
@@ -158,13 +166,13 @@ pub fn drag_and_drop(
                                             .with(account_idx)
                                             .with(asset_idx); // we create an id with all index
 
-                                        if asset.is_draggable(){
-                                            drag_source(ui, item_id, |ui| { //we make the asset dragable
-                                                asset.render(ui, &image_texture_ids);
-                                            });
-                                        }else{
-                                            asset.render(ui, &image_texture_ids);
-                                        }
+                                        // if asset.is_draggable(){
+                                        //     drag_source(ui, item_id, |ui| { //we make the asset dragable
+                                        //         asset.render(ui, &image_texture_ids);
+                                        //     });
+                                        // }else{
+                                        //     asset.render(ui, &image_texture_ids);
+                                        // }
 
                                         if ui.memory().is_being_dragged(item_id) {
                                             source_asset = Some(asset_entity); // we now know which asset is being dragged

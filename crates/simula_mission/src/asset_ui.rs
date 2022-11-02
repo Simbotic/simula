@@ -6,7 +6,20 @@ use bevy_egui::{
     EguiContext,
 };
 use crate::asset::Amount;
-use crate::MissionToken;
+// use crate::MissionToken;
+
+use crate::asset::Asset;
+
+#[derive(Debug, Default, Reflect, Component, Clone, PartialEq)]
+#[reflect(Component)]
+pub enum MissionToken {
+    #[default]
+    None,
+    Time(Asset<1000, 0>),
+    Trust(Asset<1000, 1>),
+    Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
+}
 
 pub struct TokenUiPlugin;
 
