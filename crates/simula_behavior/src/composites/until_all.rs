@@ -1,55 +1,23 @@
 use crate::prelude::*;
 use bevy::prelude::*;
-use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use serde::{Deserialize, Serialize};
 
-/// A sequence will visit each child in order, starting with the first, and when that
-/// succeeds will call the second, and so on down the list of children. If any child
-/// fails it will immediately return failure to the parent. If the last child in the
-/// sequence succeeds, then the sequence will return success to its parent.
-#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
-pub struct Sequencer {
-    #[serde(default)]
-    random: bool,
-    #[serde(default)]
-    pub seed: u64,
-}
+/// UntilAll will run all of its children until all of them succeed.
+#[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
+pub struct UntilAll;
 
-impl Default for Sequencer {
-    fn default() -> Self {
-        Self {
-            random: false,
-            seed: rand::random(),
-        }
-    }
-}
-
-impl BehaviorInfo for Sequencer {
+impl BehaviorInfo for UntilAll {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Sequencer";
-    const DESC: &'static str = "Sequencer behavior node";
+    const NAME: &'static str = "Until All";
+    const DESC: &'static str = "Until All behavior node";
 }
 
 pub fn run(
     mut commands: Commands,
-    mut sequences: Query<
-        (Entity, &BehaviorChildren, &mut Sequencer),
-        (With<Sequencer>, BehaviorRunQuery),
-    >,
-    nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
+    untils: Query<(Entity, &BehaviorChildren), (With<UntilAll>, BehaviorRunQuery)>,
+    nodes: Query<BehaviorChildQuery, With<BehaviorNode>>,
 ) {
-    for (entity, children, mut sequence) in &mut sequences {
-        // If sequence is random, shuffle the children, deterministically
-        let mut rng = StdRng::seed_from_u64(sequence.seed);
-        let mut random_children;
-        let children_iter = if sequence.random {
-            random_children = children.0.clone();
-            random_children.shuffle(&mut rng);
-            random_children.iter()
-        } else {
-            children.iter()
-        };
-
+    for (entity, children) in &untils {
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
@@ -59,25 +27,27 @@ pub fn run(
                 child_parent,
                 child_failure,
                 child_success,
-                child_running: _,
-            } in nodes.iter_many(children_iter)
+                child_running,
+            } in nodes.iter_many(children.iter())
             {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
                         if child_failure.is_some() {
                             // Child failed, so we fail
                             commands.entity(entity).insert(BehaviorFailure);
-                            sequence.seed = rand::random();
                             should_succeed = false;
                             break;
                         } else if child_success.is_some() {
                             // Child succeeded, so we move to next child
+                        } else if child_running.is_some() {
+                            // Child running, so we move to next child
+                            commands.entity(entity).remove::<BehaviorCursor>();
+                            should_succeed = false;
                         } else {
                             // Child is ready, pass on cursor
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
                             should_succeed = false;
-                            break;
                         }
                     } else {
                         // Child is not ours, so we fail
@@ -97,7 +67,6 @@ pub fn run(
             // If all children succeed, complete with success
             if should_succeed {
                 commands.entity(entity).insert(BehaviorSuccess);
-                sequence.seed = rand::random();
             }
         }
     }

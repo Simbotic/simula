@@ -30,6 +30,7 @@ pub fn run(
                 child_parent,
                 child_failure,
                 child_success,
+                child_running: _,
             }) = nodes.get(child_entity)
             {
                 if let Some(child_parent) = **child_parent {

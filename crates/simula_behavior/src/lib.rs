@@ -86,6 +86,7 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Delay>()
             .register_type::<Selector>()
             .register_type::<Sequencer>()
+            .register_type::<UntilAll>()
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
@@ -99,16 +100,19 @@ impl Plugin for BehaviorPlugin {
             .register_inspectable::<Delay>()
             .register_inspectable::<Selector>()
             .register_inspectable::<Sequencer>()
+            .register_inspectable::<UntilAll>()
             .register_inspectable::<Inverter>()
             .register_inspectable::<Repeater>()
             .register_inspectable::<Succeeder>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
-            .add_system(complete_behavior)
-            .add_system(start_behavior)
-            .add_system_to_stage(CoreStage::PostUpdate, update_behavior)
+            .add_system_to_stage(
+                CoreStage::PostUpdate,
+                update_behavior.chain(complete_behavior.chain(start_behavior)),
+            )
             .add_system(sequencer::run)
             .add_system(selector::run)
+            .add_system(until_all::run)
             .add_system(repeater::run)
             .add_system(inverter::run)
             .add_system(succeeder::run)
@@ -142,6 +146,12 @@ pub struct BehaviorSuccess;
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorFailure;
+
+/// A marker added to behaviors that are stopped without completing
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
+#[reflect(Component)]
+#[component(storage = "SparseSet")]
+pub struct BehaviorStopped;
 
 /// A marker added to behavior node entities
 #[derive(Debug, Default, Reflect, Clone, Component, Inspectable)]
@@ -328,6 +338,7 @@ pub struct BehaviorChildQuery {
     child_parent: &'static BehaviorParent,
     child_failure: Option<&'static BehaviorFailure>,
     child_success: Option<&'static BehaviorSuccess>,
+    child_running: Option<&'static BehaviorRunning>,
 }
 
 #[derive(WorldQuery)]
@@ -348,19 +359,30 @@ impl BehaviorTrace {
 /// Process completed behaviors, pass cursor to parent
 fn complete_behavior(
     mut commands: Commands,
-    mut dones: Query<
+    dones: Query<
         (
             Entity,
             Option<&BehaviorSuccess>,
             Option<&BehaviorFailure>,
             &BehaviorParent,
+            &BehaviorChildren,
             &Name,
         ),
         BehaviorDoneQuery,
     >,
+    parents: Query<Entity, (With<BehaviorParent>, With<BehaviorRunning>)>,
+    nodes: Query<
+        (Entity, &BehaviorChildren),
+        Or<(
+            With<BehaviorCursor>,
+            With<BehaviorRunning>,
+            With<BehaviorSuccess>,
+            With<BehaviorFailure>,
+        )>,
+    >,
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
-    for (entity, success, failure, parent, name) in &mut dones {
+    for (entity, success, failure, parent, children, name) in &dones {
         let state = if success.is_some() {
             "SUCCESS"
         } else if failure.is_some() {
@@ -380,8 +402,15 @@ fn complete_behavior(
         }
         commands.entity(entity).remove::<BehaviorRunning>();
         commands.entity(entity).remove::<BehaviorCursor>();
+
+        // Reset all children recursively
+        reset_nodes(true, &mut commands, children, &nodes);
+
+        // Pass cursor to parent, only if parent is running
         if let Some(parent) = **parent {
-            commands.entity(parent).insert(BehaviorCursor);
+            if parents.get(parent).is_ok() {
+                commands.entity(parent).insert(BehaviorCursor);
+            }
         }
     }
 }
@@ -389,23 +418,52 @@ fn complete_behavior(
 /// Process ready behaviors, start them
 fn start_behavior(
     mut commands: Commands,
-    mut ready: Query<(Entity, &BehaviorChildren, &Name), BehaviorReadyQuery>,
-    nodes: Query<Entity, (With<BehaviorNode>, Without<BehaviorCursor>)>,
+    ready: Query<(Entity, &BehaviorChildren, &Name), BehaviorReadyQuery>,
+    nodes: Query<
+        (Entity, &BehaviorChildren),
+        Or<(
+            With<BehaviorCursor>,
+            With<BehaviorRunning>,
+            With<BehaviorSuccess>,
+            With<BehaviorFailure>,
+        )>,
+    >,
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
-    for (entity, children, name) in &mut ready {
-        // Reset all children
+    for (entity, children, name) in &ready {
+        // Reset children
+        reset_nodes(false, &mut commands, children, &nodes);
         // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
-        for entity in nodes.iter_many(children.iter()) {
-            commands.entity(entity).remove::<BehaviorRunning>();
-            commands.entity(entity).remove::<BehaviorSuccess>();
-            commands.entity(entity).remove::<BehaviorFailure>();
-        }
         debug!("[{}] STARTED {}", entity.id().to_string(), name.to_string());
         if let Some(trace) = trace.as_mut() {
             trace.push(format!("[{}] STARTED {}", entity.id(), name.to_string(),));
         }
         commands.entity(entity).insert(BehaviorRunning::default());
+    }
+}
+
+fn reset_nodes(
+    recursively: bool,
+    commands: &mut Commands,
+    children: &BehaviorChildren,
+    nodes: &Query<
+        (Entity, &BehaviorChildren),
+        Or<(
+            With<BehaviorCursor>,
+            With<BehaviorRunning>,
+            With<BehaviorSuccess>,
+            With<BehaviorFailure>,
+        )>,
+    >,
+) {
+    for (entity, children) in nodes.iter_many(children.iter()) {
+        commands.entity(entity).remove::<BehaviorCursor>();
+        commands.entity(entity).remove::<BehaviorRunning>();
+        commands.entity(entity).remove::<BehaviorSuccess>();
+        commands.entity(entity).remove::<BehaviorFailure>();
+        if recursively {
+            reset_nodes(true, commands, children, nodes);
+        }
     }
 }
 

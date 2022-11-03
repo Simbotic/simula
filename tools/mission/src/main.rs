@@ -223,10 +223,10 @@ fn setup(
         .id();
 
     // Build Agent 001
-    let behavior = mission_behavior::create_from_data(None, &mut commands);
-    if let Some(root) = behavior.root {
-        commands.entity(root).insert(BehaviorCursor);
-    }
+    // let behavior = mission_behavior::create_from_data(None, &mut commands);
+    // if let Some(root) = behavior.root {
+    //     commands.entity(root).insert(BehaviorCursor);
+    // }
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
@@ -236,13 +236,13 @@ fn setup(
             agent_wallet,
             agent_behavior_graph,
             agent_body,
-            behavior.root.unwrap(),
+            // behavior.root.unwrap(),
         ])
-        .insert(behavior)
+        // .insert(behavior)
         .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
-    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_until_any.bht.ron");
     let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
         None,
         &mut commands,
@@ -262,7 +262,7 @@ fn setup(
         .id();
 
     behavior_inspector.select(agent_id, "Agent: 002".into());
-    behavior_inspector.unselect();
+    // behavior_inspector.unselect();
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);

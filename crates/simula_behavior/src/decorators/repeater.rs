@@ -45,6 +45,7 @@ pub fn run(
                 child_parent,
                 child_failure,
                 child_success,
+                child_running: _,
             }) = nodes.get(child_entity)
             {
                 if let Some(child_parent) = **child_parent {
@@ -98,7 +99,6 @@ pub fn run(
                         // Child is ready, pass on cursor
                         else {
                             repeater.count += 1;
-                            debug!("[{}] RUNNING #{}", entity.id(), repeater.count,);
                             commands.entity(entity).remove::<BehaviorCursor>();
                             commands.entity(child_entity).insert(BehaviorCursor);
                         }

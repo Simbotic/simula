@@ -17,6 +17,8 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(complete_behavior);
     app.add_system(sequencer::run);
     app.add_system(selector::run);
+    app.add_system(until_all::run);
+    app.add_system(until_any::run);
     app.add_system(repeater::run);
     app.add_system(inverter::run);
     app.add_system(succeeder::run);
@@ -32,6 +34,8 @@ pub enum TestBehavior {
     Debug(Debug),
     Selector(Selector),
     Sequencer(Sequencer),
+    UntilAll(UntilAll),
+    UntilAny(UntilAny),
     Repeater(Repeater),
     Inverter(Inverter),
     Succeeder(Succeeder),
@@ -50,6 +54,8 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::UntilAll(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::UntilAny(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
