@@ -18,7 +18,7 @@ use simula_mission::{
     MissionPlugin, WalletBuilder,
     wallet_ui::WalletUIPlugin,
     drag_and_drop::DragAndDropPlugin,
-    asset_ui::{AssetInfo, MissionToken},
+    asset_ui::{AssetInfo},
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -89,16 +89,28 @@ fn main() {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet2(usize);
 
-// #[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
-// #[reflect(Component)]
-// pub enum MissionToken {
-//     #[default]
-//     None,
-//     Time(Asset<1000, 0>),
-//     Trust(Asset<1000, 1>),
-//     Energy(Asset<1000, 2>),
-//     Labor(Asset<1000, 3>),
-// }
+#[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
+#[reflect(Component)]
+pub enum MissionToken {
+    #[default]
+    None,
+    Time(Asset<1000, 0>),
+    Trust(Asset<1000, 1>),
+    Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
+}
+
+impl From<MissionToken> for AssetBalance {
+    fn from(token: MissionToken) -> Self {
+        match token {
+            MissionToken::Time(asset) => asset.into(),
+            MissionToken::Trust(asset) => asset.into(),
+            MissionToken::Energy(asset) => asset.into(),
+            MissionToken::Labor(asset) => asset.into(),
+            MissionToken::None(asset) => asset.into(),
+        }
+    }
+}
 
 fn setup(
     mut commands: Commands,
