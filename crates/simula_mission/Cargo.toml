@@ -14,5 +14,6 @@ bevy-inspector-egui = "0.13"
 egui_extras = "0.19.0"
 simula_viz = { path = "../../crates/simula_viz" }
 rand = "0.8.5"
+bevy_asset = "0.8.1"
 
 [dev-dependencies]
