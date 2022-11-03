@@ -9,11 +9,11 @@
                 [
                     ("Wait a bit", Delay((duration: 5.0))),
                     (
-                        "Run until any good",
-                        UntilAny(()),
+                        "Run until all good",
+                        All(()),
                         [
                             ("Do a thing", Debug((duration: 5.0, fail: false))),
-                            ("Do another", Debug((duration: 2.0, fail: true))),
+                            ("Do another", Debug((duration: 2.0))),
                             ("Do more", Debug((duration: 8.0))),
                             (
                                 "Wait and do",
@@ -21,11 +21,11 @@
                                 [
                                     ("Wait a bit", Delay((duration: 2.0))),
                                     (
-                                        "Run until any good",
-                                        UntilAny(()),
+                                        "Run until all good",
+                                        All(()),
                                         [
                                             ("Do a thing", Debug((duration: 5.0, fail: false))),
-                                            ("Do another", Debug((duration: 2.0, fail: true))),
+                                            ("Do another", Debug((duration: 2.0))),
                                             ("Do more", Debug((duration: 8.0))),
                                         ]
                                     )

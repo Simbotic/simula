@@ -2,22 +2,22 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// UntilAny will run all of its children until one of them succeed.
+/// Any will run all of its children in parallel until one of them succeed.
 #[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
-pub struct UntilAny;
+pub struct Any;
 
-impl BehaviorInfo for UntilAny {
+impl BehaviorInfo for Any {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Until Any";
-    const DESC: &'static str = "Until Any behavior node";
+    const NAME: &'static str = "Any";
+    const DESC: &'static str = "Any behavior node";
 }
 
 pub fn run(
     mut commands: Commands,
-    untils: Query<(Entity, &BehaviorChildren), (With<UntilAny>, BehaviorRunQuery)>,
+    anys: Query<(Entity, &BehaviorChildren), (With<Any>, BehaviorRunQuery)>,
     nodes: Query<BehaviorChildQuery, With<BehaviorNode>>,
 ) {
-    for (entity, children) in &untils {
+    for (entity, children) in &anys {
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {

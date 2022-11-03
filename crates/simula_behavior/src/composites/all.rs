@@ -2,22 +2,22 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// UntilAll will run all of its children until all of them succeed.
+/// All will run all of its children in parallel until all of them succeed.
 #[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
-pub struct UntilAll;
+pub struct All;
 
-impl BehaviorInfo for UntilAll {
+impl BehaviorInfo for All {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Until All";
-    const DESC: &'static str = "Until All behavior node";
+    const NAME: &'static str = "All";
+    const DESC: &'static str = "All behavior node";
 }
 
 pub fn run(
     mut commands: Commands,
-    untils: Query<(Entity, &BehaviorChildren), (With<UntilAll>, BehaviorRunQuery)>,
+    alls: Query<(Entity, &BehaviorChildren), (With<All>, BehaviorRunQuery)>,
     nodes: Query<BehaviorChildQuery, With<BehaviorNode>>,
 ) {
-    for (entity, children) in &untils {
+    for (entity, children) in &alls {
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {

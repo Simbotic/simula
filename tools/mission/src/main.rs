@@ -19,7 +19,7 @@ use simula_video::GifAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
-    follow_ui::{FollowUICamera, FollowUIPlugin, FollowUI},
+    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
@@ -30,8 +30,8 @@ use wallet_ui::WalletUIPlugin;
 
 mod behaviors;
 mod drag_and_drop;
-mod wallet_ui;
 mod token_ui;
+mod wallet_ui;
 use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -53,7 +53,9 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .insert_resource(TimeDuration{time: Duration::default()})
+    .insert_resource(TimeDuration {
+        time: Duration::default(),
+    })
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -223,10 +225,10 @@ fn setup(
         .id();
 
     // Build Agent 001
-    // let behavior = mission_behavior::create_from_data(None, &mut commands);
-    // if let Some(root) = behavior.root {
-    //     commands.entity(root).insert(BehaviorCursor);
-    // }
+    let behavior = mission_behavior::create_from_data(None, &mut commands);
+    if let Some(root) = behavior.root {
+        commands.entity(root).insert(BehaviorCursor);
+    }
     commands
         .spawn_bundle(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
@@ -236,13 +238,13 @@ fn setup(
             agent_wallet,
             agent_behavior_graph,
             agent_body,
-            // behavior.root.unwrap(),
+            behavior.root.unwrap(),
         ])
-        // .insert(behavior)
+        .insert(behavior)
         .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
-    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_until_any.bht.ron");
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_any.bht.ron");
     let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
         None,
         &mut commands,
@@ -350,17 +352,18 @@ fn setup(
             }),
         )
         .insert(FpsText);
-        commands.spawn()
-            .insert( SignalGenerator {
-                func: SignalFunction::Pulse,
-                amplitude: 1.0,
-                frequency: 1.0,
-                phase: 1.0,
-                offset: 1.0,
-                invert: false,
-                ..default()
-            })
-            .insert(Name::new("Signal Generator"));
+    commands
+        .spawn()
+        .insert(SignalGenerator {
+            func: SignalFunction::Pulse,
+            amplitude: 1.0,
+            frequency: 1.0,
+            phase: 1.0,
+            offset: 1.0,
+            invert: false,
+            ..default()
+        })
+        .insert(Name::new("Signal Generator"));
 }
 
 #[derive(Component)]
@@ -401,15 +404,13 @@ fn increase_time_with_signal(
 ) {
     for mut token in query.iter_mut() {
         for mut signal_generator in generator_mission.iter_mut() {
-            let generate = SignalGenerator::sample(
-                &mut signal_generator, 
-                time_duration.time,
-            );
+            let generate = SignalGenerator::sample(&mut signal_generator, time_duration.time);
             let generate = generate.round() as i128;
             match *token {
-                MissionToken::Time(asset) => 
-                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
-                    _ => {}
+                MissionToken::Time(asset) => {
+                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate)))
+                }
+                _ => {}
             }
         }
     }

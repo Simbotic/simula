@@ -1,17 +1,17 @@
 use simula_behavior::{test::*, BehaviorTrace};
 
 #[test]
-fn until_all_simple() {
+fn any_simple() {
     let behavior = r#"
     (
         root:
         (
-            "Run until all good",
-            UntilAll(()),
+            "Run until any good",
+            Any(()),
             [
-                ("Do a thing", Debug(())),
+                ("Do a thing", Debug((fail: true))),
                 ("Do another", Debug(())),
-                ("Do more", Debug(())),
+                ("Do more", Debug((fail: true))),
             ]
         )
     )
@@ -19,30 +19,30 @@ fn until_all_simple() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Run until all good",
+        "[0] STARTED Run until any good",
         "[1] STARTED Do a thing",
         "[2] STARTED Do another",
         "[3] STARTED Do more",
-        "[1] SUCCESS Do a thing",
+        "[1] FAILURE Do a thing",
+        "[3] FAILURE Do more",
         "[2] SUCCESS Do another",
-        "[3] SUCCESS Do more",
-        "[0] SUCCESS Run until all good",
+        "[0] SUCCESS Run until any good",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
 
 #[test]
-fn until_all_simple_fails() {
+fn any_simple_failure() {
     let behavior = r#"
     (
         root:
         (
-            "Run until all good",
-            UntilAll(()),
+            "Run until any good",
+            Any(()),
             [
-                ("Do a thing", Debug(())),
+                ("Do a thing", Debug((fail: true))),
                 ("Do another", Debug((fail: true))),
-                ("Do more", Debug(())),
+                ("Do more", Debug((fail: true))),
             ]
         )
     )
@@ -50,14 +50,14 @@ fn until_all_simple_fails() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Run until all good",
+        "[0] STARTED Run until any good",
         "[1] STARTED Do a thing",
         "[2] STARTED Do another",
         "[3] STARTED Do more",
-        "[1] SUCCESS Do a thing",
-        "[3] SUCCESS Do more",
+        "[1] FAILURE Do a thing",
         "[2] FAILURE Do another",
-        "[0] FAILURE Run until all good",
+        "[3] FAILURE Do more",
+        "[0] FAILURE Run until any good",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
