@@ -84,6 +84,7 @@ fn initialize_images(
 pub trait AssetInfo {
     fn name(&self) -> &'static str;
     fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
+    fn icon_dir(&self) -> &'static str;
     fn amount(&self) -> Amount;
     fn is_draggable(&self) -> bool;
     fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>){
@@ -126,6 +127,16 @@ impl AssetInfo for MissionToken {
             MissionToken::Energy(_) => image_texture_ids.energy_icon,
             MissionToken::Labor(_) => image_texture_ids.labor_icon,
             MissionToken::None => None,
+        }
+    }
+
+    fn icon_dir(&self) -> &'static str {
+        match self {
+            MissionToken::Time(_) => "../assets/mission/Balance.png",
+            MissionToken::Trust(_) => "../assets/mission/Money - Cash.png",
+            MissionToken::Energy(_) => "../assets/mission/Money - Coins.png",
+            MissionToken::Labor(_) => "../assets/mission/labor-icon.png",
+            _ => "",
         }
     }
     
