@@ -1,28 +1,16 @@
-use bevy::{
-    prelude::*
-};
-use bevy_egui::{
-    egui,
-    EguiContext,
-};
-use std::collections::HashMap;
+use crate::asset_ui::{ImageTextureIds, TokenUiPlugin};
+use crate::{account::Account, asset_ui::AssetInfo, wallet::Wallet};
+use bevy::prelude::*;
+use bevy_egui::{egui, EguiContext};
 use egui_extras::{Size, TableBuilder};
-use crate::{
-    account::Account,
-    wallet::Wallet,
-    asset_ui::AssetInfo
-};
-use simula_viz::{
-    follow_ui::{FollowUI, FollowUIVisibility},
-};
-use crate::{asset_ui::{ImageTextureIds, TokenUiPlugin}};
+use simula_viz::follow_ui::{FollowUI, FollowUIVisibility};
+use std::collections::HashMap;
 
 pub struct WalletUIPlugin<T: Component + AssetInfo>(pub T);
 
 impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugin(TokenUiPlugin)
+        app.add_plugin(TokenUiPlugin)
             .insert_resource(ImageTextureIds2(HashMap::new()))
             .add_system(wallet_ui_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI, T>)
@@ -30,10 +18,7 @@ impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     }
 }
 
-fn wallet_ui_creation_window(
-    mut commands: Commands,
-    mut egui_ctx: ResMut<EguiContext>,
-) {
+fn wallet_ui_creation_window(mut commands: Commands, mut egui_ctx: ResMut<EguiContext>) {
     egui::Window::new("Wallet UI Creation")
         .default_width(200.0)
         .resizable(true)
@@ -42,12 +27,18 @@ fn wallet_ui_creation_window(
         .vscroll(false)
         .drag_bounds(egui::Rect::EVERYTHING)
         .show(egui_ctx.ctx_mut(), |ui| {
-            ui.small_button("Default Window").on_hover_text("display window").clicked().then(|| {
-                create_wallet_ui(&mut commands, DefaultWalletUI{selected_wallet: 0});
-            });
-            ui.small_button("Game Window").on_hover_text("display window").clicked().then(|| {
-                create_wallet_ui(&mut commands, GameWalletUI{selected_wallet: 0});
-            });
+            ui.small_button("Default Window")
+                .on_hover_text("display window")
+                .clicked()
+                .then(|| {
+                    create_wallet_ui(&mut commands, DefaultWalletUI { selected_wallet: 0 });
+                });
+            ui.small_button("Game Window")
+                .on_hover_text("display window")
+                .clicked()
+                .then(|| {
+                    create_wallet_ui(&mut commands, GameWalletUI { selected_wallet: 0 });
+                });
         });
 }
 
@@ -68,7 +59,7 @@ enum WalletUIResponse {
     //StartDrag(Entity),
 }
 
-trait WalletUIOptions { 
+trait WalletUIOptions {
     fn show_window(_follow_uis: Query<(&FollowUI, &FollowUIVisibility)>) -> bool {
         true
     }
@@ -79,7 +70,10 @@ trait WalletUIOptions {
         let mut response: Option<WalletUIResponse> = None;
         ui.horizontal(|ui| {
             ui.label("Wallet");
-            response = ui.button("x").clicked().then(|| WalletUIResponse::CloseTitlebar);
+            response = ui
+                .button("x")
+                .clicked()
+                .then(|| WalletUIResponse::CloseTitlebar);
         });
         response
     }
@@ -111,7 +105,17 @@ trait WalletUIOptions {
     fn wallet_title() -> &'static str {
         "Wallets"
     }
-    fn wallets<T: Component + AssetInfo>(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&T>, image_texture_ids: &Res<ImageTextureIds>, image_texture_ids2: &mut Res<ImageTextureIds2>, asset_server: &mut Res<AssetServer>, egui_ctx: &mut ResMut<EguiContext>);
+    fn wallets<T: Component + AssetInfo>(
+        &mut self,
+        ui: &mut egui::Ui,
+        wallets: &Query<(&Wallet, &Children)>,
+        accounts: &Query<(&Account, &Children)>,
+        assets: &Query<&T>,
+        image_texture_ids: &Res<ImageTextureIds>,
+        image_texture_ids2: &mut ResMut<ImageTextureIds2>,
+        asset_server: &mut Res<AssetServer>,
+        egui_ctx: &mut ResMut<EguiContext>,
+    );
 }
 
 #[derive(Component)]
@@ -119,7 +123,7 @@ struct DefaultWalletUI {
     selected_wallet: usize,
 }
 
-impl WalletUIOptions for DefaultWalletUI{
+impl WalletUIOptions for DefaultWalletUI {
     fn wallet_selector(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
@@ -132,69 +136,86 @@ impl WalletUIOptions for DefaultWalletUI{
             |i| wallet_list[i].0.to_owned(),
         );
     }
-    fn wallets<T: Component + AssetInfo>(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&T>, image_texture_ids: &Res<ImageTextureIds>, _image_texture_ids2: &mut Res<ImageTextureIds2>, _asset_server: &mut Res<AssetServer>, _egui_ctx: &mut ResMut<EguiContext>) {
+    fn wallets<T: Component + AssetInfo>(
+        &mut self,
+        ui: &mut egui::Ui,
+        wallets: &Query<(&Wallet, &Children)>,
+        accounts: &Query<(&Account, &Children)>,
+        assets: &Query<&T>,
+        image_texture_ids: &Res<ImageTextureIds>,
+        _image_texture_ids2: &mut ResMut<ImageTextureIds2>,
+        _asset_server: &mut Res<AssetServer>,
+        _egui_ctx: &mut ResMut<EguiContext>,
+    ) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
             wallet_list.push((trim_wallet(wallet), wallet_accounts));
         }
 
-        egui::Grid::new("accounts_grid").striped(false).show(ui, |ui| {
-            if !wallet_list[0].1.is_empty() {
-                ui.heading("Accounts");
-                ui.end_row();
-            } else {
-                ui.heading("No accounts in selected wallet");
-                ui.end_row();
-            }
-            for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
-                if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                    ui.collapsing(trim_account(account), |ui| {
-                        let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> = vec![];
-                        for &account_asset in account_assets.iter() {
-                            if let Ok(asset) = assets.get(account_asset) {
-                                let asset_name = asset.name();
-                                let asset_value = asset.amount();
-                                let asset_icon = asset.icon(&image_texture_ids);
-                                asset_list.push((asset_name.to_string(), asset_value.0, asset_icon));
-                            }
-                        }
-                        TableBuilder::new(ui)
-                            .column(Size::remainder().at_least(100.0))
-                            .column(Size::remainder().at_least(100.0))
-                            .striped(false)
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading(format!("Asset"));
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Amount");
-                                });
-                            })
-                            .body(|mut body| {
-                                for asset in asset_list.iter() {
-                                    body.row(20.0, |mut row| {
-                                       row.col(|ui| {
-                                           ui.horizontal(|ui| {
-                                               if let Some(icon) = asset.2 {
-                                                   ui.add(egui::widgets::Image::new(
-                                                       icon,
-                                                       [20.0, 20.0],
-                                                   ));
-                                               }
-                                               ui.label(asset.0.clone());   
-                                           });
-                                       });
-                                       row.col(|ui| {
-                                           ui.label(asset.1.to_string());
-                                       });
-                                    });
-                                }
-                            });
-                    });
+        egui::Grid::new("accounts_grid")
+            .striped(false)
+            .show(ui, |ui| {
+                if !wallet_list[0].1.is_empty() {
+                    ui.heading("Accounts");
+                    ui.end_row();
+                } else {
+                    ui.heading("No accounts in selected wallet");
+                    ui.end_row();
                 }
-                ui.end_row();
-            }
-        });
+                for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
+                    if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                        ui.collapsing(trim_account(account), |ui| {
+                            let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> =
+                                vec![];
+                            for &account_asset in account_assets.iter() {
+                                if let Ok(asset) = assets.get(account_asset) {
+                                    let asset_name = asset.name();
+                                    let asset_value = asset.amount();
+                                    let asset_icon = asset.icon(image_texture_ids);
+                                    asset_list.push((
+                                        asset_name.to_string(),
+                                        asset_value.0,
+                                        asset_icon,
+                                    ));
+                                }
+                            }
+                            TableBuilder::new(ui)
+                                .column(Size::remainder().at_least(100.0))
+                                .column(Size::remainder().at_least(100.0))
+                                .striped(false)
+                                .header(20.0, |mut header| {
+                                    header.col(|ui| {
+                                        ui.heading(format!("Asset"));
+                                    });
+                                    header.col(|ui| {
+                                        ui.heading("Amount");
+                                    });
+                                })
+                                .body(|mut body| {
+                                    for asset in asset_list.iter() {
+                                        body.row(20.0, |mut row| {
+                                            row.col(|ui| {
+                                                ui.horizontal(|ui| {
+                                                    if let Some(icon) = asset.2 {
+                                                        ui.add(egui::widgets::Image::new(
+                                                            icon,
+                                                            [20.0, 20.0],
+                                                        ));
+                                                    }
+                                                    ui.label(asset.0.clone());
+                                                });
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(asset.1.to_string());
+                                            });
+                                        });
+                                    }
+                                });
+                        });
+                    }
+                    ui.end_row();
+                }
+            });
     }
 }
 
@@ -218,7 +239,10 @@ impl WalletUIOptions for GameWalletUI {
         let mut response: Option<WalletUIResponse> = None;
         ui.horizontal(|ui| {
             ui.label("Game Wallet");
-            response = ui.button("x").clicked().then(|| WalletUIResponse::CloseTitlebar);
+            response = ui
+                .button("x")
+                .clicked()
+                .then(|| WalletUIResponse::CloseTitlebar);
         });
         response
     }
@@ -267,7 +291,17 @@ impl WalletUIOptions for GameWalletUI {
     fn show_title_bar() -> bool {
         false
     }
-    fn wallets<T: Component + AssetInfo>(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>, accounts: &Query<(&Account, &Children)>, assets: &Query<&T>, _image_texture_ids: &Res<ImageTextureIds>, image_texture_ids2: &mut Res<ImageTextureIds2>, asset_server: &mut Res<AssetServer>, egui_ctx: &mut ResMut<EguiContext>) {
+    fn wallets<T: Component + AssetInfo>(
+        &mut self,
+        ui: &mut egui::Ui,
+        wallets: &Query<(&Wallet, &Children)>,
+        accounts: &Query<(&Account, &Children)>,
+        assets: &Query<&T>,
+        _image_texture_ids: &Res<ImageTextureIds>,
+        image_texture_ids2: &mut ResMut<ImageTextureIds2>,
+        asset_server: &mut Res<AssetServer>,
+        egui_ctx: &mut ResMut<EguiContext>,
+    ) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
             let wallet_id_trimmed = wallet
@@ -279,66 +313,80 @@ impl WalletUIOptions for GameWalletUI {
             wallet_list.push((wallet_id_trimmed, wallet_accounts));
         }
 
-        egui::Grid::new("accounts_grid").striped(false).show(ui, |ui| {
-            if !wallet_list[0].1.is_empty() {
-                ui.heading("Accounts");
-                ui.end_row();
-            } else {
-                ui.heading("No accounts in selected wallet");
-                ui.end_row();
-            }
-            for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
-                if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                    let account_id_trimmed = account.account_id
+        egui::Grid::new("accounts_grid")
+            .striped(false)
+            .show(ui, |ui| {
+                if !wallet_list[0].1.is_empty() {
+                    ui.heading("Accounts");
+                    ui.end_row();
+                } else {
+                    ui.heading("No accounts in selected wallet");
+                    ui.end_row();
+                }
+                for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
+                    if let Ok((account, account_assets)) = accounts.get(wallet_account) {
+                        let account_id_trimmed = account
+                            .account_id
                             .to_string()
                             .get(0..8)
                             .unwrap_or_default()
                             .to_string();
-                    ui.collapsing(account_id_trimmed.clone(), |ui| {
-                        let mut asset_list: Vec<(String, i128, &'static str)> = vec![];
-                        for &account_asset in account_assets.iter() {
-                            if let Ok(asset) = assets.get(account_asset) {
-                                let asset_name = asset.name();
-                                let asset_value = asset.amount();
-                                let asset_icon = asset.icon_dir();
-                                asset_list.push((asset_name.to_string(), asset_value.0, asset_icon));
+                        ui.collapsing(account_id_trimmed.clone(), |ui| {
+                            let mut asset_list: Vec<(String, i128, &'static str)> = vec![];
+                            for &account_asset in account_assets.iter() {
+                                if let Ok(asset) = assets.get(account_asset) {
+                                    let asset_name = asset.name();
+                                    let asset_value = asset.amount();
+                                    let asset_icon = asset.icon_dir();
+                                    asset_list.push((
+                                        asset_name.to_string(),
+                                        asset_value.0,
+                                        asset_icon,
+                                    ));
+                                }
                             }
-                        }
-                        TableBuilder::new(ui)
-                            .column(Size::remainder().at_least(100.0))
-                            .column(Size::remainder().at_least(100.0))
-                            .striped(false)
-                            .header(20.0, |mut header| {
-                                header.col(|ui| {
-                                    ui.heading(format!("Asset"));
-                                });
-                                header.col(|ui| {
-                                    ui.heading("Amount");
-                                });
-                            })
-                            .body(|mut body| {
-                                for asset in asset_list.iter() {
-                                    body.row(20.0, |mut row| {
-                                        row.col(|ui| {
-                                            ui.horizontal(|ui| {
-                                                    let icon = image_texture_ids2.get_texture(asset.2, asset_server, egui_ctx);
+                            TableBuilder::new(ui)
+                                .column(Size::remainder().at_least(100.0))
+                                .column(Size::remainder().at_least(100.0))
+                                .striped(false)
+                                .header(20.0, |mut header| {
+                                    header.col(|ui| {
+                                        ui.heading(format!("Asset"));
+                                    });
+                                    header.col(|ui| {
+                                        ui.heading("Amount");
+                                    });
+                                })
+                                .body(|mut body| {
+                                    for asset in asset_list.iter() {
+                                        body.row(20.0, |mut row| {
+                                            row.col(|ui| {
+                                                ui.horizontal(|ui| {
+                                                    let icon = image_texture_ids2.get_texture(
+                                                        asset.2,
+                                                        asset_server,
+                                                        egui_ctx,
+                                                    );
                                                     if icon.is_some() {
-                                                        ui.image(icon.unwrap(), egui::vec2(16.0, 16.0));
+                                                        ui.image(
+                                                            icon.unwrap(),
+                                                            egui::vec2(16.0, 16.0),
+                                                        );
                                                     }
-                                                ui.label(asset.0.clone());   
+                                                    ui.label(asset.0.clone());
+                                                });
+                                            });
+                                            row.col(|ui| {
+                                                ui.label(asset.1.to_string());
                                             });
                                         });
-                                        row.col(|ui| {
-                                            ui.label(asset.1.to_string());
-                                        });
-                                    });
-                                }
-                            });
-                    });
+                                    }
+                                });
+                        });
+                    }
+                    ui.end_row();
                 }
-                ui.end_row();
-            }
-        });
+            });
     }
 }
 
@@ -349,13 +397,11 @@ fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
     assets: Query<&U>,
     mut egui_context: ResMut<EguiContext>,
     mut wallet_ui: Query<(Entity, &mut T), With<WalletUI>>,
-    follow_uis: Query<(&FollowUI, &FollowUIVisibility)/*, With<FollowPanel>*/>,
+    follow_uis: Query<(&FollowUI, &FollowUIVisibility) /*, With<FollowPanel>*/>,
     image_texture_ids: Res<ImageTextureIds>,
-    mut image_texture_ids2: Res<ImageTextureIds2>,
+    mut image_texture_ids2: ResMut<ImageTextureIds2>,
     mut asset_server: Res<AssetServer>,
-    mut egui_ctx: ResMut<EguiContext>
 ) {
-    
     let mut ui_pos = None;
     let mut ui_size = None;
     for (follow_ui, visibility) in follow_uis.iter() {
@@ -365,72 +411,70 @@ fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
 
     if T::show_window(follow_uis) {
         for (entity, mut options) in wallet_ui.iter_mut() {
-    
-            let mut window = egui::Window::new(T::wallet_title())
-                .id(egui::Id::new(entity));
-                
+            let mut window = egui::Window::new(T::wallet_title()).id(egui::Id::new(entity));
+
             window = window.title_bar(T::show_title_bar());
             window = window.collapsible(T::collapsible());
             window = window.vscroll(T::vscroll());
             window = window.resizable(T::resizable());
-    
+
             if let Some(frame) = T::window_frame() {
                 window = window.frame(frame);
             };
-    
+
             if let Some(drag_bounds) = T::drag_bounds() {
                 window = window.drag_bounds(drag_bounds);
             };
-    
+
             if let Some(size) = ui_size {
                 window = T::fixed_size(window, size.x, size.y);
             }
-    
+
             if let Some(pos) = ui_pos {
                 window = T::fixed_pos(window, pos.x, pos.y);
             }
-    
-            window
-                .show(egui_context.ctx_mut(), |ui| {
-                    if let Some(response) = T::titlebar(ui) {
-                        match response {
-                            WalletUIResponse::CloseTitlebar => {
-                                commands.entity(entity).despawn();
-                            }
+
+            let mut ctx = egui_context.ctx_mut().clone();
+
+            window.show(&mut ctx, |ui| {
+                if let Some(response) = T::titlebar(ui) {
+                    match response {
+                        WalletUIResponse::CloseTitlebar => {
+                            commands.entity(entity).despawn();
                         }
                     }
-                    options.wallet_selector(ui, &wallets);
-                    options.wallets(ui, &wallets, &accounts, &assets, &image_texture_ids, &mut image_texture_ids2, &mut asset_server, &mut egui_ctx);  
-                });
+                }
+                options.wallet_selector(ui, &wallets);
+                options.wallets(
+                    ui,
+                    &wallets,
+                    &accounts,
+                    &assets,
+                    &image_texture_ids,
+                    &mut image_texture_ids2,
+                    &mut asset_server,
+                    &mut egui_context,
+                );
+            });
         }
     }
 }
 
-fn create_wallet_ui<T: WalletUIOptions + Component>(
-    commands: &mut Commands,
-    configuration: T,
-) {
-    let entity = commands
-        .spawn()
-        .insert(WalletUI)
-        .insert(configuration)
-        .id();
-    
+fn create_wallet_ui<T: WalletUIOptions + Component>(commands: &mut Commands, configuration: T) {
+    let entity = commands.spawn().insert(WalletUI).insert(configuration).id();
+
     T::insert(entity, commands)
 }
 
-fn trim_id(id: String)-> String{
-    id
-        .get(0..8)
-        .unwrap_or_default()
-        .to_string()
+fn trim_id(id: String) -> String {
+    id.get(0..8).unwrap_or_default().to_string()
 }
 
-pub fn trim_wallet(wallet: &Wallet)-> String{
+pub fn trim_wallet(wallet: &Wallet) -> String {
     trim_id(wallet.wallet_id.to_string())
 }
 
-pub fn trim_account(account: &Account)->String{
+pub fn trim_account(account: &Account) -> String {
     trim_id(account.account_id.to_string())
 }
 
@@ -438,7 +482,12 @@ pub fn trim_account(account: &Account)->String{
 pub struct ImageTextureIds2(HashMap<&'static str, (Handle<Image>, Option<egui::TextureId>)>);
 
 impl ImageTextureIds2 {
-    fn get_texture(&mut self, key: &'static str, asset_server: &mut Res<AssetServer>, egui_ctx: &mut ResMut<EguiContext>) -> Option<egui::TextureId> {
+    fn get_texture(
+        &mut self,
+        key: &'static str,
+        asset_server: &mut Res<AssetServer>,
+        egui_ctx: &mut EguiContext,
+    ) -> Option<egui::TextureId> {
         if let Some(image_texture) = self.0.get(key) {
             if let Some(texture_id) = image_texture.1 {
                 return Some(texture_id);
@@ -449,7 +498,12 @@ impl ImageTextureIds2 {
             self.initialize_image_texture(key, asset_server, egui_ctx)
         }
     }
-    fn initialize_image_texture(&mut self, key: &'static str, asset_server: &mut Res<AssetServer>, egui_ctx: &mut ResMut<EguiContext>) -> Option<egui::TextureId> {
+    fn initialize_image_texture(
+        &mut self,
+        key: &'static str,
+        asset_server: &mut Res<AssetServer>,
+        egui_ctx: &mut EguiContext,
+    ) -> Option<egui::TextureId> {
         let image = asset_server.load(key);
         let texture_id = Some(egui_ctx.add_image(image.clone()));
         self.0.insert(key, (image, texture_id));

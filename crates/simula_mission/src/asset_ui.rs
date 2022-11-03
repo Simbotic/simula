@@ -83,11 +83,11 @@ fn initialize_images(
 
 pub trait AssetInfo {
     fn name(&self) -> &'static str;
-    fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
+    fn icon(&self, texture_ids: &ImageTextureIds) -> Option<egui::TextureId>;
     fn icon_dir(&self) -> &'static str;
     fn amount(&self) -> Amount;
     fn is_draggable(&self) -> bool;
-    fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>){
+    fn render(&self,ui: &mut egui::Ui, texture_ids: &ImageTextureIds){
         ui.horizontal(|ui| {
             if let Some(icon) = self.icon(&texture_ids){
                 ui.add(egui::widgets::Image::new(
@@ -120,7 +120,7 @@ impl AssetInfo for MissionToken {
         }
     }
 
-    fn icon(&self, image_texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId> {
+    fn icon(&self, image_texture_ids: &ImageTextureIds) -> Option<egui::TextureId> {
         match self {
             MissionToken::Time(_) => image_texture_ids.time_icon,
             MissionToken::Trust(_) => image_texture_ids.trust_icon,
@@ -160,7 +160,7 @@ impl AssetInfo for MissionToken {
         }
     }
 
-    fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>) {
+    fn render(&self,ui: &mut egui::Ui, texture_ids: &ImageTextureIds) {
         match self {
             MissionToken::None => {},
             MissionToken::Time(_) => {
