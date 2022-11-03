@@ -4,14 +4,12 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
 use egui_extras::{Size, TableBuilder};
 use simula_viz::follow_ui::{FollowUI, FollowUIVisibility};
-use std::collections::HashMap;
 
 pub struct WalletUIPlugin<T: Component + AssetInfo>(pub T);
 
 impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     fn build(&self, app: &mut App) {
         app.add_plugin(TokenUiPlugin)
-            .insert_resource(ImageTextureIds2(HashMap::new()))
             .add_system(wallet_ui_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI, T>)
             .add_system(wallet_ui_draw::<GameWalletUI, T>);
@@ -111,8 +109,7 @@ trait WalletUIOptions {
         wallets: &Query<(&Wallet, &Children)>,
         accounts: &Query<(&Account, &Children)>,
         assets: &Query<&T>,
-        image_texture_ids: &Res<ImageTextureIds>,
-        image_texture_ids2: &mut ResMut<ImageTextureIds2>,
+        image_texture_ids: &mut ResMut<ImageTextureIds>,
         asset_server: &mut Res<AssetServer>,
         egui_ctx: &mut ResMut<EguiContext>,
     );
@@ -142,10 +139,9 @@ impl WalletUIOptions for DefaultWalletUI {
         wallets: &Query<(&Wallet, &Children)>,
         accounts: &Query<(&Account, &Children)>,
         assets: &Query<&T>,
-        image_texture_ids: &Res<ImageTextureIds>,
-        _image_texture_ids2: &mut ResMut<ImageTextureIds2>,
-        _asset_server: &mut Res<AssetServer>,
-        _egui_ctx: &mut ResMut<EguiContext>,
+        image_texture_ids: &mut ResMut<ImageTextureIds>,
+        asset_server: &mut Res<AssetServer>,
+        egui_ctx: &mut ResMut<EguiContext>,
     ) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
@@ -165,13 +161,12 @@ impl WalletUIOptions for DefaultWalletUI {
                 for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
                     if let Ok((account, account_assets)) = accounts.get(wallet_account) {
                         ui.collapsing(trim_account(account), |ui| {
-                            let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> =
-                                vec![];
+                            let mut asset_list: Vec<(String, i128, &'static str)> = vec![];
                             for &account_asset in account_assets.iter() {
                                 if let Ok(asset) = assets.get(account_asset) {
                                     let asset_name = asset.name();
                                     let asset_value = asset.amount();
-                                    let asset_icon = asset.icon(image_texture_ids);
+                                    let asset_icon = asset.icon_dir();
                                     asset_list.push((
                                         asset_name.to_string(),
                                         asset_value.0,
@@ -196,11 +191,17 @@ impl WalletUIOptions for DefaultWalletUI {
                                         body.row(20.0, |mut row| {
                                             row.col(|ui| {
                                                 ui.horizontal(|ui| {
-                                                    if let Some(icon) = asset.2 {
-                                                        ui.add(egui::widgets::Image::new(
-                                                            icon,
-                                                            [20.0, 20.0],
-                                                        ));
+                                                    let icon = image_texture_ids
+                                                        .get_or_create_texture(
+                                                            asset.2,
+                                                            asset_server,
+                                                            egui_ctx,
+                                                        );
+                                                    if icon.is_some() {
+                                                        ui.image(
+                                                            icon.unwrap(),
+                                                            egui::vec2(16.0, 16.0),
+                                                        );
                                                     }
                                                     ui.label(asset.0.clone());
                                                 });
@@ -297,8 +298,7 @@ impl WalletUIOptions for GameWalletUI {
         wallets: &Query<(&Wallet, &Children)>,
         accounts: &Query<(&Account, &Children)>,
         assets: &Query<&T>,
-        _image_texture_ids: &Res<ImageTextureIds>,
-        image_texture_ids2: &mut ResMut<ImageTextureIds2>,
+        image_texture_ids: &mut ResMut<ImageTextureIds>,
         asset_server: &mut Res<AssetServer>,
         egui_ctx: &mut ResMut<EguiContext>,
     ) {
@@ -362,11 +362,12 @@ impl WalletUIOptions for GameWalletUI {
                                         body.row(20.0, |mut row| {
                                             row.col(|ui| {
                                                 ui.horizontal(|ui| {
-                                                    let icon = image_texture_ids2.get_texture(
-                                                        asset.2,
-                                                        asset_server,
-                                                        egui_ctx,
-                                                    );
+                                                    let icon = image_texture_ids
+                                                        .get_or_create_texture(
+                                                            asset.2,
+                                                            asset_server,
+                                                            egui_ctx,
+                                                        );
                                                     if icon.is_some() {
                                                         ui.image(
                                                             icon.unwrap(),
@@ -398,8 +399,7 @@ fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
     mut egui_context: ResMut<EguiContext>,
     mut wallet_ui: Query<(Entity, &mut T), With<WalletUI>>,
     follow_uis: Query<(&FollowUI, &FollowUIVisibility) /*, With<FollowPanel>*/>,
-    image_texture_ids: Res<ImageTextureIds>,
-    mut image_texture_ids2: ResMut<ImageTextureIds2>,
+    mut image_texture_ids: ResMut<ImageTextureIds>,
     mut asset_server: Res<AssetServer>,
 ) {
     let mut ui_pos = None;
@@ -450,8 +450,7 @@ fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
                     &wallets,
                     &accounts,
                     &assets,
-                    &image_texture_ids,
-                    &mut image_texture_ids2,
+                    &mut image_texture_ids,
                     &mut asset_server,
                     &mut egui_context,
                 );
@@ -476,37 +475,4 @@ pub fn trim_wallet(wallet: &Wallet) -> String {
 
 pub fn trim_account(account: &Account) -> String {
     trim_id(account.account_id.to_string())
-}
-
-#[derive(Deref, DerefMut, Debug, Default, Clone, Component)]
-pub struct ImageTextureIds2(HashMap<&'static str, (Handle<Image>, Option<egui::TextureId>)>);
-
-impl ImageTextureIds2 {
-    fn get_texture(
-        &mut self,
-        key: &'static str,
-        asset_server: &mut Res<AssetServer>,
-        egui_ctx: &mut EguiContext,
-    ) -> Option<egui::TextureId> {
-        if let Some(image_texture) = self.0.get(key) {
-            if let Some(texture_id) = image_texture.1 {
-                return Some(texture_id);
-            } else {
-                self.initialize_image_texture(key, asset_server, egui_ctx)
-            }
-        } else {
-            self.initialize_image_texture(key, asset_server, egui_ctx)
-        }
-    }
-    fn initialize_image_texture(
-        &mut self,
-        key: &'static str,
-        asset_server: &mut Res<AssetServer>,
-        egui_ctx: &mut EguiContext,
-    ) -> Option<egui::TextureId> {
-        let image = asset_server.load(key);
-        let texture_id = Some(egui_ctx.add_image(image.clone()));
-        self.0.insert(key, (image, texture_id));
-        texture_id
-    }
 }
