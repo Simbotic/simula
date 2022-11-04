@@ -250,13 +250,7 @@ impl WalletUIOptions for GameWalletUI {
     fn wallet_selector(&mut self, ui: &mut egui::Ui, wallets: &Query<(&Wallet, &Children)>) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
-            let wallet_id_trimmed = wallet
-                .wallet_id
-                .to_string()
-                .get(0..8)
-                .unwrap_or_default()
-                .to_string();
-            wallet_list.push((wallet_id_trimmed, wallet_accounts));
+            wallet_list.push((trim_wallet(wallet), wallet_accounts));
         }
         egui::ComboBox::from_label("Select a game wallet").show_index(
             ui,
@@ -304,13 +298,7 @@ impl WalletUIOptions for GameWalletUI {
     ) {
         let mut wallet_list: Vec<(String, &Children)> = vec![];
         for (wallet, wallet_accounts) in wallets.iter() {
-            let wallet_id_trimmed = wallet
-                .wallet_id
-                .to_string()
-                .get(0..8)
-                .unwrap_or_default()
-                .to_string();
-            wallet_list.push((wallet_id_trimmed, wallet_accounts));
+            wallet_list.push((trim_wallet(wallet), wallet_accounts));
         }
 
         egui::Grid::new("accounts_grid")
@@ -325,13 +313,7 @@ impl WalletUIOptions for GameWalletUI {
                 }
                 for &wallet_account in wallet_list[self.selected_wallet].1.iter() {
                     if let Ok((account, account_assets)) = accounts.get(wallet_account) {
-                        let account_id_trimmed = account
-                            .account_id
-                            .to_string()
-                            .get(0..8)
-                            .unwrap_or_default()
-                            .to_string();
-                        ui.collapsing(account_id_trimmed.clone(), |ui| {
+                        ui.collapsing(trim_account(account), |ui| {
                             let mut asset_list: Vec<(String, i128, &'static str)> = vec![];
                             for &account_asset in account_assets.iter() {
                                 if let Ok(asset) = assets.get(account_asset) {

@@ -86,9 +86,6 @@ fn main() {
     app.run();
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct SelectedWallet2(usize);
-
 // #[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
 // #[reflect(Component)]
 // pub enum MissionToken {
