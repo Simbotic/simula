@@ -108,6 +108,7 @@ impl Inspectable for BehaviorInspector {
                 .title_bar(true)
                 .resizable(true)
                 .collapsible(true)
+                .scroll2([true, true])
                 .show(ui.ctx(), |ui| {
                     changed |= node.ui(ui, BehaviorInspectorNodeAttributes::default(), context);
                 });
