@@ -675,7 +675,6 @@ fn setup(
                     .insert(Name::new("Video: Robot"))
                     .insert(SmoothLookAt {
                         target: Some(camera_entity),
-                        // initial_pose: video_rotation,
                         yaw_ease: EaseFunction::SineInOut,
                         pitch_ease: EaseFunction::SineInOut,
                         ..default()

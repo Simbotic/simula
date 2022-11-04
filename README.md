@@ -7,6 +7,9 @@ So much of AI is about compressing reality to a small vector space, like a video
 
 ![Simula splash gif](docs/Simula__main.gif)
 
+### Behaviors AI
+![Simula splash gif](docs/behaviors.gif)
+
 ### Easings Function
 
 ![Easings Function](docs/easings_functions.png)
