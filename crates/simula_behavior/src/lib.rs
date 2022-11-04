@@ -407,7 +407,7 @@ fn complete_behavior(
         commands.entity(entity).remove::<BehaviorCursor>();
 
         // Reset all children recursively
-        reset_nodes(true, &mut commands, children, &nodes);
+        reset_children(true, &mut commands, children, &nodes);
 
         // Pass cursor to parent, only if parent is running
         if let Some(parent) = **parent {
@@ -435,7 +435,7 @@ fn start_behavior(
 ) {
     for (entity, children, name) in &ready {
         // Reset children
-        reset_nodes(false, &mut commands, children, &nodes);
+        reset_children(false, &mut commands, children, &nodes);
         // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
         debug!("[{}] STARTED {}", entity.id().to_string(), name.to_string());
         if let Some(trace) = trace.as_mut() {
@@ -445,7 +445,7 @@ fn start_behavior(
     }
 }
 
-fn reset_nodes(
+fn reset_children(
     recursively: bool,
     commands: &mut Commands,
     children: &BehaviorChildren,
@@ -465,7 +465,7 @@ fn reset_nodes(
         commands.entity(entity).remove::<BehaviorSuccess>();
         commands.entity(entity).remove::<BehaviorFailure>();
         if recursively {
-            reset_nodes(true, commands, children, nodes);
+            reset_children(true, commands, children, nodes);
         }
     }
 }
