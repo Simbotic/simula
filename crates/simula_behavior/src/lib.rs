@@ -129,7 +129,7 @@ impl Plugin for BehaviorPlugin {
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                update_behavior.chain(complete_behavior.chain(start_behavior)),
+                update_added_behavior.chain(complete_behavior.chain(start_behavior)),
             )
             .add_system(sequencer::run)
             .add_system(selector::run)
@@ -511,7 +511,7 @@ fn reset_children(
     }
 }
 
-fn update_behavior(
+fn update_added_behavior(
     trees: Query<(Entity, &BehaviorTree)>,
     mut behaviors: Query<
         (Entity, &BehaviorChildren, &mut BehaviorNode),
