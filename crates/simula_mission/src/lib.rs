@@ -4,7 +4,6 @@ use core::fmt::Debug;
 use wallet::{Wallet, WalletId};
 
 pub mod account;
-pub mod action;
 pub mod agent;
 pub mod asset;
 pub mod environment;

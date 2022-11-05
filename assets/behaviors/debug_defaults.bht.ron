@@ -3,7 +3,7 @@
         "Simple sequence",
         Sequencer(()),
         [
-            ("Fail", Debug((fail: true))),
+            ("Dont Fail", Debug((fail: false))),
             ("Take some time", Debug((duration: 1.5))),
             ("Say hello", Debug((message: "Hello World!"))),
         ]

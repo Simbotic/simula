@@ -1,7 +1,9 @@
 use actions::*;
 use asset::{BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading, BehaviorDocument};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
-use bevy_inspector_egui::{Inspectable, RegisterInspectable};
+use bevy_inspector_egui::{
+    egui, options::EntityAttributes, Context, Inspectable, RegisterInspectable,
+};
 use composites::*;
 use decorators::*;
 use inspector::BehaviorInspectorPlugin;
@@ -71,7 +73,15 @@ where
 
 /// How to spawn a behavior node
 pub trait BehaviorSpawner:
-    Clone + Default + TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug + for<'de> Deserialize<'de>
+    Clone
+    + Default
+    + TypeUuid
+    + Send
+    + Sync
+    + 'static
+    + Default
+    + std::fmt::Debug
+    + for<'de> Deserialize<'de>
 {
     fn insert(&self, commands: &mut EntityCommands);
 }
@@ -85,6 +95,9 @@ impl Plugin for BehaviorPlugin {
             .register_type::<BehaviorRunning>()
             .register_type::<BehaviorFailure>()
             .register_type::<BehaviorCursor>()
+            .register_type::<BehaviorParent>()
+            .register_type::<BehaviorChildren>()
+            .register_type::<BehaviorType>()
             .register_type::<Debug>()
             .register_type::<Delay>()
             .register_type::<Selector>()
@@ -100,6 +113,9 @@ impl Plugin for BehaviorPlugin {
             .register_inspectable::<BehaviorRunning>()
             .register_inspectable::<BehaviorFailure>()
             .register_inspectable::<BehaviorCursor>()
+            .register_inspectable::<BehaviorParent>()
+            .register_inspectable::<BehaviorChildren>()
+            .register_inspectable::<BehaviorType>()
             .register_inspectable::<Debug>()
             .register_inspectable::<Delay>()
             .register_inspectable::<Selector>()
@@ -170,14 +186,36 @@ pub struct BehaviorNode {
 }
 
 /// A component to point to the parent of a behavior node
-#[derive(Deref, Debug, Default, Reflect, Clone, Component)]
+#[derive(Deref, Debug, Default, Reflect, Clone, Component, Inspectable)]
 #[reflect(Component)]
 pub struct BehaviorParent(Option<Entity>);
 
 /// A component to point to the children of a behavior node
-#[derive(Deref, Debug, Default, Reflect, Clone, Component)]
+#[derive(Deref, DerefMut, Debug, Default, Reflect, Clone, Component)]
 #[reflect(Component)]
 pub struct BehaviorChildren(Vec<Entity>);
+
+impl Inspectable for BehaviorChildren {
+    type Attributes = ();
+
+    fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
+        let world = if let Some(world) = context.world() {
+            world
+        } else {
+            return false;
+        };
+        ui.vertical(|ui| {
+            for child in self.iter_mut() {
+                if let Some(name) = world.get::<Name>(*child) {
+                    ui.collapsing(format!("{} ({})", name.to_string(), child.id()), |ui| {
+                        child.ui(ui, EntityAttributes { despawnable: false }, context);
+                    });
+                }
+            }
+        });
+        false
+    }
+}
 
 /// A component added to identify the type of a behavior node
 #[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Inspectable)]
