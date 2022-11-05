@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Any will run all of its children in parallel until one of them succeed.
+/// If all of them fail, the Any node will fail.
 #[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
 pub struct Any;
 

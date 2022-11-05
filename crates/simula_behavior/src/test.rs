@@ -28,7 +28,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app
 }
 
-#[derive(Serialize, Deserialize, TypeUuid)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
 pub enum TestBehavior {
     Debug(Debug),

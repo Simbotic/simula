@@ -5,6 +5,7 @@ use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 use composites::*;
 use decorators::*;
 use inspector::BehaviorInspectorPlugin;
+use serde::Deserialize;
 
 pub mod actions;
 pub mod asset;
@@ -69,7 +70,9 @@ where
 }
 
 /// How to spawn a behavior node
-pub trait BehaviorSpawner {
+pub trait BehaviorSpawner:
+    Clone + Default + TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug + for<'de> Deserialize<'de>
+{
     fn insert(&self, commands: &mut EntityCommands);
 }
 

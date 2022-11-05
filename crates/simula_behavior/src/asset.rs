@@ -62,14 +62,7 @@ pub fn behavior_loader<T>(
     loaded_assets: Res<Assets<BehaviorAsset>>,
     queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
 ) where
-    T: BehaviorSpawner
-        + TypeUuid
-        + Send
-        + Sync
-        + 'static
-        + Default
-        + Debug
-        + for<'de> Deserialize<'de>,
+    T: BehaviorSpawner,
 {
     for (entity, queued_asset) in queued_assets.iter() {
         if let Some(loaded_asset) = loaded_assets.get(&queued_asset.document) {

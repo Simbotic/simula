@@ -244,7 +244,7 @@ fn setup(
         .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
-    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_any.bht.ron");
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_any_subtree.bht.ron");
     let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
         None,
         &mut commands,
