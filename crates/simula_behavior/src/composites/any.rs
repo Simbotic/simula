@@ -22,12 +22,39 @@ pub fn run(
         if children.is_empty() {
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
+            // First check if any child succeeded
+            let mut should_succeed = false;
+            for BehaviorChildQueryItem {
+                child_entity: _,
+                child_parent,
+                child_failure: _,
+                child_success,
+                child_running: _,
+            } in nodes.iter_many(children.iter())
+            {
+                if let Some(child_parent) = **child_parent {
+                    if entity == child_parent {
+                        if child_success.is_some() {
+                            // Child succeeded, so we succeed
+                            should_succeed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if should_succeed {
+                commands.entity(entity).insert(BehaviorSuccess);
+                // If we succeeded, we don't need to check if any other child
+                continue;
+            }
+
+            // Handle any other state of children
             let mut should_fail = true;
             for BehaviorChildQueryItem {
                 child_entity,
                 child_parent,
                 child_failure,
-                child_success,
+                child_success: _,
                 child_running,
             } in nodes.iter_many(children.iter())
             {
@@ -35,11 +62,6 @@ pub fn run(
                     if entity == child_parent {
                         if child_failure.is_some() {
                             // Child failed, so we move to next child
-                        } else if child_success.is_some() {
-                            // Child succeeded, so we succeed
-                            commands.entity(entity).insert(BehaviorSuccess);
-                            should_fail = false;
-                            break;
                         } else if child_running.is_some() {
                             // Child running, so we move to next child
                             commands.entity(entity).remove::<BehaviorCursor>();
