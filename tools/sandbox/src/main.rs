@@ -18,7 +18,7 @@ use simula_camera::{flycam::*, orbitcam::*};
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
-    signal::{SignalController, SignalFunction, SignalGenerator},
+    signal::{SignalController, SignalFunction, SignalGenerator, SignalPlugin},
 };
 use simula_net::{NetId, NetPlugin, Replicate};
 #[cfg(feature = "gif")]
@@ -81,6 +81,7 @@ fn main() {
         .add_plugin(VideoPlugin)
         .add_plugin(LookAtPlugin)
         .add_plugin(FollowUIPlugin)
+        .add_plugin(SignalPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
