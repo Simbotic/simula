@@ -1,25 +1,19 @@
-use bevy::{
-    prelude::*
-};
-use bevy_egui::{
-    egui,
-    EguiContext,
-};
-use simula_mission::asset::Amount;
 use crate::MissionToken;
+use bevy::prelude::*;
+use bevy_egui::{egui, EguiContext};
+use simula_mission::asset::Amount;
 
 pub struct TokenUiPlugin;
 
 impl Plugin for TokenUiPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_startup_system(initialize_images)
-        .insert_resource(ImageTextureIds {
-            time_icon: None,
-            energy_icon: None,
-            trust_icon: None,
-            labor_icon: None,
-        });
+        app.add_startup_system(initialize_images)
+            .insert_resource(ImageTextureIds {
+                time_icon: None,
+                energy_icon: None,
+                trust_icon: None,
+                labor_icon: None,
+            });
     }
 }
 
@@ -27,7 +21,7 @@ pub struct Images {
     time_icon: Handle<Image>,
     trust_icon: Handle<Image>,
     energy_icon: Handle<Image>,
-    labor_icon: Handle<Image>
+    labor_icon: Handle<Image>,
 }
 
 impl FromWorld for Images {
@@ -37,14 +31,14 @@ impl FromWorld for Images {
                 time_icon: asset_server.load("../assets/mission/Balance.png"),
                 trust_icon: asset_server.load("../assets/mission/Money - Cash.png"),
                 energy_icon: asset_server.load("../assets/mission/Money - Coins.png"),
-                labor_icon: asset_server.load("../assets/mission/labor-icon.png")
+                labor_icon: asset_server.load("../assets/mission/labor-icon.png"),
             }
         } else {
             Self {
                 time_icon: Handle::default(),
                 trust_icon: Handle::default(),
                 energy_icon: Handle::default(),
-                labor_icon: Handle::default()
+                labor_icon: Handle::default(),
             }
         }
     }
@@ -73,22 +67,15 @@ pub trait AssetInfo {
     fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
     fn amount(&self) -> Amount;
     fn is_draggable(&self) -> bool;
-    fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>){
+    fn render(&self, ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>) {
         ui.horizontal(|ui| {
-            if let Some(icon) = self.icon(&texture_ids){
-                ui.add(egui::widgets::Image::new(
-                    icon,
-                    [20.0, 20.0],
-                ));
+            if let Some(icon) = self.icon(&texture_ids) {
+                ui.add(egui::widgets::Image::new(icon, [20.0, 20.0]));
             }
-            let label = egui::Label::new(format!(
-                "{}: {}",
-                self.name(), self.amount().0
-            ));
-            if self.is_draggable(){
+            let label = egui::Label::new(format!("{}: {}", self.name(), self.amount().0));
+            if self.is_draggable() {
                 ui.add(label.sense(egui::Sense::click()));
-                
-            }else{
+            } else {
                 ui.add(label);
             }
         });
@@ -98,7 +85,6 @@ pub trait AssetInfo {
 impl AssetInfo for MissionToken {
     fn name(&self) -> &'static str {
         match self {
-            MissionToken::None => "None",
             MissionToken::Time(_) => "Time",
             MissionToken::Trust(_) => "Trust",
             MissionToken::Energy(_) => "Energy",
@@ -112,13 +98,11 @@ impl AssetInfo for MissionToken {
             MissionToken::Trust(_) => image_texture_ids.trust_icon,
             MissionToken::Energy(_) => image_texture_ids.energy_icon,
             MissionToken::Labor(_) => image_texture_ids.labor_icon,
-            MissionToken::None => None,
         }
     }
-    
+
     fn amount(&self) -> Amount {
         match self {
-            MissionToken::None => 0.into(),
             MissionToken::Time(asset) => asset.0,
             MissionToken::Trust(asset) => asset.0,
             MissionToken::Energy(asset) => asset.0,
@@ -128,7 +112,6 @@ impl AssetInfo for MissionToken {
 
     fn is_draggable(&self) -> bool {
         match self {
-            MissionToken::None => false,
             MissionToken::Time(_) => false,
             MissionToken::Trust(_) => true,
             MissionToken::Energy(_) => true,
@@ -136,64 +119,51 @@ impl AssetInfo for MissionToken {
         }
     }
 
-    fn render(&self,ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>) {
+    fn render(&self, ui: &mut egui::Ui, texture_ids: &Res<ImageTextureIds>) {
         match self {
-            MissionToken::None => {},
             MissionToken::Time(_) => {
                 ui.horizontal(|ui| {
-                    if let Some(icon) = self.icon(&texture_ids){
-                        ui.add(egui::widgets::Image::new(
-                            icon,
-                            [20.0, 20.0],
-                        ));
+                    if let Some(icon) = self.icon(&texture_ids) {
+                        ui.add(egui::widgets::Image::new(icon, [20.0, 20.0]));
                     }
 
-                    let label = egui::Label::new(format!(
-                        ": {}",self.amount().0
-                    ));
+                    let label = egui::Label::new(format!(": {}", self.amount().0));
 
-                    if self.is_draggable(){
+                    if self.is_draggable() {
                         ui.add(label.sense(egui::Sense::click()));
-                        
-                    }else{
+                    } else {
                         ui.add(label);
                     }
                 });
-            },
+            }
             MissionToken::Trust(_) => {
-                if let Some(icon) = self.icon(&texture_ids){
-                    ui.add(egui::widgets::Image::new(
-                        icon,
-                        [20.0, 20.0],
-                    ));
+                if let Some(icon) = self.icon(&texture_ids) {
+                    ui.add(egui::widgets::Image::new(icon, [20.0, 20.0]));
                 }
-            },
+            }
             MissionToken::Energy(_) => {
-                ui.add(egui::widgets::SelectableLabel::new(true,format!(
-                    "{}: {}",
-                    self.name(), self.amount().0
-                )));
-            },
+                ui.add(egui::widgets::SelectableLabel::new(
+                    true,
+                    format!("{}: {}", self.name(), self.amount().0),
+                ));
+            }
             MissionToken::Labor(_) => {
                 ui.vertical(|ui| {
-                    if let Some(icon) = self.icon(&texture_ids){
-                        ui.add(egui::widgets::Image::new(
-                            icon,
-                            [20.0, 20.0],
-                        ));
+                    if let Some(icon) = self.icon(&texture_ids) {
+                        ui.add(egui::widgets::Image::new(icon, [20.0, 20.0]));
                         let label = egui::widgets::Label::new(format!(
                             "{}: {}",
-                            self.name(), self.amount().0
+                            self.name(),
+                            self.amount().0
                         ));
-                        if self.is_draggable(){
+                        if self.is_draggable() {
                             ui.add(label.sense(egui::Sense::click()));
-                        }else{
+                        } else {
                             ui.add(label);
                         }
                     }
                 });
-
-            },
+            }
         }
     }
 }

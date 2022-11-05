@@ -1,4 +1,4 @@
-use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res};
+use bevy::prelude::{App, BuildChildren, Children, Commands, Plugin, Query, Res, ResMut};
 use bevy_egui::{egui::*, EguiContext};
 use simula_mission::{
     account::Account,
@@ -6,7 +6,7 @@ use simula_mission::{
     wallet::Wallet,
 };
 
-use crate::{MissionToken, token_ui::AssetInfo};
+use crate::{token_ui::AssetInfo, MissionToken};
 
 pub struct DragAndDropPlugin;
 
@@ -102,7 +102,7 @@ fn build_mission_token(mission_type: String, amount: i128) -> MissionToken {
     } else if mission_type == "TRUST" {
         MissionToken::Trust(Asset(Amount(amount)))
     } else {
-        MissionToken::None
+        MissionToken::default()
     }
 }
 
@@ -171,11 +171,12 @@ pub fn drag_and_drop(
                                             .with(account_idx)
                                             .with(asset_idx); // we create an id with all index
 
-                                        if asset.is_draggable(){
-                                            drag_source(ui, item_id, |ui| { //we make the asset dragable
+                                        if asset.is_draggable() {
+                                            drag_source(ui, item_id, |ui| {
+                                                //we make the asset dragable
                                                 asset.render(ui, &image_texture_ids);
                                             });
-                                        }else{
+                                        } else {
                                             asset.render(ui, &image_texture_ids);
                                         }
 
@@ -230,7 +231,6 @@ pub fn drag_and_drop(
                                     *asset = MissionToken::Time(Asset(Amount(0.into())))
                                     //commands.entity(*source_asset).despawn();
                                 }
-                                MissionToken::None => {}
                             }
                         }
 
@@ -273,17 +273,14 @@ pub fn drag_and_drop(
                                                 asset_exists = true;
                                             }
                                         }
-                                        MissionToken::None => {}
                                     }
                                 }
                             }
                             if !asset_exists {
                                 let mission_token =
                                     build_mission_token(mission_tuple.clone().0, mission_tuple.1);
-                                if mission_token != MissionToken::None {
-                                    let new_asset = commands.spawn().insert(mission_token).id();
-                                    commands.entity(*drop_account).push_children(&[new_asset]);
-                                }
+                                let new_asset = commands.spawn().insert(mission_token).id();
+                                commands.entity(*drop_account).push_children(&[new_asset]);
                             }
                         }
                     }

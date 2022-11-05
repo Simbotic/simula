@@ -86,15 +86,42 @@ fn main() {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SelectedWallet2(usize);
 
-#[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
+#[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
 #[reflect(Component)]
 pub enum MissionToken {
-    #[default]
-    None,
     Time(Asset<1000, 0>),
     Trust(Asset<1000, 1>),
     Energy(Asset<1000, 2>),
     Labor(Asset<1000, 3>),
+}
+
+impl Default for MissionToken {
+    fn default() -> Self {
+        Self::Time(0.into())
+    }
+}
+
+impl From<AssetBalance> for MissionToken {
+    fn from(asset: AssetBalance) -> Self {
+        match (asset.class_id, asset.asset_id) {
+            (1000, 0) => MissionToken::Time(asset.balance.into()),
+            (1000, 1) => MissionToken::Trust(asset.balance.into()),
+            (1000, 2) => MissionToken::Energy(asset.balance.into()),
+            (1000, 3) => MissionToken::Labor(asset.balance.into()),
+            _ => panic!("Unknown asset"),
+        }
+    }
+}
+
+impl From<MissionToken> for AssetBalance {
+    fn from(token: MissionToken) -> Self {
+        match token {
+            MissionToken::Time(asset) => asset.into(),
+            MissionToken::Trust(asset) => asset.into(),
+            MissionToken::Energy(asset) => asset.into(),
+            MissionToken::Labor(asset) => asset.into(),
+        }
+    }
 }
 
 fn setup(
@@ -138,20 +165,6 @@ fn setup(
                 });
         })
         .build(&mut commands);
-
-    let agent_behavior_graph = commands
-        .spawn()
-        // .insert(BehaviorEditorState {
-        //     show: true,
-        //     ..default()
-        // })
-        // .insert(BehaviorGraphState::default())
-        .with_children(|_parent| {
-            // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
-            // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
-        })
-        .insert(Name::new("Behavior Graph"))
-        .id();
 
     let video_material = StandardMaterial {
         base_color: Color::rgb(1.0, 1.0, 1.0),
@@ -231,12 +244,7 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[
-            agent_wallet,
-            agent_behavior_graph,
-            agent_body,
-            behavior.root.unwrap(),
-        ])
+        .push_children(&[agent_wallet, agent_body, behavior.root.unwrap()])
         .insert(behavior)
         .insert(Name::new("Agent: 001"));
 
