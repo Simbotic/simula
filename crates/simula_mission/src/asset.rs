@@ -109,6 +109,7 @@ impl<const CLASS_ID: u64, const ASSET_ID: u64> From<i128> for Asset<CLASS_ID, AS
     }
 }
 
+#[derive(Component)]
 pub struct AssetBalance {
     pub class_id: u64,
     pub asset_id: u64,
