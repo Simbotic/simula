@@ -26,10 +26,8 @@ use ta::indicators::*;
 use wallet_ui::WalletUIPlugin;
 
 mod behaviors;
-mod drag_and_drop;
 mod token_ui;
 mod wallet_ui;
-use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -63,7 +61,7 @@ fn main() {
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
     .add_plugin(VideoPlugin)
-    .add_plugin(MissionPlugin)
+    .add_plugin(MissionPlugin::<MissionToken>::default())
     .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
