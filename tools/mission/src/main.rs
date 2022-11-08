@@ -3,11 +3,8 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_egui::{
-    egui,
-    EguiContext,
-};
-use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
+use bevy_egui::{egui, EguiContext};
+use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
 use mission_behavior::MissionBehaviorPlugin;
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
@@ -15,10 +12,10 @@ use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::{
     asset::{Amount, Asset},
-    MissionPlugin, WalletBuilder,
-    wallet_ui::WalletUIPlugin,
+    asset_ui::{MissionToken},
     drag_and_drop::DragAndDropPlugin,
-    asset_ui::{AssetInfo, MissionToken},
+    wallet_ui::{WalletUIPlugin},
+    MissionPlugin, WalletBuilder,
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -26,7 +23,7 @@ use simula_video::GifAsset;
 use simula_video::{VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
-    follow_ui::{FollowUICamera, FollowUIPlugin, FollowUI},
+    follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
@@ -54,7 +51,9 @@ fn main() {
     })
     .insert_resource(Msaa { samples: 4 })
     .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .insert_resource(TimeDuration{time: Duration::default()})
+    .insert_resource(TimeDuration {
+        time: Duration::default(),
+    })
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -74,6 +73,8 @@ fn main() {
     .register_type::<MissionToken>()
     .register_type::<SignalGenerator>()
     .add_startup_system(setup)
+    .add_startup_system(spawn_machines)
+    .add_startup_system(spawn_agents)
     .add_system(debug_info)
     .add_system(increase_mission_time)
     .add_system(increase_time_with_signal)
@@ -103,7 +104,6 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
-    mut behavior_inspector: ResMut<BehaviorInspector>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -173,17 +173,16 @@ fn setup(
                 transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
                 ..default()
             });
-            child.insert(
-                FollowUI {
+            child
+                .insert(FollowUI {
                     min_distance: 0.1,
                     max_distance: 20.0,
                     min_height: -5.0,
                     max_height: 5.0,
                     max_view_angle: 45.0,
                     ..default()
-                }
-            )
-            .insert(Name::new("Follow UI Robot"));
+                })
+                .insert(Name::new("Follow UI Robot"));
             // .insert(FollowPanel)
         })
         .with_children(|parent| {
@@ -248,28 +247,6 @@ fn setup(
         ])
         .insert(behavior)
         .insert(Name::new("Agent: 001"));
-
-    // Build Agent 002
-    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
-    let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
-        None,
-        &mut commands,
-        document,
-    );
-    if let Some(root) = behavior.root {
-        commands.entity(root).insert(BehaviorCursor);
-    }
-    let agent_id = commands
-        .spawn_bundle(SpatialBundle {
-            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
-            ..default()
-        })
-        .insert(behavior)
-        .insert(Name::new("Agent: 002"))
-        .id();
-
-    behavior_inspector.select(agent_id, "Agent: 002".into());
-    behavior_inspector.unselect();
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -357,17 +334,18 @@ fn setup(
             }),
         )
         .insert(FpsText);
-        commands.spawn()
-            .insert( SignalGenerator {
-                func: SignalFunction::Pulse,
-                amplitude: 1.0,
-                frequency: 1.0,
-                phase: 1.0,
-                offset: 1.0,
-                invert: false,
-                ..default()
-            })
-            .insert(Name::new("Signal Generator"));
+    commands
+        .spawn()
+        .insert(SignalGenerator {
+            func: SignalFunction::Pulse,
+            amplitude: 1.0,
+            frequency: 1.0,
+            phase: 1.0,
+            offset: 1.0,
+            invert: false,
+            ..default()
+        })
+        .insert(Name::new("Signal Generator"));
 }
 
 #[derive(Component)]
@@ -408,15 +386,13 @@ fn increase_time_with_signal(
 ) {
     for mut token in query.iter_mut() {
         for mut signal_generator in generator_mission.iter_mut() {
-            let generate = SignalGenerator::sample(
-                &mut signal_generator, 
-                time_duration.time,
-            );
+            let generate = SignalGenerator::sample(&mut signal_generator, time_duration.time);
             let generate = generate.round() as i128;
             match *token {
-                MissionToken::Time(asset) => 
-                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate))),
-                    _ => {}
+                MissionToken::Time(asset) => {
+                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate)))
+                }
+                _ => {}
             }
         }
     }
@@ -432,10 +408,7 @@ fn indicator_mission_time(_time: Res<Time>, mut assets: Query<&mut MissionToken>
     }
 }
 
-fn wallet_creation_window(
-    mut commands: Commands,
-    mut egui_ctx: ResMut<EguiContext>,
-) {
+fn wallet_creation_window(mut commands: Commands, mut egui_ctx: ResMut<EguiContext>) {
     egui::Window::new("Wallet Creation")
         .default_width(200.0)
         .resizable(true)
@@ -444,9 +417,12 @@ fn wallet_creation_window(
         .vscroll(false)
         .drag_bounds(egui::Rect::EVERYTHING)
         .show(egui_ctx.ctx_mut(), |ui| {
-            ui.small_button("Create Wallet").on_hover_text("generate wallet").clicked().then(|| {
-                add_wallet(&mut commands);
-            });
+            ui.small_button("Create Wallet")
+                .on_hover_text("generate wallet")
+                .clicked()
+                .then(|| {
+                    add_wallet(&mut commands);
+                });
         });
 }
 
@@ -484,4 +460,196 @@ fn add_wallet(commands: &mut Commands) {
                 });
         })
         .build(commands);
+}
+
+fn spawn_machines(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut asset_server: Res<AssetServer>,
+) {
+    for i in 0..2 {
+        let machine = commands
+            .spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
+                material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+                transform: Transform::from_xyz(3.0 + i as f32, 0.0, 0.0),
+                ..default()
+            })
+            .insert(Name::new(format!("Machine {}", i + 1)))
+            .id();
+
+        insert_new_wallets_to_entity(&mut commands, machine);
+        insert_behavior_tree_to_entity(
+            &mut commands,
+            machine,
+            &mut asset_server,
+            BehaviorTreeType::Machine,
+        );
+    }
+}
+
+fn insert_new_wallets_to_entity(commands: &mut Commands, entity: Entity) {
+    let wallet = WalletBuilder::<MissionToken>::default()
+        .id(gen_id().as_str())
+        .with_account(|account| {
+            account
+                .id(gen_id().as_str())
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(10000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(200.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(1000.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Labor(630.into()));
+                });
+        })
+        .with_account(|account| {
+            account
+                .id(gen_id().as_str())
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Energy(99999.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Trust(99999.into()));
+                })
+                .with_asset(|asset| {
+                    asset.amount(MissionToken::Time(99999.into()));
+                });
+        })
+        .build(commands);
+
+    commands.entity(entity).push_children(&[wallet]);
+}
+
+pub enum BehaviorTreeType {
+    Agent,
+    Machine,
+}
+
+fn insert_behavior_tree_to_entity(
+    mut commands: &mut Commands,
+    entity: Entity,
+    asset_server: &mut Res<AssetServer>,
+    tree_type: BehaviorTreeType,
+) {
+    let document: Handle<BehaviorAsset> = match tree_type {
+        BehaviorTreeType::Agent => asset_server.load("behaviors/debug_agent.bht.ron"),
+        BehaviorTreeType::Machine => asset_server.load("behaviors/debug_machine.bht.ron"),
+    };
+
+    let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
+        None,
+        &mut commands,
+        document,
+    );
+    commands.entity(entity).insert(behavior);
+}
+
+fn spawn_agents(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    line_mesh: Res<LineMesh>,
+    mut asset_server: Res<AssetServer>,
+) {
+    for i in 0..2 {
+        let video_material = StandardMaterial {
+            base_color: Color::rgb(1.0, 1.0, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            unlit: true,
+            ..default()
+        };
+        let video_rotation =
+            Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
+        let video_position = Vec3::new(0.0, 0.5, 0.0);
+
+        let agent_body = commands
+            .spawn_bundle(SpatialBundle {
+                transform: Transform::from_translation(video_position)
+                    .with_rotation(video_rotation),
+                ..default()
+            })
+            .with_children(|parent| {
+                let mut child = parent.spawn_bundle(SpatialBundle {
+                    transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
+                    ..default()
+                });
+                child
+                    .insert(FollowUI {
+                        min_distance: 0.1,
+                        max_distance: 20.0,
+                        min_height: -5.0,
+                        max_height: 5.0,
+                        max_view_angle: 45.0,
+                        ..default()
+                    })
+                    .insert(Name::new("Follow UI Robot"));
+            })
+            .with_children(|parent| {
+                let mut child = parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                    material: materials.add(video_material),
+                    transform: Transform::from_rotation(Quat::from_euler(
+                        EulerRot::YXZ,
+                        0.0,
+                        -std::f32::consts::FRAC_PI_2,
+                        0.0,
+                    )),
+                    ..default()
+                });
+                child
+                    .insert(VideoPlayer {
+                        start_frame: 0,
+                        end_frame: 80,
+                        framerate: 20.0,
+                        playing: true,
+                        ..default()
+                    })
+                    .insert(Name::new("Video: RenderTarget"));
+
+                #[cfg(feature = "gif")]
+                {
+                    let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+                    child.insert(video_asset);
+                }
+            })
+            .insert(Name::new("Agent: Body"))
+            .with_children(|parent| {
+                parent
+                    .spawn_bundle(AxesBundle {
+                        axes: Axes {
+                            size: 1.,
+                            ..default()
+                        },
+                        mesh: meshes.add(line_mesh.clone()),
+                        material: lines_materials.add(LinesMaterial {}),
+                        ..default()
+                    })
+                    .insert(Name::new("LookAt Coords"));
+            })
+            .id();
+
+        let agent = commands
+            .spawn_bundle(SpatialBundle {
+                transform: Transform::from_xyz(-3.0 - (i as f32), 0.0, 0.0),
+                ..default()
+            })
+            .push_children(&[agent_body])
+            .insert(Name::new(format!("Agent {}", i + 1)))
+            .id();
+
+        insert_new_wallets_to_entity(&mut commands, agent);
+        insert_behavior_tree_to_entity(
+            &mut commands,
+            agent,
+            &mut asset_server,
+            BehaviorTreeType::Agent,
+        );
+    }
 }

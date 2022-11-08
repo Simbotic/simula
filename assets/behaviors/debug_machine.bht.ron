@@ -1,0 +1,14 @@
+(
+    root:(
+        "Do forever",
+        Repeater((repeat:Forever)),
+        [(
+            "Simple sequence",
+            Sequencer(()),
+            [
+                ("Produce Item", Debug((duration: 8))),
+                ("Rest", Debug((duration: 8))),
+            ]
+        )]
+    )
+)
