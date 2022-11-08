@@ -27,8 +27,6 @@ use ta::indicators::*;
 
 mod behaviors;
 // mod drag_and_drop;
-mod token_ui;
-// mod wallet_ui;
 // use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
