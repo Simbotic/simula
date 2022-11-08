@@ -210,7 +210,7 @@ impl AssetInfo for MissionToken {
             MissionToken::Trust(_) => 1,
             MissionToken::Energy(_) => 2,
             MissionToken::Labor(_) => 3,
-            MissionToken::None => 4
+            MissionToken::None => panic!("Can't return an id for none!")
         }
     }
    
