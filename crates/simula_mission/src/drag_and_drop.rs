@@ -182,7 +182,7 @@ pub fn drag_and_drop<T: Component + AssetInfo>(
                             let mut asset_exists = false;
                             for asset in account.1.iter() {
                                 if let Ok(mut mut_asset) = assets.get_mut(*asset) {
-                                    if mut_asset.drop(asset_tuple.0,asset_tuple.1,asset_tuple.2){
+                                    if mut_asset.drop(asset_tuple.0,asset_tuple.1,asset_tuple.2){ 
                                         asset_exists = true;
                                     }
                                 }
@@ -193,7 +193,7 @@ pub fn drag_and_drop<T: Component + AssetInfo>(
                                 }
                             }
                         } 
-                        if let Ok(mut asset) = assets.get_mut(*source_asset) {   // finally we deplete the amount of the dragged asset
+                        if let Ok(mut asset) = assets.get_mut(*source_asset) {   // finally we deplete the amount of the dragged assetREa
                             asset.drag();
                         }
                     }
