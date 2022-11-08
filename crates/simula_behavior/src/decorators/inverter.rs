@@ -22,7 +22,7 @@ pub fn run(
             commands.entity(entity).insert(BehaviorSuccess);
         } else {
             if children.len() > 1 {
-                warn!("Has more than one child, only the first will be used");
+                panic!("Decorator node has more than one child");
             }
             let child_entity = children[0]; // Safe because we checked for empty
             if let Ok(BehaviorChildQueryItem {
@@ -30,6 +30,7 @@ pub fn run(
                 child_parent,
                 child_failure,
                 child_success,
+                child_running: _,
             }) = nodes.get(child_entity)
             {
                 if let Some(child_parent) = **child_parent {

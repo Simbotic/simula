@@ -36,37 +36,69 @@ use uuid::Uuid;
 
 type Packet = Box<[u8]>;
 
-#[derive(Debug)]
 /// General configuration options for a WebRtc connection
+///
+/// See [`WebRtcSocket::new_with_config`]
+#[derive(Debug)]
 pub struct WebRtcSocketConfig {
+    /// The url for the room to connect to
+    ///
+    /// This is a websocket url, starting with `ws://` or `ws://` followed by
+    /// the hostname and path to a matchbox server, followed by a room id and
+    /// optional query parameters.
+    ///
+    /// e.g.: `wss://matchbox.example.com/your_game`
+    ///
+    /// or: `wss://matchbox.example.com/your_game?next=2`
+    ///
+    /// The last form will pair player in the order they connect.
     pub room_url: String,
     /// Configuration for the (single) ICE server
     pub ice_server: RtcIceServerConfig,
 }
 
-#[derive(Debug)]
 /// Configuration options for an ICE server connection.
-/// See also: https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer#example
+/// See also: <https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer#example>
+#[derive(Debug)]
 pub struct RtcIceServerConfig {
     /// An ICE server instance can have several URLs
     pub urls: Vec<String>,
+    /// A username for authentication with the ICE server
+    ///
+    /// See: <https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/username>
+    pub username: Option<String>,
+    /// A password or token when authenticating with a turn server
+    ///
+    /// See: <https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer/credential>
+    pub credential: Option<String>,
+}
+
+impl Default for RtcIceServerConfig {
+    fn default() -> Self {
+        Self {
+            urls: vec![
+                "stun:stun.l.google.com:19302".to_string(),
+                //"stun:stun.johanhelsing.studio:3478".to_string(),
+                //"turn:stun.johanhelsing.studio:3478".to_string(),
+            ],
+            username: Default::default(),
+            credential: Default::default(),
+        }
+    }
 }
 
 impl Default for WebRtcSocketConfig {
     fn default() -> Self {
         WebRtcSocketConfig {
             room_url: "ws://localhost:3536/example_room".to_string(),
-            ice_server: RtcIceServerConfig {
-                urls: vec![
-                    "stun:stun.l.google.com:19302".to_string(),
-                    //"stun:stun.johanhelsing.studio:3478".to_string(),
-                    //"turn:stun.johanhelsing.studio:3478".to_string(),
-                ],
-            },
+            ice_server: RtcIceServerConfig::default(),
         }
     }
 }
 
+/// Contains the interface end of a full-mesh web rtc connection
+///
+/// Used to send and receive messages from other peers
 #[derive(Debug)]
 pub struct WebRtcSocket {
     messages_from_peers: futures_channel::mpsc::UnboundedReceiver<(PeerId, Packet)>,
@@ -84,6 +116,11 @@ pub(crate) type MessageLoopFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
 pub(crate) type MessageLoopFuture = Pin<Box<dyn Future<Output = ()>>>;
 
 impl WebRtcSocket {
+    /// Create a new connection to the given room
+    ///
+    /// See [`WebRtcSocketConfig::room_url`] for details on the room url.
+    ///
+    /// The returned future should be awaited in order for messages to be sent and received.
     #[must_use]
     pub fn new<T: Into<String>>(room_url: T) -> (Self, MessageLoopFuture) {
         WebRtcSocket::new_with_config(WebRtcSocketConfig {
@@ -92,6 +129,9 @@ impl WebRtcSocket {
         })
     }
 
+    /// Create a new connection with the given [`WebRtcSocketConfig`]
+    ///
+    /// The returned future should be awaited in order for messages to be sent and received.
     #[must_use]
     pub fn new_with_config(config: WebRtcSocketConfig) -> (Self, MessageLoopFuture) {
         let (messages_from_peers_tx, messages_from_peers) = futures_channel::mpsc::unbounded();
@@ -123,6 +163,7 @@ impl WebRtcSocket {
         )
     }
 
+    /// Returns a future that resolves when the given number of peers have connected
     pub async fn wait_for_peers(&mut self, peers: usize) -> Vec<PeerId> {
         debug!("waiting for peers to join");
         let mut addrs = vec![];
@@ -137,6 +178,7 @@ impl WebRtcSocket {
         panic!("Signal server died")
     }
 
+    /// Check if new peers have connected and if so add them as peers
     pub fn accept_new_connections(&mut self) -> Vec<PeerId> {
         let mut ids = Vec::new();
         while let Ok(Some(id)) = self.new_connected_peers.try_next() {
@@ -157,10 +199,14 @@ impl WebRtcSocket {
         ids
     }
 
+    /// Returns a Vec of the ids of the connected peers
     pub fn connected_peers(&self) -> &Vec<PeerId> {
         &self.peers
     }
 
+    /// Call this where you want to handle new received messages
+    ///
+    /// messages are removed from the socked when called
     pub fn receive(&mut self) -> Vec<(PeerId, Packet)> {
         std::iter::repeat_with(|| self.messages_from_peers.try_next())
             // .map_while(|poll| match p { // map_while is nightly-only :(
@@ -178,12 +224,14 @@ impl WebRtcSocket {
         self.messages_from_peers.try_next()
     }
 
+    /// Send a packet to the given peer
     pub fn send<T: Into<PeerId>>(&mut self, packet: Packet, id: T) {
         self.peer_messages_out
             .unbounded_send((id.into(), packet))
             .expect("send_to failed");
     }
 
+    /// Returns the id of this peer
     pub fn id(&self) -> &PeerId {
         &self.id
     }

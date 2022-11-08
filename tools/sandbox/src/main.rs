@@ -18,7 +18,7 @@ use simula_camera::{flycam::*, orbitcam::*};
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
-    signal::{SignalController, SignalFunction, SignalGenerator},
+    signal::{SignalController, SignalFunction, SignalGenerator, SignalPlugin},
 };
 use simula_net::{NetId, NetPlugin, Replicate};
 #[cfg(feature = "gif")]
@@ -81,6 +81,7 @@ fn main() {
         .add_plugin(VideoPlugin)
         .add_plugin(LookAtPlugin)
         .add_plugin(FollowUIPlugin)
+        .add_plugin(SignalPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -637,70 +638,77 @@ fn setup(
         let video_position = Vec3::new(0.0, 0.5, -2.0);
 
         commands
-            .spawn_bundle(SpatialBundle {
-                transform: Transform::from_translation(video_position)
-                    .with_rotation(video_rotation),
-                ..default()
+            .spawn_bundle(SpatialBundle { ..default() })
+            .insert(Rotate {
+                axis: Vec3::Y,
+                angle: 0.6,
             })
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(PbrBundle {
-                        mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                        material: materials.add(video_material),
-                        transform: Transform::from_rotation(Quat::from_euler(
-                            EulerRot::YXZ,
-                            0.0,
-                            -std::f32::consts::FRAC_PI_2,
-                            0.0,
-                        )),
+                    .spawn_bundle(SpatialBundle {
+                        transform: Transform::from_translation(video_position)
+                            .with_rotation(video_rotation),
                         ..default()
                     })
-                    .insert(VideoPlayer {
-                        start_frame: 0,
-                        end_frame: 80,
-                        framerate: 20.0,
-                        playing: true,
+                    .with_children(|parent| {
+                        parent
+                            .spawn_bundle(PbrBundle {
+                                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                                material: materials.add(video_material),
+                                transform: Transform::from_rotation(Quat::from_euler(
+                                    EulerRot::YXZ,
+                                    0.0,
+                                    -std::f32::consts::FRAC_PI_2,
+                                    0.0,
+                                )),
+                                ..default()
+                            })
+                            .insert(VideoPlayer {
+                                start_frame: 0,
+                                end_frame: 80,
+                                framerate: 20.0,
+                                playing: true,
+                                ..default()
+                            })
+                            .insert(video_asset)
+                            .insert(Name::new("Video: RenderTarget"));
+                    })
+                    .insert(Name::new("Video: Robot"))
+                    .insert(SmoothLookAt {
+                        target: Some(camera_entity),
+                        yaw_ease: EaseFunction::SineInOut,
+                        pitch_ease: EaseFunction::SineInOut,
                         ..default()
                     })
-                    .insert(video_asset)
-                    .insert(Name::new("Video: RenderTarget"));
-            })
-            .insert(Name::new("Video: Robot"))
-            .insert(SmoothLookAt {
-                target: Some(camera_entity),
-                initial_pose: video_rotation,
-                yaw_ease: EaseFunction::SineInOut,
-                pitch_ease: EaseFunction::SineInOut,
-                ..default()
-            })
-            .with_children(|parent| {
+                    .with_children(|parent| {
+                        parent
+                            .spawn_bundle(AxesBundle {
+                                axes: Axes {
+                                    size: 1.,
+                                    ..default()
+                                },
+                                mesh: meshes.add(line_mesh.clone()),
+                                material: lines_materials.add(LinesMaterial {}),
+                                ..default()
+                            })
+                            .insert(Name::new("LookAt Coords"));
+                    });
+
                 parent
                     .spawn_bundle(AxesBundle {
+                        transform: Transform::from_translation(video_position)
+                            .with_rotation(video_rotation),
                         axes: Axes {
-                            size: 1.,
+                            size: 3.,
                             ..default()
                         },
+                        visibility: Visibility { is_visible: false },
                         mesh: meshes.add(line_mesh.clone()),
                         material: lines_materials.add(LinesMaterial {}),
                         ..default()
                     })
                     .insert(Name::new("LookAt Coords"));
             });
-
-        commands
-            .spawn_bundle(AxesBundle {
-                transform: Transform::from_translation(video_position)
-                    .with_rotation(video_rotation),
-                axes: Axes {
-                    size: 3.,
-                    ..default()
-                },
-                visibility: Visibility { is_visible: false },
-                mesh: meshes.add(line_mesh.clone()),
-                material: lines_materials.add(LinesMaterial {}),
-                ..default()
-            })
-            .insert(Name::new("LookAt Coords"));
     }
 
     #[cfg(feature = "webp")]

@@ -17,6 +17,8 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(complete_behavior);
     app.add_system(sequencer::run);
     app.add_system(selector::run);
+    app.add_system(all::run);
+    app.add_system(any::run);
     app.add_system(repeater::run);
     app.add_system(inverter::run);
     app.add_system(succeeder::run);
@@ -26,12 +28,14 @@ pub fn test_app(app: &mut App) -> &mut App {
     app
 }
 
-#[derive(Serialize, Deserialize, TypeUuid)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
 pub enum TestBehavior {
     Debug(Debug),
     Selector(Selector),
     Sequencer(Sequencer),
+    All(All),
+    Any(Any),
     Repeater(Repeater),
     Inverter(Inverter),
     Succeeder(Succeeder),
@@ -50,6 +54,8 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::All(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Any(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),

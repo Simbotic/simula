@@ -59,6 +59,7 @@ pub fn run(
                 child_parent,
                 child_failure,
                 child_success,
+                child_running: _,
             } in nodes.iter_many(children_iter)
             {
                 if let Some(child_parent) = **child_parent {
@@ -87,7 +88,7 @@ pub fn run(
                     }
                 } else {
                     // Child has no parent, so we fail
-                    warn!("Child has no parent, so we fail");
+                    warn!("Child has no parent");
                     commands.entity(entity).insert(BehaviorFailure);
                     should_fail = true;
                     break;

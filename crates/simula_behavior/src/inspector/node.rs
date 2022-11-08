@@ -25,8 +25,12 @@ fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
             color_from_hex("#CC0100").unwrap()
         } else if behavior.name == "Sequencer" {
             color_from_hex("#36980D").unwrap()
+        }  else if behavior.name == "All" {
+            color_from_hex("#36980D").unwrap()
+        }  else if behavior.name == "Any" {
+            color_from_hex("#CC0100").unwrap()
         } else {
-            color_from_hex("#F3F342").unwrap()
+            color_from_hex("#000000").unwrap()
         }
     } else if behavior.typ == BehaviorType::Decorator {
         color_from_hex("#ACA000").unwrap()
@@ -62,7 +66,7 @@ impl Inspectable for BehaviorInspectorNode {
         let behavior_cursor = world.get::<BehaviorCursor>(entity);
 
         let cursor_stroke = if behavior_cursor.is_some() {
-            egui::Stroke::new(2.0, color_from_hex("#FF00FF").unwrap())
+            egui::Stroke::new(3.0, color_from_hex("#FF00FF").unwrap())
         } else {
             egui::Stroke::none()
         };

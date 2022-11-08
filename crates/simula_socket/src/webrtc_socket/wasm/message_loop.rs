@@ -135,7 +135,7 @@ async fn handshake_offer(
     config: &WebRtcSocketConfig,
 ) -> Result<(PeerId, RtcDataChannel), Box<dyn std::error::Error>> {
     debug!("making offer");
-    let conn = create_rtc_peer_connection(config.ice_server.urls.clone());
+    let conn = create_rtc_peer_connection(config);
     let (channel_ready_tx, mut channel_ready_rx) = futures_channel::mpsc::channel(1);
     let data_channel = create_data_channel(
         conn.clone(),
@@ -214,7 +214,7 @@ async fn handshake_accept(
 ) -> Result<(PeerId, RtcDataChannel), Box<dyn std::error::Error>> {
     debug!("handshake_accept");
 
-    let conn = create_rtc_peer_connection(config.ice_server.urls.clone());
+    let conn = create_rtc_peer_connection(config);
     let (channel_ready_tx, mut channel_ready_rx) = futures_channel::mpsc::channel(1);
     let data_channel = create_data_channel(
         conn.clone(),
@@ -281,18 +281,23 @@ async fn handshake_accept(
     Ok((signal_peer.id, data_channel))
 }
 
-fn create_rtc_peer_connection(ice_server_urls: Vec<String>) -> RtcPeerConnection {
+fn create_rtc_peer_connection(config: &WebRtcSocketConfig) -> RtcPeerConnection {
     #[derive(Serialize)]
-    pub struct IceServerConfig {
-        pub urls: Vec<String>,
+    struct IceServerConfig {
+        urls: Vec<String>,
+        username: String,
+        credential: String,
     }
 
     let mut peer_config: RtcConfiguration = RtcConfiguration::new();
+    let ice_server = &config.ice_server;
     let ice_server_config = IceServerConfig {
-        urls: ice_server_urls,
+        urls: ice_server.urls.clone(),
+        username: ice_server.username.clone().unwrap_or_default(),
+        credential: ice_server.credential.clone().unwrap_or_default(),
     };
     let ice_server_config_list = [ice_server_config];
-    peer_config.ice_servers(&JsValue::from_serde(&ice_server_config_list).unwrap());
+    peer_config.ice_servers(&serde_wasm_bindgen::to_value(&ice_server_config_list).unwrap());
     RtcPeerConnection::new_with_configuration(&peer_config).unwrap()
 }
 

@@ -109,6 +109,12 @@ impl<const CLASS_ID: u64, const ASSET_ID: u64> From<i128> for Asset<CLASS_ID, AS
     }
 }
 
+impl<const CLASS_ID: u64, const ASSET_ID: u64> From<Amount> for Asset<CLASS_ID, ASSET_ID> {
+    fn from(amount: Amount) -> Self {
+        Self(amount)
+    }
+}
+
 pub struct AssetBalance {
     pub class_id: u64,
     pub asset_id: u64,

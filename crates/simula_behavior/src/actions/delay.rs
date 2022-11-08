@@ -20,17 +20,16 @@ impl BehaviorInfo for Delay {
 pub fn run(
     time: Res<Time>,
     mut commands: Commands,
-    mut debug_actions: Query<(Entity, &mut Delay, &mut BehaviorRunning), BehaviorRunQuery>,
+    mut delays: Query<(Entity, &mut Delay, &mut BehaviorRunning), BehaviorRunQuery>,
 ) {
-    for (entity, mut debug_action, mut running) in &mut debug_actions {
+    for (entity, mut delay, mut running) in &mut delays {
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            debug_action.start = time.seconds_since_startup();
+            delay.start = time.seconds_since_startup();
         }
-        let duration = time.seconds_since_startup() - debug_action.start;
-        if duration > debug_action.duration {
+        let duration = time.seconds_since_startup() - delay.start;
+        if duration > delay.duration {
             commands.entity(entity).insert(BehaviorSuccess);
         }
-        debug!("[{}] RUNNING #{}", entity.id(), duration,);
     }
 }

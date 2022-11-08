@@ -10,13 +10,8 @@ use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
-use simula_mission::{
-    asset::{Amount, Asset},
-    asset_ui::{MissionToken},
-    drag_and_drop::DragAndDropPlugin,
-    wallet_ui::{WalletUIPlugin},
-    MissionPlugin, WalletBuilder,
-};
+use simula_mission::prelude::*;
+use simula_mission::{wallet_ui::WalletUIPlugin, asset_ui::AssetInfo};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
@@ -31,6 +26,10 @@ use std::time::Duration;
 use ta::indicators::*;
 
 mod behaviors;
+// mod drag_and_drop;
+mod token_ui;
+// mod wallet_ui;
+// use drag_and_drop::DragAndDropPlugin;
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -68,8 +67,8 @@ fn main() {
     .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
-    .add_plugin(DragAndDropPlugin)
-    .add_plugin(WalletUIPlugin(MissionToken::None))
+    // .add_plugin(DragAndDropPlugin)
+    .add_plugin(WalletUIPlugin(MissionToken::default()))
     .register_type::<MissionToken>()
     .register_type::<SignalGenerator>()
     .add_startup_system(setup)
@@ -87,16 +86,86 @@ fn main() {
     app.run();
 }
 
-// #[derive(Debug, Inspectable, Default, Reflect, Component, Clone, PartialEq)]
-// #[reflect(Component)]
-// pub enum MissionToken {
-//     #[default]
-//     None,
-//     Time(Asset<1000, 0>),
-//     Trust(Asset<1000, 1>),
-//     Energy(Asset<1000, 2>),
-//     Labor(Asset<1000, 3>),
-// }
+#[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
+#[reflect(Component)]
+pub enum MissionToken {
+    Time(Asset<1000, 0>),
+    Trust(Asset<1000, 1>),
+    Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
+}
+
+impl Default for MissionToken {
+    fn default() -> Self {
+        Self::Time(0.into())
+    }
+}
+
+impl AssetInfo for MissionToken {
+    fn name(&self) -> &'static str {
+        match self {
+            MissionToken::Time(_) => "Time",
+            MissionToken::Trust(_) => "Trust",
+            MissionToken::Energy(_) => "Energy",
+            MissionToken::Labor(_) => "Labor",
+        }
+    }
+
+    fn icon_dir(&self) -> &'static str {
+        match self {
+            MissionToken::Time(_) => "../assets/mission/Balance.png",
+            MissionToken::Trust(_) => "../assets/mission/Money - Cash.png",
+            MissionToken::Energy(_) => "../assets/mission/Money - Coins.png",
+            MissionToken::Labor(_) => "../assets/mission/labor-icon.png",
+        }
+    }
+
+    fn amount(&self) -> Amount {
+        match self {
+            MissionToken::Time(asset) => asset.0,
+            MissionToken::Trust(asset) => asset.0,
+            MissionToken::Energy(asset) => asset.0,
+            MissionToken::Labor(asset) => asset.0,
+        }
+    }
+
+    fn is_draggable(&self) -> bool {
+        match self {
+            MissionToken::Time(_) => false,
+            MissionToken::Trust(_) => true,
+            MissionToken::Energy(_) => true,
+            MissionToken::Labor(_) => true,
+        }
+    }
+    fn class_id(&self)->u64 {0}
+    fn asset_id(&self)->u64{0}
+    fn drag(&mut self)-> bool {false}
+    fn drop(&mut self, _src_class_id: u64, _src_asset_id: u64, _source_amount: Amount)-> bool {false}
+    fn push_as_children(&self,_commands: &mut Commands, _parent: Entity) {}
+}
+
+impl From<AssetBalance> for MissionToken {
+    fn from(asset: AssetBalance) -> Self {
+        match (asset.class_id, asset.asset_id) {
+            (1000, 0) => MissionToken::Time(asset.balance.into()),
+            (1000, 1) => MissionToken::Trust(asset.balance.into()),
+            (1000, 2) => MissionToken::Energy(asset.balance.into()),
+            (1000, 3) => MissionToken::Labor(asset.balance.into()),
+            _ => panic!("Unknown asset"),
+        }
+    }
+}
+
+impl From<MissionToken> for AssetBalance {
+    fn from(token: MissionToken) -> Self {
+        match token {
+            MissionToken::Time(asset) => asset.into(),
+            MissionToken::Trust(asset) => asset.into(),
+            MissionToken::Energy(asset) => asset.into(),
+            MissionToken::Labor(asset) => asset.into(),
+        }
+    }
+}
 
 fn setup(
     mut commands: Commands,
@@ -104,6 +173,7 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -138,20 +208,6 @@ fn setup(
                 });
         })
         .build(&mut commands);
-
-    let agent_behavior_graph = commands
-        .spawn()
-        // .insert(BehaviorEditorState {
-        //     show: true,
-        //     ..default()
-        // })
-        // .insert(BehaviorGraphState::default())
-        .with_children(|_parent| {
-            // parent.spawn_bundle(BehaviorBundle::<AgentRest>::default());
-            // parent.spawn_bundle(BehaviorBundle::<AgentWork>::default());
-        })
-        .insert(Name::new("Behavior Graph"))
-        .id();
 
     let video_material = StandardMaterial {
         base_color: Color::rgb(1.0, 1.0, 1.0),
@@ -239,14 +295,32 @@ fn setup(
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
-        .push_children(&[
-            agent_wallet,
-            agent_behavior_graph,
-            agent_body,
-            behavior.root.unwrap(),
-        ])
+        .push_children(&[agent_wallet, agent_body, behavior.root.unwrap()])
         .insert(behavior)
         .insert(Name::new("Agent: 001"));
+
+    // Build Agent 002
+    let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_any_subtree.bht.ron");
+    let behavior = BehaviorTree::from_asset::<mission_behavior::MissionBehavior>(
+        None,
+        &mut commands,
+        document,
+    );
+    if let Some(root) = behavior.root {
+        commands.entity(root).insert(BehaviorCursor);
+    }
+    let agent_id = commands
+        .spawn_bundle(SpatialBundle {
+            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+            ..default()
+        })
+        .push_children(&[behavior.root.unwrap()])
+        .insert(behavior)
+        .insert(Name::new("Agent: 002"))
+        .id();
+
+    behavior_inspector.select(agent_id, "Agent: 002".into());
+    // behavior_inspector.unselect();
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);

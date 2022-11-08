@@ -29,10 +29,9 @@ pub fn run(
         if !running.on_enter_handled {
             running.on_enter_handled = true;
             debug_action.start = time.seconds_since_startup();
+            debug!("[{}] RUNNING {}", entity.id(), debug_action.message);
         }
-
         let duration = time.seconds_since_startup() - debug_action.start;
-
         if duration > debug_action.duration {
             if debug_action.fail {
                 commands.entity(entity).insert(BehaviorFailure);
@@ -40,12 +39,5 @@ pub fn run(
                 commands.entity(entity).insert(BehaviorSuccess);
             }
         }
-
-        debug!(
-            "[{}] RUNNING #{} {}",
-            entity.id(),
-            duration,
-            debug_action.message
-        );
     }
 }
