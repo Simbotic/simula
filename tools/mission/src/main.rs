@@ -11,7 +11,7 @@ use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::prelude::*;
-use simula_mission::{wallet_ui::WalletUIPlugin, asset_ui::AssetInfo};
+use simula_mission::{asset_ui::AssetInfo, wallet_ui::WalletUIPlugin};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
@@ -135,11 +135,19 @@ impl AssetInfo for MissionToken {
             MissionToken::Labor(_) => true,
         }
     }
-    fn class_id(&self)->u64 {0}
-    fn asset_id(&self)->u64{0}
-    fn drag(&mut self)-> bool {false}
-    fn drop(&mut self, _src_class_id: u64, _src_asset_id: u64, _source_amount: Amount)-> bool {false}
-    fn push_as_children(&self,_commands: &mut Commands, _parent: Entity) {}
+    fn class_id(&self) -> u64 {
+        0
+    }
+    fn asset_id(&self) -> u64 {
+        0
+    }
+    fn drag(&mut self) -> bool {
+        false
+    }
+    fn drop(&mut self, _src_class_id: u64, _src_asset_id: u64, _source_amount: Amount) -> bool {
+        false
+    }
+    fn push_as_children(&self, _commands: &mut Commands, _parent: Entity) {}
 }
 
 impl From<AssetBalance> for MissionToken {
@@ -539,6 +547,7 @@ fn spawn_machines(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut asset_server: Res<AssetServer>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
 ) {
     for i in 0..2 {
         let machine = commands
@@ -557,6 +566,8 @@ fn spawn_machines(
             machine,
             &mut asset_server,
             BehaviorTreeType::Machine,
+            &mut behavior_inspector,
+            format!("Machine {}", i + 1),
         );
     }
 }
@@ -608,6 +619,8 @@ fn insert_behavior_tree_to_entity(
     entity: Entity,
     asset_server: &mut Res<AssetServer>,
     tree_type: BehaviorTreeType,
+    behavior_inspector: &mut ResMut<BehaviorInspector>,
+    name: String,
 ) {
     let document: Handle<BehaviorAsset> = match tree_type {
         BehaviorTreeType::Agent => asset_server.load("behaviors/debug_agent.bht.ron"),
@@ -619,7 +632,12 @@ fn insert_behavior_tree_to_entity(
         &mut commands,
         document,
     );
-    commands.entity(entity).insert(behavior);
+    if let Some(root) = behavior.root {
+        commands.entity(root).insert(BehaviorCursor);
+        commands.entity(entity).push_children(&[root]);
+        commands.entity(entity).insert(behavior);
+        behavior_inspector.select(entity, name);
+    }
 }
 
 fn spawn_agents(
@@ -629,6 +647,7 @@ fn spawn_agents(
     mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
     mut asset_server: Res<AssetServer>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
 ) {
     for i in 0..2 {
         let video_material = StandardMaterial {
@@ -722,6 +741,8 @@ fn spawn_agents(
             agent,
             &mut asset_server,
             BehaviorTreeType::Agent,
+            &mut behavior_inspector,
+            format!("Agent {}", i + 1),
         );
     }
 }
