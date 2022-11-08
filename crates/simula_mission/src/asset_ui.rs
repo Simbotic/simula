@@ -1,4 +1,4 @@
-use crate::asset::Amount;
+use crate::{asset::{Amount, AssetBalance}, account::Account};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
 use std::collections::HashMap;
@@ -74,6 +74,9 @@ pub trait AssetInfo {
     }
     fn class_id(&self)->u64;
     fn asset_id(&self)->u64;
+    fn drag(&mut self)-> bool;
+    fn drop(&mut self, src_class_id: u64, src_asset_id: u64, source_amount: Amount)-> bool;
+    fn push_as_children(&self,commands: &mut Commands, parent: Entity);
 }
 
 

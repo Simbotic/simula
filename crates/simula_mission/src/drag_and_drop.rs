@@ -1,4 +1,4 @@
-use bevy::{prelude::{Component, App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res,ReflectComponent,Reflect}};
+use bevy::{prelude::{Component, App, BuildChildren, Children, Commands, Plugin, Query, ResMut,Res,ReflectComponent,Reflect, Mut, Entity}};
 use bevy_egui::{egui::*, EguiContext};
 use bevy_inspector_egui::Inspectable;
 use crate::{
@@ -89,29 +89,12 @@ pub fn drop_target<R>(
     InnerResponse::new(ret, response)
 }
 
-//fn build_mission_token(mission_type: String, amount: i128) -> MissionToken {
-//    if mission_type == "ENERGY" {
-//        MissionToken::Energy(Asset(Amount(amount)))
-//    } else if mission_type == "LABOR" {
-//        MissionToken::Labor(Asset(Amount(amount)))
-//    } else if mission_type == "TRUST" {
-//        MissionToken::Trust(Asset(Amount(amount)))
-//    } else {
-//        MissionToken::None
-//    }
-//}
 
-impl Into<AssetBalance> for &dyn AssetInfo{
-    fn into(self) -> AssetBalance {
-        AssetBalance { class_id: self.class_id(), asset_id: self.asset_id(), balance: self.amount() }
-    }
-}
-
-pub fn drag_and_drop<T: Into<AssetBalance> + Component + AssetInfo + Clone>(
+pub fn drag_and_drop<T: Component + AssetInfo>(
     mut egui_ctx: ResMut<EguiContext>,
     wallets: Query<(&mut Wallet, &Children)>,
     accounts: Query<(&mut Account, &Children)>,
-    mut assets: Query<&T>,
+    mut assets: Query<&mut T>,
     mut commands: Commands,
     image_texture_ids: Res<ImageTextureIds>,
 ) {
@@ -188,35 +171,31 @@ pub fn drag_and_drop<T: Into<AssetBalance> + Component + AssetInfo + Clone>(
 
             if let Some(source_asset) = source_asset {
                 if let Some(drop_account) = drop_account {
-
-                    //let mut mission_tuple: (String, i128) = ("".to_string(), 0);
-                    let mut mission_tuple: (u64, u64,i128) = (0,0,0);
                     if ui.input().pointer.any_released() {
+                        let mut asset_tuple: (u64,u64,Amount) = (0,0,0.into());
 
-                        if let Ok(asset) = assets.get(*source_asset) {
-
-                            mission_tuple = (asset.class_id(), asset.asset_id(), asset.amount().0);
-
-                            commands.entity(*source_asset).despawn();
+                        if let Ok(asset) = assets.get(*source_asset) {   // save the amount, class and asset id to compare with the assets in dropped account
+                            asset_tuple = (asset.class_id(), asset.asset_id(), asset.amount());
                         }
 
-                        if let Ok(account) = accounts.get(*drop_account) {
-                            // we add the dragged element
+                        if let Ok(account) = accounts.get(*drop_account) { // we check if it exists to add the amounts
                             let mut asset_exists = false;
-
                             for asset in account.1.iter() {
-                                if let Ok(asset) = assets.get_mut(*asset) {
-                                    if asset.class_id() == mission_tuple.0 && asset.asset_id() == mission_tuple.1 {
-                                        let new_asset = commands.spawn().insert(AssetBalance{
-                                            class_id : asset.class_id(),
-                                            asset_id : asset.asset_id(),
-                                            balance : asset.amount(),
-                                        }).id();
-                                        commands.entity(*drop_account).push_children(&[new_asset]);
+                                if let Ok(mut mut_asset) = assets.get_mut(*asset) {
+                                    if mut_asset.drop(asset_tuple.0,asset_tuple.1,asset_tuple.2){
+                                        asset_exists = true;
                                     }
                                 }
                             }
+                            if !asset_exists{  //if the asset doesn't exist we push it to the dropped account
+                                if let Ok(new_asset) = assets.get_mut(*source_asset) {
+                                    new_asset.push_as_children(&mut commands, *drop_account);
+                                }
+                            }
                         } 
+                        if let Ok(mut asset) = assets.get_mut(*source_asset) {   // finally we deplete the amount of the dragged asset
+                            asset.drag();
+                        }
                     }
                 }
             }

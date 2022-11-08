@@ -18,7 +18,7 @@ use simula_mission::{
     MissionPlugin, WalletBuilder,
     wallet_ui::WalletUIPlugin,
     drag_and_drop::DragAndDropPlugin,
-    asset_ui::{AssetInfo, ImageTextureIds},
+    asset_ui::{AssetInfo, ImageTextureIds}, account::Account,
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -213,8 +213,69 @@ impl AssetInfo for MissionToken {
             MissionToken::None => 4
         }
     }
-}
+   
 
+    fn drag(&mut self)-> bool {
+        match self {
+            MissionToken::Energy(_) => {
+                *self = MissionToken::Energy(Asset(Amount(0.into())))
+            }
+            MissionToken::Labor(_) => {
+                *self = MissionToken::Labor(Asset(Amount(0.into())))
+            }
+            MissionToken::Trust(_) => {
+                *self = MissionToken::Trust(Asset(Amount(0.into())))
+            }
+            MissionToken::Time(_) => {
+                *self = MissionToken::Time(Asset(Amount(0.into())))
+            }
+            MissionToken::None=>{return false}
+        }
+        return true;
+    }
+
+    fn drop(&mut self, src_class_id: u64, src_asset_id: u64, src_amount: Amount)-> bool {
+        
+        if self.class_id() == src_class_id {
+            if self.asset_id() == src_asset_id{
+                match self {
+                    MissionToken::Energy(value) => {
+                        *self = MissionToken::Energy(Asset(Amount(
+                            value.0 .0 + src_amount.0,
+                        )));
+                        return true;
+                    }
+                    MissionToken::Labor(value) => {
+                        *self = MissionToken::Labor(Asset(Amount(
+                            value.0 .0 + src_amount.0,
+                        )));
+                        return true;
+                    }
+                    MissionToken::Trust(value) => {
+                        *self = MissionToken::Trust(Asset(Amount(
+                            value.0 .0 + src_amount.0,
+                        )));
+                        return true;
+                    }
+                    MissionToken::Time(value) => {
+                        *self = MissionToken::Time(Asset(Amount(
+                            value.0 .0 + src_amount.0,
+                        )));
+                        return true;
+                    }
+                    MissionToken::None=>{return false}
+                }
+            }
+        }
+        return false;
+    }
+
+    fn push_as_children(&self,commands: &mut Commands, parent: Entity) {
+        let new_asset = commands.spawn().insert(self.clone()).id();
+        commands.entity(parent).push_children(&[new_asset]);
+    }
+    
+}
 
 fn setup(
     mut commands: Commands,
