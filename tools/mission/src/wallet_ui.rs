@@ -1,5 +1,5 @@
 use crate::{
-    token_ui::{AssetInfo, ImageTextureIds, TokenUiPlugin},
+    token_ui::{ ImageTextureIds, TokenUiPlugin},
     FollowPanel, MissionToken,
 };
 use bevy::prelude::*;
@@ -186,17 +186,16 @@ impl WalletUIOptions for DefaultWalletUI {
                             .unwrap_or_default()
                             .to_string();
                         ui.collapsing(account_id_trimmed.clone(), |ui| {
-                            let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> =
-                                vec![];
+                            //let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> = vec![];
+                            let mut asset_list: Vec<(String, i128)> = vec![];
                             for &account_asset in account_assets.iter() {
                                 if let Ok(asset) = assets.get(account_asset) {
                                     let asset_name = asset.name();
                                     let asset_value = asset.amount();
-                                    let asset_icon = asset.icon(&image_texture_ids);
+                                    //let asset_icon = asset.icon(&image_texture_ids);
                                     asset_list.push((
                                         asset_name.to_string(),
                                         asset_value.0,
-                                        asset_icon,
                                     ));
                                 }
                             }
@@ -217,11 +216,11 @@ impl WalletUIOptions for DefaultWalletUI {
                                         if let Ok(asset) = assets.get(account_asset) {
                                             let asset_name = asset.name();
                                             let asset_value = asset.amount();
-                                            let asset_icon = asset.icon(&image_texture_ids);
+                                            //let asset_icon = asset.icon(&image_texture_ids);
                                             asset_list.push((
                                                 asset_name.to_string(),
                                                 asset_value.0,
-                                                asset_icon,
+                                                //asset_icon,
                                             ));
                                         }
                                     }
@@ -229,12 +228,12 @@ impl WalletUIOptions for DefaultWalletUI {
                                         body.row(20.0, |mut row| {
                                             row.col(|ui| {
                                                 ui.horizontal(|ui| {
-                                                    if let Some(icon) = asset.2 {
-                                                        ui.add(egui::widgets::Image::new(
-                                                            icon,
-                                                            [20.0, 20.0],
-                                                        ));
-                                                    }
+                                                    //if let Some(icon) = asset.2 {
+                                                    //    ui.add(egui::widgets::Image::new(
+                                                    //        icon,
+                                                    //        [20.0, 20.0],
+                                                    //    ));
+                                                    //}
                                                     ui.label(asset.0.clone());
                                                 });
                                             });
@@ -355,17 +354,17 @@ impl WalletUIOptions for MyCoolInGameWalletUI {
                             .unwrap_or_default()
                             .to_string();
                         ui.collapsing(account_id_trimmed.clone(), |ui| {
-                            let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> =
-                                vec![];
+                            //let mut asset_list: Vec<(String, i128, Option<egui::TextureId>)> = vec![];
+                            let mut asset_list: Vec<(String, i128)> = vec![];
                             for &account_asset in account_assets.iter() {
                                 if let Ok(asset) = assets.get(account_asset) {
                                     let asset_name = asset.name();
                                     let asset_value = asset.amount();
-                                    let asset_icon = asset.icon(&image_texture_ids);
+                                    //let asset_icon = asset.icon(&image_texture_ids);
                                     asset_list.push((
                                         asset_name.to_string(),
                                         asset_value.0,
-                                        asset_icon,
+                                        //asset_icon,
                                     ));
                                 }
                             }
@@ -386,12 +385,12 @@ impl WalletUIOptions for MyCoolInGameWalletUI {
                                         body.row(20.0, |mut row| {
                                             row.col(|ui| {
                                                 ui.horizontal(|ui| {
-                                                    if let Some(icon) = asset.2 {
-                                                        ui.add(egui::widgets::Image::new(
-                                                            icon,
-                                                            [20.0, 20.0],
-                                                        ));
-                                                    }
+                                                    //if let Some(icon) = asset.2 {
+                                                    //    ui.add(egui::widgets::Image::new(
+                                                    //        icon,
+                                                    //        [20.0, 20.0],
+                                                    //    ));
+                                                    //}
                                                     ui.label(asset.0.clone());
                                                 });
                                             });

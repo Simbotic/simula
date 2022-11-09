@@ -9,7 +9,7 @@ use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
-use simula_mission::prelude::*;
+use simula_mission::{prelude::*, drag_and_drop::DragAndDropPlugin};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
@@ -20,7 +20,7 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
-use std::time::Duration;
+use std::{time::Duration, marker::PhantomData};
 use ta::indicators::*;
 
 use wallet_ui::WalletUIPlugin;
@@ -65,7 +65,7 @@ fn main() {
     .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
-    .add_plugin(DragAndDropPlugin)
+    .add_plugin(DragAndDropPlugin::<MissionToken>{_marker: PhantomData::<MissionToken>})
     .add_plugin(WalletUIPlugin)
     .register_type::<MissionToken>()
     .register_type::<SignalGenerator>()

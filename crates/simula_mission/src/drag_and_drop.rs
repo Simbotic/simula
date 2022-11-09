@@ -4,14 +4,12 @@ use crate::{
     account::Account,
     asset::{Amount, Asset},
     wallet::Wallet,
-    asset_info::{AssetInfo},
+    asset_info::{AssetInfo}, utils::{trim_wallet, trim_account},
 };
-
-// use crate::{token_ui::AssetInfo, MissionToken};
 
 #[derive(Default)]
 pub struct DragAndDropPlugin<T> where T: AssetInfo {
-    _marker: std::marker::PhantomData<T>,
+    pub _marker: std::marker::PhantomData<T>,
 }
 
 impl<T> Plugin for DragAndDropPlugin<T> where T: AssetInfo + Send + Sync + 'static {
@@ -37,13 +35,6 @@ pub fn drag_source(ui: &mut egui::Ui, id: egui::Id, body: impl FnOnce(&mut egui:
         // Paint the body to a new layer:
         let layer_id = egui::LayerId::new(egui::Order::Tooltip, id);
         let response = ui.with_layer_id(layer_id, body).response;
-
-        // Now we move the visuals of the body to where the mouse is.
-        // Normally you need to decide a location for a widget first,
-        // because otherwise that widget cannot interact with the mouse.
-        // However, a dragged component cannot be interacted with anyway
-        // (anything with `Order::Tooltip` always gets an empty [`Response`])
-        // So this is fine!
 
         if let Some(pointer_pos) = ui.ctx().pointer_interact_pos() {
             let delta = pointer_pos - response.rect.center();
@@ -96,25 +87,13 @@ pub fn drop_target<R>(
     egui::InnerResponse::new(ret, response)
 }
 
-// fn build_mission_token(mission_type: String, amount: i128) -> MissionToken {
-//     if mission_type == "ENERGY" {
-//         MissionToken::Energy(Asset(Amount(amount)))
-//     } else if mission_type == "LABOR" {
-//         MissionToken::Labor(Asset(Amount(amount)))
-//     } else if mission_type == "TRUST" {
-//         MissionToken::Trust(Asset(Amount(amount)))
-//     } else {
-//         MissionToken::default()
-//     }
-// }
-
 pub fn drag_and_drop<T>(
     mut egui_ctx: ResMut<EguiContext>,
     wallets: Query<(&mut Wallet, &Children)>,
     accounts: Query<(&mut Account, &Children)>,
     mut assets: Query<(&mut T, &<T as AssetInfo>::AssetAttributes)>,
     mut commands: Commands,
-) where T: AssetInfo {
+) where T: AssetInfo{
     egui::Window::new("Transfer assets")
         .open(&mut true)
         .default_size(egui::vec2(256.0, 256.0))
@@ -131,15 +110,7 @@ pub fn drag_and_drop<T>(
 
                     let ui = &mut uis[wallet_idx]; // our current column, index comes from the iteration of wallets
 
-                    let wallet_id_trimmed = wallet
-                        .0
-                        .wallet_id
-                        .to_string()
-                        .get(0..8)
-                        .unwrap_or_default()
-                        .to_string();
-
-                    ui.add(egui::Label::new(format!("Wallet: {}", wallet_id_trimmed)));
+                    ui.add(egui::Label::new(format!("Wallet: {}", trim_wallet(wallet.0))));
 
                     let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
 
@@ -154,18 +125,10 @@ pub fn drag_and_drop<T>(
                             if let Ok((account, account_assets)) = accounts.get(*account) {
                                 // obtain al the assets from the current account
 
-                                let account_id_trimmed = account
-                                    .account_id
-                                    .to_string()
-                                    .get(0..8)
-                                    .unwrap_or_default()
-                                    .to_string();
-
-                                ui.add(egui::Label::new(account_id_trimmed));
+                                ui.add(egui::Label::new(trim_account(account)));
 
                                 for (asset_idx, asset_entity) in account_assets.iter().enumerate() {
                                     // iterate assets
-
                                     if let Ok((asset, attributes)) = assets.get(*asset_entity) {
                                         let item_id = egui::Id::new(id_source)
                                             .with(wallet_idx)
@@ -204,86 +167,31 @@ pub fn drag_and_drop<T>(
 
             if let Some(source_asset) = source_asset {
                 if let Some(drop_account) = drop_account {
-                    let mut mission_tuple: (String, i128) = ("".to_string(), 0);
-
                     if ui.input().pointer.any_released() {
-                        // check the release
+                        let mut asset_tuple: (u64,u64,Amount) = (0,0,0.into());
 
-                        // if let Ok(mut asset) = assets.get_mut(*source_asset) {
-                        //     // we remove the dragged element
-                        //     match *asset {
-                        //         MissionToken::Energy(value) => {
-                        //             mission_tuple = ("ENERGY".to_string(), value.0 .0);
-                        //             *asset = MissionToken::Energy(Asset(Amount(0.into())))
-                        //             //commands.entity(*source_asset).despawn();
-                        //         }
-                        //         MissionToken::Labor(value) => {
-                        //             mission_tuple = ("LABOR".to_string(), value.0 .0);
-                        //             *asset = MissionToken::Labor(Asset(Amount(0.into())))
-                        //             //commands.entity(*source_asset).despawn();
-                        //         }
-                        //         MissionToken::Trust(value) => {
-                        //             mission_tuple = ("TRUST".to_string(), value.0 .0);
-                        //             *asset = MissionToken::Trust(Asset(Amount(0.into())))
-                        //             //commands.entity(*source_asset).despawn();
-                        //         }
-                        //         MissionToken::Time(value) => {
-                        //             mission_tuple = ("TIME".to_string(), value.0 .0);
-                        //             *asset = MissionToken::Time(Asset(Amount(0.into())))
-                        //             //commands.entity(*source_asset).despawn();
-                        //         }
-                        //     }
-                        // }
+                        if let Ok((asset,_attributes)) = assets.get(*source_asset) {   // save the amount, class and asset id to compare with the assets in dropped account
+                            asset_tuple = (asset.class_id(), asset.asset_id(), asset.amount());
+                        }
 
-                        // if let Ok(account) = accounts.get(*drop_account) {
-                        //     // we add the dragged element
-                        //     let mut asset_exists = false;
-
-                        //     for asset in account.1.iter() {
-                        //         if let Ok(mut asset) = assets.get_mut(*asset) {
-                        //             match *asset {
-                        //                 MissionToken::Energy(value) => {
-                        //                     if mission_tuple.clone().0 == "ENERGY" {
-                        //                         *asset = MissionToken::Energy(Asset(Amount(
-                        //                             value.0 .0 + mission_tuple.1,
-                        //                         )));
-                        //                         asset_exists = true;
-                        //                     }
-                        //                 }
-                        //                 MissionToken::Labor(value) => {
-                        //                     if mission_tuple.clone().0 == "LABOR" {
-                        //                         *asset = MissionToken::Labor(Asset(Amount(
-                        //                             value.0 .0 + mission_tuple.1,
-                        //                         )));
-                        //                         asset_exists = true;
-                        //                     }
-                        //                 }
-                        //                 MissionToken::Trust(value) => {
-                        //                     if mission_tuple.clone().0 == "TRUST" {
-                        //                         *asset = MissionToken::Trust(Asset(Amount(
-                        //                             value.0 .0 + mission_tuple.1,
-                        //                         )));
-                        //                         asset_exists = true;
-                        //                     }
-                        //                 }
-                        //                 MissionToken::Time(value) => {
-                        //                     if mission_tuple.clone().0 == "TIME" {
-                        //                         *asset = MissionToken::Time(Asset(Amount(
-                        //                             value.0 .0 + mission_tuple.1,
-                        //                         )));
-                        //                         asset_exists = true;
-                        //                     }
-                        //                 }
-                        //             }
-                        //         }
-                        //     }
-                        //     if !asset_exists {
-                        //         let mission_token =
-                        //             build_mission_token(mission_tuple.clone().0, mission_tuple.1);
-                        //         let new_asset = commands.spawn().insert(mission_token).id();
-                        //         commands.entity(*drop_account).push_children(&[new_asset]);
-                        //     }
-                        // }
+                        if let Ok(account) = accounts.get(*drop_account) { // we check if it exists to add the amounts
+                            let mut asset_exists = false;
+                            for asset in account.1.iter() {
+                                if let Ok((mut mut_asset, _attributes)) = assets.get_mut(*asset) {
+                                    if mut_asset.drop(asset_tuple.0,asset_tuple.1,asset_tuple.2){ 
+                                        asset_exists = true;
+                                    }
+                                }
+                            }
+                            if !asset_exists{  //if the asset doesn't exist we push it to the dropped account
+                                if let Ok((new_asset, _attributes)) = assets.get_mut(*source_asset) {
+                                    new_asset.push_as_children(&mut commands, *drop_account);
+                                }
+                            }
+                        } 
+                        if let Ok((mut asset, _attributes)) = assets.get_mut(*source_asset) {   // finally we deplete the amount of the dragged assetREa
+                            asset.drag();
+                        }
                     }
                 }
             }

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::egui;
 use crate::asset::Amount;
 
 pub trait AssetInfo: Component + Default {
@@ -22,4 +22,9 @@ pub trait AssetInfo: Component + Default {
             }
         });
     }
+    fn class_id(&self)->u64;
+    fn asset_id(&self)->u64;
+    fn drag(&mut self)-> bool;
+    fn drop(&mut self, src_class_id: u64, src_asset_id: u64, source_amount: Amount)-> bool;
+    fn push_as_children(&self,commands: &mut Commands, parent: Entity);
 }

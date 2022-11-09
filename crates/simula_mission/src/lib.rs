@@ -11,6 +11,7 @@ pub mod drag_and_drop;
 pub mod environment;
 pub mod game;
 pub mod wallet;
+pub mod utils;
 
 pub mod prelude {
     pub use crate::account::{Account, AccountId};
