@@ -1,11 +1,17 @@
 use bevy::prelude::*;
 
-#[derive(Debug, Component)]
-pub struct Game<T> {
-    phantom: std::marker::PhantomData<T>,
+pub trait Player: Component {
+    type Game: Game;
+
+    fn game(&self) -> Entity;
 }
 
-#[derive(Component)]
-pub struct GameCreate<T> {
-    phantom: std::marker::PhantomData<T>,
+pub trait Game: Component {
+    type Player: Player;
+
+    fn players(&self) -> Vec<Entity>;
+    fn max_players(&self) -> usize;
 }
+
+
+

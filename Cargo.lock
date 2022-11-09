@@ -1649,6 +1649,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
 
 [[package]]
+name = "cops_n_robbers"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_egui",
+ "egui",
+ "egui_extras",
+ "enum-display-derive",
+ "enum-iterator",
+ "hex",
+ "rand 0.8.5",
+ "ron",
+ "serde",
+ "simula_action",
+ "simula_behavior",
+ "simula_camera",
+ "simula_core",
+ "simula_mission",
+ "simula_net",
+ "simula_video",
+ "simula_viz",
+ "ta",
+]
+
+[[package]]
 name = "copyless"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5572,6 +5599,7 @@ name = "simula_viz"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy-inspector-egui",
  "bytemuck",
  "mikktspace",
  "simula_core",

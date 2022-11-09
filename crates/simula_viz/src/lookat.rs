@@ -1,15 +1,19 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::{
+    egui, options::EntityAttributes, Context, Inspectable, RegisterInspectable,
+};
 use simula_core::ease::*;
 
 pub struct LookAtPlugin;
 
 impl Plugin for LookAtPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(smooth_look_at);
+        app.add_system(smooth_look_at)
+            .register_inspectable::<SmoothLookAt>();
     }
 }
 
-#[derive(Debug, Component)]
+#[derive(Debug, Component, Inspectable)]
 pub struct SmoothLookAt {
     pub target: Option<Entity>,
     pub max_yaw: f32,
