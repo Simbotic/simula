@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[allow(missing_docs)]
-#[derive(
-    Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Sequence, Display,
-)]
+#[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Sequence, Display)]
 pub enum EaseFunction {
     Linear,
 
@@ -323,22 +321,22 @@ macro_rules! impl_ease_trait_for {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
                 if p == 0.0 {
-                    return 0.0
+                    return 0.0;
                 }
                 if p == 1.0 {
-                    return 1.0
+                    return 1.0;
                 }
-                ((p * 10.0 - 10.75) * (PI_2 / 3.0)).sin() * - (2.0 as $T).powf(10.0 * p - 10.0)
+                ((p * 10.0 - 10.75) * (PI_2 / 3.0)).sin() * -(2.0 as $T).powf(10.0 * p - 10.0)
             }
 
             fn elastic_out(self) -> Self {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
                 if p == 0.0 {
-                    return 0.0
+                    return 0.0;
                 }
                 if p == 1.0 {
-                    return 1.0
+                    return 1.0;
                 }
                 ((p * 10.0 - 0.75) * (PI_2 / 3.0)).sin() * (2.0 as $T).powf(-10.0 * p) + 1.0
             }
@@ -347,19 +345,18 @@ macro_rules! impl_ease_trait_for {
                 use self::$T::PI_2;
                 let p = $T::clamp(self);
                 if p == 0.0 {
-                    return 0.0
+                    return 0.0;
                 }
                 if p == 1.0 {
-                    return 1.0
+                    return 1.0;
                 }
                 if p < 0.5 {
-                    ((20.0 * p - 11.125) * PI_2 / 4.5).sin()
-                        * - (2.0 as $T).powf(20.0 * p - 10.0)
+                    ((20.0 * p - 11.125) * PI_2 / 4.5).sin() * -(2.0 as $T).powf(20.0 * p - 10.0)
                         / 2.0
                 } else {
-                    (((20.0 * p - 11.125) * PI_2 / 4.5).sin()
-                        * (2.0 as $T).powf(-20.0 * p + 10.0))
-                        / 2.0 + 1.0
+                    (((20.0 * p - 11.125) * PI_2 / 4.5).sin() * (2.0 as $T).powf(-20.0 * p + 10.0))
+                        / 2.0
+                        + 1.0
                 }
             }
 
@@ -370,18 +367,21 @@ macro_rules! impl_ease_trait_for {
 
             fn back_out(self) -> Self {
                 let p = $T::clamp(self);
-                1.0 + (1.70158 + 1.0) * ((p - 1.0) as $T).powf(3.0) + 1.70158
-                    * ((p - 1.0) as $T).powf(2.0)
+                1.0 + (1.70158 + 1.0) * ((p - 1.0) as $T).powf(3.0)
+                    + 1.70158 * ((p - 1.0) as $T).powf(2.0)
             }
 
             fn back_in_out(self) -> Self {
                 let p = $T::clamp(self);
                 if p < 0.5 {
-                    (((2.0 * p) as $T).powf(2.0) * (((1.70158 * 1.525) + 1.0) * 
-                        2.0 * p - (1.70158 * 1.525))) / 2.0
+                    (((2.0 * p) as $T).powf(2.0)
+                        * (((1.70158 * 1.525) + 1.0) * 2.0 * p - (1.70158 * 1.525)))
+                        / 2.0
                 } else {
-                    (((2.0 * p - 2.0) as $T).powf(2.0) * (((1.70158 * 1.525) + 1.0) *
-                        (p * 2.0 - 2.0) + (1.70158 * 1.525)) + 2.0) / 2.0
+                    (((2.0 * p - 2.0) as $T).powf(2.0)
+                        * (((1.70158 * 1.525) + 1.0) * (p * 2.0 - 2.0) + (1.70158 * 1.525))
+                        + 2.0)
+                        / 2.0
                 }
             }
 

@@ -43,7 +43,6 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands

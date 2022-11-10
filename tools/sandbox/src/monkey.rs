@@ -1,7 +1,7 @@
 use bevy::input::{keyboard::KeyCode, mouse::MouseButton};
 use bevy::{prelude::*, reflect::FromReflect};
 use simula_action::{
-    action_map, action_axis_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
+    action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
     AxisMapInput, AxisMapSource, MouseAxis,
 };
 
