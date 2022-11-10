@@ -25,9 +25,9 @@ fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
             color_from_hex("#CC0100").unwrap()
         } else if behavior.name == "Sequencer" {
             color_from_hex("#36980D").unwrap()
-        }  else if behavior.name == "All" {
+        } else if behavior.name == "All" {
             color_from_hex("#36980D").unwrap()
-        }  else if behavior.name == "Any" {
+        } else if behavior.name == "Any" {
             color_from_hex("#CC0100").unwrap()
         } else {
             color_from_hex("#000000").unwrap()

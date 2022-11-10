@@ -61,7 +61,7 @@ where
     pub fn remove(&mut self, input_device: T) -> Option<f32> {
         self.axis.remove(&input_device)
     }
-    
+
     /// Remove all position data.
     pub fn clear(&mut self) {
         self.axis.clear();

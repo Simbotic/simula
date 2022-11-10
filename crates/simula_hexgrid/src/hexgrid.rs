@@ -1,11 +1,13 @@
 use crate::pathfinding::*;
 use bevy::{
+    core_pipeline::core_3d::Transparent3d,
     //core_pipeline::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
     math::prelude::*,
     pbr::{MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup, SetMeshViewBindGroup},
     prelude::*,
     render::{
+        extract_component::{ExtractComponent, ExtractComponentPlugin},
         mesh::{GpuBufferInfo, MeshVertexBufferLayout},
         render_asset::RenderAssets,
         //render_component::{ExtractComponent, ExtractComponentPlugin},
@@ -16,10 +18,11 @@ use bevy::{
         render_resource::*,
         renderer::RenderDevice,
         view::{ComputedVisibility, ExtractedView, Msaa, NoFrustumCulling, Visibility},
-        RenderApp, RenderStage, extract_component::{ExtractComponent, ExtractComponentPlugin},
-    }, core_pipeline::core_3d::Transparent3d,
+        RenderApp,
+        RenderStage,
+    },
 };
-use bevy_inspector_egui::{*, bevy_egui::EguiContext};
+use bevy_inspector_egui::{bevy_egui::EguiContext, *};
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
 use simula_camera::orbitcam::*;
