@@ -62,7 +62,7 @@ fn initialize_images(
     image_texture_ids.labor_icon = Some(egui_ctx.add_image(images.labor_icon.clone()));
 }
 
-#[derive(Component)]
+#[derive(Component, Default, Clone)]
 pub struct MissionTokenAttributes {
     icon: Option<egui::TextureId>,
 }
