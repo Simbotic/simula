@@ -11,7 +11,9 @@ use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::prelude::*;
-use simula_mission::{asset_ui::AssetInfo, wallet_ui::WalletUIPlugin};
+use simula_mission::{
+    agent::Agent, asset_ui::AssetInfo, machine::Machine, wallet_ui::WalletUIPlugin,
+};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
@@ -557,6 +559,7 @@ fn spawn_machines(
                 transform: Transform::from_xyz(3.0 + i as f32, 0.0, 0.0),
                 ..default()
             })
+            .insert(Machine)
             .insert(Name::new(format!("Machine {}", i + 1)))
             .id();
 
@@ -732,6 +735,7 @@ fn spawn_agents(
                 ..default()
             })
             .push_children(&[agent_body])
+            .insert(Agent)
             .insert(Name::new(format!("Agent {}", i + 1)))
             .id();
 

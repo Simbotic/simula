@@ -6,9 +6,8 @@
             "Simple sequence",
             Sequencer(()),
             [
-                ("Work", Debug((duration: 8))),
-                ("Do random chores", Debug((duration: 8))),
-                ("Rest", Debug((duration: 8))),
+                ("Work", AgentWork((duration: 8.0))),
+                ("Rest", AgentRest((duration: 8.0, position: Vec3(0.0, 0.0, 0.0)))),
             ]
         )]
     )

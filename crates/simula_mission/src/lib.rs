@@ -3,6 +3,7 @@ use prelude::*;
 
 pub mod account;
 pub mod agent;
+pub mod machine;
 pub mod asset;
 pub mod builder;
 pub mod environment;
