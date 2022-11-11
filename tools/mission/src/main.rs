@@ -130,6 +130,7 @@ fn setup(
     line_mesh: Res<LineMesh>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
     asset_server: Res<AssetServer>,
+    image_texture_ids: &Res<ImageTextureIds>
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
         .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
@@ -137,29 +138,29 @@ fn setup(
             account
                 .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
+                    asset.amount(MissionToken::Energy(10000.into()),MissionTokenAttributes{icon: image_texture_ids.energy_icon});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()));
+                    asset.amount(MissionToken::Trust(200.into()),MissionTokenAttributes{icon: image_texture_ids.trust_icon});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
+                    asset.amount(MissionToken::Time(1000.into()),MissionTokenAttributes{icon: image_texture_ids.time_icon});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(630.into()));
+                    asset.amount(MissionToken::Labor(630.into()),MissionTokenAttributes{icon: image_texture_ids.labor_icon});
                 });
         })
         .with_account(|account| {
             account
                 .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()));
+                    asset.amount(MissionToken::Energy(99999.into()),MissionTokenAttributes{icon: image_texture_ids.energy_icon});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()));
+                    asset.amount(MissionToken::Trust(99999.into()),MissionTokenAttributes{icon: image_texture_ids.trust_icon});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()));
+                    asset.amount(MissionToken::Time(99999.into()),MissionTokenAttributes{icon: image_texture_ids.time_icon});
                 });
         })
         .build(&mut commands);

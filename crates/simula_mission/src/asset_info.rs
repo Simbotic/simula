@@ -3,7 +3,7 @@ use bevy_egui::egui;
 use crate::asset::Amount;
 
 pub trait AssetInfo: Component + Default {
-    type AssetAttributes: Component;
+    type AssetAttributes: Component + Clone;
 
     fn name(&self) -> &'static str;
     // fn icon(&self, texture_ids: &Res<ImageTextureIds>) -> Option<egui::TextureId>;
