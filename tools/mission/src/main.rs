@@ -9,7 +9,7 @@ use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
-use simula_mission::{prelude::*, drag_and_drop::DragAndDropPlugin};
+use simula_mission::{prelude::*};
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
@@ -20,6 +20,7 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
+use token_ui::{ImageTextureIds, MissionTokenAttributes};
 use std::{time::Duration, marker::PhantomData};
 use ta::indicators::*;
 

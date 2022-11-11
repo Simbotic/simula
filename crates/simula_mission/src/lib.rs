@@ -22,6 +22,7 @@ pub mod prelude {
     pub use crate::game::Game;
     pub use crate::wallet::{Wallet, WalletId};
     pub use crate::MissionPlugin;
+    pub use crate::drag_and_drop::DragAndDropPlugin;
 }
 
 #[derive(Default)]

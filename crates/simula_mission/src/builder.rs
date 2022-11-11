@@ -1,10 +1,9 @@
 use crate::account::{Account, AccountId};
-use crate::prelude::AssetInfo;
+use crate::prelude::{AssetInfo, Amount};
 use crate::wallet::{Wallet, WalletId};
 use bevy::prelude::*;
 use core::fmt::Debug;
 
-#[derive(Default)]
 pub struct AssetBuilder<T> where T: AssetInfo + Debug + Clone{
     asset: T, 
     attributes: T::AssetAttributes
@@ -30,6 +29,65 @@ where
             .insert(self.attributes.clone())
             .insert(Name::new(format!("Asset: {}", name)));
         self.asset.clone()
+    }
+}
+
+#[derive(Component, Clone, Debug)]
+pub struct DefaultToken{
+    _value: i128,
+}
+
+#[derive(Clone,Component,Default)]
+pub struct DefaultAssetAtributtes{
+}
+
+impl AssetInfo for DefaultToken{
+    type AssetAttributes = DefaultAssetAtributtes;
+
+    fn name(&self) -> &'static str {
+        todo!()
+    }
+
+    fn amount(&self) -> Amount {
+        todo!()
+    }
+
+    fn is_draggable(&self) -> bool {
+        todo!()
+    }
+
+    fn class_id(&self)->u64 {
+        todo!()
+    }
+
+    fn asset_id(&self)->u64 {
+        todo!()
+    }
+
+    fn drag(&mut self)-> bool {
+        todo!()
+    }
+
+    fn drop(&mut self, src_class_id: u64, src_asset_id: u64, source_amount: Amount)-> bool {
+        todo!()
+    }
+
+    fn push_as_children(&self,commands: &mut Commands, parent: Entity) {
+        todo!()
+    }
+}
+
+impl Default for DefaultToken{
+    fn default() -> Self {
+        Self { _value: Default::default() }
+    }
+}
+
+trait NewTrait: AssetInfo + Debug + Clone{}
+
+impl Default for AssetBuilder<DefaultToken>{
+    fn default() -> Self {
+        Self { asset: Default::default(), attributes: Default::default() }
     }
 }
 
