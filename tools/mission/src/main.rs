@@ -20,9 +20,6 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
-use std::time::Duration;
-use ta::indicators::*;
-
 use wallet_ui::WalletUIPlugin;
 
 mod behaviors;
@@ -44,9 +41,6 @@ fn main() {
 
     app.insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .insert_resource(TimeDuration {
-            time: Duration::default(),
-        })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
                 title: "[Simbotic] Simula - Mission".to_string(),
@@ -75,9 +69,7 @@ fn main() {
         .register_type::<SignalGenerator>()
         .add_startup_system(setup)
         .add_system(debug_info)
-        .add_system(increase_mission_time)
-        .add_system(increase_time_with_signal)
-        .add_system(indicator_mission_time);
+        .add_system(increase_mission_time);
 
     app.register_inspectable::<MissionToken>();
     app.register_inspectable::<SignalFunction>();
@@ -179,7 +171,7 @@ fn setup(
     let video_position = Vec3::new(0.0, 0.5, 0.0);
 
     let agent_body = commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_translation(video_position).with_rotation(video_rotation),
             ..default()
         })
@@ -193,7 +185,7 @@ fn setup(
         })
         .insert(FollowPanel)
         .with_children(|parent| {
-            let mut child = parent.spawn_bundle(PbrBundle {
+            let mut child = parent.spawn(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
                 transform: Transform::from_rotation(Quat::from_euler(
@@ -223,7 +215,7 @@ fn setup(
         .insert(Name::new("Agent: Body"))
         .with_children(|parent| {
             parent
-                .spawn_bundle(AxesBundle {
+                .spawn(AxesBundle {
                     axes: Axes {
                         size: 1.,
                         ..default()
@@ -242,7 +234,7 @@ fn setup(
         commands.entity(root).insert(BehaviorCursor);
     }
     commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
@@ -261,7 +253,7 @@ fn setup(
         commands.entity(root).insert(BehaviorCursor);
     }
     let agent_id = commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
@@ -276,7 +268,7 @@ fn setup(
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
-        .spawn_bundle(GridBundle {
+        .spawn(GridBundle {
             grid: Grid {
                 size: 10,
                 divisions: 10,
@@ -293,7 +285,7 @@ fn setup(
 
     // axes
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 6.,
                 inner_offset: 0.,
@@ -307,7 +299,7 @@ fn setup(
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::rgb(1.0, 1.0, 1.0),
             illuminance: 5000.,
@@ -319,7 +311,7 @@ fn setup(
 
     // orbit camera
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             ..Default::default()
         })
         .insert(OrbitCamera {
@@ -331,7 +323,7 @@ fn setup(
 
     //FPS ON SCREEN
     commands
-        .spawn_bundle(
+        .spawn(
             TextBundle::from_sections([
                 TextSection::new(
                     "FPS: ",
@@ -396,39 +388,5 @@ fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) 
             MissionToken::Time(asset) => *token = MissionToken::Time(Asset(Amount(asset.0 .0 + 1))),
             _ => {}
         }
-    }
-}
-
-#[derive(Default)]
-pub struct TimeDuration {
-    time: Duration,
-}
-
-fn increase_time_with_signal(
-    mut generator_mission: Query<&mut SignalGenerator>,
-    time_duration: Res<TimeDuration>,
-    mut query: Query<&mut MissionToken>,
-) {
-    for mut token in query.iter_mut() {
-        for mut signal_generator in generator_mission.iter_mut() {
-            let generate = SignalGenerator::sample(&mut signal_generator, time_duration.time);
-            let generate = generate.round() as i128;
-            match *token {
-                MissionToken::Time(asset) => {
-                    *token = MissionToken::Time(Asset(Amount(asset.0 .0 + generate)))
-                }
-                _ => {}
-            }
-        }
-    }
-}
-
-fn indicator_mission_time(_time: Res<Time>, mut assets: Query<&mut MissionToken>) {
-    for asset in assets.iter_mut() {
-        let asset_value = match *asset {
-            MissionToken::Time(asset) => asset.0 .0,
-            _ => default(),
-        };
-        let _time_indicator = ExponentialMovingAverage::new(asset_value as usize);
     }
 }

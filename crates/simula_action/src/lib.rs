@@ -149,27 +149,29 @@ pub fn mouse_axis_system(
         debug!("Egui wants pointer input");
         return;
     }
-    let mut ev = Vec2::new(0., 0.);
+    let mut exy = Vec2::new(0., 0.);
+
     for mut action_axis in mouse_axis_actions.iter_mut() {
         action_axis.set(MouseAxis::X, 0.);
         action_axis.set(MouseAxis::Y, 0.);
         action_axis.set(MouseAxis::Z, 0.);
     }
     for event in mouse_motion_input_events.iter() {
-        ev += event.delta * 0.01;
+        exy += event.delta * 0.01;
     }
     for mut action_axis in mouse_axis_actions.iter_mut() {
-        action_axis.set(MouseAxis::X, ev.x);
-        action_axis.set(MouseAxis::Y, ev.y);
+        action_axis.set(MouseAxis::X, exy.x);
+        action_axis.set(MouseAxis::Y, exy.y);
     }
+    let mut ez = 0.;
     for event in mouse_wheel_input_events.iter() {
         for mut action_axis in mouse_axis_actions.iter_mut() {
-            let delta = event.y
+            ez += event.y
                 * match event.unit {
                     MouseScrollUnit::Line => 1.0,
                     MouseScrollUnit::Pixel => LINE_TO_PIXEL_RATIO,
                 };
-            action_axis.set(MouseAxis::Z, delta);
+            action_axis.set(MouseAxis::Z, ez);
         }
     }
 }

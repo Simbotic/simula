@@ -28,10 +28,10 @@ pub fn run(
     for (entity, mut debug_action, mut running) in &mut debug_actions {
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            debug_action.start = time.elapsed_seconds();
-            debug!("[{}] RUNNING {}", entity.id(), debug_action.message);
+            debug_action.start = time.elapsed_seconds_f64();
+            debug!("[{}] RUNNING {}", entity.index(), debug_action.message);
         }
-        let duration = time.elapsed_seconds() - debug_action.start;
+        let duration = time.elapsed_seconds_f64() - debug_action.start;
         if duration > debug_action.duration {
             if debug_action.fail {
                 commands.entity(entity).insert(BehaviorFailure);

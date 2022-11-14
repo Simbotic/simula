@@ -279,7 +279,7 @@ pub fn drag_and_drop(
                             if !asset_exists {
                                 let mission_token =
                                     build_mission_token(mission_tuple.clone().0, mission_tuple.1);
-                                let new_asset = commands.spawn().insert(mission_token).id();
+                                let new_asset = commands.spawn_empty().insert(mission_token).id();
                                 commands.entity(*drop_account).push_children(&[new_asset]);
                             }
                         }

@@ -871,7 +871,7 @@ fn follow_ui(
             .collapsible(false)
             .title_bar(false)
             .show(egui_context.ctx_mut(), |ui| {
-                let time = time.elapsed_seconds() as f64;
+                let time = time.elapsed_seconds_f64();
 
                 let circle_line = {
                     let n = 512;

@@ -3,7 +3,7 @@ use bevy_egui::egui::Ui;
 use bevy_inspector_egui::{Context, Inspectable};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromReflect)]
 pub struct Amount(pub i128);
 
 impl From<i128> for Amount {
@@ -52,7 +52,7 @@ impl std::ops::Add for Amount {
 
 /// An asset for a specific class
 #[derive(
-    Default, Component, Reflect, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash,
+    Default, Component, Reflect, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromReflect
 )]
 pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64>(pub Amount);
 

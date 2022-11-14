@@ -9,10 +9,6 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-#[derive(Deref, DerefMut, Resource)]
-
-pub struct NetSocket(Option<WebRtcSocket>);
-
 #[derive(
     Default, Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, FromReflect,
 )]
@@ -83,7 +79,7 @@ fn setup(mut commands: Commands) {
 
     let peer_id = PeerId::new(socket.id());
 
-    commands.insert_resource(NetSocket(Some(socket)));
+    commands.insert_resource(socket);
 
     commands
         .spawn_empty()
@@ -96,9 +92,13 @@ fn setup(mut commands: Commands) {
         )));
 }
 
-fn run(mut commands: Commands, mut socket: ResMut<NetSocket>, peers: Query<(Entity, &RemotePeer)>) {
+fn run(
+    mut commands: Commands,
+    mut socket: Option<ResMut<WebRtcSocket>>,
+    peers: Query<(Entity, &RemotePeer)>,
+) {
     let socket = socket.as_mut();
-    if let Some(socket) = socket.0.as_mut() {
+    if let Some(socket) = socket {
         let new_peers = socket.accept_new_connections();
         for peer in new_peers {
             info!("New peer: {}", peer);
@@ -144,9 +144,9 @@ pub struct Messages {
     messages: Vec<(Uuid, Box<[u8]>)>,
 }
 
-pub fn extract_messages(mut socket: ResMut<NetSocket>, mut messages: ResMut<Messages>) {
+pub fn extract_messages(mut socket: Option<ResMut<WebRtcSocket>>, mut messages: ResMut<Messages>) {
     messages.messages.clear();
-    if let Some(socket) = socket.0.as_mut() {
+    if let Some(socket) = socket.as_mut() {
         let mut message = socket.receive_one();
         while let Ok(Some((peer, data))) = message {
             messages.messages.push((peer, data));
@@ -235,7 +235,7 @@ pub fn replicate<T>(
     mut cache: ResMut<ProxyCache>,
     time: Res<Time>,
     mut commands: Commands,
-    mut socket: ResMut<NetSocket>,
+    mut socket: Option<ResMut<WebRtcSocket>>,
     messages: Res<Messages>,
     peers: Query<&RemotePeer>,
     mut syncs: Query<(&NetId, &mut Replicate<T>, &T, Option<&Name>)>,
@@ -245,7 +245,7 @@ pub fn replicate<T>(
 {
     let replicate_type_id = get_hash::<T>();
 
-    if let Some(socket) = socket.0.as_mut() {
+    if let Some(socket) = socket.as_mut() {
         // Send data to peers
         for (net_id, mut sync, data, name) in syncs.iter_mut() {
             let name = if let Some(name) = name {
@@ -253,8 +253,8 @@ pub fn replicate<T>(
             } else {
                 "Entity".to_string()
             };
-            if sync.last_sync + 1.0 / sync.rate < time.elapsed_seconds().into() {
-                sync.last_sync = time.elapsed_seconds().into();
+            if sync.last_sync + 1.0 / sync.rate < time.elapsed_seconds_f64() {
+                sync.last_sync = time.elapsed_seconds_f64();
                 let payload = Payload::Replicate {
                     type_id: replicate_type_id,
                     net_id: net_id.uuid,
@@ -364,9 +364,9 @@ pub fn replicate<T>(
 fn cleanup_proxies(
     mut commands: Commands,
     proxies: Query<(Entity, &Proxy)>,
-    socket: Res<NetSocket>,
+    socket: Option<ResMut<WebRtcSocket>>,
 ) {
-    if let Some(socket) = &socket.0 {
+    if let Some(socket) = socket.as_ref() {
         let connected_peers = socket.connected_peers();
         for (entity, proxy) in proxies.iter() {
             if !connected_peers.contains(&proxy.sender.uuid) {
