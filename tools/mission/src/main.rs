@@ -42,40 +42,42 @@ struct ColorText;
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(WindowDescriptor {
-        title: "[Simbotic] Simula - Mission".to_string(),
-        width: 940.,
-        height: 528.,
-        ..Default::default()
-    })
-    .insert_resource(Msaa { samples: 4 })
-    .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .insert_resource(TimeDuration {
-        time: Duration::default(),
-    })
-    .add_plugins(DefaultPlugins)
-    .add_plugin(NetPlugin)
-    .add_plugin(WorldInspectorPlugin::new())
-    .add_plugin(ActionPlugin)
-    .add_plugin(FrameTimeDiagnosticsPlugin::default())
-    .add_plugin(OrbitCameraPlugin)
-    .add_plugin(LinesPlugin)
-    .add_plugin(AxesPlugin)
-    .add_plugin(GridPlugin)
-    .add_plugin(VideoPlugin)
-    .add_plugin(MissionPlugin)
-    .add_plugin(MissionBehaviorPlugin)
-    .add_plugin(BehaviorPlugin)
-    .add_plugin(FollowUIPlugin)
-    .add_plugin(DragAndDropPlugin)
-    .add_plugin(WalletUIPlugin)
-    .register_type::<MissionToken>()
-    .register_type::<SignalGenerator>()
-    .add_startup_system(setup)
-    .add_system(debug_info)
-    .add_system(increase_mission_time)
-    .add_system(increase_time_with_signal)
-    .add_system(indicator_mission_time);
+    app.insert_resource(Msaa { samples: 4 })
+        .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+        .insert_resource(TimeDuration {
+            time: Duration::default(),
+        })
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "[Simbotic] Simula - Mission".to_string(),
+                width: 940.,
+                height: 528.,
+                ..default()
+            },
+            ..default()
+        }))
+        .add_plugin(NetPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(ActionPlugin)
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(OrbitCameraPlugin)
+        .add_plugin(LinesPlugin)
+        .add_plugin(AxesPlugin)
+        .add_plugin(GridPlugin)
+        .add_plugin(VideoPlugin)
+        .add_plugin(MissionPlugin)
+        .add_plugin(MissionBehaviorPlugin)
+        .add_plugin(BehaviorPlugin)
+        .add_plugin(FollowUIPlugin)
+        .add_plugin(DragAndDropPlugin)
+        .add_plugin(WalletUIPlugin)
+        .register_type::<MissionToken>()
+        .register_type::<SignalGenerator>()
+        .add_startup_system(setup)
+        .add_system(debug_info)
+        .add_system(increase_mission_time)
+        .add_system(increase_time_with_signal)
+        .add_system(indicator_mission_time);
 
     app.register_inspectable::<MissionToken>();
     app.register_inspectable::<SignalFunction>();
@@ -358,7 +360,7 @@ fn setup(
         )
         .insert(FpsText);
     commands
-        .spawn()
+        .spawn_empty()
         .insert(SignalGenerator {
             func: SignalFunction::Pulse,
             amplitude: 1.0,

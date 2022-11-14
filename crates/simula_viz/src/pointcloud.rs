@@ -122,6 +122,7 @@ fn prepare_pointclouds(
     }
 }
 
+#[derive(Resource)]
 struct PointcloudPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
@@ -131,7 +132,6 @@ impl FromWorld for PointcloudPipeline {
     fn from_world(world: &mut World) -> Self {
         let world = world.cell();
         let asset_server = world.get_resource::<AssetServer>().unwrap();
-        asset_server.watch_for_changes().unwrap();
         let shader = asset_server.load("shaders/pointcloud.wgsl");
 
         let mesh_pipeline = world.get_resource::<MeshPipeline>().unwrap();

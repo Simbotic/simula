@@ -58,7 +58,7 @@ impl Plugin for ActionPlugin {
 
 fn setup(mut commands: Commands) {
     commands
-        .spawn()
+        .spawn_empty()
         .insert(MainActionInput)
         .insert(Action::<KeyCode>::default())
         .insert(Action::<MouseButton>::default())

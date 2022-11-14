@@ -11,15 +11,18 @@ use simula_hexgrid::hexgrid::*;
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            title: "[Simbotic] Simula - Hexgrid".to_string(),
-            width: 940.,
-            height: 528.,
-            ..Default::default()
-        })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins
+            .set(WindowPlugin {
+                window: WindowDescriptor {
+                    title: "[Simbotic] Simula - Hexgrid".to_string(),
+                    width: 940.,
+                    height: 528.,
+                    ..default()
+                },
+                ..default()
+            }))
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(HexgridPlugin)
         .add_startup_system(hexgrid_setup)
@@ -29,8 +32,8 @@ fn main() {
 
 pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     commands
-        .spawn()
-        .insert_bundle((
+        .spawn_empty()
+        .insert((
             meshes.add(Mesh::from(shape::Capsule {
                 depth: 0.5,
                 latitudes: 4,
@@ -62,7 +65,7 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
 
     // camera
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
