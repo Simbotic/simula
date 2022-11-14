@@ -27,6 +27,8 @@ use simula_viz::{
 use std::time::Duration;
 use ta::indicators::*;
 
+use mission_behavior::MissionToken; // remove missiontoken from there
+
 mod behaviors;
 // mod drag_and_drop;
 // use drag_and_drop::DragAndDropPlugin;
@@ -86,71 +88,71 @@ fn main() {
     app.run();
 }
 
-#[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
-#[reflect(Component)]
-pub enum MissionToken {
-    Time(Asset<1000, 0>),
-    Trust(Asset<1000, 1>),
-    Energy(Asset<1000, 2>),
-    Labor(Asset<1000, 3>),
-}
+// #[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
+// #[reflect(Component)]
+// pub enum MissionToken {
+//     Time(Asset<1000, 0>),
+//     Trust(Asset<1000, 1>),
+//     Energy(Asset<1000, 2>),
+//     Labor(Asset<1000, 3>),
+// }
 
-impl Default for MissionToken {
-    fn default() -> Self {
-        Self::Time(0.into())
-    }
-}
+// impl Default for MissionToken {
+//     fn default() -> Self {
+//         Self::Time(0.into())
+//     }
+// }
 
-impl AssetInfo for MissionToken {
-    fn name(&self) -> &'static str {
-        match self {
-            MissionToken::Time(_) => "Time",
-            MissionToken::Trust(_) => "Trust",
-            MissionToken::Energy(_) => "Energy",
-            MissionToken::Labor(_) => "Labor",
-        }
-    }
+// impl AssetInfo for MissionToken {
+//     fn name(&self) -> &'static str {
+//         match self {
+//             MissionToken::Time(_) => "Time",
+//             MissionToken::Trust(_) => "Trust",
+//             MissionToken::Energy(_) => "Energy",
+//             MissionToken::Labor(_) => "Labor",
+//         }
+//     }
 
-    fn icon_dir(&self) -> &'static str {
-        match self {
-            MissionToken::Time(_) => "../assets/mission/Balance.png",
-            MissionToken::Trust(_) => "../assets/mission/Money - Cash.png",
-            MissionToken::Energy(_) => "../assets/mission/Money - Coins.png",
-            MissionToken::Labor(_) => "../assets/mission/labor-icon.png",
-        }
-    }
+//     fn icon_dir(&self) -> &'static str {
+//         match self {
+//             MissionToken::Time(_) => "../assets/mission/Balance.png",
+//             MissionToken::Trust(_) => "../assets/mission/Money - Cash.png",
+//             MissionToken::Energy(_) => "../assets/mission/Money - Coins.png",
+//             MissionToken::Labor(_) => "../assets/mission/labor-icon.png",
+//         }
+//     }
 
-    fn amount(&self) -> Amount {
-        match self {
-            MissionToken::Time(asset) => asset.0,
-            MissionToken::Trust(asset) => asset.0,
-            MissionToken::Energy(asset) => asset.0,
-            MissionToken::Labor(asset) => asset.0,
-        }
-    }
+//     fn amount(&self) -> Amount {
+//         match self {
+//             MissionToken::Time(asset) => asset.0,
+//             MissionToken::Trust(asset) => asset.0,
+//             MissionToken::Energy(asset) => asset.0,
+//             MissionToken::Labor(asset) => asset.0,
+//         }
+//     }
 
-    fn is_draggable(&self) -> bool {
-        match self {
-            MissionToken::Time(_) => false,
-            MissionToken::Trust(_) => true,
-            MissionToken::Energy(_) => true,
-            MissionToken::Labor(_) => true,
-        }
-    }
-    fn class_id(&self) -> u64 {
-        0
-    }
-    fn asset_id(&self) -> u64 {
-        0
-    }
-    fn drag(&mut self) -> bool {
-        false
-    }
-    fn drop(&mut self, _src_class_id: u64, _src_asset_id: u64, _source_amount: Amount) -> bool {
-        false
-    }
-    fn push_as_children(&self, _commands: &mut Commands, _parent: Entity) {}
-}
+//     fn is_draggable(&self) -> bool {
+//         match self {
+//             MissionToken::Time(_) => false,
+//             MissionToken::Trust(_) => true,
+//             MissionToken::Energy(_) => true,
+//             MissionToken::Labor(_) => true,
+//         }
+//     }
+//     fn class_id(&self) -> u64 {
+//         0
+//     }
+//     fn asset_id(&self) -> u64 {
+//         0
+//     }
+//     fn drag(&mut self) -> bool {
+//         false
+//     }
+//     fn drop(&mut self, _src_class_id: u64, _src_asset_id: u64, _source_amount: Amount) -> bool {
+//         false
+//     }
+//     fn push_as_children(&self, _commands: &mut Commands, _parent: Entity) {}
+// }
 
 impl From<AssetBalance> for MissionToken {
     fn from(asset: AssetBalance) -> Self {
