@@ -1,33 +1,42 @@
 use bevy::prelude::*;
+use drag_and_drop::DragAndDropPlugin;
 use prelude::*;
 
 pub mod account;
 pub mod agent;
 pub mod machine;
 pub mod asset;
+pub mod asset_info;
 pub mod builder;
+pub mod drag_and_drop;
 pub mod environment;
 pub mod game;
 pub mod wallet;
-pub mod drag_and_drop;
 pub mod wallet_ui;
-pub mod asset_ui;
+// pub mod asset_ui;
+pub mod utils;
 
 pub mod prelude {
     pub use crate::account::{Account, AccountId};
     pub use crate::agent::Agent;
     pub use crate::asset::{Amount, Asset, AssetBalance};
+    pub use crate::asset_info::AssetInfo;
     pub use crate::builder::{AccountBuilder, AssetBuilder, WalletBuilder};
     pub use crate::game::Game;
     pub use crate::wallet::{Wallet, WalletId};
     pub use crate::MissionPlugin;
+    pub use crate::drag_and_drop::DragAndDropPlugin;
 }
 
-pub struct MissionPlugin;
+#[derive(Default)]
+pub struct MissionPlugin<T> where T: AssetInfo {
+    _marker: std::marker::PhantomData<T>,
+}
 
-impl Plugin for MissionPlugin {
+impl<T> Plugin for MissionPlugin<T> where T: AssetInfo {
     fn build(&self, app: &mut App) {
-        app.register_type::<Account>()
+        app.add_plugin(DragAndDropPlugin::<T>::default())
+            .register_type::<Account>()
             .register_type::<AccountId>()
             .register_type::<Wallet>()
             .register_type::<WalletId>();

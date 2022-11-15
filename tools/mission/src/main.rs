@@ -13,7 +13,7 @@ use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::prelude::*;
 use simula_mission::{
     agent::Agent,
-    asset_ui::AssetInfo,
+    asset_info::ImageTextureIds,
     machine::{Machine, MachineType},
     wallet_ui::WalletUIPlugin,
 };
@@ -27,11 +27,15 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
-use std::time::Duration;
+use crate::token_ui::{MissionTokenAttributes};
+use std::{time::Duration, marker::PhantomData};
 use ta::indicators::*;
+use std::collections::HashMap;
+// use simula_mission::asset_ui::ImageTextureIds;
 
-use mission_behavior::MissionToken; // remove missiontoken from there
+// use mission_behavior::MissionToken; // remove missiontoken from there
 
+mod token_ui;
 mod behaviors;
 // mod drag_and_drop;
 // use drag_and_drop::DragAndDropPlugin;
@@ -58,6 +62,7 @@ fn main() {
     .insert_resource(TimeDuration {
         time: Duration::default(),
     })
+    .insert_resource(ImageTextureIds(HashMap::new()))
     .add_plugins(DefaultPlugins)
     .add_plugin(NetPlugin)
     .add_plugin(WorldInspectorPlugin::new())
@@ -68,12 +73,13 @@ fn main() {
     .add_plugin(AxesPlugin)
     .add_plugin(GridPlugin)
     .add_plugin(VideoPlugin)
-    .add_plugin(MissionPlugin)
+    .add_plugin(MissionPlugin::<MissionToken>::default())
     .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
     .add_plugin(FollowUIPlugin)
     // .add_plugin(DragAndDropPlugin)
     .add_plugin(WalletUIPlugin(MissionToken::default()))
+    .add_plugin(DragAndDropPlugin::<MissionToken>{_marker: PhantomData::<MissionToken>})
     .register_type::<MissionToken>()
     .register_type::<SignalGenerator>()
     .add_startup_system(setup)
@@ -85,78 +91,26 @@ fn main() {
     .add_system(indicator_mission_time)
     .add_system(wallet_creation_window);
 
-    // app.register_inspectable::<MissionToken>();
+    app.register_inspectable::<MissionToken>();
     app.register_inspectable::<SignalFunction>();
 
     app.run();
 }
 
-// #[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
-// #[reflect(Component)]
-// pub enum MissionToken {
-//     Time(Asset<1000, 0>),
-//     Trust(Asset<1000, 1>),
-//     Energy(Asset<1000, 2>),
-//     Labor(Asset<1000, 3>),
-// }
+#[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
+#[reflect(Component)]
+pub enum MissionToken {
+    Time(Asset<1000, 0>),
+    Trust(Asset<1000, 1>),
+    Energy(Asset<1000, 2>),
+    Labor(Asset<1000, 3>),
+}
 
-// impl Default for MissionToken {
-//     fn default() -> Self {
-//         Self::Time(0.into())
-//     }
-// }
-
-// impl AssetInfo for MissionToken {
-//     fn name(&self) -> &'static str {
-//         match self {
-//             MissionToken::Time(_) => "Time",
-//             MissionToken::Trust(_) => "Trust",
-//             MissionToken::Energy(_) => "Energy",
-//             MissionToken::Labor(_) => "Labor",
-//         }
-//     }
-
-//     fn icon_dir(&self) -> &'static str {
-//         match self {
-//             MissionToken::Time(_) => "../assets/mission/Balance.png",
-//             MissionToken::Trust(_) => "../assets/mission/Money - Cash.png",
-//             MissionToken::Energy(_) => "../assets/mission/Money - Coins.png",
-//             MissionToken::Labor(_) => "../assets/mission/labor-icon.png",
-//         }
-//     }
-
-//     fn amount(&self) -> Amount {
-//         match self {
-//             MissionToken::Time(asset) => asset.0,
-//             MissionToken::Trust(asset) => asset.0,
-//             MissionToken::Energy(asset) => asset.0,
-//             MissionToken::Labor(asset) => asset.0,
-//         }
-//     }
-
-//     fn is_draggable(&self) -> bool {
-//         match self {
-//             MissionToken::Time(_) => false,
-//             MissionToken::Trust(_) => true,
-//             MissionToken::Energy(_) => true,
-//             MissionToken::Labor(_) => true,
-//         }
-//     }
-//     fn class_id(&self) -> u64 {
-//         0
-//     }
-//     fn asset_id(&self) -> u64 {
-//         0
-//     }
-//     fn drag(&mut self) -> bool {
-//         false
-//     }
-//     fn drop(&mut self, _src_class_id: u64, _src_asset_id: u64, _source_amount: Amount) -> bool {
-//         false
-//     }
-//     fn push_as_children(&self, _commands: &mut Commands, _parent: Entity) {}
-// }
-
+impl Default for MissionToken {
+    fn default() -> Self {
+        Self::Time(0.into())
+    }
+}
 impl From<AssetBalance> for MissionToken {
     fn from(asset: AssetBalance) -> Self {
         match (asset.class_id, asset.asset_id) {
@@ -188,129 +142,130 @@ fn setup(
     line_mesh: Res<LineMesh>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
     asset_server: Res<AssetServer>,
+    // image_texture_ids: &Res<ImageTextureIds>
 ) {
-    let agent_wallet = WalletBuilder::<MissionToken>::default()
-        .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
-        .with_account(|account| {
-            account
-                .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(630.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()));
-                })
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()));
-                });
-        })
-        .build(&mut commands);
+    // let agent_wallet = WalletBuilder::<MissionToken>::default()
+    //     .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+    //     .with_account(|account| {
+    //         account
+    //             .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Energy(10000.into()),MissionTokenAttributes{icon: image_texture_ids.energy_icon});
+    //             })
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Trust(200.into()),MissionTokenAttributes{icon: image_texture_ids.trust_icon});
+    //             })
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Time(1000.into()),MissionTokenAttributes{icon: image_texture_ids.time_icon});
+    //             })
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Labor(630.into()),MissionTokenAttributes{icon: image_texture_ids.labor_icon});
+    //             });
+    //     })
+    //     .with_account(|account| {
+    //         account
+    //             .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Energy(99999.into()),MissionTokenAttributes{icon: image_texture_ids.energy_icon});
+    //             })
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Trust(99999.into()),MissionTokenAttributes{icon: image_texture_ids.trust_icon});
+    //             })
+    //             .with_asset(|asset| {
+    //                 asset.amount(MissionToken::Time(99999.into()),MissionTokenAttributes{icon: image_texture_ids.time_icon});
+    //             });
+    //     })
+    //     .build(&mut commands);
 
-    let video_material = StandardMaterial {
-        base_color: Color::rgb(1.0, 1.0, 1.0),
-        alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..default()
-    };
-    let video_rotation =
-        Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
-    let video_position = Vec3::new(0.0, 0.5, 0.0);
+    // let video_material = StandardMaterial {
+    //     base_color: Color::rgb(1.0, 1.0, 1.0),
+    //     alpha_mode: AlphaMode::Blend,
+    //     unlit: true,
+    //     ..default()
+    // };
+    // let video_rotation =
+    //     Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
+    // let video_position = Vec3::new(0.0, 0.5, 0.0);
 
-    let agent_body = commands
-        .spawn_bundle(SpatialBundle {
-            transform: Transform::from_translation(video_position).with_rotation(video_rotation),
-            ..default()
-        })
-        .with_children(|parent| {
-            let mut child = parent.spawn_bundle(SpatialBundle {
-                transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
-                ..default()
-            });
-            child
-                .insert(FollowUI {
-                    min_distance: 0.1,
-                    max_distance: 20.0,
-                    min_height: -5.0,
-                    max_height: 5.0,
-                    max_view_angle: 45.0,
-                    ..default()
-                })
-                .insert(Name::new("Follow UI Robot"));
-            // .insert(FollowPanel)
-        })
-        .with_children(|parent| {
-            let mut child = parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
-                transform: Transform::from_rotation(Quat::from_euler(
-                    EulerRot::YXZ,
-                    0.0,
-                    -std::f32::consts::FRAC_PI_2,
-                    0.0,
-                )),
-                ..default()
-            });
-            child
-                .insert(VideoPlayer {
-                    start_frame: 0,
-                    end_frame: 80,
-                    framerate: 20.0,
-                    playing: true,
-                    ..default()
-                })
-                .insert(Name::new("Video: RenderTarget"));
+    // let agent_body = commands
+    //     .spawn_bundle(SpatialBundle {
+    //         transform: Transform::from_translation(video_position).with_rotation(video_rotation),
+    //         ..default()
+    //     })
+    //     .with_children(|parent| {
+    //         let mut child = parent.spawn_bundle(SpatialBundle {
+    //             transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
+    //             ..default()
+    //         });
+    //         child
+    //             .insert(FollowUI {
+    //                 min_distance: 0.1,
+    //                 max_distance: 20.0,
+    //                 min_height: -5.0,
+    //                 max_height: 5.0,
+    //                 max_view_angle: 45.0,
+    //                 ..default()
+    //             })
+    //             .insert(Name::new("Follow UI Robot"));
+    //         // .insert(FollowPanel)
+    //     })
+    //     .with_children(|parent| {
+    //         let mut child = parent.spawn_bundle(PbrBundle {
+    //             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+    //             material: materials.add(video_material),
+    //             transform: Transform::from_rotation(Quat::from_euler(
+    //                 EulerRot::YXZ,
+    //                 0.0,
+    //                 -std::f32::consts::FRAC_PI_2,
+    //                 0.0,
+    //             )),
+    //             ..default()
+    //         });
+    //         child
+    //             .insert(VideoPlayer {
+    //                 start_frame: 0,
+    //                 end_frame: 80,
+    //                 framerate: 20.0,
+    //                 playing: true,
+    //                 ..default()
+    //             })
+    //             .insert(Name::new("Video: RenderTarget"));
 
-            #[cfg(feature = "gif")]
-            {
-                let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
-                child.insert(video_asset);
-            }
-        })
-        .insert(Name::new("Agent: Body"))
-        .with_children(|parent| {
-            parent
-                .spawn_bundle(AxesBundle {
-                    axes: Axes {
-                        size: 1.,
-                        ..default()
-                    },
-                    mesh: meshes.add(line_mesh.clone()),
-                    material: lines_materials.add(LinesMaterial {}),
-                    ..default()
-                })
-                .insert(Name::new("LookAt Coords"));
-        })
-        .id();
+    //         #[cfg(feature = "gif")]
+    //         {
+    //             let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+    //             child.insert(video_asset);
+    //         }
+    //     })
+    //     .insert(Name::new("Agent: Body"))
+    //     .with_children(|parent| {
+    //         parent
+    //             .spawn_bundle(AxesBundle {
+    //                 axes: Axes {
+    //                     size: 1.,
+    //                     ..default()
+    //                 },
+    //                 mesh: meshes.add(line_mesh.clone()),
+    //                 material: lines_materials.add(LinesMaterial {}),
+    //                 ..default()
+    //             })
+    //             .insert(Name::new("LookAt Coords"));
+    //     })
+    //     .id();
 
-    // Build Agent 001
-    let behavior = mission_behavior::create_from_data(None, &mut commands);
-    if let Some(root) = behavior.root {
-        commands.entity(root).insert(BehaviorCursor);
-    }
-    commands
-        .spawn_bundle(SpatialBundle {
-            transform: Transform::from_xyz(-2.0, 0.0, 0.0),
-            ..default()
-        })
-        .push_children(&[agent_wallet, agent_body, behavior.root.unwrap()])
-        .insert(behavior)
-        .insert(Name::new("Agent: 001"));
+    // // Build Agent 001
+    // let behavior = mission_behavior::create_from_data(None, &mut commands);
+    // if let Some(root) = behavior.root {
+    //     commands.entity(root).insert(BehaviorCursor);
+    // }
+    // commands
+    //     .spawn_bundle(SpatialBundle {
+    //         transform: Transform::from_xyz(-2.0, 0.0, 0.0),
+    //         ..default()
+    //     })
+    //     .push_children(&[agent_wallet, agent_body, behavior.root.unwrap()])
+    //     .insert(behavior)
+    //     .insert(Name::new("Agent: 001"));
 
     // Build Agent 002
     let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_any_subtree.bht.ron");
@@ -524,26 +479,26 @@ fn add_wallet(commands: &mut Commands) {
             account
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
+                    asset.amount(MissionToken::Energy(10000.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()));
+                    asset.amount(MissionToken::Trust(200.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
+                    asset.amount(MissionToken::Time(1000.into()), MissionTokenAttributes{});
                 });
         })
         .with_account(|account| {
             account
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()));
+                    asset.amount(MissionToken::Energy(99999.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()));
+                    asset.amount(MissionToken::Trust(99999.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()));
+                    asset.amount(MissionToken::Time(99999.into()), MissionTokenAttributes{});
                 });
         })
         .build(commands);
@@ -597,29 +552,29 @@ fn insert_new_wallets_to_entity(commands: &mut Commands, entity: Entity) {
             account
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
+                    asset.amount(MissionToken::Energy(10000.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()));
+                    asset.amount(MissionToken::Trust(200.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
+                    asset.amount(MissionToken::Time(1000.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(630.into()));
+                    asset.amount(MissionToken::Labor(630.into()), MissionTokenAttributes{});
                 });
         })
         .with_account(|account| {
             account
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()));
+                    asset.amount(MissionToken::Energy(99999.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()));
+                    asset.amount(MissionToken::Trust(99999.into()), MissionTokenAttributes{});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()));
+                    asset.amount(MissionToken::Time(99999.into()), MissionTokenAttributes{});
                 });
         })
         .build(commands);

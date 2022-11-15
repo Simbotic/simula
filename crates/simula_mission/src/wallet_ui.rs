@@ -1,5 +1,5 @@
-use crate::asset_ui::{ImageTextureIds, TokenUiPlugin};
-use crate::{account::Account, asset_ui::AssetInfo, wallet::Wallet};
+use crate::asset_info::{ImageTextureIds, /*TokenUiPlugin*/};
+use crate::{account::Account, asset_info::AssetInfo, wallet::Wallet};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
 use egui_extras::{Size, TableBuilder};
@@ -9,8 +9,7 @@ pub struct WalletUIPlugin<T: Component + AssetInfo>(pub T);
 
 impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.add_plugin(TokenUiPlugin)
-            .add_system(wallet_ui_creation_window)
+        app.add_system(wallet_ui_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI, T>)
             .add_system(wallet_ui_draw::<GameWalletUI, T>);
     }

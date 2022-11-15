@@ -1,19 +1,21 @@
 use crate::account::{Account, AccountId};
+use crate::prelude::{AssetInfo, Amount};
 use crate::wallet::{Wallet, WalletId};
 use bevy::prelude::*;
 use core::fmt::Debug;
 
-#[derive(Default)]
-pub struct AssetBuilder<T> {
-    asset: T,
+pub struct AssetBuilder<T> where T: AssetInfo + Debug + Clone {
+    asset: T, 
+    attributes: T::AssetAttributes
 }
 
 impl<T> AssetBuilder<T>
 where
-    T: Component + Clone + Debug,
+    T: AssetInfo + Clone + Debug,
 {
-    pub fn amount(&mut self, asset: T) -> &mut Self {
+    pub fn amount(&mut self, asset: T, attributes: T::AssetAttributes) -> &mut Self {
         self.asset = asset;
+        self.attributes = attributes;
         self
     }
 
@@ -24,20 +26,30 @@ where
             .collect::<String>();
         cmd.spawn()
             .insert(self.asset.clone())
+            .insert(self.attributes.clone())
             .insert(Name::new(format!("Asset: {}", name)));
         self.asset.clone()
     }
 }
 
+impl<T> Default for AssetBuilder<T> where T: AssetInfo + Debug + Clone {
+    fn default() -> Self {
+        Self {
+            asset: T::default(),
+            attributes: T::AssetAttributes::default(),
+        }
+    }
+}
+
 #[derive(Default)]
-pub struct AccountBuilder<T> {
+pub struct AccountBuilder<T> where T:AssetInfo + Debug + Clone {
     pub id: AccountId,
     pub assets: Vec<AssetBuilder<T>>,
 }
 
 impl<T> AccountBuilder<T>
 where
-    T: Default + Component + Clone + Debug,
+    T: AssetInfo + Default + Component + Clone + Debug,
 {
     pub fn id(&mut self, id: &str) -> &mut Self {
         self.id = AccountId::try_from(id.to_string()).unwrap_or_default();
@@ -76,14 +88,14 @@ where
 }
 
 #[derive(Default)]
-pub struct WalletBuilder<T> {
+pub struct WalletBuilder<T> where T: AssetInfo + Debug + Clone{
     pub id: WalletId,
     pub accounts: Vec<AccountBuilder<T>>,
-}
+} 
 
 impl<T> WalletBuilder<T>
 where
-    T: Default + Component + Clone + Debug,
+    T: AssetInfo + Default + Component + Clone + Debug,
 {
     pub fn id(&mut self, id: &str) -> &mut Self {
         self.id = WalletId::try_from(id.to_string()).unwrap_or_default();

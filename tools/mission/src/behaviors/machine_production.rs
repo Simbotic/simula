@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 use simula_mission::{
     account::Account,
-    asset_ui::AssetInfo,
+    asset_info::AssetInfo,
     machine::{Machine, MachineType},
     wallet::Wallet,
 };
@@ -25,16 +25,16 @@ impl BehaviorInfo for MachineProduction {
 #[derive(Debug, Default, Component, Reflect, Clone)]
 pub struct ProductionTimer(Timer);
 
-pub struct MachineProductionNodePlugin<T: Component + AssetInfo>(pub T);
+pub struct MachineProductionNodePlugin<T: AssetInfo>(pub T);
 
-impl<T: Component + AssetInfo> Plugin for MachineProductionNodePlugin<T> {
+impl<T: AssetInfo> Plugin for MachineProductionNodePlugin<T> {
     fn build(&self, app: &mut App) {
         app.insert_resource(ProductionTimer(Timer::from_seconds(1.0, true)))
             .add_system(run::<T>);
     }
 }
 
-pub fn run<T: Component + AssetInfo>(
+pub fn run<T: AssetInfo>(
     mut commands: Commands,
     time: Res<Time>,
     mut timer: ResMut<ProductionTimer>,
@@ -77,8 +77,10 @@ pub fn run<T: Component + AssetInfo>(
                                     for account_asset in account_assets {
                                         if let Ok(mut asset) = assets.get_mut(*account_asset) {
                                             if machine_type.0.name() == asset.name() {
+                                                let asset_class_id = asset.class_id();
+                                                let asset_asset_id = asset.asset_id();
                                                 let asset_value = asset.amount();
-                                                asset.drop(0, 0, asset_value + 1.into());
+                                                asset.drop(asset_class_id, asset_asset_id, asset_value + 1.into());
                                             }
                                         }
                                     }
