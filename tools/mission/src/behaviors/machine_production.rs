@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
-use simula_mission::{account::Account, asset_ui::AssetInfo, machine::Machine, wallet::Wallet};
+use simula_mission::{
+    account::Account,
+    asset_ui::AssetInfo,
+    machine::{Machine, MachineType},
+    wallet::Wallet,
+};
 
 #[derive(Debug, Default, Component, Reflect, Clone, Serialize, Deserialize, Inspectable)]
 pub struct MachineProduction {
@@ -42,7 +47,7 @@ pub fn run<T: Component + AssetInfo>(
         ),
         BehaviorRunQuery,
     >,
-    mut machines: Query<(Entity, &Children), With<Machine>>,
+    mut machines: Query<(Entity, &Children, &MachineType<T>), With<Machine>>,
     mut wallets: Query<(&mut Wallet, &Children), Without<Machine>>,
     mut accounts: Query<(&mut Account, &Children)>,
     mut assets: Query<&mut T>,
@@ -62,7 +67,7 @@ pub fn run<T: Component + AssetInfo>(
                     .insert(BehaviorSuccess);
             }
             if timer.0.tick(time.delta()).just_finished() {
-                if let Ok((_machine, machine_children)) = machines.get_mut(tree_entity) {
+                if let Ok((_machine, machine_children, machine_type)) = machines.get_mut(tree_entity) {
                     for machine_child in machine_children {
                         if let Ok((_wallet, wallet_accounts)) = wallets.get_mut(*machine_child) {
                             for wallet_account in wallet_accounts {
@@ -71,8 +76,10 @@ pub fn run<T: Component + AssetInfo>(
                                 {
                                     for account_asset in account_assets {
                                         if let Ok(mut asset) = assets.get_mut(*account_asset) {
-                                            let asset_value = asset.amount();
-                                            asset.drop(0, 0, asset_value + 1.into());
+                                            if machine_type.0.name() == asset.name() {
+                                                let asset_value = asset.amount();
+                                                asset.drop(0, 0, asset_value + 1.into());
+                                            }
                                         }
                                     }
                                 }

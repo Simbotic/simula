@@ -12,7 +12,10 @@ use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::prelude::*;
 use simula_mission::{
-    agent::Agent, asset_ui::AssetInfo, machine::Machine, wallet_ui::WalletUIPlugin,
+    agent::Agent,
+    asset_ui::AssetInfo,
+    machine::{Machine, MachineType},
+    wallet_ui::WalletUIPlugin,
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
@@ -574,6 +577,16 @@ fn spawn_machines(
             &mut behavior_inspector,
             format!("Machine {}", i + 1),
         );
+
+        if i == 0 {
+            commands
+                .entity(machine)
+                .insert(MachineType(MissionToken::Trust(Asset::default())));
+        } else {
+            commands
+                .entity(machine)
+                .insert(MachineType(MissionToken::Energy(Asset::default())));
+        }
     }
 }
 
