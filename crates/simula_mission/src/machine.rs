@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::asset_info::AssetInfo;
+use bevy::prelude::*;
 
 #[derive(Debug, Default, Component, Reflect, Clone)]
 pub struct Machine;

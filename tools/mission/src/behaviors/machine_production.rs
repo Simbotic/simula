@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 use simula_mission::{
     account::Account,
+    asset::Amount,
     asset_info::AssetInfo,
     machine::{Machine, MachineType},
     wallet::Wallet,
@@ -67,7 +68,9 @@ pub fn run<T: AssetInfo>(
                     .insert(BehaviorSuccess);
             }
             if timer.0.tick(time.delta()).just_finished() {
-                if let Ok((_machine, machine_children, machine_type)) = machines.get_mut(tree_entity) {
+                if let Ok((_machine, machine_children, machine_type)) =
+                    machines.get_mut(tree_entity)
+                {
                     for machine_child in machine_children {
                         if let Ok((_wallet, wallet_accounts)) = wallets.get_mut(*machine_child) {
                             for wallet_account in wallet_accounts {
@@ -79,8 +82,7 @@ pub fn run<T: AssetInfo>(
                                             if machine_type.0.name() == asset.name() {
                                                 let asset_class_id = asset.class_id();
                                                 let asset_asset_id = asset.asset_id();
-                                                let asset_value = asset.amount();
-                                                asset.drop(asset_class_id, asset_asset_id, asset_value + 1.into());
+                                                asset.drop(asset_class_id, asset_asset_id, Amount(1));
                                             }
                                         }
                                     }

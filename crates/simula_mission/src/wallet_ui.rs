@@ -1,4 +1,4 @@
-use crate::asset_info::{ImageTextureIds, /*TokenUiPlugin*/};
+use crate::asset_info::ImageTextureIds;
 use crate::{account::Account, asset_info::AssetInfo, wallet::Wallet};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};

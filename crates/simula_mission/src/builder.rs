@@ -1,12 +1,15 @@
 use crate::account::{Account, AccountId};
-use crate::prelude::{AssetInfo, Amount};
+use crate::prelude::AssetInfo;
 use crate::wallet::{Wallet, WalletId};
 use bevy::prelude::*;
 use core::fmt::Debug;
 
-pub struct AssetBuilder<T> where T: AssetInfo + Debug + Clone {
-    asset: T, 
-    attributes: T::AssetAttributes
+pub struct AssetBuilder<T>
+where
+    T: AssetInfo + Debug + Clone,
+{
+    asset: T,
+    attributes: T::AssetAttributes,
 }
 
 impl<T> AssetBuilder<T>
@@ -32,7 +35,10 @@ where
     }
 }
 
-impl<T> Default for AssetBuilder<T> where T: AssetInfo + Debug + Clone {
+impl<T> Default for AssetBuilder<T>
+where
+    T: AssetInfo + Debug + Clone,
+{
     fn default() -> Self {
         Self {
             asset: T::default(),
@@ -42,7 +48,10 @@ impl<T> Default for AssetBuilder<T> where T: AssetInfo + Debug + Clone {
 }
 
 #[derive(Default)]
-pub struct AccountBuilder<T> where T:AssetInfo + Debug + Clone {
+pub struct AccountBuilder<T>
+where
+    T: AssetInfo + Debug + Clone,
+{
     pub id: AccountId,
     pub assets: Vec<AssetBuilder<T>>,
 }
@@ -88,10 +97,13 @@ where
 }
 
 #[derive(Default)]
-pub struct WalletBuilder<T> where T: AssetInfo + Debug + Clone{
+pub struct WalletBuilder<T>
+where
+    T: AssetInfo + Debug + Clone,
+{
     pub id: WalletId,
     pub accounts: Vec<AccountBuilder<T>>,
-} 
+}
 
 impl<T> WalletBuilder<T>
 where

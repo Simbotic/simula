@@ -6,8 +6,7 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use simula_mission::{asset_info::AssetInfo, asset::Asset, asset::Amount};
-use crate::{MissionToken};
+use crate::MissionToken;
 
 pub struct MissionBehaviorPlugin;
 
@@ -19,7 +18,9 @@ impl Plugin for MissionBehaviorPlugin {
             .add_system(agent_work::run)
             .add_system(subtree::run::<QuestBehavior>)
             .add_plugin(QuestBehaviorPlugin)
-            .add_plugin(machine_production::MachineProductionNodePlugin(MissionToken::default()));
+            .add_plugin(machine_production::MachineProductionNodePlugin(
+                MissionToken::default(),
+            ));
     }
 }
 

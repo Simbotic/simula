@@ -1,18 +1,25 @@
-use bevy::prelude::*;
-use bevy_egui::{egui, EguiContext};
 use crate::{
     account::Account,
-    asset::{Amount, Asset},
+    asset::Amount,
+    asset_info::{AssetInfo, ImageTextureIds},
+    utils::{trim_account, trim_wallet},
     wallet::Wallet,
-    asset_info::{AssetInfo, ImageTextureIds}, utils::{trim_wallet, trim_account},
 };
+use bevy::prelude::*;
+use bevy_egui::{egui, EguiContext};
 
 #[derive(Default)]
-pub struct DragAndDropPlugin<T> where T: AssetInfo {
+pub struct DragAndDropPlugin<T>
+where
+    T: AssetInfo,
+{
     pub _marker: std::marker::PhantomData<T>,
 }
 
-impl<T> Plugin for DragAndDropPlugin<T> where T: AssetInfo + Send + Sync + 'static {
+impl<T> Plugin for DragAndDropPlugin<T>
+where
+    T: AssetInfo + Send + Sync + 'static,
+{
     fn build(&self, app: &mut App) {
         app.add_system(drag_and_drop::<T>);
     }
@@ -57,7 +64,8 @@ pub fn drop_target<R>(
     let where_to_put_background = ui.painter().add(egui::Shape::Noop);
     let mut content_ui = ui.child_ui(inner_rect, *ui.layout());
     let ret = body(&mut content_ui);
-    let outer_rect = egui::Rect::from_min_max(outer_rect_bounds.min, content_ui.min_rect().max + margin);
+    let outer_rect =
+        egui::Rect::from_min_max(outer_rect_bounds.min, content_ui.min_rect().max + margin);
     let (rect, response) = ui.allocate_at_least(outer_rect.size(), egui::Sense::hover());
 
     let style = if is_being_dragged && can_accept_what_is_being_dragged && response.hovered() {
@@ -95,7 +103,9 @@ pub fn drag_and_drop<T>(
     mut commands: Commands,
     mut image_texture_ids: ResMut<ImageTextureIds>,
     mut asset_server: Res<AssetServer>,
-) where T: AssetInfo{
+) where
+    T: AssetInfo,
+{
     let mut ctx = egui_ctx.ctx_mut().clone();
     egui::Window::new("Transfer assets")
         .open(&mut true)
@@ -113,7 +123,10 @@ pub fn drag_and_drop<T>(
 
                     let ui = &mut uis[wallet_idx]; // our current column, index comes from the iteration of wallets
 
-                    ui.add(egui::Label::new(format!("Wallet: {}", trim_wallet(wallet.0))));
+                    ui.add(egui::Label::new(format!(
+                        "Wallet: {}",
+                        trim_wallet(wallet.0)
+                    )));
 
                     let can_accept_what_is_being_dragged = true; // We accept anything being dragged (for now) ¯\_(ツ)_/¯
 
@@ -141,10 +154,22 @@ pub fn drag_and_drop<T>(
                                         if asset.is_draggable() {
                                             drag_source(ui, item_id, |ui| {
                                                 //we make the asset dragable
-                                                asset.render(ui, &mut image_texture_ids, &mut asset_server, &mut egui_ctx, &attributes);
+                                                asset.render(
+                                                    ui,
+                                                    &mut image_texture_ids,
+                                                    &mut asset_server,
+                                                    &mut egui_ctx,
+                                                    &attributes,
+                                                );
                                             });
                                         } else {
-                                            asset.render(ui, &mut image_texture_ids, &mut asset_server, &mut egui_ctx, &attributes);
+                                            asset.render(
+                                                ui,
+                                                &mut image_texture_ids,
+                                                &mut asset_server,
+                                                &mut egui_ctx,
+                                                &attributes,
+                                            );
                                         }
 
                                         if ui.memory().is_being_dragged(item_id) {
@@ -171,28 +196,33 @@ pub fn drag_and_drop<T>(
             if let Some(source_asset) = source_asset {
                 if let Some(drop_account) = drop_account {
                     if ui.input().pointer.any_released() {
-                        let mut asset_tuple: (u64,u64,Amount) = (0,0,0.into());
+                        let mut asset_tuple: (u64, u64, Amount) = (0, 0, 0.into());
 
-                        if let Ok((asset,_attributes)) = assets.get(*source_asset) {   // save the amount, class and asset id to compare with the assets in dropped account
+                        if let Ok((asset, _attributes)) = assets.get(*source_asset) {
+                            // save the amount, class and asset id to compare with the assets in dropped account
                             asset_tuple = (asset.class_id(), asset.asset_id(), asset.amount());
                         }
 
-                        if let Ok(account) = accounts.get(*drop_account) { // we check if it exists to add the amounts
+                        if let Ok(account) = accounts.get(*drop_account) {
+                            // we check if it exists to add the amounts
                             let mut asset_exists = false;
                             for asset in account.1.iter() {
                                 if let Ok((mut mut_asset, _attributes)) = assets.get_mut(*asset) {
-                                    if mut_asset.drop(asset_tuple.0,asset_tuple.1,asset_tuple.2){ 
+                                    if mut_asset.drop(asset_tuple.0, asset_tuple.1, asset_tuple.2) {
                                         asset_exists = true;
                                     }
                                 }
                             }
-                            if !asset_exists{  //if the asset doesn't exist we push it to the dropped account
-                                if let Ok((new_asset, _attributes)) = assets.get_mut(*source_asset) {
+                            if !asset_exists {
+                                //if the asset doesn't exist we push it to the dropped account
+                                if let Ok((new_asset, _attributes)) = assets.get_mut(*source_asset)
+                                {
                                     new_asset.push_as_children(&mut commands, *drop_account);
                                 }
                             }
-                        } 
-                        if let Ok((mut asset, _attributes)) = assets.get_mut(*source_asset) {   // finally we deplete the amount of the dragged assetREa
+                        }
+                        if let Ok((mut asset, _attributes)) = assets.get_mut(*source_asset) {
+                            // finally we deplete the amount of the dragged assetREa
                             asset.drag();
                         }
                     }

@@ -1,15 +1,13 @@
 use crate::MissionToken;
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContext};
 use simula_mission::prelude::*;
-use std::collections::HashMap;
-use simula_mission::asset_info::{AssetInfo, ImageTextureIds};
+use simula_mission::asset_info::AssetInfo;
 
 pub struct TokenUiPlugin;
 
 impl Plugin for TokenUiPlugin {
-    fn build(&self, app: &mut App) {
-        app;
+    fn build(&self, _app: &mut App) {
+        // app;
     }
 }
 
