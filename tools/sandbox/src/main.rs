@@ -25,7 +25,7 @@ use simula_net::{NetId, NetPlugin, Replicate};
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, RawSrc, VideoPlayer, VideoPlugin};
+use simula_video::{rt, VideoPlayer, VideoPlugin};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -269,7 +269,7 @@ fn setup(
         ..default()
     });
 
-    let rt_image = images.add(rt::default_render_target_image());
+    let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
 
     let camera_entity = commands
         .spawn_bundle(Camera3dBundle {
@@ -292,11 +292,11 @@ fn setup(
                 ..default()
             });
 
-            // RawSrc is optional when using GstSrc, as it will be set automatically
-            child.insert(RawSrc::default());
-
             #[cfg(feature = "gst")]
-            child.insert(GstSrc::default());
+            child.insert(GstSrc {
+                size: UVec2 { x: 256, y: 256 },
+                ..default()
+            });
         })
         .insert(FlyCamera::default())
         .insert(FollowUICamera)
@@ -336,7 +336,7 @@ fn setup(
                         max_view_angle: 45.0,
                         ..default()
                     })
-                    .insert(FollowPanel)
+                    .insert(SandboxPanel)
                     .insert(Name::new("FollowUI: Axes"));
             })
             .insert(Name::new("Follow UI: Shape"));
@@ -765,7 +765,10 @@ fn setup(
                 playing: true,
                 ..default()
             })
-            .insert(GstSink::default())
+            .insert(GstSink {
+                size: UVec2::new(256, 256),
+                ..default()
+            })
             .insert(Name::new("Video: Gst"));
     }
 
@@ -840,12 +843,12 @@ fn line_test(mut lines: Query<&mut Lines, With<RandomLines>>) {
 }
 
 #[derive(Component)]
-struct FollowPanel;
+struct SandboxPanel;
 
 fn follow_ui(
     time: Res<Time>,
     mut egui_context: ResMut<EguiContext>,
-    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<FollowPanel>>,
+    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<SandboxPanel>>,
 ) {
     for (entity, follow_ui, visibility) in follow_uis.iter() {
         let ui_pos = visibility.screen_pos;

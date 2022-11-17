@@ -4,10 +4,10 @@ use bevy::render::render_resource::{
 };
 use bevy::render::texture::BevyDefault;
 
-pub fn default_render_target_image() -> Image {
+pub fn common_render_target_image(size: UVec2) -> Image {
     let size = Extent3d {
-        width: 512,
-        height: 512,
+        width: size.x,
+        height: size.y,
         ..default()
     };
     let mut image = Image {
