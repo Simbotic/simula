@@ -15,7 +15,6 @@ impl Plugin for MissionBehaviorPlugin {
         app.add_startup_system(setup)
             .add_system(behavior_loader::<MissionBehavior>)
             .add_system(agent_rest::run)
-            // .add_system(agent_work::run)
             .add_system(subtree::run::<QuestBehavior>)
             .add_plugin(QuestBehaviorPlugin)
             .add_plugin(agent_work::AgentWorkNodePlugin(
