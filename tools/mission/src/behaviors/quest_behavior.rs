@@ -9,8 +9,8 @@ impl Plugin for QuestBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup)
             .add_system(behavior_loader::<QuestBehavior>)
-            .add_system(behaviors::agent_rest::run)
-            .add_system(behaviors::agent_work::run);
+            .add_system(behaviors::agent_rest::run);
+            // .add_system(behaviors::agent_work::run);
     }
 }
 

@@ -5,4 +5,4 @@ use bevy::prelude::*;
 pub struct Machine;
 
 #[derive(Debug, Default, Component, Clone)]
-pub struct MachineType<T: Component + AssetInfo>(pub T);
+pub struct MachineType<T: AssetInfo>(pub T);

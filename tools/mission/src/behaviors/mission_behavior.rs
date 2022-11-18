@@ -1,5 +1,5 @@
 use super::{
-    agent_rest, agent_work, machine_production,
+    agent_rest, agent_work, agent_purchase, machine_production,
     quest_behavior::{QuestBehavior, QuestBehaviorPlugin},
 };
 use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
@@ -15,9 +15,15 @@ impl Plugin for MissionBehaviorPlugin {
         app.add_startup_system(setup)
             .add_system(behavior_loader::<MissionBehavior>)
             .add_system(agent_rest::run)
-            .add_system(agent_work::run)
+            // .add_system(agent_work::run)
             .add_system(subtree::run::<QuestBehavior>)
             .add_plugin(QuestBehaviorPlugin)
+            .add_plugin(agent_work::AgentWorkNodePlugin(
+                MissionToken::default(),
+            ))
+            .add_plugin(agent_purchase::AgentPurchaseNodePlugin(
+                MissionToken::default(),
+            ))
             .add_plugin(machine_production::MachineProductionNodePlugin(
                 MissionToken::default(),
             ));
@@ -39,6 +45,7 @@ pub enum MissionBehavior {
     Quest(Subtree<QuestBehavior>),
     AgentRest(agent_rest::AgentRest),
     AgentWork(agent_work::AgentWork),
+    AgentPurchase(agent_purchase::AgentPurchase),
     MachineProduction(machine_production::MachineProduction),
 }
 
@@ -63,6 +70,7 @@ impl BehaviorSpawner for MissionBehavior {
             MissionBehavior::Quest(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::AgentRest(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::AgentWork(data) => BehaviorInfo::insert_with(commands, data),
+            MissionBehavior::AgentPurchase(data) => BehaviorInfo::insert_with(commands, data),
             MissionBehavior::MachineProduction(data) => BehaviorInfo::insert_with(commands, data),
         }
     }

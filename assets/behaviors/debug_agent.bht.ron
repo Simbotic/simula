@@ -7,6 +7,7 @@
             Sequencer(()),
             [
                 ("Work", AgentWork((duration: 8.0))),
+                ("Purchase", AgentPurchase((duration: 8.0))),
                 ("Rest", AgentRest((duration: 8.0, position: Vec3(0.0, 0.0, 0.0)))),
             ]
         )]

@@ -13,7 +13,7 @@ use simula_camera::orbitcam::*;
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::prelude::*;
 use simula_mission::{
-    agent::Agent,
+    agent::{Agent, AgentProductionType, AgentPurchaseType},
     asset_info::ImageTextureIds,
     machine::{Machine, MachineType},
     wallet_ui::WalletUIPlugin,
@@ -144,29 +144,35 @@ fn setup(
             account
                 .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()),MissionTokenAttributes{});
+                    asset.amount(
+                        MissionToken::Energy(10000.into()),
+                        MissionTokenAttributes {},
+                    );
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(200.into()),MissionTokenAttributes{});
+                    asset.amount(MissionToken::Trust(200.into()), MissionTokenAttributes {});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()),MissionTokenAttributes{});
+                    asset.amount(MissionToken::Time(1000.into()), MissionTokenAttributes {});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Labor(630.into()),MissionTokenAttributes{});
+                    asset.amount(MissionToken::Labor(630.into()), MissionTokenAttributes {});
                 });
         })
         .with_account(|account| {
             account
                 .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(99999.into()),MissionTokenAttributes{});
+                    asset.amount(
+                        MissionToken::Energy(99999.into()),
+                        MissionTokenAttributes {},
+                    );
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Trust(99999.into()),MissionTokenAttributes{});
+                    asset.amount(MissionToken::Trust(99999.into()), MissionTokenAttributes {});
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(99999.into()),MissionTokenAttributes{});
+                    asset.amount(MissionToken::Time(99999.into()), MissionTokenAttributes {});
                 });
         })
         .build(&mut commands);
@@ -724,5 +730,17 @@ fn spawn_agents(
             &mut behavior_inspector,
             format!("Agent {}", i + 1),
         );
+
+        if i == 0 {
+            commands
+                .entity(agent)
+                .insert(AgentProductionType(MissionToken::Trust(Asset::default())))
+                .insert(AgentPurchaseType(MissionToken::Energy(Asset::default())));
+        } else {
+            commands
+                .entity(agent)
+                .insert(AgentProductionType(MissionToken::Energy(Asset::default())))
+                .insert(AgentPurchaseType(MissionToken::Trust(Asset::default())));
+        }
     }
 }
