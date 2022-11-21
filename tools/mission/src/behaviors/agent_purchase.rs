@@ -12,12 +12,7 @@ use simula_mission::{
 use std::iter::zip;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Serialize, Deserialize, Inspectable)]
-pub struct AgentPurchase {
-    #[serde(default)]
-    duration: f64,
-    #[serde(default)]
-    start: f64,
-}
+pub struct AgentPurchase {}
 
 impl BehaviorInfo for AgentPurchase {
     const TYPE: BehaviorType = BehaviorType::Action;
@@ -35,23 +30,14 @@ impl<T: AssetInfo> Plugin for AgentPurchaseNodePlugin<T> {
 
 pub fn run<T: AssetInfo>(
     mut commands: Commands,
-    time: Res<Time>,
-    mut agents_work: Query<
-        (
-            Entity,
-            &mut AgentPurchase,
-            &mut BehaviorRunning,
-            &mut BehaviorNode,
-        ),
-        BehaviorRunQuery,
-    >,
+    mut agents_work: Query<(Entity, &mut AgentPurchase, &mut BehaviorNode), BehaviorRunQuery>,
     machines: Query<(Entity, &Children, &MachineType<T>), (With<Machine>, Without<Agent>)>,
     mut agents: Query<(Entity, &Children, &AgentPurchaseType<T>), (With<Agent>, Without<Machine>)>,
     wallets: Query<(&Wallet, &Children), Without<Machine>>,
     mut accounts: Query<(&Account, &Children)>,
     mut assets: Query<(Entity, &mut T)>,
 ) {
-    for (agent_work_entity, mut work, mut running, node) in agents_work.iter_mut() {
+    for (agent_work_entity, _purchase, node) in agents_work.iter_mut() {
         if let Some(tree_entity) = node.tree {
             if let Ok((_agent, agent_children, agent_purchase_type)) = agents.get_mut(tree_entity) {
                 let mut source_accounts = None;
@@ -89,14 +75,7 @@ pub fn run<T: AssetInfo>(
                 }
             }
         }
-        if !running.on_enter_handled {
-            running.on_enter_handled = true;
-            work.start = time.seconds_since_startup();
-        }
-        let duration = time.seconds_since_startup() - work.start;
-        if duration > work.duration {
-            commands.entity(agent_work_entity).insert(BehaviorSuccess);
-        }
+        commands.entity(agent_work_entity).insert(BehaviorSuccess);
     }
 }
 
