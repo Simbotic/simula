@@ -9,6 +9,7 @@ use simula_mission::{
     machine::{Machine, MachineType},
     wallet::Wallet,
 };
+use std::iter::zip;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Serialize, Deserialize, Inspectable)]
 pub struct AgentPurchase {
@@ -46,40 +47,25 @@ pub fn run<T: AssetInfo>(
     >,
     machines: Query<(Entity, &Children, &MachineType<T>), (With<Machine>, Without<Agent>)>,
     mut agents: Query<(Entity, &Children, &AgentPurchaseType<T>), (With<Agent>, Without<Machine>)>,
-    mut wallets: Query<(&Wallet, &Children), Without<Machine>>,
+    wallets: Query<(&Wallet, &Children), Without<Machine>>,
     mut accounts: Query<(&Account, &Children)>,
     mut assets: Query<(Entity, &mut T)>,
 ) {
     for (agent_work_entity, mut work, mut running, node) in agents_work.iter_mut() {
         if let Some(tree_entity) = node.tree {
             if let Ok((_agent, agent_children, agent_purchase_type)) = agents.get_mut(tree_entity) {
-                let mut source_asset = None;
-                let mut target_asset = None;
+                let mut source_accounts = None;
+                let mut target_accounts = None;
 
                 for (_machine, machine_children, machine_type) in &machines {
-                    if agent_purchase_type.0.name() == machine_type.0.name() {
+                    if agent_purchase_type.0.class_id() == machine_type.0.class_id()
+                        && agent_purchase_type.0.asset_id() == machine_type.0.asset_id()
+                    {
                         for machine_child in machine_children {
                             if let Ok((_machine_wallet, machine_wallet_accounts)) =
                                 wallets.get(machine_child.to_owned())
                             {
-                                for machine_wallet_account in machine_wallet_accounts {
-                                    if let Ok((_machine_account, machine_account_assets)) =
-                                        accounts.get(machine_wallet_account.to_owned())
-                                    {
-                                        for machine_account_asset in machine_account_assets {
-                                            if let Ok((machine_asset_entity, machine_asset)) =
-                                                assets.get(machine_account_asset.to_owned())
-                                            {
-                                                if agent_purchase_type.0.name()
-                                                    == machine_asset.name()
-                                                {
-                                                    source_asset = Some(machine_asset_entity);
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                                source_accounts = Some(machine_wallet_accounts);
                             }
                         }
                     }
@@ -87,28 +73,20 @@ pub fn run<T: AssetInfo>(
 
                 for agent_child in agent_children {
                     if let Ok((_agent_wallet, agent_wallet_accounts)) =
-                        wallets.get_mut(*agent_child)
+                        wallets.get(agent_child.to_owned())
                     {
-                        for agent_wallet_account in agent_wallet_accounts {
-                            if let Ok((_agent_account, agent_account_assets)) =
-                                accounts.get_mut(*agent_wallet_account)
-                            {
-                                for agent_account_asset in agent_account_assets {
-                                    if let Ok((agent_asset_entity, agent_asset)) =
-                                        assets.get(*agent_account_asset)
-                                    {
-                                        if agent_purchase_type.0.name() == agent_asset.name() {
-                                            target_asset = Some(agent_asset_entity);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        target_accounts = Some(agent_wallet_accounts);
                     }
                 }
-
-                trade_assets(source_asset.as_mut(), target_asset.as_mut(), &mut assets);
+                if source_accounts.is_some() && target_accounts.is_some() {
+                    iterate_accounts(
+                        source_accounts.unwrap(),
+                        target_accounts.unwrap(),
+                        &mut accounts,
+                        &mut assets,
+                        &agent_purchase_type.0,
+                    );
+                }
             }
         }
         if !running.on_enter_handled {
@@ -122,34 +100,100 @@ pub fn run<T: AssetInfo>(
     }
 }
 
-fn trade_assets<T: AssetInfo>(
-    source: Option<&mut Entity>,
-    target: Option<&mut Entity>,
-    assets: &mut Query<(Entity, &mut T)>,
+fn iterate_accounts<T: AssetInfo>(
+    source_accounts: &Children,
+    target_accounts: &Children,
+    accounts: &mut Query<(&Account, &Children)>,
+    mut assets: &mut Query<(Entity, &mut T)>,
+    asset_type: &T,
 ) {
-    if let (Some(source_asset), Some(target_asset)) = (source, target) {
-        let mut asset_class_id = None;
-        let mut asset_asset_id = None;
-        let mut asset_amount: Option<Amount> = None;
+    let mut iter = zip(source_accounts, target_accounts);
 
-        if let Ok((_, mut source_asset)) = assets.get_mut(*source_asset) {
-            asset_class_id = Some(source_asset.class_id());
-            asset_asset_id = Some(source_asset.asset_id());
-            asset_amount = Some(source_asset.amount());
+    loop {
+        if let Some((iter_source_account, iter_target_account)) = iter.next() {
+            let mut source_assets = None;
+            let mut target_assets = None;
 
-            if let (Some(asset_class_id), Some(asset_asset_id), Some(asset_amount)) =
-                (asset_class_id, asset_asset_id, asset_amount)
+            if let Ok((_account, account_assets)) = accounts.get(iter_source_account.to_owned()) {
+                source_assets = Some(account_assets);
+            }
+            if let Ok((_account, account_assets)) = accounts.get(iter_target_account.to_owned()) {
+                target_assets = Some(account_assets);
+            }
+
+            if source_assets.is_some() && target_assets.is_some() {
+                iterate_assets(
+                    source_assets.unwrap(),
+                    target_assets.unwrap(),
+                    &mut assets,
+                    &asset_type,
+                );
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+fn iterate_assets<T: AssetInfo>(
+    source_assets: &Children,
+    target_assets: &Children,
+    assets: &mut Query<(Entity, &mut T)>,
+    asset_type: &T,
+) {
+    let mut source_asset = None;
+    let mut target_asset = None;
+    for source_asset_entity in source_assets {
+        if let Ok((entity, asset)) = assets.get(*source_asset_entity) {
+            if asset.class_id() == asset_type.class_id()
+                && asset.asset_id() == asset_type.asset_id()
             {
-                source_asset.drop(asset_class_id, asset_asset_id, Amount(-asset_amount.0));
+                source_asset = Some(entity);
+                break;
             }
         }
-
-        if let Ok((_, mut target_asset)) = assets.get_mut(*target_asset) {
-            if let (Some(asset_class_id), Some(asset_asset_id), Some(asset_amount)) =
-                (asset_class_id, asset_asset_id, asset_amount)
+    }
+    for target_asset_entity in target_assets {
+        if let Ok((entity, asset)) = assets.get(*target_asset_entity) {
+            if asset.class_id() == asset_type.class_id()
+                && asset.asset_id() == asset_type.asset_id()
             {
-                target_asset.drop(asset_class_id, asset_asset_id, Amount(asset_amount.0));
+                target_asset = Some(entity);
+                break;
             }
+        }
+    }
+    if source_asset.is_some() && target_asset.is_some() {
+        trade_assets(source_asset.unwrap(), target_asset.unwrap(), assets);
+    }
+}
+
+fn trade_assets<T: AssetInfo>(
+    source: Entity,
+    target: Entity,
+    assets: &mut Query<(Entity, &mut T)>,
+) {
+    let mut asset_class_id = None;
+    let mut asset_asset_id = None;
+    let mut asset_amount: Option<Amount> = None;
+
+    if let Ok((_, mut source)) = assets.get_mut(source) {
+        asset_class_id = Some(source.class_id());
+        asset_asset_id = Some(source.asset_id());
+        asset_amount = Some(source.amount());
+
+        if let (Some(asset_class_id), Some(asset_asset_id), Some(asset_amount)) =
+            (asset_class_id, asset_asset_id, asset_amount)
+        {
+            source.drop(asset_class_id, asset_asset_id, Amount(-asset_amount.0));
+        }
+    }
+
+    if let Ok((_, mut target)) = assets.get_mut(target) {
+        if let (Some(asset_class_id), Some(asset_asset_id), Some(asset_amount)) =
+            (asset_class_id, asset_asset_id, asset_amount)
+        {
+            target.drop(asset_class_id, asset_asset_id, asset_amount);
         }
     }
 }
