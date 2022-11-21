@@ -9,9 +9,10 @@ use bevy::{
 use crossbeam_channel::{bounded, Receiver, Sender};
 use std::num::NonZeroU32;
 
-#[derive(Default, Component)]
+#[derive(Component)]
 pub struct RawSrc {
     pub data: Vec<u8>,
+    pub size: UVec2,
 }
 
 #[derive(Component)]
@@ -27,12 +28,16 @@ pub fn setup_raw_srcs(
     mut commands: Commands,
     device: Res<RenderDevice>,
     images: Res<Assets<Image>>,
-    srcs: Query<(Entity, &Camera), (With<RawSrc>, Without<RawBuffer>)>,
+    srcs: Query<(Entity, &Camera, &RawSrc), (With<RawSrc>, Without<RawBuffer>)>,
 ) {
-    for (entity, camera) in srcs.iter() {
+    for (entity, camera, src) in srcs.iter() {
         if let RenderTarget::Image(image) = &camera.target {
             if let Some(image) = images.get(&image) {
                 let size = image.size();
+
+                if size.x as u32 != src.size.x || size.y as u32 != src.size.y {
+                    error!("RawSrc size does not match Camera target size");
+                }
 
                 let padded_bytes_per_row =
                     RenderDevice::align_copy_bytes_per_row((size.x) as usize) * 4;
