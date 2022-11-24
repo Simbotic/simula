@@ -31,6 +31,7 @@ pub struct VideoResource {
 fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
     let video_id = Uuid::new_v4();
     let canva_id = Uuid::new_v4();
+
     let video = web_sys::window()
         .and_then(|window| {
             window
@@ -80,39 +81,36 @@ pub(crate) fn setup_video_tags(world: &mut World) {
     let mut tags = vec![];
     let mut videos = world.query_filtered::<(Entity, &VideoSrc), Without<VideoTag>>();
     for (entity, src) in videos.iter(world) {
-        if let Some(video_canvas) = video_canvas(src) {
-            tags.push((entity, video_canvas));
-        }
+        tags.push((entity, video_canvas(src)));
     }
 
     for (entity, video_canvas) in tags {
         world.entity_mut(entity).insert(VideoTag);
-        let mut video_res = world.get_non_send_resource_mut::<VideoResource>().unwrap();
 
-        web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .body()
-            .unwrap()
-            .append_child(&video_canvas.video)
-            .unwrap();
+        if let Some(video_canvas) = video_canvas {
+            #[cfg(feature = "html-debug")]
+            web_sys::window()
+                .and_then(|window| window.document())
+                .and_then(|document| document.body())
+                .and_then(|body| body.append_child(&video_canvas.video).ok());
 
-        web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .body()
-            .unwrap()
-            .append_child(&video_canvas.canvas)
-            .unwrap();
+            #[cfg(feature = "html-debug")]
+            web_sys::window()
+                .and_then(|window| window.document())
+                .and_then(|document| document.body())
+                .and_then(|body| body.append_child(&video_canvas.canvas).ok());
 
-        video_res.videos.insert(entity, video_canvas);
+            let video_res = world.get_non_send_resource_mut::<VideoResource>();
+            if let Some(mut video_res) = video_res {
+                video_res.videos.insert(entity, video_canvas);
+            }
+        }
     }
 }
 
 pub(crate) fn blit_videos_to_canvas(world: &mut World) {
-    let mut videos = world.query_filtered::<(Entity, &VideoSrc), With<VideoTag>>();
+    let mut videos = world
+        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<StandardMaterial>>)>();
 
     let videos: Vec<(Entity, UVec2)> = videos
         .iter(world)
@@ -120,48 +118,67 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
         .collect();
 
     for (entity, size) in videos {
-        let videos = world.get_non_send_resource::<VideoResource>().unwrap();
-        let video_canvas = videos.videos.get(&entity).unwrap();
+        let videos = world.get_non_send_resource::<VideoResource>();
+        if let Some(videos) = videos {
+            let video_canvas = videos.videos.get(&entity);
+            if let Some(video_canvas) = video_canvas {
+                // Get the 2d context of the canvas and make sure it's optimized for fast reading
+                let mut attribs = web_sys::ContextAttributes2d::new();
+                attribs.will_read_frequently(true);
+                let ctx = video_canvas
+                    .canvas
+                    .get_context_with_context_options("2d", &attribs);
 
-        let mut attribs = web_sys::ContextAttributes2d::new();
-        attribs.will_read_frequently(true);
+                // Copy the video frame to the canvas
+                if let Ok(Some(ctx)) = ctx {
+                    let ctx = ctx.dyn_into::<web_sys::CanvasRenderingContext2d>();
+                    if let Ok(ctx) = ctx {
+                        if ctx
+                            .draw_image_with_html_video_element(&video_canvas.video, 0.0, 0.0)
+                            .is_err()
+                        {
+                            error!("Error drawing video to canvas");
+                            continue;
+                        }
 
-        let ctx = video_canvas
-            .canvas
-            .get_context_with_context_options("2d", &attribs)
-            .unwrap()
-            .unwrap()
-            .dyn_into::<web_sys::CanvasRenderingContext2d>()
-            .unwrap();
+                        // Extract the image data from the canvas
+                        let img_data = ctx.get_image_data(0.0, 0.0, size.x as f64, size.y as f64);
+                        if let Ok(img_data) = img_data {
+                            let data = img_data.data();
 
-        ctx.draw_image_with_html_video_element(&video_canvas.video, 0.0, 0.0)
-            .unwrap();
+                            // Resources should have image assets
+                            let mut images = world.get_resource_mut::<Assets<Image>>().unwrap();
 
-        let img_data = ctx
-            .get_image_data(0.0, 0.0, size.x as f64, size.y as f64)
-            .unwrap();
-        let data = img_data.data();
+                            // Create a new image asset for this video frame
+                            let image = images.add(Image::new(
+                                Extent3d {
+                                    width: size.x,
+                                    height: size.y,
+                                    depth_or_array_layers: 1,
+                                },
+                                TextureDimension::D2,
+                                data.to_vec(),
+                                TextureFormat::Rgba8UnormSrgb,
+                            ));
 
-        let mut images = world.get_resource_mut::<Assets<Image>>().unwrap();
-        let image = images.add(Image::new(
-            Extent3d {
-                width: size.x,
-                height: size.y,
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            data.to_vec(),
-            TextureFormat::Rgba8UnormSrgb,
-        ));
-
-        let material = world
-            .get::<Handle<StandardMaterial>>(entity)
-            .unwrap()
-            .clone();
-        let mut materials = world
-            .get_resource_mut::<Assets<StandardMaterial>>()
-            .unwrap();
-        let material = materials.get_mut(&material).unwrap();
-        material.base_color_texture = Some(image.clone());
+                            // Update the material with the new image, world query assures this exists
+                            let material = world
+                                .get::<Handle<StandardMaterial>>(entity)
+                                .unwrap()
+                                .clone();
+                            let materials = world.get_resource_mut::<Assets<StandardMaterial>>();
+                            if let Some(mut materials) = materials {
+                                let material = materials.get_mut(&material);
+                                if let Some(material) = material {
+                                    material.base_color_texture = Some(image.clone());
+                                }
+                            }
+                        } else {
+                            error!("Error getting image data from canvas");
+                        }
+                    }
+                }
+            }
+        }
     }
 }
