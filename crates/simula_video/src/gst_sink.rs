@@ -45,9 +45,9 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup_gst_sink() {}
+pub(crate) fn setup_gst_sink() {}
 
-pub fn stream_gst_sinks(
+pub(crate) fn stream_gst_sinks(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     videos: Query<(
@@ -79,7 +79,7 @@ pub fn stream_gst_sinks(
     }
 }
 
-pub fn launch_gst_sinks(
+pub(crate) fn launch_gst_sinks(
     mut commands: Commands,
     sinks: Query<(Entity, &GstSink), Without<GstSinkProcess>>,
 ) {

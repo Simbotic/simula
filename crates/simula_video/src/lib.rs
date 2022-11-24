@@ -4,6 +4,8 @@ use bevy::prelude::*;
 #[cfg(feature = "gif")]
 pub use gif::{GifAsset, GifAssetLoader};
 pub use raw_src::RawSrc;
+#[cfg(feature = "video")]
+pub use video::VideoSrc;
 #[cfg(feature = "webp")]
 pub use webp::{WebPAsset, WebPAssetLoader};
 
@@ -13,6 +15,8 @@ mod gif;
 mod gst_sink;
 #[cfg(feature = "gst")]
 mod gst_src;
+#[cfg(feature = "video")]
+pub mod video;
 #[cfg(feature = "webp")]
 mod webp;
 
@@ -61,6 +65,11 @@ impl Plugin for VideoPlugin {
                 .add_system(gst_src::stream_gst_srcs)
                 .add_system(gst_src::launch_gst_srcs);
         }
+
+        #[cfg(feature = "video")]
+        app.add_startup_system(video::setup.exclusive_system())
+            .add_system(video::setup_video_tags.exclusive_system())
+            .add_system(video::blit_videos_to_canvas.exclusive_system());
     }
 }
 

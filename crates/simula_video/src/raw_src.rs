@@ -22,9 +22,9 @@ pub struct RawBuffer {
     receiver: Receiver<Vec<u8>>,
 }
 
-pub fn setup_raw_src() {}
+pub(crate) fn setup_raw_src() {}
 
-pub fn setup_raw_srcs(
+pub(crate) fn setup_raw_srcs(
     mut commands: Commands,
     device: Res<RenderDevice>,
     images: Res<Assets<Image>>,
@@ -61,7 +61,7 @@ pub fn setup_raw_srcs(
     }
 }
 
-pub fn setup_render_graph(app: &mut App) {
+pub(crate) fn setup_render_graph(app: &mut App) {
     let render_app = app
         .sub_app_mut(RenderApp)
         .add_system_to_stage(RenderStage::Extract, extract_raw_srcs)
@@ -73,7 +73,7 @@ pub fn setup_render_graph(app: &mut App) {
     graph.add_node_edge(CAMERA_DRIVER, NODE_NAME).unwrap();
 }
 
-pub fn process_raw_srcs(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
+pub(crate) fn process_raw_srcs(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
     for (buffer, mut src) in srcs.iter_mut() {
         if let Ok(data) = buffer.receiver.try_recv() {
             src.data = data.clone();
@@ -88,7 +88,7 @@ pub struct RawSrcBlit {
     sender: Sender<Vec<u8>>,
 }
 
-pub fn extract_raw_srcs(
+pub(crate) fn extract_raw_srcs(
     mut commands: Commands,
     images: Res<RenderAssets<Image>>,
     srcs: Extract<Query<(Entity, &RawBuffer, &Camera)>>,
@@ -106,7 +106,7 @@ pub fn extract_raw_srcs(
     }
 }
 
-pub fn cleanup_raw_srcs(
+pub(crate) fn cleanup_raw_srcs(
     mut commands: Commands,
     device: Res<RenderDevice>,
     srcs: Query<(Entity, &RawSrcBlit)>,

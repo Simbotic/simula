@@ -42,9 +42,9 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup_gst_src() {}
+pub(crate) fn setup_gst_src() {}
 
-pub fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
+pub(crate) fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
     for (process, src) in srcs.iter() {
         if src.data.len() > 0 {
             let _ = process.sender.try_send(src.data.clone());
@@ -52,7 +52,7 @@ pub fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
     }
 }
 
-pub fn launch_gst_srcs(
+pub(crate) fn launch_gst_srcs(
     mut commands: Commands,
     srcs: Query<(Entity, &GstSrc), Without<GstSrcProcess>>,
 ) {

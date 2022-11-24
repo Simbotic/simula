@@ -5592,6 +5592,10 @@ dependencies = [
  "gstreamer-app",
  "gstreamer-video",
  "image 0.24.5",
+ "url",
+ "uuid",
+ "wasm-bindgen",
+ "web-sys",
  "wgpu",
 ]
 
@@ -6120,7 +6124,7 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "static_assertions",
 ]
 
@@ -6249,6 +6253,29 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+
+[[package]]
+name = "video_player"
+version = "0.1.0"
+dependencies = [
+ "authority",
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_egui",
+ "bevy_mod_debugdump",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "simula_action",
+ "simula_cad",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_video",
+ "simula_viz",
+ "url",
+ "wgpu-types",
+]
 
 [[package]]
 name = "waitgroup"
