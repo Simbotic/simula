@@ -37,12 +37,6 @@ pub fn run(
         if let Some(tree_entity) = node.tree {
             for (agent, mut agent_transform) in agents.iter_mut() {
                 if agent == tree_entity {
-                    // for (_machine, machine_transform) in &machines {
-                    // // agent_transform.translation = machine_transform.translation;
-                    // break;
-                    // }
-                    // commands.entity(entity).insert(BehaviorSuccess);
-
                     agent_transform.translation = rest.position;
                 }
             }

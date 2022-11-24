@@ -6,8 +6,22 @@
             "Simple sequence",
             Sequencer(()),
             [
-                ("Produce Item", MachineProduction((duration: 8))),
-                ("Rest", Debug((duration: 8))),
+                (
+                    "Produce or Dead",
+                    Selector((random:true)),
+                    [
+                        ("Produce Item", MachineProduction((duration: 8))),
+                        ("Dead", AgentDead(())),
+                    ]
+                ),
+                (
+                    "Rest or Dead",
+                    Selector((random:true)),
+                    [
+                        ("Rest", Debug((duration: 8))),
+                        ("Dead", AgentDead(())),
+                    ]
+                ),
             ]
         )]
     )

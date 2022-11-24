@@ -517,7 +517,7 @@ fn spawn_machines(
     mut asset_server: Res<AssetServer>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
 ) {
-    for i in 0..2 {
+    for i in 0..3 {
         let machine = commands
             .spawn_bundle(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
@@ -539,14 +539,22 @@ fn spawn_machines(
             format!("Machine {}", i + 1),
         );
 
-        if i == 0 {
-            commands
-                .entity(machine)
-                .insert(MachineType(MissionToken::Trust(Asset::default())));
-        } else {
-            commands
-                .entity(machine)
-                .insert(MachineType(MissionToken::Energy(Asset::default())));
+        match i {
+            0 => {
+                commands
+                    .entity(machine)
+                    .insert(MachineType(MissionToken::Trust(Asset::default())));
+            }
+            1 => {
+                commands
+                    .entity(machine)
+                    .insert(MachineType(MissionToken::Energy(Asset::default())));
+            }
+            _ => {
+                commands
+                    .entity(machine)
+                    .insert(MachineType(MissionToken::Labor(Asset::default())));
+            }
         }
     }
 }
@@ -634,7 +642,7 @@ fn spawn_agents(
     mut asset_server: Res<AssetServer>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
 ) {
-    for i in 0..2 {
+    for i in 0..3 {
         let video_material = StandardMaterial {
             base_color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
@@ -731,16 +739,25 @@ fn spawn_agents(
             format!("Agent {}", i + 1),
         );
 
-        if i == 0 {
-            commands
-                .entity(agent)
-                .insert(AgentProductionType(MissionToken::Trust(Asset::default())))
-                .insert(AgentPurchaseType(MissionToken::Energy(Asset::default())));
-        } else {
-            commands
-                .entity(agent)
-                .insert(AgentProductionType(MissionToken::Energy(Asset::default())))
-                .insert(AgentPurchaseType(MissionToken::Trust(Asset::default())));
+        match i {
+            0 => {
+                commands
+                    .entity(agent)
+                    .insert(AgentProductionType(MissionToken::Trust(Asset::default())))
+                    .insert(AgentPurchaseType(MissionToken::Energy(Asset::default())));
+            }
+            1 => {
+                commands
+                    .entity(agent)
+                    .insert(AgentProductionType(MissionToken::Energy(Asset::default())))
+                    .insert(AgentPurchaseType(MissionToken::Trust(Asset::default())));
+            }
+            _ => {
+                commands
+                    .entity(agent)
+                    .insert(AgentProductionType(MissionToken::Labor(Asset::default())))
+                    .insert(AgentPurchaseType(MissionToken::Labor(Asset::default())));
+            }
         }
     }
 }

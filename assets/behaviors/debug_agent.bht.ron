@@ -5,10 +5,24 @@
         [(
             "Simple sequence",
             Sequencer(()),
-            [
-                ("Work", AgentWork((duration: 8.0))),
+            [   
+                (
+                    "Work or Dead",
+                    Selector((random:true)),
+                    [
+                        ("Work", AgentWork((duration: 8.0))),
+                        ("Dead", AgentDead(())),
+                    ]
+                ),
                 ("Purchase", AgentPurchase(())),
-                ("Rest", AgentRest((duration: 8.0, position: Vec3(0.0, 0.0, 0.0)))),
+                (
+                    "Rest or Dead",
+                    Selector((random:true)),
+                    [
+                        ("Rest", AgentRest((duration: 8.0, position: Vec3(0.0, 0.0, 0.0)))),
+                        ("Dead", AgentDead(())),
+                    ]
+                ),
             ]
         )]
     )
