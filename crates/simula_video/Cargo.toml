@@ -48,6 +48,7 @@ features = [
   "ContextAttributes2d",
   "ImageData",
   "HtmlDocument",
+  "CssStyleDeclaration",
 ]
 
 [dev-dependencies]

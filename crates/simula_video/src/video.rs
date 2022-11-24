@@ -32,6 +32,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
     let video_id = Uuid::new_v4();
     let canva_id = Uuid::new_v4();
 
+    // Create video element
     let video = web_sys::window()
         .and_then(|window| {
             window
@@ -40,14 +41,28 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .and_then(|video| video.dyn_into::<web_sys::HtmlVideoElement>().ok())
         })
         .and_then(|video| {
+            // Hide video element
+            video.set_hidden(true);
+            video
+                .style()
+                .set_property("display", "none")
+                .unwrap_or_default();
             video.set_id(&video_id.to_string());
             video.set_autoplay(true);
             video.set_loop(true);
             video.set_src(&src.src);
             video.set_controls(true);
+
+            // Add video to DOM
+            web_sys::window()
+                .and_then(|window| window.document())
+                .and_then(|document| document.body())
+                .and_then(|body| body.append_child(&video).ok());
+
             Some(video)
         });
 
+    // Create canvas element video will render to
     let canvas = web_sys::window()
         .and_then(|window| {
             window
@@ -56,9 +71,22 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .and_then(|canvas| canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok())
         })
         .and_then(|canvas| {
+            // Hide canvas element
+            canvas.set_hidden(true);
+            canvas
+                .style()
+                .set_property("display", "none")
+                .unwrap_or_default();
             canvas.set_id(&canva_id.to_string());
             canvas.set_width(src.size.x);
             canvas.set_height(src.size.y);
+
+            // Add canvas to DOM
+            web_sys::window()
+                .and_then(|window| window.document())
+                .and_then(|document| document.body())
+                .and_then(|body| body.append_child(&canvas).ok());
+
             Some(canvas)
         });
 
@@ -78,28 +106,15 @@ pub(crate) fn setup(world: &mut World) {
 }
 
 pub(crate) fn setup_video_tags(world: &mut World) {
+    // Find entities without VideoTag and insert VideoTag
     let mut tags = vec![];
     let mut videos = world.query_filtered::<(Entity, &VideoSrc), Without<VideoTag>>();
     for (entity, src) in videos.iter(world) {
         tags.push((entity, video_canvas(src)));
     }
-
     for (entity, video_canvas) in tags {
         world.entity_mut(entity).insert(VideoTag);
-
         if let Some(video_canvas) = video_canvas {
-            #[cfg(feature = "html-debug")]
-            web_sys::window()
-                .and_then(|window| window.document())
-                .and_then(|document| document.body())
-                .and_then(|body| body.append_child(&video_canvas.video).ok());
-
-            #[cfg(feature = "html-debug")]
-            web_sys::window()
-                .and_then(|window| window.document())
-                .and_then(|document| document.body())
-                .and_then(|body| body.append_child(&video_canvas.canvas).ok());
-
             let video_res = world.get_non_send_resource_mut::<VideoResource>();
             if let Some(mut video_res) = video_res {
                 video_res.videos.insert(entity, video_canvas);
