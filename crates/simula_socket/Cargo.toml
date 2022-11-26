@@ -55,6 +55,6 @@ async-tungstenite = { version = "0.17", default-features = false, features = [
     "async-std-runtime",
     "async-tls",
 ] }
-webrtc = { git = "https://github.com/webrtc-rs/webrtc.git", rev = "44f2d79c75e3c2f31d173eb6196685ee3c77c670", default-features = false }
+webrtc = { version = "0.6", default-features = false }
 bytes = { version = "1.1", default-features = false }
 async-compat = { version = "0.2.1", default-features = false }
