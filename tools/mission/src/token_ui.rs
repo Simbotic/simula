@@ -1,6 +1,7 @@
 use crate::MissionToken;
 use bevy::prelude::*;
 use simula_mission::prelude::*;
+use simula_mission::builder::AssetBuilder;
 use simula_mission::asset_info::AssetInfo;
 
 pub struct TokenUiPlugin;
@@ -178,4 +179,8 @@ impl AssetInfo for MissionToken {
         commands.entity(parent).push_children(&[new_asset]);
     }
 
+    fn push_to_account(&self,commands: &mut Commands, parent: Entity, attributes: &Self::AssetAttributes) {
+        let builder = AssetBuilder {asset: self.to_owned(), attributes: attributes.to_owned()};
+        commands.entity(parent).add_children(|account| builder.build(account));
+    }
 }

@@ -37,6 +37,7 @@ pub trait AssetInfo: Component + Default {
     fn drag(&mut self) -> bool;
     fn drop(&mut self, src_class_id: u64, src_asset_id: u64, source_amount: Amount) -> bool;
     fn push_as_children(&self, commands: &mut Commands, parent: Entity);
+    fn push_to_account(&self, commands: &mut Commands, parent: Entity, attributes: &Self::AssetAttributes);
 }
 
 #[derive(Deref, DerefMut, Debug, Default, Clone, Component)]

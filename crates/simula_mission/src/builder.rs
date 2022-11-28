@@ -8,8 +8,8 @@ pub struct AssetBuilder<T>
 where
     T: AssetInfo + Debug + Clone,
 {
-    asset: T,
-    attributes: T::AssetAttributes,
+    pub asset: T,
+    pub attributes: T::AssetAttributes,
 }
 
 impl<T> AssetBuilder<T>

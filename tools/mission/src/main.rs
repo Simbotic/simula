@@ -601,7 +601,6 @@ fn insert_new_wallets_to_entity(commands: &mut Commands, entity: Entity) {
 
     commands.entity(entity).push_children(&[wallet]);
 }
-
 pub enum BehaviorTreeType {
     Agent,
     Machine,
