@@ -215,9 +215,12 @@ pub fn drag_and_drop<T>(
                             }
                             if !asset_exists {
                                 //if the asset doesn't exist we push it to the dropped account
-                                if let Ok((new_asset, _attributes)) = assets.get_mut(*source_asset)
-                                {
-                                    new_asset.push_as_children(&mut commands, *drop_account);
+                                if let Ok((new_asset, attributes)) = assets.get_mut(*source_asset) {
+                                    new_asset.push_to_account(
+                                        &mut commands,
+                                        *drop_account,
+                                        attributes,
+                                    );
                                 }
                             }
                         }

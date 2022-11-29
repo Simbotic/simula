@@ -183,11 +183,7 @@ fn trade_assets<T: AssetInfo>(
         asset_asset_id = Some(source.asset_id());
         asset_amount = Some(source.amount());
 
-        if let (Some(asset_class_id), Some(asset_asset_id), Some(asset_amount)) =
-            (asset_class_id, asset_asset_id, asset_amount)
-        {
-            source.drop(asset_class_id, asset_asset_id, Amount(-asset_amount.0));
-        }
+        source.drag();
     }
 
     if let Ok((_, mut target, _)) = assets.get_mut(target) {
@@ -207,15 +203,6 @@ fn create_asset_on_account<T: AssetInfo>(
 ) {
     if let Ok((_entity, mut asset, attributes)) = assets.get_mut(new_asset) {
         asset.push_to_account(commands, account, attributes);
-
-        let asset_class_id = Some(asset.class_id());
-        let asset_asset_id = Some(asset.asset_id());
-        let asset_amount = Some(asset.amount());
-
-        if let (Some(asset_class_id), Some(asset_asset_id), Some(asset_amount)) =
-            (asset_class_id, asset_asset_id, asset_amount)
-        {
-            asset.drop(asset_class_id, asset_asset_id, Amount(-asset_amount.0));
-        }
+        asset.drag();
     }
 }
