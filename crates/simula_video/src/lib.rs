@@ -3,6 +3,7 @@ pub use crate::{gst_sink::GstSink, gst_src::GstSrc};
 use bevy::prelude::*;
 #[cfg(feature = "gif")]
 pub use gif::{GifAsset, GifAssetLoader};
+pub use material::VideoMaterial;
 pub use raw_src::RawSrc;
 #[cfg(feature = "video")]
 pub use video::VideoSrc;
@@ -20,6 +21,7 @@ pub mod video;
 #[cfg(feature = "webp")]
 mod webp;
 
+pub mod material;
 pub mod raw_src;
 pub mod rt;
 
@@ -38,7 +40,9 @@ pub struct VideoPlugin;
 
 impl Plugin for VideoPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<VideoPlayer>().add_system(run);
+        app.add_plugin(MaterialPlugin::<VideoMaterial>::default())
+            .register_type::<VideoPlayer>()
+            .add_system(run);
 
         app.add_startup_system(raw_src::setup_raw_src)
             .add_system(raw_src::setup_raw_srcs)
