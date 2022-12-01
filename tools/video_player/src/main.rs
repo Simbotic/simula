@@ -343,6 +343,7 @@ fn setup(
                     .insert(VideoSrc {
                         size: UVec2 { x: 320, y: 240 },
                         src: "assets/videos/mov_bbb.mp4".into(),
+                        autoloop: true,
                     })
                     .insert(Name::new("Robot: Body"));
                 parent

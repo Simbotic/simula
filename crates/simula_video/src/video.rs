@@ -11,6 +11,7 @@ use web_sys;
 pub struct VideoSrc {
     pub src: String,
     pub size: UVec2,
+    pub autoloop: bool,
 }
 
 #[derive(Component)]
@@ -49,9 +50,12 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .unwrap_or_default();
             video.set_id(&video_id.to_string());
             video.set_autoplay(true);
-            video.set_loop(true);
             video.set_src(&src.src);
             video.set_controls(true);
+
+            if src.autoloop {
+              video.set_loop(true);
+            }
 
             // Add video to DOM
             web_sys::window()
