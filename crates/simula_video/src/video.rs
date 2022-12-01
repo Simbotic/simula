@@ -11,6 +11,7 @@ use web_sys;
 pub struct VideoSrc {
     pub src: String,
     pub size: UVec2,
+    pub playing: bool,
 }
 
 #[derive(Component)]
@@ -41,7 +42,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
         })
         .and_then(|video| {
             video.set_id(&video_id.to_string());
-            video.set_autoplay(true);
+            video.set_autoplay(false);
             video.set_loop(true);
             video.set_src(&src.src);
             video.set_controls(true);
@@ -177,6 +178,29 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
                             error!("Error getting image data from canvas");
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+pub(crate) fn update_video_state(world: &mut World) {
+    let mut videos = world
+        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<StandardMaterial>>)>();
+    let videos: Vec<(Entity, bool)> = videos
+        .iter(world)
+        .map(|(entity, src)| (entity, src.playing))
+        .collect();
+
+    for (entity, playing) in videos.iter() {
+        let video_res = world.get_non_send_resource_mut::<VideoResource>();
+        if let Some(mut video_res) = video_res {
+            let video_canvas = video_res.videos.get_mut(&entity);
+            if let Some(video_canvas) = video_canvas {
+                if *playing {
+                    let _ = video_canvas.video.play();
+                } else {
+                    let _ = video_canvas.video.pause();
                 }
             }
         }
