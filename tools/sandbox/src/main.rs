@@ -25,7 +25,7 @@ use simula_net::{NetId, NetPlugin, Replicate};
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, VideoPlayer, VideoPlugin};
+use simula_video::{rt, VideoMaterial, VideoPlayer, VideoPlugin};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -106,6 +106,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut video_materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
@@ -279,6 +280,7 @@ fn setup(
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
+            #[allow(unused)]
             let mut child = parent.spawn_bundle(Camera3dBundle {
                 camera_3d: Camera3d {
                     clear_color: ClearColorConfig::Custom(Color::BLACK),
@@ -626,11 +628,10 @@ fn setup(
     #[cfg(feature = "gif")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
         let video_rotation =
@@ -652,9 +653,9 @@ fn setup(
                     })
                     .with_children(|parent| {
                         parent
-                            .spawn_bundle(PbrBundle {
+                            .spawn_bundle(MaterialMeshBundle {
                                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                                material: materials.add(video_material),
+                                material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
                                     EulerRot::YXZ,
                                     0.0,

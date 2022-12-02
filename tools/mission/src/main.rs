@@ -66,6 +66,7 @@ fn main() {
     .add_plugin(MissionPlugin)
     .add_plugin(MissionBehaviorPlugin)
     .add_plugin(BehaviorPlugin)
+    .add_plugin(BehaviorInspectorPlugin)
     .add_plugin(FollowUIPlugin)
     .add_plugin(DragAndDropPlugin)
     .add_plugin(WalletUIPlugin)
@@ -130,7 +131,7 @@ fn setup(
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     line_mesh: Res<LineMesh>,
-    mut behavior_inspector: ResMut<BehaviorInspector>,
+    mut behavior_inspector: Option<ResMut<BehaviorInspector>>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -268,8 +269,10 @@ fn setup(
         .insert(Name::new("Agent: 002"))
         .id();
 
-    behavior_inspector.select(agent_id, "Agent: 002".into());
-    // behavior_inspector.unselect();
+    if let Some(behavior_inspector) = behavior_inspector.as_mut() {
+        behavior_inspector.select(agent_id, "Agent: 002".into());
+        // behavior_inspector.unselect();
+    }
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
