@@ -6,6 +6,7 @@ use bevy::{
     render::view::RenderLayers,
 };
 use bevy_egui::EguiPlugin;
+use bevy_egui::{egui, EguiContext};
 use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::{flycam::*, orbitcam::*};
@@ -47,6 +48,7 @@ fn main() {
     .add_plugin(GridPlugin)
     .add_plugin(VideoPlugin)
     .add_startup_system(setup)
+    .add_system(video_control_window)
     .add_system(debug_info);
 
     app.run();
@@ -343,6 +345,7 @@ fn setup(
                     .insert(VideoSrc {
                         size: UVec2 { x: 320, y: 240 },
                         src: "assets/videos/mov_bbb.mp4".into(),
+                        playing: true,
                     })
                     .insert(Name::new("Robot: Body"));
                 parent
@@ -419,4 +422,35 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
             }
         }
     };
+}
+
+fn video_control_window(
+    mut egui_ctx: ResMut<EguiContext>,
+    mut video_sources: Query<&mut VideoSrc>,
+) {
+    egui::Window::new("Panel")
+        .default_width(200.0)
+        .resizable(true)
+        .collapsible(false)
+        .title_bar(true)
+        .vscroll(false)
+        .drag_bounds(egui::Rect::EVERYTHING)
+        .show(egui_ctx.ctx_mut(), |ui| {
+            ui.small_button("play")
+                .on_hover_text("play video")
+                .clicked()
+                .then(|| {
+                    for mut video in video_sources.iter_mut() {
+                        video.playing = true;
+                    }
+                });
+            ui.small_button("pause")
+                .on_hover_text("pause video")
+                .clicked()
+                .then(|| {
+                    for mut video in video_sources.iter_mut() {
+                        video.playing = false;
+                    }
+                });
+        });
 }
