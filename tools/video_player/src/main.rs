@@ -313,12 +313,12 @@ fn setup(
     #[cfg(feature = "video")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            cull_mode: Some(wgpu_types::Face::Front),
-            ..default()
+            // unlit: true,
+            // cull_mode: Some(wgpu_types::Face::Front),
+            ..Default::default()
         };
         // let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
@@ -329,9 +329,9 @@ fn setup(
             .insert(Name::new("Video: Robot"))
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(PbrBundle {
+                    .spawn_bundle(MaterialMeshBundle {
                         mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                        material: materials.add(video_material),
+                        material: video_materials.add(video_material),
                         transform: Transform::from_rotation(Quat::from_euler(
                             EulerRot::ZXY,
                             -std::f32::consts::PI,

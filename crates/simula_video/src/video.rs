@@ -6,6 +6,7 @@ use bevy::{
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
 use web_sys;
+use crate::material::VideoMaterial;
 
 #[derive(Debug, Component, Clone)]
 pub struct VideoSrc {
@@ -126,7 +127,7 @@ pub(crate) fn setup_video_tags(world: &mut World) {
 
 pub(crate) fn blit_videos_to_canvas(world: &mut World) {
     let mut videos = world
-        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<StandardMaterial>>)>();
+        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<VideoMaterial>>)>();
 
     let videos: Vec<(Entity, UVec2)> = videos
         .iter(world)
@@ -179,14 +180,14 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
 
                             // Update the material with the new image, world query assures this exists
                             let material = world
-                                .get::<Handle<StandardMaterial>>(entity)
+                                .get::<Handle<VideoMaterial>>(entity)
                                 .unwrap()
                                 .clone();
-                            let materials = world.get_resource_mut::<Assets<StandardMaterial>>();
+                            let materials = world.get_resource_mut::<Assets<VideoMaterial>>();
                             if let Some(mut materials) = materials {
                                 let material = materials.get_mut(&material);
                                 if let Some(material) = material {
-                                    material.base_color_texture = Some(image.clone());
+                                    material.video_texture = Some(image.clone());
                                 }
                             }
                         } else {
@@ -201,7 +202,7 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
 
 pub(crate) fn update_video_state(world: &mut World) {
     let mut videos = world
-        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<StandardMaterial>>)>();
+        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<VideoMaterial>>)>();
     let videos: Vec<(Entity, bool)> = videos
         .iter(world)
         .map(|(entity, src)| (entity, src.playing))
