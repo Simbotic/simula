@@ -13,6 +13,7 @@ pub struct VideoSrc {
     pub src: String,
     pub size: UVec2,
     pub playing: bool,
+    pub _loop: bool,
 }
 
 #[derive(Component)]
@@ -51,7 +52,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .unwrap_or_default();
             video.set_id(&video_id.to_string());
             video.set_autoplay(false);
-            video.set_loop(true);
+            video.set_loop(false);
             video.set_src(&src.src);
             video.set_controls(true);
 
@@ -202,21 +203,23 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
 pub(crate) fn update_video_state(world: &mut World) {
     let mut videos = world
         .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<VideoMaterial>>)>();
-    let videos: Vec<(Entity, bool)> = videos
+    let videos: Vec<(Entity, VideoSrc)> = videos
         .iter(world)
-        .map(|(entity, src)| (entity, src.playing))
+        .map(|(entity, src)| (entity, src.clone()))
         .collect();
 
-    for (entity, playing) in videos.iter() {
+    for (entity, src) in videos.iter() {
         let video_res = world.get_non_send_resource_mut::<VideoResource>();
         if let Some(mut video_res) = video_res {
             let video_canvas = video_res.videos.get_mut(&entity);
             if let Some(video_canvas) = video_canvas {
-                if *playing {
+                if src.playing {
                     let _ = video_canvas.video.play();
                 } else {
                     let _ = video_canvas.video.pause();
                 }
+
+                video_canvas.video.set_loop(src._loop);
             }
         }
     }
