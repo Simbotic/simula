@@ -1,3 +1,4 @@
+use crate::VideoMaterial;
 use bevy::{
     asset::Error,
     prelude::*,
@@ -49,10 +50,10 @@ pub(crate) fn setup_gst_sink() {}
 
 pub(crate) fn stream_gst_sinks(
     mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<VideoMaterial>>,
     videos: Query<(
         &GstSinkProcess,
-        &Handle<StandardMaterial>,
+        &Handle<VideoMaterial>,
         &ComputedVisibility,
         &GstSink,
     )>,
@@ -74,7 +75,8 @@ pub(crate) fn stream_gst_sinks(
                 TextureFormat::Rgba8UnormSrgb,
             );
             let image_handle = images.add(image);
-            material.base_color_texture = Some(image_handle);
+            material.alpha_scaler = 1.0;
+            material.video_texture = Some(image_handle);
         }
     }
 }

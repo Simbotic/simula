@@ -13,7 +13,7 @@ use simula_mission::prelude::*;
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
-use simula_video::{VideoPlayer, VideoPlugin};
+use simula_video::{VideoPlayer, VideoPlugin, VideoMaterial};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
@@ -129,7 +129,7 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
     mut behavior_inspector: Option<ResMut<BehaviorInspector>>,
     asset_server: Res<AssetServer>,
@@ -167,11 +167,10 @@ fn setup(
         })
         .build(&mut commands);
 
-    let video_material = StandardMaterial {
-        base_color: Color::rgb(1.0, 1.0, 1.0),
+    let video_material = VideoMaterial {
+        color: Color::rgb(1.0, 1.0, 1.0),
         alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..default()
+        ..Default::default()
     };
     let video_rotation =
         Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
@@ -192,7 +191,7 @@ fn setup(
         })
         .insert(FollowPanel)
         .with_children(|parent| {
-            let mut child = parent.spawn_bundle(PbrBundle {
+            let mut child = parent.spawn_bundle(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
                 transform: Transform::from_rotation(Quat::from_euler(

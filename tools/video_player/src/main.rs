@@ -15,7 +15,7 @@ use simula_video::GifAsset;
 use simula_video::VideoSrc;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, VideoPlayer, VideoPlugin};
+use simula_video::{rt, VideoPlayer, VideoPlugin, VideoMaterial};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -57,6 +57,7 @@ fn setup(
     mut images: ResMut<Assets<Image>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut video_materials: ResMut<Assets<VideoMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
@@ -170,7 +171,7 @@ fn setup(
             });
 
             #[cfg(feature = "gst")]
-            child.insert(GstSrc {
+            _child.insert(GstSrc {
                 size: UVec2 { x: 256, y: 256 },
                 ..default()
             });
@@ -205,11 +206,10 @@ fn setup(
     #[cfg(feature = "gif")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
         let video_rotation =
@@ -227,9 +227,9 @@ fn setup(
                     })
                     .with_children(|parent| {
                         parent
-                            .spawn_bundle(PbrBundle {
+                            .spawn_bundle(MaterialMeshBundle {
                                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                                material: materials.add(video_material),
+                                material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
                                     EulerRot::YXZ,
                                     0.0,
@@ -283,17 +283,16 @@ fn setup(
     #[cfg(feature = "webp")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn_bundle(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+                material: video_materials.add(video_material),
                 transform: Transform::from_xyz(0.0, 0.5, -2.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
                 ..default()
@@ -362,16 +361,15 @@ fn setup(
     #[cfg(feature = "gst")]
     {
         // video stream
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn_bundle(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+                material: video_materials.add(video_material),
                 transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                     .with_scale(Vec3::new(1.0, 1.0, 1.0)),
