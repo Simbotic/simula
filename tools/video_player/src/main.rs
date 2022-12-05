@@ -16,7 +16,7 @@ use simula_video::GifAsset;
 use simula_video::VideoSrc;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, VideoPlayer, VideoPlugin, VideoMaterial};
+use simula_video::{rt, VideoMaterial, VideoPlayer, VideoPlugin};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -316,8 +316,6 @@ fn setup(
         let video_material = VideoMaterial {
             color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            // unlit: true,
-            // cull_mode: Some(wgpu_types::Face::Front),
             ..Default::default()
         };
         // let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
@@ -332,17 +330,14 @@ fn setup(
                     .spawn_bundle(MaterialMeshBundle {
                         mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                         material: video_materials.add(video_material),
-                        transform: Transform::from_rotation(Quat::from_euler(
-                            EulerRot::ZXY,
-                            -std::f32::consts::PI,
-                            std::f32::consts::FRAC_PI_2,
-                            0.0,
+                        transform: Transform::from_rotation(Quat::from_rotation_x(
+                            -std::f32::consts::FRAC_PI_2,
                         ))
-                        .with_scale(Vec3::new(1.6, 1.0, 1.0)),
+                        .with_scale(Vec3::new(1.8, 1.0, 1.0)),
                         ..default()
                     })
                     .insert(VideoSrc {
-                        size: UVec2 { x: 320, y: 240 },
+                        size: UVec2 { x: 320, y: 176 },
                         src: "assets/videos/mov_bbb.mp4".into(),
                         playing: true,
                     })

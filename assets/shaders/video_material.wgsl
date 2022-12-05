@@ -14,7 +14,8 @@ var base_color_sampler: sampler;
 fn fragment(
     #import bevy_pbr::mesh_vertex_output
 ) -> @location(0) vec4<f32> {
-    let tex_color = textureSample(base_color_texture, base_color_sampler, uv);
+    let x_flipped_uv = vec2<f32>(1.0 - uv.x, uv.y);
+    let tex_color = textureSample(base_color_texture, base_color_sampler, x_flipped_uv);
     let color = material.color.rgb * tex_color.rgb;
     let alpha = material.color.a * tex_color.a * material.alpha_scaler;
     return vec4<f32>(color.rgb, alpha);

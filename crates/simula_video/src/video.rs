@@ -1,3 +1,4 @@
+use crate::material::VideoMaterial;
 use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
@@ -6,7 +7,6 @@ use bevy::{
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
 use web_sys;
-use crate::material::VideoMaterial;
 
 #[derive(Debug, Component, Clone)]
 pub struct VideoSrc {
@@ -179,15 +179,14 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
                             ));
 
                             // Update the material with the new image, world query assures this exists
-                            let material = world
-                                .get::<Handle<VideoMaterial>>(entity)
-                                .unwrap()
-                                .clone();
+                            let material =
+                                world.get::<Handle<VideoMaterial>>(entity).unwrap().clone();
                             let materials = world.get_resource_mut::<Assets<VideoMaterial>>();
                             if let Some(mut materials) = materials {
                                 let material = materials.get_mut(&material);
                                 if let Some(material) = material {
                                     material.video_texture = Some(image.clone());
+                                    material.alpha_scaler = 1.0;
                                 }
                             }
                         } else {
