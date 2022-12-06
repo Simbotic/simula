@@ -1,4 +1,4 @@
-use crate::VideoPlayer;
+use crate::{VideoPlayer, VideoMaterial};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -49,11 +49,11 @@ impl AssetLoader for WebPAssetLoader {
 pub fn run(
     mut gifs: ResMut<Assets<WebPAsset>>,
     mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<VideoMaterial>>,
     videos: Query<(
         &VideoPlayer,
         &Handle<WebPAsset>,
-        &Handle<StandardMaterial>,
+        &Handle<VideoMaterial>,
         &ComputedVisibility,
     )>,
 ) {
@@ -64,7 +64,7 @@ pub fn run(
         if let Some(material) = materials.get_mut(&material) {
             if let Some(gif) = gifs.get_mut(asset) {
                 if let Some(image) = gif.images.get(&video.current_frame) {
-                    material.base_color_texture = Some(image.clone());
+                    material.video_texture = Some(image.clone());
                 } else {
                     if video.current_frame <= gif.frames.len() {
                         debug!("video image: {:?} {:?}", gif.path, video);
@@ -80,7 +80,8 @@ pub fn run(
                             TextureFormat::Rgba8UnormSrgb,
                         ));
                         gif.images.insert(video.current_frame, image.clone());
-                        material.base_color_texture = Some(image);
+                        material.alpha_scaler = 1.0;
+                        material.video_texture = Some(image);
                     }
                 }
             }

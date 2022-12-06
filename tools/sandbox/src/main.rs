@@ -25,7 +25,7 @@ use simula_net::{NetId, NetPlugin, Replicate};
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, RawSrc, VideoPlayer, VideoPlugin};
+use simula_video::{rt, VideoMaterial, VideoPlayer, VideoPlugin};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -108,6 +108,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut video_materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
@@ -271,7 +272,7 @@ fn setup(
         ..default()
     });
 
-    let rt_image = images.add(rt::default_render_target_image());
+    let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
 
     let camera_entity = commands
         .spawn(Camera3dBundle {
@@ -281,6 +282,7 @@ fn setup(
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
+            #[allow(unused)]
             let mut child = parent.spawn(Camera3dBundle {
                 camera_3d: Camera3d {
                     clear_color: ClearColorConfig::Custom(Color::BLACK),
@@ -294,11 +296,11 @@ fn setup(
                 ..default()
             });
 
-            // RawSrc is optional when using GstSrc, as it will be set automatically
-            child.insert(RawSrc::default());
-
             #[cfg(feature = "gst")]
-            child.insert(GstSrc::default());
+            child.insert(GstSrc {
+                size: UVec2 { x: 256, y: 256 },
+                ..default()
+            });
         })
         .insert(FlyCamera::default())
         .insert(FollowUICamera)
@@ -338,7 +340,7 @@ fn setup(
                         max_view_angle: 45.0,
                         ..default()
                     })
-                    .insert(FollowPanel)
+                    .insert(SandboxPanel)
                     .insert(Name::new("FollowUI: Axes"));
             })
             .insert(Name::new("Follow UI: Shape"));
@@ -628,11 +630,10 @@ fn setup(
     #[cfg(feature = "gif")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
         let video_rotation =
@@ -654,9 +655,9 @@ fn setup(
                     })
                     .with_children(|parent| {
                         parent
-                            .spawn(PbrBundle {
+                            .spawn(MaterialMeshBundle {
                                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                                material: materials.add(video_material),
+                                material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
                                     EulerRot::YXZ,
                                     0.0,
@@ -716,17 +717,16 @@ fn setup(
     #[cfg(feature = "webp")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
-            .spawn(PbrBundle {
+            .spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+                material: video_materials.add(video_material),
                 transform: Transform::from_xyz(0.0, 0.5, -2.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
                 ..default()
@@ -745,16 +745,15 @@ fn setup(
     #[cfg(feature = "gst")]
     {
         // video stream
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         commands
-            .spawn(PbrBundle {
+            .spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+                material: video_materials.add(video_material),
                 transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                     .with_scale(Vec3::new(1.0, 1.0, 1.0)),
@@ -767,7 +766,10 @@ fn setup(
                 playing: true,
                 ..default()
             })
-            .insert(GstSink::default())
+            .insert(GstSink {
+                size: UVec2::new(256, 256),
+                ..default()
+            })
             .insert(Name::new("Video: Gst"));
     }
 
@@ -842,12 +844,12 @@ fn line_test(mut lines: Query<&mut Lines, With<RandomLines>>) {
 }
 
 #[derive(Component)]
-struct FollowPanel;
+struct SandboxPanel;
 
 fn follow_ui(
     time: Res<Time>,
     mut egui_context: ResMut<EguiContext>,
-    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<FollowPanel>>,
+    follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<SandboxPanel>>,
 ) {
     for (entity, follow_ui, visibility) in follow_uis.iter() {
         let ui_pos = visibility.screen_pos;

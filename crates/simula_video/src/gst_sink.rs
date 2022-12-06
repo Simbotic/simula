@@ -1,3 +1,4 @@
+use crate::VideoMaterial;
 use bevy::{
     asset::Error,
     prelude::*,
@@ -11,15 +12,17 @@ use gstreamer as gst;
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct GstSink {
     pub pipeline: String,
+    pub size: UVec2,
 }
 
 impl Default for GstSink {
     fn default() -> Self {
         Self {
             pipeline: "videotestsrc ! appsink name=simula".to_string(),
+            size: UVec2::new(512, 512),
         }
     }
 }
@@ -43,21 +46,19 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup_gst_sink() {}
+pub(crate) fn setup_gst_sink() {}
 
-pub fn stream_gst_sinks(
+pub(crate) fn stream_gst_sinks(
     mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    videos: Query<
-        (
-            &GstSinkProcess,
-            &Handle<StandardMaterial>,
-            &ComputedVisibility,
-        ),
-        With<GstSink>,
-    >,
+    mut materials: ResMut<Assets<VideoMaterial>>,
+    videos: Query<(
+        &GstSinkProcess,
+        &Handle<VideoMaterial>,
+        &ComputedVisibility,
+        &GstSink,
+    )>,
 ) {
-    for (process, material, visibility) in videos.iter() {
+    for (process, material, visibility, sink) in videos.iter() {
         if !visibility.is_visible() {
             continue;
         }
@@ -65,8 +66,8 @@ pub fn stream_gst_sinks(
             let mut material = materials.get_mut(&material).unwrap();
             let image = Image::new(
                 Extent3d {
-                    width: 512,
-                    height: 512,
+                    width: sink.size.x,
+                    height: sink.size.y,
                     depth_or_array_layers: 1,
                 },
                 TextureDimension::D2,
@@ -74,20 +75,21 @@ pub fn stream_gst_sinks(
                 TextureFormat::Rgba8UnormSrgb,
             );
             let image_handle = images.add(image);
-            material.base_color_texture = Some(image_handle);
+            material.alpha_scaler = 1.0;
+            material.video_texture = Some(image_handle);
         }
     }
 }
 
-pub fn launch_gst_sinks(
+pub(crate) fn launch_gst_sinks(
     mut commands: Commands,
     sinks: Query<(Entity, &GstSink), Without<GstSinkProcess>>,
 ) {
     for (entity, sink) in sinks.iter() {
         let (sender, receiver) = bounded(1);
-        let pipeline = sink.pipeline.clone();
+        let sink = sink.clone();
         let launch_handle = std::thread::spawn(move || {
-            match create_pipeline(pipeline, sender).and_then(pipeline_loop) {
+            match create_pipeline(sink, sender).and_then(pipeline_loop) {
                 Ok(r) => r,
                 Err(e) => eprintln!("Error! {}", e),
             }
@@ -99,12 +101,15 @@ pub fn launch_gst_sinks(
     }
 }
 
-fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst::Pipeline, Error> {
+fn create_pipeline(sink: GstSink, sender: Sender<Vec<u8>>) -> Result<gst::Pipeline, Error> {
     gst::init()?;
 
     let mut context = gst::ParseContext::new();
-    let pipeline =
-        gst::parse_launch_full(&pipeline_str, Some(&mut context), gst::ParseFlags::empty())?;
+    let pipeline = gst::parse_launch_full(
+        &sink.pipeline.clone(),
+        Some(&mut context),
+        gst::ParseFlags::empty(),
+    )?;
 
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
 
@@ -114,11 +119,14 @@ fn create_pipeline(pipeline_str: String, sender: Sender<Vec<u8>>) -> Result<gst:
         .dynamic_cast::<gst_app::AppSink>()
         .unwrap();
 
+    let width = sink.size.x as i32;
+    let height = sink.size.y as i32;
+
     // set video caps
     let caps = gst::Caps::builder("video/x-raw")
         .field("format", &"RGBA")
-        .field("width", &512)
-        .field("height", &512)
+        .field("width", &width)
+        .field("height", &height)
         .build();
     appsink.set_caps(Some(&caps));
 

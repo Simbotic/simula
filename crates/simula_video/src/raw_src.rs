@@ -9,9 +9,10 @@ use bevy::{
 use crossbeam_channel::{bounded, Receiver, Sender};
 use std::num::NonZeroU32;
 
-#[derive(Default, Component)]
+#[derive(Component)]
 pub struct RawSrc {
     pub data: Vec<u8>,
+    pub size: UVec2,
 }
 
 #[derive(Component)]
@@ -21,18 +22,22 @@ pub struct RawBuffer {
     receiver: Receiver<Vec<u8>>,
 }
 
-pub fn setup_raw_src() {}
+pub(crate) fn setup_raw_src() {}
 
-pub fn setup_raw_srcs(
+pub(crate) fn setup_raw_srcs(
     mut commands: Commands,
     device: Res<RenderDevice>,
     images: Res<Assets<Image>>,
-    srcs: Query<(Entity, &Camera), (With<RawSrc>, Without<RawBuffer>)>,
+    srcs: Query<(Entity, &Camera, &RawSrc), (With<RawSrc>, Without<RawBuffer>)>,
 ) {
-    for (entity, camera) in srcs.iter() {
+    for (entity, camera, src) in srcs.iter() {
         if let RenderTarget::Image(image) = &camera.target {
             if let Some(image) = images.get(&image) {
                 let size = image.size();
+
+                if size.x as u32 != src.size.x || size.y as u32 != src.size.y {
+                    error!("RawSrc size does not match Camera target size");
+                }
 
                 let padded_bytes_per_row =
                     RenderDevice::align_copy_bytes_per_row((size.x) as usize) * 4;
@@ -56,7 +61,7 @@ pub fn setup_raw_srcs(
     }
 }
 
-pub fn setup_render_graph(app: &mut App) {
+pub(crate) fn setup_render_graph(app: &mut App) {
     let render_app = app
         .sub_app_mut(RenderApp)
         .add_system_to_stage(RenderStage::Extract, extract_raw_srcs)
@@ -68,7 +73,7 @@ pub fn setup_render_graph(app: &mut App) {
     graph.add_node_edge(CAMERA_DRIVER, NODE_NAME).unwrap();
 }
 
-pub fn process_raw_srcs(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
+pub(crate) fn process_raw_srcs(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
     for (buffer, mut src) in srcs.iter_mut() {
         if let Ok(data) = buffer.receiver.try_recv() {
             src.data = data.clone();
@@ -83,7 +88,7 @@ pub struct RawSrcBlit {
     sender: Sender<Vec<u8>>,
 }
 
-pub fn extract_raw_srcs(
+pub(crate) fn extract_raw_srcs(
     mut commands: Commands,
     images: Res<RenderAssets<Image>>,
     srcs: Extract<Query<(Entity, &RawBuffer, &Camera)>>,
@@ -101,7 +106,7 @@ pub fn extract_raw_srcs(
     }
 }
 
-pub fn cleanup_raw_srcs(
+pub(crate) fn cleanup_raw_srcs(
     mut commands: Commands,
     device: Res<RenderDevice>,
     srcs: Query<(Entity, &RawSrcBlit)>,

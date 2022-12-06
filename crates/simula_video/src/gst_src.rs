@@ -8,15 +8,17 @@ use gstreamer as gst;
 use gstreamer_app as gst_app;
 use gstreamer_video as gst_video;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct GstSrc {
     pub pipeline: String,
+    pub size: UVec2,
 }
 
 impl Default for GstSrc {
     fn default() -> Self {
         Self {
             pipeline: "appsrc name=simula ! videoconvert ! autovideosink".to_string(),
+            size: UVec2::new(512, 512),
         }
     }
 }
@@ -40,9 +42,9 @@ struct ErrorMessage {
     source: glib::Error,
 }
 
-pub fn setup_gst_src() {}
+pub(crate) fn setup_gst_src() {}
 
-pub fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
+pub(crate) fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
     for (process, src) in srcs.iter() {
         if src.data.len() > 0 {
             let _ = process.sender.try_send(src.data.clone());
@@ -50,15 +52,16 @@ pub fn stream_gst_srcs(srcs: Query<(&GstSrcProcess, &RawSrc)>) {
     }
 }
 
-pub fn launch_gst_srcs(
+pub(crate) fn launch_gst_srcs(
     mut commands: Commands,
     srcs: Query<(Entity, &GstSrc), Without<GstSrcProcess>>,
 ) {
     for (entity, src) in srcs.iter() {
         let (sender, receiver) = bounded(1);
-        let pipeline = src.pipeline.clone();
+        let src = src.clone();
+        let size = src.size;
         let launch_handle = std::thread::spawn(move || {
-            match create_pipeline(pipeline, receiver).and_then(pipeline_loop) {
+            match create_pipeline(src, receiver).and_then(pipeline_loop) {
                 Ok(r) => r,
                 Err(e) => eprintln!("Error! {}", e),
             }
@@ -69,19 +72,19 @@ pub fn launch_gst_srcs(
                 process: launch_handle,
                 sender,
             })
-            .insert(RawSrc::default());
+            .insert(RawSrc { data: vec![], size });
     }
 }
 
-fn create_pipeline(
-    pipeline_str: String,
-    receiver: Receiver<Vec<u8>>,
-) -> Result<gst::Pipeline, Error> {
+fn create_pipeline(src: GstSrc, receiver: Receiver<Vec<u8>>) -> Result<gst::Pipeline, Error> {
     gst::init()?;
 
     let mut context = gst::ParseContext::new();
-    let pipeline =
-        gst::parse_launch_full(&pipeline_str, Some(&mut context), gst::ParseFlags::empty())?;
+    let pipeline = gst::parse_launch_full(
+        &src.pipeline.clone(),
+        Some(&mut context),
+        gst::ParseFlags::empty(),
+    )?;
 
     let pipeline = pipeline.dynamic_cast::<gst::Pipeline>().unwrap();
 
@@ -91,10 +94,13 @@ fn create_pipeline(
         .dynamic_cast::<gst_app::AppSrc>()
         .unwrap();
 
+    let width = src.size.x as i32;
+    let height = src.size.y as i32;
+
     let caps = gst::Caps::builder("video/x-raw")
         .field("format", &"BGRA")
-        .field("width", &512)
-        .field("height", &512)
+        .field("width", &width)
+        .field("height", &height)
         .field("framerate", &gst::Fraction::new(30, 1))
         .build();
     appsrc.set_caps(Some(&caps));
@@ -106,6 +112,7 @@ fn create_pipeline(
     let callbacks = gst_app::AppSrcCallbacks::builder()
         .need_data(move |appsrc, _length| {
             let mut buffer = gst::Buffer::with_size(video_info.size()).unwrap();
+
             match receiver.recv() {
                 Ok(data) => {
                     let buffer = buffer.get_mut().unwrap();
@@ -113,7 +120,7 @@ fn create_pipeline(
                     buffer.set_pts(gst::ClockTime::from_mseconds(ms));
                     let mut map = buffer.map_writable().unwrap();
                     let payload = map.as_mut_slice();
-                    payload.copy_from_slice(&data)
+                    payload.copy_from_slice(&data[..video_info.size()]);
                 }
                 Err(e) => {
                     element_error!(

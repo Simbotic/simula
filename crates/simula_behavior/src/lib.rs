@@ -6,7 +6,6 @@ use bevy_inspector_egui::{
 };
 use composites::*;
 use decorators::*;
-use inspector::BehaviorInspectorPlugin;
 use serde::Deserialize;
 
 pub mod actions;
@@ -25,7 +24,7 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::BehaviorInspector;
+    pub use crate::inspector::{BehaviorInspector, BehaviorInspectorPlugin};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
@@ -88,8 +87,7 @@ pub trait BehaviorSpawner:
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(BehaviorInspectorPlugin)
-            .register_type::<BehaviorTree>()
+        app.register_type::<BehaviorTree>()
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()

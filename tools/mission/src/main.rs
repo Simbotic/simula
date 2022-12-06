@@ -13,7 +13,7 @@ use simula_mission::prelude::*;
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
-use simula_video::{VideoPlayer, VideoPlugin};
+use simula_video::{VideoMaterial, VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
@@ -62,14 +62,14 @@ fn main() {
         .add_plugin(MissionPlugin)
         .add_plugin(MissionBehaviorPlugin)
         .add_plugin(BehaviorPlugin)
+        .add_plugin(BehaviorInspectorPlugin)
         .add_plugin(FollowUIPlugin)
         .add_plugin(DragAndDropPlugin)
         .add_plugin(WalletUIPlugin)
         .register_type::<MissionToken>()
         .register_type::<SignalGenerator>()
         .add_startup_system(setup)
-        .add_system(debug_info)
-        .add_system(increase_mission_time);
+        .add_system(debug_info);
 
     app.register_inspectable::<MissionToken>();
     app.register_inspectable::<SignalFunction>();
@@ -122,9 +122,9 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
-    mut behavior_inspector: ResMut<BehaviorInspector>,
+    mut behavior_inspector: Option<ResMut<BehaviorInspector>>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -160,11 +160,10 @@ fn setup(
         })
         .build(&mut commands);
 
-    let video_material = StandardMaterial {
-        base_color: Color::rgb(1.0, 1.0, 1.0),
+    let video_material = VideoMaterial {
+        color: Color::rgb(1.0, 1.0, 1.0),
         alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..default()
+        ..Default::default()
     };
     let video_rotation =
         Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
@@ -185,7 +184,7 @@ fn setup(
         })
         .insert(FollowPanel)
         .with_children(|parent| {
-            let mut child = parent.spawn(PbrBundle {
+            let mut child = parent.spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
                 transform: Transform::from_rotation(Quat::from_euler(
@@ -262,8 +261,10 @@ fn setup(
         .insert(Name::new("Agent: 002"))
         .id();
 
-    behavior_inspector.select(agent_id, "Agent: 002".into());
-    // behavior_inspector.unselect();
+    if let Some(behavior_inspector) = behavior_inspector.as_mut() {
+        behavior_inspector.select(agent_id, "Agent: 002".into());
+        // behavior_inspector.unselect();
+    }
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -378,15 +379,6 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
             for mut text in &mut query {
                 text.sections[1].value = format!("{average:.2}");
             }
-        }
-    }
-}
-
-fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) {
-    for mut token in query.iter_mut() {
-        match *token {
-            MissionToken::Time(asset) => *token = MissionToken::Time(Asset(Amount(asset.0 .0 + 1))),
-            _ => {}
         }
     }
 }
