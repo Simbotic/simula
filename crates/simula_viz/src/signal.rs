@@ -19,7 +19,8 @@ pub fn signal_generator_lines(
             signal_line.points[i].y = signal_line.points[i + 1].y;
         }
 
-        signal_line.points[num_points - 1].y = generator.sample(time.time_since_startup());
+        let elapsed_time = std::time::Duration::from_secs_f32(time.elapsed_seconds());
+        signal_line.points[num_points - 1].y = generator.sample(elapsed_time);
 
         let color = Color::Hsla {
             hue,

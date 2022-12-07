@@ -5,10 +5,10 @@ use crate::{
 use bevy::prelude::*;
 use bevy_inspector_egui::{egui, Context, Inspectable};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Resource)]
 pub struct BehaviorInspectorAttributes;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Resource)]
 pub struct BehaviorInspector {
     pub selected: BehaviorInspectorItem,
 }
@@ -43,7 +43,7 @@ impl Default for BehaviorInspectorItem {
 
 fn item_label(item: &BehaviorInspectorItem) -> String {
     let entity = if let Some(entity) = item.entity {
-        format!("[{}]: ", entity.id())
+        format!("[{}]: ", entity.index())
     } else {
         "".to_string()
     };

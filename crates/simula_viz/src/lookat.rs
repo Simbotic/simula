@@ -48,7 +48,7 @@ pub fn smooth_look_at(
                 let initial_pose = look_at.initial_pose.unwrap_or_default();
 
                 // Compute everything in the local space of the parent
-                let mut global_transform = Transform::identity();
+                let mut global_transform = Transform::default();
                 if let Some(parent) = parent {
                     if let Ok(parent_transform) = transforms.get(parent.get()) {
                         global_transform = parent_transform.compute_transform();
@@ -68,7 +68,7 @@ pub fn smooth_look_at(
 
                 // Compute yaw that can be eased
                 let yaw = {
-                    let look_transform = Transform::identity()
+                    let look_transform = Transform::default()
                         .with_translation(transform.translation)
                         .looking_at(target_position, Vec3::Y);
                     let rotation = (look_transform.rotation * inv_initial_pose).normalize();
@@ -85,7 +85,7 @@ pub fn smooth_look_at(
                         -local_target_position.z.abs(),
                     );
                     let target_position = initial_pose * local_target_position;
-                    let look_transform = Transform::identity()
+                    let look_transform = Transform::default()
                         .with_translation(transform.translation)
                         .looking_at(target_position, Vec3::Y);
                     let (_yaw, pitch, _roll) = look_transform.rotation.to_euler(EulerRot::YXZ);

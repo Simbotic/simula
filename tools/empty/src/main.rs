@@ -14,15 +14,17 @@ use simula_viz::{
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            title: "[Simbotic] Simula - Empty".to_string(),
-            width: 940.,
-            height: 528.,
-            ..Default::default()
-        })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "[Simbotic] Simula - Empty".to_string(),
+                width: 940.,
+                height: 528.,
+                ..default()
+            },
+            ..default()
+        }))
         .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
@@ -46,7 +48,7 @@ fn setup(
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
-        .spawn_bundle(GridBundle {
+        .spawn(GridBundle {
             grid: Grid {
                 size: 10,
                 divisions: 10,
@@ -63,7 +65,7 @@ fn setup(
 
     // axes
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 1.,
                 inner_offset: 5.,
@@ -77,7 +79,7 @@ fn setup(
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::rgb(1.0, 1.0, 1.0),
             illuminance: 5000.,
@@ -89,7 +91,7 @@ fn setup(
 
     // orbit camera
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             ..Default::default()
         })
         .insert(OrbitCamera {
@@ -99,7 +101,7 @@ fn setup(
         });
 
     // FPS on screen
-    commands.spawn_bundle(TextBundle {
+    commands.spawn(TextBundle {
         text: Text {
             sections: vec![TextSection {
                 value: "\nFPS: ".to_string(),

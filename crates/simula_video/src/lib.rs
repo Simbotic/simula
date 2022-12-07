@@ -71,10 +71,10 @@ impl Plugin for VideoPlugin {
         }
 
         #[cfg(feature = "video")]
-        app.add_startup_system(video::setup.exclusive_system())
-            .add_system(video::setup_video_tags.exclusive_system())
-            .add_system(video::blit_videos_to_canvas.exclusive_system())
-            .add_system(video::update_video_state.exclusive_system());
+        app.add_startup_system(video::setup)
+            .add_system(video::setup_video_tags)
+            .add_system(video::blit_videos_to_canvas)
+            .add_system(video::update_video_state);
     }
 }
 

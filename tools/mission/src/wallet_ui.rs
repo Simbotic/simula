@@ -21,7 +21,7 @@ impl Plugin for WalletUIPlugin {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Component)]
+#[derive(Debug, Clone, PartialEq, Component, Resource)]
 pub struct SelectedWallet(usize);
 
 fn wallet_creation_window(mut commands: Commands, mut egui_ctx: ResMut<EguiContext>) {
@@ -503,7 +503,7 @@ fn add_wallet(commands: &mut Commands) {
 }
 
 fn create_wallet_ui<T: WalletUIOptions + Component>(commands: &mut Commands, configuration: T) {
-    let entity = commands.spawn().insert(WalletUI).insert(configuration).id();
+    let entity = commands.spawn_empty().insert(WalletUI).insert(configuration).id();
 
     T::insert(entity, commands)
 }

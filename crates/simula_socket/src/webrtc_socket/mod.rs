@@ -1,5 +1,5 @@
 use std::pin::Pin;
-
+use bevy::prelude::*;
 use futures::{Future, FutureExt, StreamExt};
 use futures_util::select;
 use log::debug;
@@ -99,7 +99,7 @@ impl Default for WebRtcSocketConfig {
 /// Contains the interface end of a full-mesh web rtc connection
 ///
 /// Used to send and receive messages from other peers
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 pub struct WebRtcSocket {
     messages_from_peers: futures_channel::mpsc::UnboundedReceiver<(PeerId, Packet)>,
     new_connected_peers: futures_channel::mpsc::UnboundedReceiver<PeerId>,

@@ -44,6 +44,7 @@ impl FromWorld for Images {
     }
 }
 
+#[derive(Resource)]
 pub struct ImageTextureIds {
     time_icon: Option<egui::TextureId>,
     trust_icon: Option<egui::TextureId>,

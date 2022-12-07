@@ -28,28 +28,30 @@ use simula_viz::{
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(WindowDescriptor {
-        title: "[Simbotic] Simula - Sandbox".to_string(),
-        width: 940.,
-        height: 528.,
-        ..default()
-    })
-    .insert_resource(Msaa { samples: 4 })
-    .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .add_plugins(DefaultPlugins)
-    .add_plugin(EguiPlugin)
-    .add_plugin(WorldInspectorPlugin::new())
-    .add_plugin(ActionPlugin)
-    .add_plugin(FrameTimeDiagnosticsPlugin::default())
-    .add_plugin(OrbitCameraPlugin)
-    .add_plugin(FlyCameraPlugin)
-    .add_plugin(LinesPlugin)
-    .add_plugin(AxesPlugin)
-    .add_plugin(GridPlugin)
-    .add_plugin(VideoPlugin)
-    .add_startup_system(setup)
-    .add_system(video_control_window)
-    .add_system(debug_info);
+    app.insert_resource(Msaa { samples: 4 })
+        .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "[Simbotic] Simula - Sandbox".to_string(),
+                width: 940.,
+                height: 528.,
+                ..default()
+            },
+            ..default()
+        }))
+        .add_plugin(EguiPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(ActionPlugin)
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(OrbitCameraPlugin)
+        .add_plugin(FlyCameraPlugin)
+        .add_plugin(LinesPlugin)
+        .add_plugin(AxesPlugin)
+        .add_plugin(GridPlugin)
+        .add_plugin(VideoPlugin)
+        .add_startup_system(setup)
+        .add_system(video_control_window)
+        .add_system(debug_info);
 
     app.run();
 }
@@ -66,7 +68,7 @@ fn setup(
 ) {
     // grid
     commands
-        .spawn_bundle(GridBundle {
+        .spawn(GridBundle {
             grid: Grid {
                 size: 10,
                 divisions: 10,
@@ -83,7 +85,7 @@ fn setup(
 
     // axes
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 1.,
                 inner_offset: 5.,
@@ -97,7 +99,7 @@ fn setup(
 
     // x - axis
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
@@ -111,7 +113,7 @@ fn setup(
 
     // y - axis
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
@@ -125,7 +127,7 @@ fn setup(
 
     // z - axis
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
@@ -139,7 +141,7 @@ fn setup(
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::rgb(1.0, 1.0, 1.0),
             illuminance: 5000.,
@@ -152,14 +154,14 @@ fn setup(
     let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
 
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 2.0, -10.0)
                 .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
             ..default()
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
-            let mut _child = parent.spawn_bundle(Camera3dBundle {
+            let mut _child = parent.spawn(Camera3dBundle {
                 camera_3d: Camera3d {
                     clear_color: ClearColorConfig::Custom(Color::BLACK),
                     ..default()
@@ -181,7 +183,7 @@ fn setup(
         .insert(FlyCamera::default());
 
     // FPS on screen
-    commands.spawn_bundle(TextBundle {
+    commands.spawn(TextBundle {
         text: Text {
             sections: vec![TextSection {
                 value: "\nFPS: ".to_string(),
@@ -219,17 +221,17 @@ fn setup(
         let video_position = Vec3::new(0.0, 0.5, -2.0);
 
         commands
-            .spawn_bundle(SpatialBundle { ..default() })
+            .spawn(SpatialBundle { ..default() })
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(SpatialBundle {
+                    .spawn(SpatialBundle {
                         transform: Transform::from_translation(video_position)
                             .with_rotation(video_rotation),
                         ..default()
                     })
                     .with_children(|parent| {
                         parent
-                            .spawn_bundle(MaterialMeshBundle {
+                            .spawn(MaterialMeshBundle {
                                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                                 material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
@@ -253,7 +255,7 @@ fn setup(
                     .insert(Name::new("Video: Robot"))
                     .with_children(|parent| {
                         parent
-                            .spawn_bundle(AxesBundle {
+                            .spawn(AxesBundle {
                                 axes: Axes {
                                     size: 1.,
                                     ..default()
@@ -266,7 +268,7 @@ fn setup(
                     });
 
                 parent
-                    .spawn_bundle(AxesBundle {
+                    .spawn(AxesBundle {
                         transform: Transform::from_translation(video_position)
                             .with_rotation(video_rotation),
                         axes: Axes {
@@ -292,7 +294,7 @@ fn setup(
         };
         let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
-            .spawn_bundle(MaterialMeshBundle {
+            .spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: video_materials.add(video_material),
                 transform: Transform::from_xyz(0.0, 0.5, -2.0)
@@ -320,14 +322,14 @@ fn setup(
         };
         // let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
-            .spawn_bundle(SpatialBundle {
+            .spawn(SpatialBundle {
                 transform: Transform::from_xyz(2.0, 0.5, -2.0),
                 ..default()
             })
             .insert(Name::new("Video: Robot"))
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(MaterialMeshBundle {
+                    .spawn(MaterialMeshBundle {
                         mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                         material: video_materials.add(video_material),
                         transform: Transform::from_rotation(Quat::from_rotation_x(
@@ -344,7 +346,7 @@ fn setup(
                     })
                     .insert(Name::new("Robot: Body"));
                 parent
-                    .spawn_bundle(AxesBundle {
+                    .spawn(AxesBundle {
                         axes: Axes {
                             size: 1.,
                             ..default()
@@ -366,7 +368,7 @@ fn setup(
             ..Default::default()
         };
         commands
-            .spawn_bundle(MaterialMeshBundle {
+            .spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: video_materials.add(video_material),
                 transform: Transform::from_xyz(2.5, 0.5, -3.0)
@@ -396,7 +398,7 @@ fn setup(
         ..default()
     };
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
             material: materials.add(rt_material),
             transform: Transform::from_xyz(-2.5, 0.5, -3.0)
