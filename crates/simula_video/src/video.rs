@@ -201,24 +201,22 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
 }
 
 pub(crate) fn update_video_state(world: &mut World) {
-    let mut videos = world
-        .query_filtered::<(Entity, &VideoSrc), (With<VideoTag>, With<Handle<VideoMaterial>>)>();
-    let videos: Vec<(Entity, VideoSrc)> = videos
-        .iter(world)
-        .map(|(entity, src)| (entity, src.clone()))
-        .collect();
-
-    for (entity, src) in videos.iter() {
-        let video_res = world.get_non_send_resource_mut::<VideoResource>();
-        if let Some(mut video_res) = video_res {
-            let video_canvas = video_res.videos.get_mut(&entity);
+    let mut videos = world.query_filtered::<(Entity, &VideoSrc), (
+        With<VideoTag>,
+        With<Handle<VideoMaterial>>,
+        Changed<VideoSrc>,
+    )>();
+    let videos = videos.iter(world).map(|(entity, src)| (entity, src));
+    for (entity, src) in videos {
+        let video_res = world.get_non_send_resource::<VideoResource>();
+        if let Some(video_res) = video_res {
+            let video_canvas = video_res.videos.get(&entity);
             if let Some(video_canvas) = video_canvas {
                 if src.playing {
                     let _ = video_canvas.video.play();
                 } else {
                     let _ = video_canvas.video.pause();
                 }
-
                 video_canvas.video.set_loop(src._loop);
             }
         }
