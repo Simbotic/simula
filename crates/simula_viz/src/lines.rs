@@ -100,6 +100,45 @@ impl Lines {
             }
         }
     }
+
+    pub fn sphere_colored(&mut self, center: Vec3, radius: f32, color: Color) {
+        let res = 12;
+        let arc = std::f32::consts::TAU / res as f32;
+        let rot = std::f32::consts::PI / 2.0;
+        // Draw horizontal ring
+        for vs in 0..res {
+            let arc = std::f32::consts::TAU / res as f32;
+            let a0 = (vs + 0) as f32 * arc;
+            let a1 = (vs + 1) as f32 * arc;
+            let x0 = a0.sin();
+            let z0 = a0.cos();
+            let x1 = a1.sin();
+            let z1 = a1.cos();
+            self.line_colored(
+                center + Vec3::new(x0, 0.0, z0) * radius,
+                center + Vec3::new(x1, 0.0, z1) * radius,
+                color,
+            );
+        }
+        // Draw vertical rings
+        for va in 0..2 {
+            let r0 = va as f32 * rot;
+            let r0 = Quat::from_rotation_y(r0);
+            for vi in 0..res {
+                let a0 = (vi + 0) as f32 * arc;
+                let a1 = (vi + 1) as f32 * arc;
+                let x0 = a0.sin();
+                let y0 = a0.cos();
+                let x1 = a1.sin();
+                let y1 = a1.cos();
+                let start = Vec3::new(x0, y0, 0.0);
+                let start = r0 * start;
+                let end = Vec3::new(x1, y1, 0.0);
+                let end = r0 * end;
+                self.line_colored(center + start * radius, center + end * radius, color);
+            }
+        }
+    }
 }
 
 #[derive(Bundle)]

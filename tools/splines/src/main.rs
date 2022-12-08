@@ -1,7 +1,6 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    transform,
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
