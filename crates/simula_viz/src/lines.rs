@@ -62,6 +62,44 @@ impl Lines {
         }
         self.lines.push(line);
     }
+
+    pub fn cross_colored(&mut self, center: Vec3, size: f32, color: Color) {
+        self.line_colored(
+            center + Vec3::new(-size, 0.0, 0.0),
+            center + Vec3::new(size, 0.0, 0.0),
+            color,
+        );
+        self.line_colored(
+            center + Vec3::new(0.0, -size, 0.0),
+            center + Vec3::new(0.0, size, 0.0),
+            color,
+        );
+        self.line_colored(
+            center + Vec3::new(0.0, 0.0, -size),
+            center + Vec3::new(0.0, 0.0, size),
+            color,
+        );
+    }
+
+    pub fn box_colored(&mut self, center: Vec3, size: f32, color: Color) {
+        let half_size = size / 2.0;
+        for x in 0..2 {
+            for y in 0..2 {
+                for z in 0..2 {
+                    let x = if x == 0 { -half_size } else { half_size };
+                    let y = if y == 0 { -half_size } else { half_size };
+                    let z = if z == 0 { -half_size } else { half_size };
+                    let start = center + Vec3::new(x, y, z);
+                    let end = center + Vec3::new(x, y, -z);
+                    self.line_colored(start, end, color);
+                    let end = center + Vec3::new(x, -y, z);
+                    self.line_colored(start, end, color);
+                    let end = center + Vec3::new(-x, y, z);
+                    self.line_colored(start, end, color);
+                }
+            }
+        }
+    }
 }
 
 #[derive(Bundle)]
@@ -103,8 +141,6 @@ impl Plugin for LinesPlugin {
         // Add a line mesh that can be used as default by all line bundles
         let mut mesh: Mesh = Mesh::new(PrimitiveTopology::LineList);
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
         let line_mesh = LineMesh(mesh);
         app.insert_resource(line_mesh);
@@ -128,15 +164,11 @@ fn generate_lines(
         }
 
         let mut points = vec![];
-        let mut normals = vec![];
-        let mut uvs = vec![];
         let mut colors = vec![];
 
         let num_lines = lines.lines.len();
 
         points.resize(num_lines * 2, [0f32; 3]);
-        normals.resize(num_lines * 2, [0f32; 3]);
-        uvs.resize(num_lines * 2, [0f32; 2]);
         colors.resize(num_lines * 2, [0f32; 4]);
 
         for (idx, line) in lines.lines.iter().enumerate() {
@@ -149,8 +181,6 @@ fn generate_lines(
 
         if let Some(mesh) = meshes.get_mut(&mesh_handle.clone()) {
             mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
-            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
-            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
             mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
         }
 
