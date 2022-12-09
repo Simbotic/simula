@@ -222,3 +222,31 @@ pub(crate) fn update_video_state(world: &mut World) {
         }
     }
 }
+
+pub(crate) fn detect_video_removal(mut world: &mut World) {
+    let removals = world.removed::<VideoSrc>();
+    let videos: Vec<Entity> = removals.to_owned().map(|v| v.clone()).collect();
+
+    for entity in videos {
+        let video_res = (&mut world).get_non_send_resource_mut::<VideoResource>();
+        if let Some(mut video_res) = video_res {
+            let video_canvas = video_res.videos.get(&entity);
+
+            if let Some(video_canvas) = video_canvas {
+                video_canvas.video.remove();
+                video_canvas.canvas.remove();
+            }
+            video_res.videos.remove(&entity);
+
+            let material = world.get::<Handle<VideoMaterial>>(entity).unwrap().clone();
+            let materials = world.get_resource_mut::<Assets<VideoMaterial>>();
+            if let Some(mut materials) = materials {
+                let material = materials.get_mut(&material);
+                if let Some(material) = material {
+                    material.video_texture = None;
+                    material.alpha_scaler = 0.0;
+                }
+            }
+        }
+    }
+}

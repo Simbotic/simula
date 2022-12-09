@@ -74,7 +74,8 @@ impl Plugin for VideoPlugin {
         app.add_startup_system(video::setup.exclusive_system())
             .add_system(video::setup_video_tags.exclusive_system())
             .add_system(video::blit_videos_to_canvas.exclusive_system())
-            .add_system(video::update_video_state.exclusive_system());
+            .add_system(video::update_video_state.exclusive_system())
+            .add_system(video::detect_video_removal.exclusive_system().at_end());
     }
 }
 

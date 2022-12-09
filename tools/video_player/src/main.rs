@@ -419,8 +419,9 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
 }
 
 fn video_control_window(
+    mut commands: Commands,
     mut egui_ctx: ResMut<EguiContext>,
-    mut video_sources: Query<&mut VideoSrc>,
+    mut video_sources: Query<(Entity, &mut VideoSrc)>,
 ) {
     egui::Window::new("Panel")
         .default_width(200.0)
@@ -434,7 +435,7 @@ fn video_control_window(
                 .on_hover_text("play video")
                 .clicked()
                 .then(|| {
-                    for mut video in video_sources.iter_mut() {
+                    for (_, mut video) in video_sources.iter_mut() {
                         video.playing = true;
                     }
                 });
@@ -442,8 +443,16 @@ fn video_control_window(
                 .on_hover_text("pause video")
                 .clicked()
                 .then(|| {
-                    for mut video in video_sources.iter_mut() {
+                    for (_, mut video) in video_sources.iter_mut() {
                         video.playing = false;
+                    }
+                });
+            ui.small_button("remove")
+                .on_hover_text("remove video")
+                .clicked()
+                .then(|| {
+                    for (entity, _) in video_sources.iter() {
+                        commands.entity(entity).remove::<VideoSrc>();
                     }
                 });
         });
