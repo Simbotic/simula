@@ -25,9 +25,9 @@ pub fn run(
     for (entity, mut delay, mut running) in &mut delays {
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            delay.start = time.seconds_since_startup();
+            delay.start = time.elapsed_seconds_f64();
         }
-        let duration = time.seconds_since_startup() - delay.start;
+        let duration = time.elapsed_seconds_f64() - delay.start;
         if duration > delay.duration {
             commands.entity(entity).insert(BehaviorSuccess);
         }

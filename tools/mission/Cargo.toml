@@ -8,9 +8,9 @@ default = ["gif"]
 gif = ["simula_video/gif"]
 
 [dependencies]
-bevy = { version = "0.8" }
-bevy-inspector-egui = "0.13"
-bevy_egui = "0.16"
+bevy = { version = "0.9" }
+bevy-inspector-egui = "0.14"
+bevy_egui = "0.17"
 egui = { version = "0.19.0", default-features = false }
 egui_extras = "0.19.0"
 hex = "0.4"

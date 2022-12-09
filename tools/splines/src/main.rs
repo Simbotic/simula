@@ -4,13 +4,14 @@ use bevy::{
 };
 use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
-use simula_authority::{Authority, NetAuthorityPlugin};
 use simula_camera::orbitcam::*;
-use simula_net::{NetId, NetPlugin, Replicate};
+use simula_core::spline::Spline;
+use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
+    spline::{SplineBundle, SplinePlugin},
 };
 
 fn main() {
@@ -19,7 +20,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
-                title: "[Simbotic] Simula - Authority".to_string(),
+                title: "[Simbotic] Simula - Splines".to_string(),
                 width: 940.,
                 height: 528.,
                 ..default()
@@ -27,7 +28,6 @@ fn main() {
             ..default()
         }))
         .add_plugin(NetPlugin)
-        .add_plugin(NetAuthorityPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -35,7 +35,9 @@ fn main() {
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
+        .add_plugin(SplinePlugin)
         .add_startup_system(setup)
+        .add_system(travel_on_spline)
         .add_system(debug_info)
         .run();
 }
@@ -47,14 +49,6 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    // network authority
-    commands
-        .spawn_empty()
-        .insert(Authority::default())
-        .insert(Replicate::<Authority>::default())
-        .insert(NetId::default())
-        .insert(Name::new("Authority"));
-
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
@@ -78,7 +72,7 @@ fn setup(
         .spawn(AxesBundle {
             axes: Axes {
                 size: 1.,
-                inner_offset: 5.,
+                inner_offset: 10.,
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
@@ -134,6 +128,106 @@ fn setup(
         },
         ..Default::default()
     });
+
+    let spline = Spline::from_points(vec![
+        Vec3::new(-6.0, 0.0, 0.0),
+        Vec3::new(-5.0, 1.0, 0.0),
+        Vec3::new(-4.0, -1.0, 0.0),
+        Vec3::new(-3.0, 0.0, 0.0),
+        Vec3::new(-2.0, 1.0, 0.0),
+        Vec3::new(-1.0, -1.0, 0.0),
+        Vec3::new(0.0, 0.0, 0.0),
+        Vec3::new(1.0, 1.0, 0.0),
+        Vec3::new(2.0, -1.0, 0.0),
+        Vec3::new(3.0, 0.0, 0.0),
+        Vec3::new(4.0, 1.0, 0.0),
+        Vec3::new(5.0, -1.0, 0.0),
+        Vec3::new(6.0, 0.0, 0.0),
+    ]);
+
+    // spline
+    let spline = commands
+        .spawn(SplineBundle {
+            spline,
+            mesh: meshes.add(line_mesh.clone()),
+            material: lines_materials.add(LinesMaterial {}),
+            transform: Transform::from_xyz(0.0, 2.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Name::new("Spline Simple"))
+        .id();
+
+    // spline traveler (time)
+    commands
+        .spawn(AxesBundle {
+            axes: Axes {
+                size: 1.0,
+                inner_offset: 0.0,
+            },
+            mesh: meshes.add(line_mesh.clone()),
+            material: lines_materials.add(LinesMaterial {}),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..Default::default()
+        })
+        .insert(SplineTraveler {
+            spline,
+            travel_type: TravelType::Time,
+        });
+
+    // spline traveler (distance)
+    commands
+        .spawn(AxesBundle {
+            axes: Axes {
+                size: 1.0,
+                inner_offset: 0.0,
+            },
+            mesh: meshes.add(line_mesh.clone()),
+            material: lines_materials.add(LinesMaterial {}),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..Default::default()
+        })
+        .insert(SplineTraveler {
+            spline,
+            travel_type: TravelType::Distance,
+        });
+}
+
+enum TravelType {
+    Time,
+    Distance,
+}
+
+#[derive(Component)]
+struct SplineTraveler {
+    spline: Entity,
+    travel_type: TravelType,
+}
+
+fn travel_on_spline(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &SplineTraveler)>,
+    splines: Query<(&Spline, &GlobalTransform)>,
+) {
+    for (mut transform, traveler) in &mut query {
+        if let Ok((spline, spline_transform)) = splines.get(traveler.spline) {
+            match traveler.travel_type {
+                TravelType::Time => {
+                    let t = time.elapsed_seconds() * 0.1;
+                    let t = t % 1.0;
+                    let mat = spline_transform.compute_matrix() * spline.get_frame(t);
+                    *transform = Transform::from_matrix(mat);
+                }
+                TravelType::Distance => {
+                    let d = 1.0 * time.elapsed_seconds();
+                    let d = d % spline.get_length();
+                    let t = spline.get_t_at_length(d);
+                    let t = t % 1.0;
+                    let mat = spline_transform.compute_matrix() * spline.get_frame(t);
+                    *transform = Transform::from_matrix(mat);
+                }
+            }
+        }
+    }
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

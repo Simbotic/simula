@@ -72,7 +72,7 @@ impl Inspectable for BehaviorInspectorNode {
         };
 
         ui.set_min_width(100.0);
-        ui.push_id(format!("bhtins-{}", entity.id()), |ui| {
+        ui.push_id(format!("bhtins-{}", entity.index()), |ui| {
             ui.vertical(|ui| {
                 // Node frame
                 egui::Frame::none()

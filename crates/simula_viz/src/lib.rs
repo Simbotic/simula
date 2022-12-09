@@ -8,4 +8,5 @@ pub mod lookat;
 pub mod pointcloud;
 pub mod rod;
 pub mod signal;
+pub mod spline;
 pub mod voxel;

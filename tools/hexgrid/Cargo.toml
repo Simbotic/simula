@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.8" }
+bevy = { version = "0.9" }
 simula_hexgrid = { path = "../../crates/simula_hexgrid" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_core = { path = "../../crates/simula_core" }
 rand = "0.8.5"
-bevy-inspector-egui = "0.13"
+bevy-inspector-egui = "0.14"
