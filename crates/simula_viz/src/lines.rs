@@ -107,7 +107,6 @@ impl Lines {
         let rot = std::f32::consts::PI / 2.0;
         // Draw horizontal ring
         for vs in 0..res {
-            let arc = std::f32::consts::TAU / res as f32;
             let a0 = (vs + 0) as f32 * arc;
             let a1 = (vs + 1) as f32 * arc;
             let x0 = a0.sin();

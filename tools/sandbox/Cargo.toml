@@ -22,7 +22,7 @@ simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
 simula_video = { path = "../../crates/simula_video" }
 
-authority = { path = "../../tools/authority" }
+net_authority = { path = "../../tools/net_authority" }
 
 rand = "0.8.5"
 enum-iterator = "1.2"

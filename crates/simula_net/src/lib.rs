@@ -151,6 +151,7 @@ pub fn extract_messages(mut socket: Option<ResMut<WebRtcSocket>>, mut messages: 
         while let Ok(Some((peer, data))) = message {
             messages.messages.push((peer, data));
             message = socket.receive_one();
+            debug!("Received message from peer: {}", peer);
         }
     }
 }
