@@ -136,6 +136,7 @@ async fn handshake_offer(
     config: &WebRtcSocketConfig,
 ) -> Result<(PeerId, RtcDataChannel), Box<dyn std::error::Error>> {
     debug!("making offer");
+
     let conn = create_rtc_peer_connection(config);
     let (channel_ready_tx, mut channel_ready_rx) = futures_channel::mpsc::channel(1);
     let data_channel = create_data_channel(
@@ -180,7 +181,7 @@ async fn handshake_offer(
                 candidates.push(candidate);
             }
             _ => {
-                warn!("ignoring other signal!!!");
+                warn!("ignoring unexpected signal: {signal:?}");
             }
         };
     }
@@ -225,7 +226,6 @@ async fn handshake_offer(
         select! {
             _ = channel_ready_rx.next() => {
                 debug!("channel ready");
-                // wait_for_ice_complete(conn.clone()).await;
                 break;
             }
             msg = signal_receiver.next() => {
@@ -243,6 +243,10 @@ async fn handshake_offer(
         };
     }
 
+    // stop listening for ICE candidates
+    // TODO: we should support getting new ICE candidates even after connecting,
+    //       since it's possible to return to the ice gathering state
+    // See: <https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/iceGatheringState>
     conn.set_onicecandidate(None);
 
     debug!("Ice completed: {:?}", conn.ice_gathering_state());
@@ -271,7 +275,12 @@ async fn handshake_accept(
 
     let offer: Option<String>;
     loop {
-        match signal_receiver.next().await.ok_or("error")? {
+        let signal = signal_receiver
+            .next()
+            .await
+            .ok_or("Signal server connection lost in the middle of a handshake")?;
+
+        match signal {
             PeerSignal::Offer(o) => {
                 offer = Some(o);
                 break;
@@ -281,7 +290,7 @@ async fn handshake_accept(
                 candidates.push(candidate);
             }
             _ => {
-                warn!("ignoring other signal!!!");
+                warn!("ignoring unexpected signal: {signal:?}");
             }
         }
     }
@@ -354,7 +363,6 @@ async fn handshake_accept(
         select! {
             _ = channel_ready_rx.next() => {
                 debug!("channel ready");
-                // wait_for_ice_complete(conn.clone()).await;
                 break;
             }
             msg = signal_receiver.next() => {
@@ -372,6 +380,10 @@ async fn handshake_accept(
         };
     }
 
+    // stop listening for ICE candidates
+    // TODO: we should support getting new ICE candidates even after connecting,
+    //       since it's possible to return to the ice gathering state
+    // See: <https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/iceGatheringState>
     conn.set_onicecandidate(None);
 
     debug!("Ice completed: {:?}", conn.ice_gathering_state());
@@ -410,7 +422,7 @@ fn create_data_channel(
     data_channel_config.ordered(false);
     data_channel_config.max_retransmits(0);
     data_channel_config.negotiated(true);
-    data_channel_config.id(0);
+    data_channel_config.id(127);
 
     let channel: RtcDataChannel =
         connection.create_data_channel_with_data_channel_dict("webudp", &data_channel_config);
