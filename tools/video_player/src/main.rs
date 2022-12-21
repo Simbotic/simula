@@ -4,6 +4,7 @@ use bevy::{
     // log::LogPlugin,
     prelude::*,
     render::view::RenderLayers,
+    utils::HashMap,
 };
 use bevy_egui::EguiPlugin;
 use bevy_egui::{egui, EguiContext};
@@ -30,6 +31,7 @@ fn main() {
 
     app.insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+        .insert_resource(DeletedEntityVideoResource(HashMap::new()))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
                 title: "[Simbotic] Simula - Sandbox".to_string(),
@@ -344,6 +346,9 @@ fn setup(
                         playing: true,
                         _loop: false,
                     })
+                    .insert(Visibility {
+                        is_visible: true,
+                    })
                     .insert(Name::new("Robot: Body"));
                 parent
                     .spawn(AxesBundle {
@@ -423,7 +428,8 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
 fn video_control_window(
     mut commands: Commands,
     mut egui_ctx: ResMut<EguiContext>,
-    mut video_sources: Query<(Entity, &mut VideoSrc)>,
+    mut video_sources: Query<(Entity, &mut VideoSrc, Option<&mut Visibility>)>,
+    mut deleted_video_sources: ResMut<DeletedEntityVideoResource>,
 ) {
     egui::Window::new("Panel")
         .default_width(200.0)
@@ -437,7 +443,7 @@ fn video_control_window(
                 .on_hover_text("play video")
                 .clicked()
                 .then(|| {
-                    for (_, mut video) in video_sources.iter_mut() {
+                    for (_, mut video, _) in video_sources.iter_mut() {
                         video.playing = true;
                     }
                 });
@@ -445,7 +451,7 @@ fn video_control_window(
                 .on_hover_text("pause video")
                 .clicked()
                 .then(|| {
-                    for (_, mut video) in video_sources.iter_mut() {
+                    for (_, mut video, _) in video_sources.iter_mut() {
                         video.playing = false;
                     }
                 });
@@ -453,9 +459,35 @@ fn video_control_window(
                 .on_hover_text("remove video")
                 .clicked()
                 .then(|| {
-                    for (entity, _) in video_sources.iter() {
+                    for (entity, src, _) in video_sources.iter_mut() {
+                        deleted_video_sources.0.insert(entity, src.to_owned());
                         commands.entity(entity).remove::<VideoSrc>();
+                    }
+                });
+            ui.small_button("spawn")
+                .on_hover_text("spawn video")
+                .clicked()
+                .then(|| {
+                    for video in deleted_video_sources.0.iter() {
+                        let mut src = video.1.to_owned();
+                        src.playing = true;
+                        commands.entity(video.0.to_owned()).insert(src);
+                        commands.entity(video.0.to_owned()).insert(Visibility{is_visible: true});
+                    }
+                    deleted_video_sources.0 = HashMap::new();
+                });
+            ui.small_button("visibility")
+                .on_hover_text("show or hide video")
+                .clicked()
+                .then(|| {
+                    for (_, _, visible) in video_sources.iter_mut() {
+                        if let Some(mut visible) = visible {
+                            visible.is_visible = !visible.is_visible;
+                        }
                     }
                 });
         });
 }
+
+#[derive(Debug, Clone, Component, Resource)]
+pub struct DeletedEntityVideoResource(HashMap<Entity, VideoSrc>);
