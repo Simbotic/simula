@@ -3,8 +3,7 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     // log::LogPlugin,
     prelude::*,
-    render::view::RenderLayers,
-    utils::HashMap,
+    render::view::RenderLayers
 };
 use bevy_egui::EguiPlugin;
 use bevy_egui::{egui, EguiContext};
@@ -14,7 +13,7 @@ use simula_camera::{flycam::*, orbitcam::*};
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
 #[cfg(feature = "video")]
-use simula_video::VideoSrc;
+use simula_video::{VideoSrc, VideoRemoved, VideoTag};
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
 use simula_video::{rt, VideoMaterial, VideoPlayer, VideoPlugin};
@@ -31,7 +30,6 @@ fn main() {
 
     app.insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .insert_resource(DeletedEntityVideoResource(HashMap::new()))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
                 title: "[Simbotic] Simula - Sandbox".to_string(),
@@ -429,7 +427,7 @@ fn video_control_window(
     mut commands: Commands,
     mut egui_ctx: ResMut<EguiContext>,
     mut video_sources: Query<(Entity, &mut VideoSrc, Option<&mut Visibility>)>,
-    mut deleted_video_sources: ResMut<DeletedEntityVideoResource>,
+    mut removed_videos: Query<Entity, With<VideoRemoved>>,
 ) {
     egui::Window::new("Panel")
         .default_width(200.0)
@@ -459,8 +457,7 @@ fn video_control_window(
                 .on_hover_text("remove video")
                 .clicked()
                 .then(|| {
-                    for (entity, src, _) in video_sources.iter_mut() {
-                        deleted_video_sources.0.insert(entity, src.to_owned());
+                    for (entity, _, _) in video_sources.iter_mut() {
                         commands.entity(entity).remove::<VideoSrc>();
                     }
                 });
@@ -468,13 +465,10 @@ fn video_control_window(
                 .on_hover_text("spawn video")
                 .clicked()
                 .then(|| {
-                    for video in deleted_video_sources.0.iter() {
-                        let mut src = video.1.to_owned();
-                        src.playing = true;
-                        commands.entity(video.0.to_owned()).insert(src);
-                        commands.entity(video.0.to_owned()).insert(Visibility{is_visible: true});
+                    for video in removed_videos.iter_mut() {
+                        info!("video respawn button");
+                        commands.entity(video).insert(VideoTag);
                     }
-                    deleted_video_sources.0 = HashMap::new();
                 });
             ui.small_button("visibility")
                 .on_hover_text("show or hide video")
@@ -489,5 +483,3 @@ fn video_control_window(
         });
 }
 
-#[derive(Debug, Clone, Component, Resource)]
-pub struct DeletedEntityVideoResource(HashMap<Entity, VideoSrc>);

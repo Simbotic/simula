@@ -106,6 +106,8 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
 
 pub(crate) fn setup(world: &mut World) {
     world.init_non_send_resource::<VideoResource>();
+    world.init_non_send_resource::<EntityVideoResource>();
+    world.init_non_send_resource::<DeletedEntityVideoResource>();
 }
 
 pub(crate) fn setup_video_tags(world: &mut World) {
@@ -138,7 +140,12 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
             } else {
                 true
             };
-            (entity, src.size, visibility, computed_visibility.is_visible())
+            (
+                entity,
+                src.size,
+                visibility,
+                computed_visibility.is_visible(),
+            )
         })
         .collect();
 
@@ -217,7 +224,11 @@ pub(crate) fn update_video_state(world: &mut World) {
         Changed<VideoSrc>,
     )>();
     let videos = videos.iter(world).map(|(entity, src)| (entity, src));
+    let mut srcs = vec![];
+
     for (entity, src) in videos {
+        srcs.push((entity, src.clone()));
+
         let video_res = world.get_non_send_resource::<VideoResource>();
         if let Some(video_res) = video_res {
             let video_canvas = video_res.videos.get(&entity);
@@ -231,6 +242,13 @@ pub(crate) fn update_video_state(world: &mut World) {
             }
         }
     }
+
+    for (entity, src) in srcs {
+        //update stored VideoSrc
+        if let Some(mut sources) = world.get_non_send_resource_mut::<EntityVideoResource>() {
+            sources.0.insert(entity, src.clone());
+        }
+    }
 }
 
 pub(crate) fn detect_video_removal(mut world: &mut World) {
@@ -238,7 +256,20 @@ pub(crate) fn detect_video_removal(mut world: &mut World) {
     let videos: Vec<Entity> = removals.to_owned().map(|v| v.clone()).collect();
 
     for entity in videos {
+        if let Some(mut sources) = (world).get_non_send_resource_mut::<EntityVideoResource>() {
+            if let Some(src) = sources.0.remove(&entity) {
+                if let Some(mut deleted_video_sources) =
+                    (&mut world).get_non_send_resource_mut::<DeletedEntityVideoResource>()
+                {
+                    deleted_video_sources.0.insert(entity, src);
+                }
+            }
+        }
+
+        world.entity_mut(entity).insert(VideoRemoved);
         world.entity_mut(entity).remove::<VideoTag>();
+
+        //clean video resources
         let video_res = (&mut world).get_non_send_resource_mut::<VideoResource>();
         if let Some(mut video_res) = video_res {
             let video_canvas = video_res.videos.get(&entity);
@@ -261,3 +292,43 @@ pub(crate) fn detect_video_removal(mut world: &mut World) {
         }
     }
 }
+
+pub(crate) fn detect_video_respawn(mut world: &mut World) {
+    let mut respawns = world.query_filtered::<Entity, (Added<VideoTag>, Without<VideoSrc>)>();
+    let videos: Vec<Entity> = respawns.iter(world).map(|v| v.clone()).collect();
+    for entity in videos {
+        world.entity_mut(entity).remove::<VideoRemoved>();
+        world.entity_mut(entity).remove::<VideoTag>();
+        let deleted_video_sources =
+            (&mut world).get_non_send_resource_mut::<DeletedEntityVideoResource>();
+        if let Some(mut deleted_video_sources) = deleted_video_sources {
+            let config = deleted_video_sources.0.remove(&entity);
+            if let Some(src) = config {
+                world.entity_mut(entity).insert(src);
+            }
+        }
+    }
+}
+
+pub(crate) fn store_video_sources(mut world: &mut World) {
+    let mut videos = world.query_filtered::<(Entity, &VideoSrc), Added<VideoSrc>>();
+    let entity_sources = videos.iter(world).map(|(entity, src)| (entity, src));
+    let mut srcs = vec![];
+    for (entity, src) in entity_sources {
+        srcs.push((entity, src.clone()));
+    }
+
+    for (entity, src) in srcs {
+        if let Some(mut sources) = (&mut world).get_non_send_resource_mut::<EntityVideoResource>() {
+            sources.0.insert(entity, src.clone());
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct EntityVideoResource(HashMap<Entity, VideoSrc>);
+#[derive(Default)]
+pub struct DeletedEntityVideoResource(HashMap<Entity, VideoSrc>);
+
+#[derive(Debug, Component, Clone)]
+pub struct VideoRemoved;

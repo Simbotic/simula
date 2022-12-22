@@ -6,7 +6,7 @@ pub use gif::{GifAsset, GifAssetLoader};
 pub use material::VideoMaterial;
 pub use raw_src::RawSrc;
 #[cfg(feature = "video")]
-pub use video::VideoSrc;
+pub use video::{VideoSrc, VideoRemoved, VideoTag};
 #[cfg(feature = "webp")]
 pub use webp::{WebPAsset, WebPAssetLoader};
 
@@ -75,6 +75,8 @@ impl Plugin for VideoPlugin {
             .add_system(video::setup_video_tags)
             .add_system(video::blit_videos_to_canvas)
             .add_system(video::update_video_state)
+            .add_system(video::detect_video_respawn)
+            .add_system(video::store_video_sources)
             .add_system(video::detect_video_removal.at_end());
     }
 }
