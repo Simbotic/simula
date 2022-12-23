@@ -62,6 +62,82 @@ impl Lines {
         }
         self.lines.push(line);
     }
+
+    pub fn cross_colored(&mut self, center: Vec3, size: f32, color: Color) {
+        self.line_colored(
+            center + Vec3::new(-size, 0.0, 0.0),
+            center + Vec3::new(size, 0.0, 0.0),
+            color,
+        );
+        self.line_colored(
+            center + Vec3::new(0.0, -size, 0.0),
+            center + Vec3::new(0.0, size, 0.0),
+            color,
+        );
+        self.line_colored(
+            center + Vec3::new(0.0, 0.0, -size),
+            center + Vec3::new(0.0, 0.0, size),
+            color,
+        );
+    }
+
+    pub fn box_colored(&mut self, center: Vec3, size: f32, color: Color) {
+        let half_size = size / 2.0;
+        for x in 0..2 {
+            for y in 0..2 {
+                for z in 0..2 {
+                    let x = if x == 0 { -half_size } else { half_size };
+                    let y = if y == 0 { -half_size } else { half_size };
+                    let z = if z == 0 { -half_size } else { half_size };
+                    let start = center + Vec3::new(x, y, z);
+                    let end = center + Vec3::new(x, y, -z);
+                    self.line_colored(start, end, color);
+                    let end = center + Vec3::new(x, -y, z);
+                    self.line_colored(start, end, color);
+                    let end = center + Vec3::new(-x, y, z);
+                    self.line_colored(start, end, color);
+                }
+            }
+        }
+    }
+
+    pub fn sphere_colored(&mut self, center: Vec3, radius: f32, color: Color) {
+        let res = 12;
+        let arc = std::f32::consts::TAU / res as f32;
+        let rot = std::f32::consts::PI / 2.0;
+        // Draw horizontal ring
+        for vs in 0..res {
+            let a0 = (vs + 0) as f32 * arc;
+            let a1 = (vs + 1) as f32 * arc;
+            let x0 = a0.sin();
+            let z0 = a0.cos();
+            let x1 = a1.sin();
+            let z1 = a1.cos();
+            self.line_colored(
+                center + Vec3::new(x0, 0.0, z0) * radius,
+                center + Vec3::new(x1, 0.0, z1) * radius,
+                color,
+            );
+        }
+        // Draw vertical rings
+        for va in 0..2 {
+            let r0 = va as f32 * rot;
+            let r0 = Quat::from_rotation_y(r0);
+            for vi in 0..res {
+                let a0 = (vi + 0) as f32 * arc;
+                let a1 = (vi + 1) as f32 * arc;
+                let x0 = a0.sin();
+                let y0 = a0.cos();
+                let x1 = a1.sin();
+                let y1 = a1.cos();
+                let start = Vec3::new(x0, y0, 0.0);
+                let start = r0 * start;
+                let end = Vec3::new(x1, y1, 0.0);
+                let end = r0 * end;
+                self.line_colored(center + start * radius, center + end * radius, color);
+            }
+        }
+    }
 }
 
 #[derive(Bundle)]
@@ -103,8 +179,6 @@ impl Plugin for LinesPlugin {
         // Add a line mesh that can be used as default by all line bundles
         let mut mesh: Mesh = Mesh::new(PrimitiveTopology::LineList);
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<[f32; 3]>::new());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, Vec::<[f32; 3]>::new());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, Vec::<[f32; 2]>::new());
         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<[f32; 4]>::new());
         let line_mesh = LineMesh(mesh);
         app.insert_resource(line_mesh);
@@ -128,15 +202,11 @@ fn generate_lines(
         }
 
         let mut points = vec![];
-        let mut normals = vec![];
-        let mut uvs = vec![];
         let mut colors = vec![];
 
         let num_lines = lines.lines.len();
 
         points.resize(num_lines * 2, [0f32; 3]);
-        normals.resize(num_lines * 2, [0f32; 3]);
-        uvs.resize(num_lines * 2, [0f32; 2]);
         colors.resize(num_lines * 2, [0f32; 4]);
 
         for (idx, line) in lines.lines.iter().enumerate() {
@@ -149,8 +219,6 @@ fn generate_lines(
 
         if let Some(mesh) = meshes.get_mut(&mesh_handle.clone()) {
             mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
-            mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
-            mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
             mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
         }
 

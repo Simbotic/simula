@@ -26,6 +26,60 @@ So much of AI is about compressing reality to a small vector space, like a video
 
 ![Force Graph Function](docs/force_graph_function.png)
 
+## WASM
+To add WASM support to your Rust installation. Using Rustup:
+```
+rustup target install wasm32-unknown-unknown
+```
+
+Now, to run your project in the browser.
+```
+wasm-server-runner
+```
+
+The easiest and most automatic way to get started is the wasm-server-runner tool.
+
+Install it:
+```
+cargo install wasm-server-runner
+```
+
+Set up cargo to use it, in `.cargo/config.toml` (in your project folder, or globally in your user home folder):
+```
+[target.wasm32-unknown-unknown]
+runner = "wasm-server-runner"
+```
+
+Alternatively, you can also set the runner using an environment variable:
+
+```
+export CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-server-runner
+```
+
+Now you can just run your simulation with:
+```
+cargo run --target wasm32-unknown-unknown
+```
+
+It will automatically run a minimal local webserver and open your simulation in your browser.
+
+## P2P Networking
+
+Launch signaling server:
+```
+cargo run --release -p simula_signaling
+```
+
+Launch any number of native peers:
+```
+cargo run --release -p net_peer
+```
+
+Launch any number of WASM peers:
+```
+cargo run --target wasm32-unknown-unknown --release -p net_peer
+```
+
 ## GStreamer
 
 ### Ubuntu

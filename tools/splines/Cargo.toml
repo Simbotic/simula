@@ -1,33 +1,19 @@
 [package]
-name = "sandbox"
+name = "splines"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-default = ["gif"]
-gif = ["simula_video/gif"]
-webp = ["simula_video/webp"]
-gst = ["simula_video/gst"]
-
 [dependencies]
 bevy = { version = "0.9" }
-bevy_egui = "0.17"
 bevy-inspector-egui = "0.14"
-bevy_mod_debugdump = "0.6"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
-simula_video = { path = "../../crates/simula_video" }
-
-net_authority = { path = "../../tools/net_authority" }
 
 rand = "0.8.5"
 enum-iterator = "1.2"
 enum-display-derive = "0.1.1"
 
-# while we wait for WASM support
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-simula_cad = { path = "../../crates/simula_cad" }

@@ -8,3 +8,4 @@ pub mod map_range;
 pub mod prng;
 pub mod ray;
 pub mod signal;
+pub mod spline;

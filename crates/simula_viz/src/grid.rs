@@ -51,7 +51,7 @@ impl Default for GridBundle {
     }
 }
 
-fn system(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {
+fn grid_lines(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {
     for (mut lines, grid, visibility) in query.iter_mut() {
         if visibility.is_visible {
             let center = grid.divisions / 2;
@@ -87,6 +87,6 @@ pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Grid>().add_system(system);
+        app.register_type::<Grid>().add_system(grid_lines);
     }
 }

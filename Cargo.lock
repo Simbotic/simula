@@ -531,20 +531,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "authority"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy-inspector-egui",
- "serde",
- "simula_action",
- "simula_camera",
- "simula_core",
- "simula_net",
- "simula_viz",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4249,6 +4235,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "net_authority"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "serde",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_viz",
+]
+
+[[package]]
+name = "net_peer"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "net_authority",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_viz",
+]
+
+[[package]]
 name = "nix"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5384,13 +5398,13 @@ dependencies = [
 name = "sandbox"
 version = "0.1.0"
 dependencies = [
- "authority",
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",
  "bevy_mod_debugdump",
  "enum-display-derive",
  "enum-iterator",
+ "net_authority",
  "rand 0.8.5",
  "simula_action",
  "simula_cad",
@@ -5932,6 +5946,22 @@ checksum = "67cf02bbac7a337dc36e4f5a693db6c21e7863f45070f7064577eb4367a3212b"
 dependencies = [
  "base64ct",
  "der",
+]
+
+[[package]]
+name = "splines"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_net",
+ "simula_viz",
 ]
 
 [[package]]
@@ -6563,7 +6593,6 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "video_player"
 version = "0.1.0"
 dependencies = [
- "authority",
  "bevy",
  "bevy-inspector-egui",
  "bevy_egui",
@@ -6572,7 +6601,6 @@ dependencies = [
  "enum-iterator",
  "rand 0.8.5",
  "simula_action",
- "simula_cad",
  "simula_camera",
  "simula_core",
  "simula_net",
