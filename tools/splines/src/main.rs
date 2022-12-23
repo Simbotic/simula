@@ -39,6 +39,7 @@ fn main() {
         .add_startup_system(setup)
         .add_system(travel_on_spline)
         .add_system(debug_info)
+        .add_system(oscillate_spline)
         .run();
 }
 
@@ -238,4 +239,22 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
             }
         }
     };
+}
+
+fn oscillate_spline(
+    time: Res<Time>,
+    mut spline_points: Query<&mut Spline>,
+) {
+
+    for mut spline_point in spline_points.iter_mut() {
+        let frequency = 0.5;
+        let amplitude = 1.0;
+
+        let oscillation = (frequency * time.elapsed_seconds() * std::f32::consts::PI * 2.0).sin() * amplitude;
+
+        for point in spline_point.segments.iter_mut() {
+            point.p1.y = oscillation;
+            point.p2.y = -oscillation;
+        }
+    }
 }
