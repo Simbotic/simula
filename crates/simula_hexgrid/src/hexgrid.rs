@@ -176,7 +176,7 @@ pub fn hexgrid_viewer(
 
             commands
                 .spawn_empty()
-                .insert_bundle((
+                .insert((
                     meshes.add(Mesh::from(shape::Capsule {
                         depth: 0.5,
                         latitudes: 4,
@@ -234,7 +234,7 @@ pub fn hexgrid_rebuilder(
 
             commands
                 .spawn_empty()
-                .insert_bundle((
+                .insert((
                     meshes.add(Mesh::from(shape::Capsule {
                         depth: 0.5,
                         latitudes: 4,
