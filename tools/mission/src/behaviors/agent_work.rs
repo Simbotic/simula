@@ -62,9 +62,9 @@ pub fn run<T: AssetInfo>(
         }
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            work.start = time.seconds_since_startup();
+            work.start = time.elapsed_seconds_f64();
         }
-        let duration = time.seconds_since_startup() - work.start;
+        let duration = time.elapsed_seconds_f64() - work.start;
         if duration > work.duration {
             commands.entity(agent_work_entity).insert(BehaviorSuccess);
         }

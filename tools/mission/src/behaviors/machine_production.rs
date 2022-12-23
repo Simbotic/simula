@@ -23,14 +23,14 @@ impl BehaviorInfo for MachineProduction {
     const DESC: &'static str = "Produce something";
 }
 
-#[derive(Debug, Default, Component, Reflect, Clone)]
+#[derive(Debug, Default, Component, Reflect, Clone, Resource)]
 pub struct ProductionTimer(Timer);
 
 pub struct MachineProductionNodePlugin<T: AssetInfo>(pub T);
 
 impl<T: AssetInfo> Plugin for MachineProductionNodePlugin<T> {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ProductionTimer(Timer::from_seconds(1.0, true)))
+        app.insert_resource(ProductionTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
             .add_system(run::<T>);
     }
 }
@@ -59,9 +59,9 @@ pub fn run<T: AssetInfo>(
         if let Some(tree_entity) = node.tree {
             if !running.on_enter_handled {
                 running.on_enter_handled = true;
-                production.start = time.seconds_since_startup();
+                production.start = time.elapsed_seconds_f64();
             }
-            let duration = time.seconds_since_startup() - production.start;
+            let duration = time.elapsed_seconds_f64() - production.start;
             if duration > production.duration {
                 commands
                     .entity(machine_production_entity)

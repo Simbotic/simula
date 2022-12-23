@@ -44,9 +44,9 @@ pub fn run(
 
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            rest.start = time.seconds_since_startup();
+            rest.start = time.elapsed_seconds_f64();
         }
-        let duration = time.seconds_since_startup() - rest.start;
+        let duration = time.elapsed_seconds_f64() - rest.start;
         if duration > rest.duration {
             commands.entity(agent_rest_entity).insert(BehaviorSuccess);
         }
