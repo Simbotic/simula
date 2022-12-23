@@ -9,7 +9,9 @@ use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-#[derive(Default, Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Default, Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, FromReflect,
+)]
 pub struct PeerId {
     #[reflect(ignore)]
     uuid: Uuid,
@@ -77,10 +79,10 @@ fn setup(mut commands: Commands) {
 
     let peer_id = PeerId::new(socket.id());
 
-    commands.insert_resource(Some(socket));
+    commands.insert_resource(socket);
 
     commands
-        .spawn()
+        .spawn_empty()
         .insert(LocalPeer {
             id: peer_id.clone(),
         })
@@ -92,7 +94,7 @@ fn setup(mut commands: Commands) {
 
 fn run(
     mut commands: Commands,
-    mut socket: ResMut<Option<WebRtcSocket>>,
+    mut socket: Option<ResMut<WebRtcSocket>>,
     peers: Query<(Entity, &RemotePeer)>,
 ) {
     let socket = socket.as_mut();
@@ -121,7 +123,7 @@ fn run(
                 .is_none()
             {
                 commands
-                    .spawn()
+                    .spawn_empty()
                     .insert(RemotePeer {
                         id: PeerId::new(net_peer),
                     })
@@ -134,15 +136,15 @@ fn run(
     }
 }
 
-#[derive(Default, Deref, DerefMut)]
+#[derive(Default, Deref, DerefMut, Resource)]
 pub struct ProxyCache(HashMap<Uuid, Entity>);
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct Messages {
     messages: Vec<(Uuid, Box<[u8]>)>,
 }
 
-pub fn extract_messages(mut socket: ResMut<Option<WebRtcSocket>>, mut messages: ResMut<Messages>) {
+pub fn extract_messages(mut socket: Option<ResMut<WebRtcSocket>>, mut messages: ResMut<Messages>) {
     messages.messages.clear();
     if let Some(socket) = socket.as_mut() {
         let mut message = socket.receive_one();
@@ -233,7 +235,7 @@ pub fn replicate<T>(
     mut cache: ResMut<ProxyCache>,
     time: Res<Time>,
     mut commands: Commands,
-    mut socket: ResMut<Option<WebRtcSocket>>,
+    mut socket: Option<ResMut<WebRtcSocket>>,
     messages: Res<Messages>,
     peers: Query<&RemotePeer>,
     mut syncs: Query<(&NetId, &mut Replicate<T>, &T, Option<&Name>)>,
@@ -251,8 +253,8 @@ pub fn replicate<T>(
             } else {
                 "Entity".to_string()
             };
-            if sync.last_sync + 1.0 / sync.rate < time.seconds_since_startup() {
-                sync.last_sync = time.seconds_since_startup();
+            if sync.last_sync + 1.0 / sync.rate < time.elapsed_seconds_f64() {
+                sync.last_sync = time.elapsed_seconds_f64();
                 let payload = Payload::Replicate {
                     type_id: replicate_type_id,
                     net_id: net_id.uuid,
@@ -319,7 +321,7 @@ pub fn replicate<T>(
                             } else {
                                 cached = false;
                                 let entity = commands
-                                    .spawn()
+                                    .spawn_empty()
                                     .insert(Proxy {
                                         sender: PeerId::new(peer_id),
                                     })
@@ -362,7 +364,7 @@ pub fn replicate<T>(
 fn cleanup_proxies(
     mut commands: Commands,
     proxies: Query<(Entity, &Proxy)>,
-    socket: Res<Option<WebRtcSocket>>,
+    socket: Option<ResMut<WebRtcSocket>>,
 ) {
     if let Some(socket) = socket.as_ref() {
         let connected_peers = socket.connected_peers();

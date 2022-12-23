@@ -175,7 +175,7 @@ impl AssetInfo for MissionToken {
     }
 
     fn push_as_children(&self,commands: &mut Commands, parent: Entity) {
-        let new_asset = commands.spawn().insert(self.clone()).id();
+        let new_asset = commands.spawn_empty().insert(self.clone()).id();
         commands.entity(parent).push_children(&[new_asset]);
     }
 

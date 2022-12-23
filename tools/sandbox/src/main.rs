@@ -25,7 +25,7 @@ use simula_net::{NetId, NetPlugin, Replicate};
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
 use simula_video::WebPAsset;
-use simula_video::{rt, VideoPlayer, VideoPlugin};
+use simula_video::{rt, VideoMaterial, VideoPlayer, VideoPlugin};
 #[cfg(feature = "gst")]
 use simula_video::{GstSink, GstSrc};
 use simula_viz::{
@@ -54,15 +54,17 @@ fn main() {
         .register_type::<ForceGraph<SandboxNodeData, SandboxEdgeData>>()
         .register_type::<SimulationParameters>()
         .register_type::<SandboxNode>()
-        .insert_resource(WindowDescriptor {
-            title: "[Simbotic] Simula - Sandbox".to_string(),
-            width: 940.,
-            height: 528.,
-            ..default()
-        })
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "[Simbotic] Simula - Sandbox".to_string(),
+                width: 940.,
+                height: 528.,
+                ..default()
+            },
+            ..default()
+        }))
         // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
         .add_plugin(NetPlugin)
         .add_plugin(NetAuthorityPlugin)
@@ -106,20 +108,21 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
+    mut video_materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
     // network minion that will only communicate with authority
     commands
-        .spawn()
+        .spawn_empty()
         .insert(Minion::default())
         .insert(NetId::default())
         .insert(Name::new("Minion"));
 
     // network worker that will sync with everyone
     commands
-        .spawn()
+        .spawn_empty()
         .insert(Worker::default())
         .insert(Replicate::<Worker>::default())
         .insert(NetId::default())
@@ -128,7 +131,7 @@ fn setup(
     // network minion worker that will sync worker state with others
     // but only minion state with authority
     commands
-        .spawn()
+        .spawn_empty()
         .insert(Minion::default())
         .insert(Worker::default())
         .insert(Replicate::<Worker>::default())
@@ -140,7 +143,7 @@ fn setup(
         // CAD shape
         let shape = shapes::star(5, Color::BLUE);
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn(PbrBundle {
                 mesh: meshes.add(shape.to_mesh()),
                 material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
                 transform: Transform::from_xyz(0.0, -10.0, 0.0),
@@ -151,7 +154,7 @@ fn setup(
 
     // plane
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             transform: Transform::from_xyz(2.0, 0.01, 2.0),
@@ -161,7 +164,7 @@ fn setup(
 
     // cube
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(-2.5, 0.0, -1.5),
@@ -171,7 +174,7 @@ fn setup(
 
     // grid
     commands
-        .spawn_bundle(GridBundle {
+        .spawn(GridBundle {
             grid: Grid {
                 size: 10,
                 divisions: 10,
@@ -188,7 +191,7 @@ fn setup(
 
     // axes
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 1.,
                 inner_offset: 5.,
@@ -202,7 +205,7 @@ fn setup(
 
     // x - axis
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
@@ -221,7 +224,7 @@ fn setup(
 
     // y - axis
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
@@ -240,7 +243,7 @@ fn setup(
 
     // z - axis
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 3.,
                 inner_offset: 0.,
@@ -259,7 +262,7 @@ fn setup(
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::rgb(1.0, 1.0, 1.0),
             illuminance: 5000.,
@@ -272,14 +275,15 @@ fn setup(
     let rt_image = images.add(rt::common_render_target_image(UVec2 { x: 256, y: 256 }));
 
     let camera_entity = commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 2.0, -10.0)
                 .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
             ..default()
         })
         .insert(RenderLayers::all())
         .with_children(|parent| {
-            let mut child = parent.spawn_bundle(Camera3dBundle {
+            #[allow(unused)]
+            let mut child = parent.spawn(Camera3dBundle {
                 camera_3d: Camera3d {
                     clear_color: ClearColorConfig::Custom(Color::BLACK),
                     ..default()
@@ -305,7 +309,7 @@ fn setup(
     for i in 0..5 {
         // Follow UI over torus
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Torus {
                     radius: 0.5,
                     ring_radius: 0.1,
@@ -317,7 +321,7 @@ fn setup(
             })
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(AxesBundle {
+                    .spawn(AxesBundle {
                         axes: Axes {
                             size: 1.,
                             inner_offset: 1.,
@@ -343,7 +347,7 @@ fn setup(
     }
 
     // FPS on screen
-    commands.spawn_bundle(TextBundle {
+    commands.spawn(TextBundle {
         text: Text {
             sections: vec![TextSection {
                 value: "\nFPS: ".to_string(),
@@ -386,7 +390,7 @@ fn setup(
         },
     ];
     commands
-        .spawn_bundle(VoxelsBundle {
+        .spawn(VoxelsBundle {
             voxels: Voxels { voxels },
             mesh: meshes.add(voxel_mesh.clone()),
             material: voxels_materials.add(VoxelsMaterial {}),
@@ -402,8 +406,8 @@ fn setup(
     let rod_mesh = simula_viz::rod::Rod { ..default() };
     let rod_mesh = simula_viz::rod::RodMesh::from(rod_mesh);
     commands
-        .spawn()
-        .insert_bundle(PbrBundle {
+        .spawn_empty()
+        .insert(PbrBundle {
             mesh: meshes.add(rod_mesh.mesh),
             material: materials.add(StandardMaterial {
                 base_color: Color::PINK,
@@ -416,7 +420,7 @@ fn setup(
 
     // metric plane mesh
     commands
-        .spawn_bundle(SceneBundle {
+        .spawn(SceneBundle {
             scene: asset_server.load("models/metric_plane/metric_plane_8x8.gltf#Scene0"),
             ..default()
         })
@@ -424,7 +428,7 @@ fn setup(
 
     // metric box mesh
     commands
-        .spawn_bundle(SceneBundle {
+        .spawn(SceneBundle {
             scene: asset_server.load("models/metric_box/metric_box_1x1.gltf#Scene0"),
             transform: Transform::from_xyz(-2.5, 0.0, 2.5),
             ..default()
@@ -436,8 +440,8 @@ fn setup(
         .map(|i| Vec3::new((i as f32) * 0.01, 0.0, 0.0))
         .collect();
     commands
-        .spawn()
-        .insert_bundle(SpatialBundle {
+        .spawn_empty()
+        .insert(SpatialBundle {
             transform: Transform::from_xyz(7.5, -8.0, 0.0)
                 .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
             ..default()
@@ -448,7 +452,7 @@ fn setup(
                 // println!("{:2}: {:?}", i, ease_func);
                 let name = ease_func.to_string();
                 parent
-                    .spawn_bundle(LinesBundle {
+                    .spawn(LinesBundle {
                         mesh: meshes.add(line_mesh.clone()),
                         material: lines_materials.add(LinesMaterial {}),
                         transform: Transform::from_xyz(
@@ -474,7 +478,7 @@ fn setup(
     for (i, signal_func) in all::<SignalFunction>().enumerate().skip(1) {
         let name = signal_func.to_string();
         commands
-            .spawn_bundle(LinesBundle {
+            .spawn(LinesBundle {
                 mesh: meshes.add(line_mesh.clone()),
                 material: lines_materials.add(LinesMaterial {}),
                 transform: Transform::from_xyz(0.0, 3.0 - (i as f32 * 0.2), 0.0),
@@ -494,7 +498,7 @@ fn setup(
 
     // control signals
     commands
-        .spawn_bundle(LinesBundle {
+        .spawn(LinesBundle {
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 4.0, 0.0),
@@ -530,7 +534,7 @@ fn setup(
     let graph = &mut graph_bundle.graph.graph;
 
     commands
-        .spawn()
+        .spawn_empty()
         .insert(Name::new("Force-directed Graph"))
         .insert(SandboxGraph)
         .with_children(|parent| {
@@ -540,7 +544,7 @@ fn setup(
             });
 
             parent
-                .spawn_bundle(PbrBundle {
+                .spawn(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::UVSphere {
                         radius: 0.1,
                         ..default()
@@ -563,7 +567,7 @@ fn setup(
                 graph.add_edge(root_index, node_index, Default::default());
 
                 parent
-                    .spawn_bundle(PbrBundle {
+                    .spawn(PbrBundle {
                         mesh: meshes.add(Mesh::from(shape::UVSphere {
                             radius: 0.1,
                             ..default()
@@ -585,7 +589,7 @@ fn setup(
                     graph.add_edge(parent_index, node_index, Default::default());
 
                     parent
-                        .spawn_bundle(PbrBundle {
+                        .spawn(PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::UVSphere {
                                 radius: 0.1,
                                 ..default()
@@ -598,12 +602,12 @@ fn setup(
                 }
             }
         })
-        .insert_bundle(graph_bundle);
+        .insert(graph_bundle);
 
     // pointcloud
     commands
-        .spawn()
-        .insert_bundle((
+        .spawn_empty()
+        .insert((
             meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
             Transform::from_xyz(0.0, 10.0, 10.0),
             GlobalTransform::default(),
@@ -626,11 +630,10 @@ fn setup(
     #[cfg(feature = "gif")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
         let video_rotation =
@@ -638,23 +641,23 @@ fn setup(
         let video_position = Vec3::new(0.0, 0.5, -2.0);
 
         commands
-            .spawn_bundle(SpatialBundle { ..default() })
+            .spawn(SpatialBundle { ..default() })
             .insert(Rotate {
                 axis: Vec3::Y,
                 angle: 0.6,
             })
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(SpatialBundle {
+                    .spawn(SpatialBundle {
                         transform: Transform::from_translation(video_position)
                             .with_rotation(video_rotation),
                         ..default()
                     })
                     .with_children(|parent| {
                         parent
-                            .spawn_bundle(PbrBundle {
+                            .spawn(MaterialMeshBundle {
                                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                                material: materials.add(video_material),
+                                material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
                                     EulerRot::YXZ,
                                     0.0,
@@ -682,7 +685,7 @@ fn setup(
                     })
                     .with_children(|parent| {
                         parent
-                            .spawn_bundle(AxesBundle {
+                            .spawn(AxesBundle {
                                 axes: Axes {
                                     size: 1.,
                                     ..default()
@@ -695,7 +698,7 @@ fn setup(
                     });
 
                 parent
-                    .spawn_bundle(AxesBundle {
+                    .spawn(AxesBundle {
                         transform: Transform::from_translation(video_position)
                             .with_rotation(video_rotation),
                         axes: Axes {
@@ -714,17 +717,16 @@ fn setup(
     #[cfg(feature = "webp")]
     {
         // video robot
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         let video_asset: Handle<WebPAsset> = asset_server.load("videos/robot.webp");
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+                material: video_materials.add(video_material),
                 transform: Transform::from_xyz(0.0, 0.5, -2.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
                 ..default()
@@ -743,16 +745,15 @@ fn setup(
     #[cfg(feature = "gst")]
     {
         // video stream
-        let video_material = StandardMaterial {
-            base_color: Color::rgb(1.0, 1.0, 1.0),
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
             alpha_mode: AlphaMode::Blend,
-            unlit: true,
-            ..default()
+            ..Default::default()
         };
         commands
-            .spawn_bundle(PbrBundle {
+            .spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                material: materials.add(video_material),
+                material: video_materials.add(video_material),
                 transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                     .with_scale(Vec3::new(1.0, 1.0, 1.0)),
@@ -780,7 +781,7 @@ fn setup(
         ..default()
     };
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
             material: materials.add(rt_material),
             transform: Transform::from_xyz(-2.5, 0.5, -3.0)
@@ -872,7 +873,7 @@ fn follow_ui(
             .collapsible(false)
             .title_bar(false)
             .show(egui_context.ctx_mut(), |ui| {
-                let time = time.seconds_since_startup();
+                let time = time.elapsed_seconds_f64();
 
                 let circle_line = {
                     let n = 512;

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.8" }
+bevy = { version = "0.9" }
 
 fj = "0.17"
 fj-math = "0.17"

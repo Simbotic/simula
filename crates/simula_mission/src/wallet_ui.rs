@@ -4,19 +4,24 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
 use egui_extras::{Size, TableBuilder};
 use simula_viz::follow_ui::{FollowUI, FollowUIVisibility};
+use std::collections::HashMap;
 
 pub struct WalletUIPlugin<T: Component + AssetInfo>(pub T);
 
 impl<T: Component + AssetInfo> Plugin for WalletUIPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.add_system(wallet_ui_creation_window)
+        app.insert_resource(ImageTextureIds(HashMap::new()))
+            .add_system(wallet_creation_window)
             .add_system(wallet_ui_draw::<DefaultWalletUI, T>)
             .add_system(wallet_ui_draw::<GameWalletUI, T>);
     }
 }
 
-fn wallet_ui_creation_window(mut commands: Commands, mut egui_ctx: ResMut<EguiContext>) {
-    egui::Window::new("Wallet UI Creation")
+#[derive(Debug, Clone, PartialEq, Component, Resource)]
+pub struct SelectedWallet(usize);
+
+fn wallet_creation_window(mut commands: Commands, mut egui_ctx: ResMut<EguiContext>) {
+    egui::Window::new("Wallet UI Panel")
         .default_width(200.0)
         .resizable(true)
         .collapsible(false)
@@ -441,7 +446,11 @@ fn wallet_ui_draw<T: WalletUIOptions + Component, U: Component + AssetInfo>(
 }
 
 fn create_wallet_ui<T: WalletUIOptions + Component>(commands: &mut Commands, configuration: T) {
-    let entity = commands.spawn().insert(WalletUI).insert(configuration).id();
+    let entity = commands
+        .spawn_empty()
+        .insert(WalletUI)
+        .insert(configuration)
+        .id();
 
     T::insert(entity, commands)
 }

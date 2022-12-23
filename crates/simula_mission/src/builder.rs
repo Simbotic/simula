@@ -27,7 +27,7 @@ where
             .chars()
             .take_while(|&ch| ch != '(')
             .collect::<String>();
-        cmd.spawn()
+        cmd.spawn_empty()
             .insert(self.asset.clone())
             .insert(self.attributes.clone())
             .insert(Name::new(format!("Asset: {}", name)));
@@ -79,7 +79,7 @@ where
             .get(0..8)
             .unwrap_or_default()
             .to_string();
-        cmd.spawn()
+        cmd.spawn_empty()
             .insert(Account {
                 account_id: self.id.clone(),
             })
@@ -128,7 +128,7 @@ where
             .get(0..8)
             .unwrap_or_default()
             .to_string();
-        cmd.spawn()
+        cmd.spawn_empty()
             .insert(Wallet {
                 wallet_id: self.id.clone(),
             })

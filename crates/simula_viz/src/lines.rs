@@ -95,7 +95,7 @@ pub struct LinesMaterial {}
 
 pub struct LinesPlugin;
 
-#[derive(Deref)]
+#[derive(Deref, Resource)]
 pub struct LineMesh(Mesh);
 
 impl Plugin for LinesPlugin {

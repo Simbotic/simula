@@ -143,7 +143,7 @@ fn monkey_setup(mut commands: Commands) {
     ];
 
     commands
-        .spawn()
+        .spawn_empty()
         .insert(MonkeyActor)
         .insert(Action::<MonkeyDo>::default())
         .insert(ActionAxis::<MonkeyMove>::default())

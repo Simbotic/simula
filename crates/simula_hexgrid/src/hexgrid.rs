@@ -57,6 +57,7 @@ pub enum RenderAction {
     Rerender,
 }
 
+#[derive(Resource)]
 pub struct NodeStartEnd {
     pub startx: i32,
     pub starty: i32,
@@ -87,6 +88,7 @@ impl Default for NodeStartEnd {
     }
 }
 
+#[derive(Resource)]
 pub struct ShortestPathBuilder {
     pub render_min_column: i32,
     pub render_max_column: i32,
@@ -173,7 +175,7 @@ pub fn hexgrid_viewer(
                 -(shortest_path.render_min_column + shortest_path.render_size * 2 / 5) as f32;
 
             commands
-                .spawn()
+                .spawn_empty()
                 .insert_bundle((
                     meshes.add(Mesh::from(shape::Capsule {
                         depth: 0.5,
@@ -231,7 +233,7 @@ pub fn hexgrid_rebuilder(
                 shortest_path.render_min_column + shortest_path.render_size;
 
             commands
-                .spawn()
+                .spawn_empty()
                 .insert_bundle((
                     meshes.add(Mesh::from(shape::Capsule {
                         depth: 0.5,
@@ -441,6 +443,7 @@ fn prepare_hexgrids(
     }
 }
 
+#[derive(Resource)]
 pub struct HexgridPipeline {
     shader: Handle<Shader>,
     mesh_pipeline: MeshPipeline,
@@ -450,7 +453,6 @@ impl FromWorld for HexgridPipeline {
     fn from_world(world: &mut World) -> Self {
         let world = world.cell();
         let asset_server = world.get_resource::<AssetServer>().unwrap();
-        asset_server.watch_for_changes().unwrap();
         let shader = asset_server.load("shaders/hexgrid.wgsl");
 
         let mesh_pipeline = world.get_resource::<MeshPipeline>().unwrap();

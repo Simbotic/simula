@@ -242,7 +242,7 @@ pub struct VoxelsMaterial {}
 
 pub struct VoxelsPlugin;
 
-#[derive(Deref)]
+#[derive(Deref, Resource)]
 pub struct VoxelMesh(Mesh);
 
 impl Plugin for VoxelsPlugin {

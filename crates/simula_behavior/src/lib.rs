@@ -6,7 +6,6 @@ use bevy_inspector_egui::{
 };
 use composites::*;
 use decorators::*;
-use inspector::BehaviorInspectorPlugin;
 use serde::Deserialize;
 
 pub mod actions;
@@ -25,7 +24,7 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::BehaviorInspector;
+    pub use crate::inspector::{BehaviorInspector, BehaviorInspectorPlugin};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
@@ -88,8 +87,7 @@ pub trait BehaviorSpawner:
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(BehaviorInspectorPlugin)
-            .register_type::<BehaviorTree>()
+        app.register_type::<BehaviorTree>()
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
@@ -129,7 +127,7 @@ impl Plugin for BehaviorPlugin {
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                update_added_behavior.chain(complete_behavior.chain(start_behavior)),
+                update_added_behavior.pipe(complete_behavior.pipe(start_behavior)),
             )
             .add_system(sequencer::run)
             .add_system(selector::run)
@@ -207,7 +205,7 @@ impl Inspectable for BehaviorChildren {
         ui.vertical(|ui| {
             for child in self.iter_mut() {
                 if let Some(name) = world.get::<Name>(*child) {
-                    ui.collapsing(format!("{} ({})", name.to_string(), child.id()), |ui| {
+                    ui.collapsing(format!("{} ({})", name.to_string(), child.index()), |ui| {
                         child.ui(ui, EntityAttributes { despawnable: false }, context);
                     });
                 }
@@ -237,11 +235,11 @@ where
     const DESC: &'static str;
 
     fn insert(commands: &mut EntityCommands) {
-        commands.insert_bundle(BehaviorBundle::<Self>::default());
+        commands.insert(BehaviorBundle::<Self>::default());
     }
 
     fn insert_with(commands: &mut EntityCommands, data: &Self) {
-        commands.insert_bundle(BehaviorBundle::<Self> {
+        commands.insert(BehaviorBundle::<Self> {
             behavior: data.clone(),
             ..Default::default()
         });
@@ -276,7 +274,7 @@ impl BehaviorTree {
         T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
     {
         let entity = commands
-            .spawn()
+            .spawn_empty()
             .insert(BehaviorAssetLoading::<T> {
                 document,
                 parent,
@@ -325,7 +323,9 @@ impl BehaviorTree {
         entity_commands.insert(BehaviorParent(parent));
         let children = nodes
             .iter()
-            .map(|node| Self::insert_tree(commands.spawn().id(), Some(entity), commands, node))
+            .map(|node| {
+                Self::insert_tree(commands.spawn_empty().id(), Some(entity), commands, node)
+            })
             .collect::<Vec<Entity>>();
         add_children(commands, entity, &children);
         entity
@@ -340,7 +340,7 @@ impl BehaviorTree {
     where
         T: Default + BehaviorSpawner,
     {
-        let entity = commands.spawn().id();
+        let entity = commands.spawn_empty().id();
         Self::insert_tree(entity, parent, commands, node);
         entity
     }
@@ -392,7 +392,7 @@ pub struct BehaviorChildQueryFilter {
     _running: Without<BehaviorRunning>,
 }
 
-#[derive(Default, Debug, Clone, Deref, DerefMut, PartialEq)]
+#[derive(Default, Debug, Clone, Deref, DerefMut, PartialEq, Resource)]
 pub struct BehaviorTrace(pub Vec<String>);
 impl BehaviorTrace {
     pub fn from_list(traces: &[&str]) -> Self {
@@ -437,12 +437,17 @@ fn complete_behavior(
         };
         debug!(
             "[{}] {} {}",
-            entity.id().to_string(),
+            entity.index().to_string(),
             state,
             name.to_string()
         );
         if let Some(trace) = trace.as_mut() {
-            trace.push(format!("[{}] {} {}", entity.id(), state, name.to_string(),));
+            trace.push(format!(
+                "[{}] {} {}",
+                entity.index(),
+                state,
+                name.to_string(),
+            ));
         }
         commands.entity(entity).remove::<BehaviorRunning>();
         commands.entity(entity).remove::<BehaviorCursor>();
@@ -478,9 +483,13 @@ fn start_behavior(
         // Reset children
         reset_children(false, &mut commands, children, &nodes);
         // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
-        debug!("[{}] STARTED {}", entity.id().to_string(), name.to_string());
+        debug!(
+            "[{}] STARTED {}",
+            entity.index().to_string(),
+            name.to_string()
+        );
         if let Some(trace) = trace.as_mut() {
-            trace.push(format!("[{}] STARTED {}", entity.id(), name.to_string(),));
+            trace.push(format!("[{}] STARTED {}", entity.index(), name.to_string(),));
         }
         commands.entity(entity).insert(BehaviorRunning::default());
     }

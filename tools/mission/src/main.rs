@@ -14,23 +14,22 @@ use simula_core::signal::{SignalFunction, SignalGenerator};
 use simula_mission::prelude::*;
 use simula_mission::{
     agent::{Agent, AgentProductionType, AgentPurchaseType},
-    asset_info::ImageTextureIds,
     machine::{Machine, MachineType},
     wallet_ui::WalletUIPlugin,
 };
 use simula_net::NetPlugin;
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
-use simula_video::{VideoPlayer, VideoPlugin};
+use simula_video::{VideoMaterial, VideoPlayer, VideoPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
-use std::collections::HashMap;
 use std::{marker::PhantomData, time::Duration};
 use ta::indicators::*;
+
 mod behaviors;
 mod token_ui;
 
@@ -45,46 +44,47 @@ struct ColorText;
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(WindowDescriptor {
-        title: "[Simbotic] Simula - Mission".to_string(),
-        width: 940.,
-        height: 528.,
-        ..Default::default()
-    })
-    .insert_resource(Msaa { samples: 4 })
-    .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-    .insert_resource(TimeDuration {
-        time: Duration::default(),
-    })
-    .insert_resource(ImageTextureIds(HashMap::new()))
-    .add_plugins(DefaultPlugins)
-    .add_plugin(NetPlugin)
-    .add_plugin(WorldInspectorPlugin::new())
-    .add_plugin(ActionPlugin)
-    .add_plugin(FrameTimeDiagnosticsPlugin::default())
-    .add_plugin(OrbitCameraPlugin)
-    .add_plugin(LinesPlugin)
-    .add_plugin(AxesPlugin)
-    .add_plugin(GridPlugin)
-    .add_plugin(VideoPlugin)
-    .add_plugin(MissionPlugin::<MissionToken>::default())
-    .add_plugin(MissionBehaviorPlugin)
-    .add_plugin(BehaviorPlugin)
-    .add_plugin(FollowUIPlugin)
-    .add_plugin(WalletUIPlugin(MissionToken::default()))
-    .add_plugin(DragAndDropPlugin::<MissionToken> {
-        _marker: PhantomData::<MissionToken>,
-    })
-    .register_type::<MissionToken>()
-    .register_type::<SignalGenerator>()
-    .add_startup_system(setup)
-    .add_startup_system(spawn_machines)
-    .add_startup_system(spawn_agents)
-    .add_system(debug_info)
-    .add_system(increase_mission_time)
-    .add_system(increase_time_with_signal)
-    .add_system(indicator_mission_time)
-    .add_system(wallet_creation_window);
+    app.insert_resource(Msaa { samples: 4 })
+        .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+        .insert_resource(TimeDuration {time: Duration::from_secs(0)})
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "[Simbotic] Simula - Mission".to_string(),
+                width: 940.,
+                height: 528.,
+                ..default()
+            },
+            ..default()
+        }))
+        .add_plugin(NetPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(ActionPlugin)
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(OrbitCameraPlugin)
+        .add_plugin(LinesPlugin)
+        .add_plugin(AxesPlugin)
+        .add_plugin(GridPlugin)
+        .add_plugin(VideoPlugin)
+        .add_plugin(MissionBehaviorPlugin)
+        .add_plugin(BehaviorPlugin)
+        .add_plugin(BehaviorInspectorPlugin)
+        .add_plugin(FollowUIPlugin)
+        .add_plugin(DragAndDropPlugin::<MissionToken> {
+            _marker: PhantomData::<MissionToken>,
+        })
+        .add_plugin(WalletUIPlugin(MissionToken::default()))
+        .register_type::<MissionToken>()
+        .register_type::<SignalGenerator>()
+        .add_startup_system(setup)
+        .add_system(debug_info)
+        .register_type::<MissionToken>()
+        .register_type::<SignalGenerator>()
+        .add_startup_system(spawn_machines)
+        .add_startup_system(spawn_agents)
+        .add_system(increase_mission_time)
+        .add_system(increase_time_with_signal)
+        .add_system(indicator_mission_time)
+        .add_system(wallet_creation_window);
 
     app.register_inspectable::<MissionToken>();
     app.register_inspectable::<SignalFunction>();
@@ -133,9 +133,9 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
-    mut behavior_inspector: ResMut<BehaviorInspector>,
+    mut behavior_inspector: Option<ResMut<BehaviorInspector>>,
     asset_server: Res<AssetServer>,
 ) {
     let agent_wallet = WalletBuilder::<MissionToken>::default()
@@ -145,8 +145,7 @@ fn setup(
                 .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
                 .with_asset(|asset| {
                     asset.amount(
-                        MissionToken::Energy(10000.into()),
-                        MissionTokenAttributes {},
+                        MissionToken::Energy(10000.into()), MissionTokenAttributes {}
                     );
                 })
                 .with_asset(|asset| {
@@ -164,8 +163,7 @@ fn setup(
                 .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
                 .with_asset(|asset| {
                     asset.amount(
-                        MissionToken::Energy(99999.into()),
-                        MissionTokenAttributes {},
+                        MissionToken::Energy(99999.into()), MissionTokenAttributes {}
                     );
                 })
                 .with_asset(|asset| {
@@ -177,23 +175,22 @@ fn setup(
         })
         .build(&mut commands);
 
-    let video_material = StandardMaterial {
-        base_color: Color::rgb(1.0, 1.0, 1.0),
+    let video_material = VideoMaterial {
+        color: Color::rgb(1.0, 1.0, 1.0),
         alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..default()
+        ..Default::default()
     };
     let video_rotation =
         Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
     let video_position = Vec3::new(0.0, 0.5, 0.0);
 
     let agent_body = commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_translation(video_position).with_rotation(video_rotation),
             ..default()
         })
         .with_children(|parent| {
-            let mut child = parent.spawn_bundle(SpatialBundle {
+            let mut child = parent.spawn(SpatialBundle {
                 transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
                 ..default()
             });
@@ -210,7 +207,7 @@ fn setup(
             // .insert(FollowPanel)
         })
         .with_children(|parent| {
-            let mut child = parent.spawn_bundle(PbrBundle {
+            let mut child = parent.spawn(MaterialMeshBundle {
                 mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                 material: materials.add(video_material),
                 transform: Transform::from_rotation(Quat::from_euler(
@@ -240,7 +237,7 @@ fn setup(
         .insert(Name::new("Agent: Body"))
         .with_children(|parent| {
             parent
-                .spawn_bundle(AxesBundle {
+                .spawn(AxesBundle {
                     axes: Axes {
                         size: 1.,
                         ..default()
@@ -259,7 +256,7 @@ fn setup(
         commands.entity(root).insert(BehaviorCursor);
     }
     commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
@@ -278,7 +275,7 @@ fn setup(
         commands.entity(root).insert(BehaviorCursor);
     }
     let agent_id = commands
-        .spawn_bundle(SpatialBundle {
+        .spawn(SpatialBundle {
             transform: Transform::from_xyz(-2.0, 0.0, 0.0),
             ..default()
         })
@@ -287,13 +284,15 @@ fn setup(
         .insert(Name::new("Agent: 002"))
         .id();
 
-    behavior_inspector.select(agent_id, "Agent: 002".into());
-    // behavior_inspector.unselect();
+    if let Some(behavior_inspector) = behavior_inspector.as_mut() {
+        behavior_inspector.select(agent_id, "Agent: 002".into());
+        // behavior_inspector.unselect();
+    }
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
-        .spawn_bundle(GridBundle {
+        .spawn(GridBundle {
             grid: Grid {
                 size: 10,
                 divisions: 10,
@@ -310,7 +309,7 @@ fn setup(
 
     // axes
     commands
-        .spawn_bundle(AxesBundle {
+        .spawn(AxesBundle {
             axes: Axes {
                 size: 6.,
                 inner_offset: 0.,
@@ -324,7 +323,7 @@ fn setup(
 
     let theta = std::f32::consts::FRAC_PI_4;
     let light_transform = Mat4::from_euler(EulerRot::ZYX, 0.0, std::f32::consts::FRAC_PI_2, -theta);
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::rgb(1.0, 1.0, 1.0),
             illuminance: 5000.,
@@ -336,7 +335,7 @@ fn setup(
 
     // orbit camera
     commands
-        .spawn_bundle(Camera3dBundle {
+        .spawn(Camera3dBundle {
             ..Default::default()
         })
         .insert(OrbitCamera {
@@ -348,7 +347,7 @@ fn setup(
 
     //FPS ON SCREEN
     commands
-        .spawn_bundle(
+        .spawn(
             TextBundle::from_sections([
                 TextSection::new(
                     "FPS: ",
@@ -377,7 +376,7 @@ fn setup(
         )
         .insert(FpsText);
     commands
-        .spawn()
+        .spawn_empty()
         .insert(SignalGenerator {
             func: SignalFunction::Pulse,
             amplitude: 1.0,
@@ -416,7 +415,7 @@ fn increase_mission_time(_time: Res<Time>, mut query: Query<&mut MissionToken>) 
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct TimeDuration {
     time: Duration,
 }
@@ -480,8 +479,7 @@ fn add_wallet(commands: &mut Commands) {
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
                     asset.amount(
-                        MissionToken::Energy(10000.into()),
-                        MissionTokenAttributes {},
+                        MissionToken::Energy(10000.into()), MissionTokenAttributes {}
                     );
                 })
                 .with_asset(|asset| {
@@ -496,8 +494,7 @@ fn add_wallet(commands: &mut Commands) {
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
                     asset.amount(
-                        MissionToken::Energy(99999.into()),
-                        MissionTokenAttributes {},
+                        MissionToken::Energy(99999.into()), MissionTokenAttributes {}
                     );
                 })
                 .with_asset(|asset| {
@@ -519,7 +516,7 @@ fn spawn_machines(
 ) {
     for i in 0..3 {
         let machine = commands
-            .spawn_bundle(PbrBundle {
+            .spawn(PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
                 material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
                 transform: Transform::from_xyz(3.0 + i as f32, 0.0, 0.0),
@@ -567,8 +564,7 @@ fn insert_new_wallets_to_entity(commands: &mut Commands, entity: Entity) {
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
                     asset.amount(
-                        MissionToken::Energy(10000.into()),
-                        MissionTokenAttributes {},
+                        MissionToken::Energy(10000.into()), MissionTokenAttributes {}
                     );
                 })
                 .with_asset(|asset| {
@@ -586,8 +582,7 @@ fn insert_new_wallets_to_entity(commands: &mut Commands, entity: Entity) {
                 .id(gen_id().as_str())
                 .with_asset(|asset| {
                     asset.amount(
-                        MissionToken::Energy(99999.into()),
-                        MissionTokenAttributes {},
+                        MissionToken::Energy(99999.into()), MissionTokenAttributes {}
                     );
                 })
                 .with_asset(|asset| {
@@ -653,13 +648,13 @@ fn spawn_agents(
         let video_position = Vec3::new(0.0, 0.5, 0.0);
 
         let agent_body = commands
-            .spawn_bundle(SpatialBundle {
+            .spawn(SpatialBundle {
                 transform: Transform::from_translation(video_position)
                     .with_rotation(video_rotation),
                 ..default()
             })
             .with_children(|parent| {
-                let mut child = parent.spawn_bundle(SpatialBundle {
+                let mut child = parent.spawn(SpatialBundle {
                     transform: Transform::from_translation(Vec3::new(0.0, 2.0, 0.0)),
                     ..default()
                 });
@@ -675,7 +670,7 @@ fn spawn_agents(
                     .insert(Name::new("Follow UI Robot"));
             })
             .with_children(|parent| {
-                let mut child = parent.spawn_bundle(PbrBundle {
+                let mut child = parent.spawn(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
                     material: materials.add(video_material),
                     transform: Transform::from_rotation(Quat::from_euler(
@@ -705,7 +700,7 @@ fn spawn_agents(
             .insert(Name::new("Agent: Body"))
             .with_children(|parent| {
                 parent
-                    .spawn_bundle(AxesBundle {
+                    .spawn(AxesBundle {
                         axes: Axes {
                             size: 1.,
                             ..default()
@@ -719,7 +714,7 @@ fn spawn_agents(
             .id();
 
         let agent = commands
-            .spawn_bundle(SpatialBundle {
+            .spawn(SpatialBundle {
                 transform: Transform::from_xyz(-3.0 - (i as f32), 0.0, 0.0),
                 ..default()
             })
