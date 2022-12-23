@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.9", features = [
+bevy = { version = "0.9.1", features = [
 	"render",
 	"bevy_winit",
 	"ktx2", 
@@ -14,7 +14,7 @@ bevy = { version = "0.9", features = [
 simula_camera = { path = "../../crates/simula_camera" }
 simula_core = { path = "../../crates/simula_core" }
 bevy-inspector-egui = "0.14"
-bytemuck = "1.11"
+bytemuck = "1.12.3"
 rand = "0.8.5"
 
 [lib]
