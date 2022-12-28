@@ -132,17 +132,17 @@ fn setup(
 
     let spline = Spline::from_points(vec![
         Vec3::new(-6.0, 0.0, 0.0),
-        Vec3::new(-5.0, 1.0, 0.0),
-        Vec3::new(-4.0, -1.0, 0.0),
+        Vec3::new(-5.0, 1.0, 2.0),
+        Vec3::new(-4.0, -1.0, -2.0),
         Vec3::new(-3.0, 0.0, 0.0),
-        Vec3::new(-2.0, 1.0, 0.0),
-        Vec3::new(-1.0, -1.0, 0.0),
+        Vec3::new(-2.0, 1.0, 2.0),
+        Vec3::new(-1.0, -1.0, -2.0),
         Vec3::new(0.0, 0.0, 0.0),
-        Vec3::new(1.0, 1.0, 0.0),
-        Vec3::new(2.0, -1.0, 0.0),
+        Vec3::new(1.0, 1.0, 2.0),
+        Vec3::new(2.0, -1.0, -2.0),
         Vec3::new(3.0, 0.0, 0.0),
-        Vec3::new(4.0, 1.0, 0.0),
-        Vec3::new(5.0, -1.0, 0.0),
+        Vec3::new(4.0, 1.0, 2.0),
+        Vec3::new(5.0, -1.0, -2.0),
         Vec3::new(6.0, 0.0, 0.0),
     ]);
 
@@ -248,13 +248,16 @@ fn oscillate_spline(
 
     for mut spline_point in spline_points.iter_mut() {
         let frequency = 0.5;
+        let phase = 1.0;
         let amplitude = 1.0;
 
-        let oscillation = (frequency * time.elapsed_seconds() * std::f32::consts::PI * 2.0).sin() * amplitude;
+        let oscillation = (frequency * time.elapsed_seconds() * std::f32::consts::PI * 2.0 + phase).sin() * amplitude;
 
         for point in spline_point.segments.iter_mut() {
             point.p1.y = oscillation;
             point.p2.y = -oscillation;
+            //point.p1.z = oscillation * 2.0 ;
+            //point.p2.z = -oscillation * 2.0 ;
         }
     }
 }
