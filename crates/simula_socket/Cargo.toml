@@ -41,10 +41,10 @@ js-sys = { version = "0.3", default-features = false }
 web-sys = { version = "0.3.22", default-features = false, features = [
     "MessageEvent",
     "RtcPeerConnection",
+    "RtcPeerConnectionIceEvent",
     "RtcSdpType",
     "RtcSessionDescription",
     "RtcSessionDescriptionInit",
-    "RtcIceGatheringState",
     "RtcConfiguration",
     "RtcDataChannel",
     "RtcDataChannelInit",
@@ -52,6 +52,8 @@ web-sys = { version = "0.3.22", default-features = false, features = [
     "RtcIceCandidate",
     "RtcIceCandidateInit",
     "RtcIceTransportPolicy",
+    "RtcIceGatheringState",
+    "RtcIceConnectionState",
 ] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
