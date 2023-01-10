@@ -26,6 +26,10 @@ So much of AI is about compressing reality to a small vector space, like a video
 
 ![Force Graph Function](docs/force_graph_function.png)
 
+### P2P Networking
+
+![P2P Networking](docs/p2p.png)
+
 ## WASM
 To add WASM support to your Rust installation. Using Rustup:
 ```
