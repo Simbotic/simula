@@ -4,7 +4,7 @@ use bevy::{
     utils::{HashMap, Uuid},
 };
 use serde::{Deserialize, Serialize};
-use simula_socket::WebRtcSocket;
+use simula_socket::{WebRtcSocket, WebRtcSocketConfig};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -48,8 +48,28 @@ pub struct LocalPeer {
 
 pub struct NetPlugin;
 
+#[derive(Resource)]
+pub struct NetPluginSettings {
+    pub room_id: String,
+    pub room_host: String,
+    pub socket_config: Option<WebRtcSocketConfig>,
+}
+
+impl Default for NetPluginSettings {
+    fn default() -> Self {
+        Self {
+            room_id: "simula".into(),
+            room_host: "ws://127.0.0.1:3536".into(),
+            socket_config: None,
+        }
+    }
+}
+
 impl Plugin for NetPlugin {
     fn build(&self, app: &mut App) {
+        app.world
+            .get_resource_or_insert_with(NetPluginSettings::default);
+
         app.insert_resource(ProxyCache::default())
             .insert_resource(Messages::default())
             .register_type::<RemotePeer>()
@@ -64,13 +84,17 @@ impl Plugin for NetPlugin {
     }
 }
 
-fn setup(mut commands: Commands) {
-    let room_id: String = "simula".into();
-    let room_host: String = "ws://127.0.0.1:3536".into();
-
-    let room_url = format!("{}/{}", room_host, room_id);
+fn setup(mut commands: Commands, settings: Res<NetPluginSettings>) {
+    let room_url = format!("{}/{}", settings.room_host, settings.room_id);
     info!("Connecting to Simula server: {:?}", room_url);
-    let (socket, message_loop) = WebRtcSocket::new(room_url);
+    let socket;
+    let message_loop;
+
+    if let Some(socket_config) = settings.socket_config.clone() {
+        (socket, message_loop) = WebRtcSocket::new_with_config(socket_config);
+    } else {
+        (socket, message_loop) = WebRtcSocket::new(room_url);
+    }
 
     // The message loop needs to be awaited, or nothing will happen.
     // We do this here using bevy's task system.

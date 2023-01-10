@@ -40,7 +40,7 @@ type Packet = Box<[u8]>;
 /// General configuration options for a WebRtc connection
 ///
 /// See [`WebRtcSocket::new_with_config`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WebRtcSocketConfig {
     /// The url for the room to connect to
     ///
@@ -60,7 +60,7 @@ pub struct WebRtcSocketConfig {
 
 /// Configuration options for an ICE server connection.
 /// See also: <https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer#example>
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RtcIceServerConfig {
     /// An ICE server instance can have several URLs
     pub urls: Vec<String>,
