@@ -5,7 +5,6 @@ use bevy::{
 use bevy_inspector_egui::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
-use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -25,7 +24,6 @@ fn main() {
             },
             ..default()
         }))
-        .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
