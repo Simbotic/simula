@@ -20,7 +20,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
-                title: "[Simbotic] Simula - Sandbox".to_string(),
+                title: "[Simbotic] Simula - NetPeer".to_string(),
                 width: 940.,
                 height: 528.,
                 ..default()
