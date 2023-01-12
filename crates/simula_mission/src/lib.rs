@@ -2,19 +2,14 @@ use bevy::prelude::*;
 use prelude::*;
 
 pub mod account;
-pub mod agent;
 pub mod asset;
 pub mod builder;
-pub mod environment;
-pub mod game;
 pub mod wallet;
 
 pub mod prelude {
     pub use crate::account::{Account, AccountId};
-    pub use crate::agent::Agent;
     pub use crate::asset::{Amount, Asset, AssetBalance};
     pub use crate::builder::{AccountBuilder, AssetBuilder, WalletBuilder};
-    pub use crate::game::Game;
     pub use crate::wallet::{Wallet, WalletId};
     pub use crate::MissionPlugin;
 }
