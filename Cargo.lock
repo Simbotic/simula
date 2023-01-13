@@ -3781,6 +3781,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mission"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "bevy_egui",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_mission",
+ "simula_video",
+ "simula_viz",
+]
+
+[[package]]
 name = "muldiv"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
