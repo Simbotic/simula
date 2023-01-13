@@ -5162,6 +5162,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "sdf_csg"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
+ "enum-display-derive",
+ "enum-iterator",
+ "rand 0.8.5",
+ "simula_action",
+ "simula_camera",
+ "simula_core",
+ "simula_sdf",
+ "simula_viz",
+]
+
+[[package]]
 name = "sdp"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5513,6 +5529,14 @@ dependencies = [
 [[package]]
 name = "simula_octree"
 version = "0.1.0"
+
+[[package]]
+name = "simula_sdf"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "static_assertions",
+]
 
 [[package]]
 name = "simula_signaling"
