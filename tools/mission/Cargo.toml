@@ -17,7 +17,9 @@ simula_viz = { path = "../../crates/simula_viz" }
 simula_action = { path = "../../crates/simula_action" }
 simula_video = { path = "../../crates/simula_video", features = ["gif"] }
 simula_mission = { path = "../../crates/simula_mission" }
+simula_behavior = { path = "../../crates/simula_behavior" }
 
+serde = { version = "1.0", features = ["derive"] }
 rand = "0.8.5"
 enum-iterator = "1.2"
 enum-display-derive = "0.1.1"

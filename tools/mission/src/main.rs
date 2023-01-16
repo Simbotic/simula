@@ -1,13 +1,18 @@
+use behavior_trees::MissionBehaviorPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
 use bevy_inspector_egui::{Inspectable, RegisterInspectable, WorldInspectorPlugin};
+use common::{CanRotate, Robot, Rotate};
+use cop::Cop;
+use robber::Robber;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::ease::EaseFunction;
 use simula_mission::{
-    prelude::{Asset, AssetBalance, WalletBuilder},
+    prelude::{Account, Amount, Asset, AssetBalance, WalletBuilder},
+    wallet::Wallet,
     MissionPlugin,
 };
 use simula_video::{GifAsset, VideoMaterial, VideoPlayer, VideoPlugin};
@@ -19,17 +24,21 @@ use simula_viz::{
     lookat::{LookAtPlugin, SmoothLookAt},
 };
 
+pub mod behavior_trees;
+pub mod common;
+pub mod cop;
+pub mod robber;
 pub mod ui;
 
 pub const CLASS_ID: u64 = 1000;
 pub const TIME_ASSET_ID: u64 = 0;
-pub const ENERGY_ASSET_ID: u64 = 1;
+pub const MONEY_ASSET_ID: u64 = 1;
 
 #[derive(Debug, Inspectable, Reflect, Component, Clone, PartialEq)]
 #[reflect(Component)]
 pub enum MissionToken {
     Time(Asset<CLASS_ID, TIME_ASSET_ID>),
-    Energy(Asset<CLASS_ID, ENERGY_ASSET_ID>),
+    Money(Asset<CLASS_ID, MONEY_ASSET_ID>),
 }
 
 impl Default for MissionToken {
@@ -42,7 +51,7 @@ impl From<AssetBalance> for MissionToken {
     fn from(asset: AssetBalance) -> Self {
         match (asset.class_id, asset.asset_id) {
             (CLASS_ID, TIME_ASSET_ID) => MissionToken::Time(asset.balance.into()),
-            (CLASS_ID, ENERGY_ASSET_ID) => MissionToken::Energy(asset.balance.into()),
+            (CLASS_ID, MONEY_ASSET_ID) => MissionToken::Money(asset.balance.into()),
             _ => panic!("Unknown asset"),
         }
     }
@@ -52,15 +61,9 @@ impl From<MissionToken> for AssetBalance {
     fn from(token: MissionToken) -> Self {
         match token {
             MissionToken::Time(asset) => asset.into(),
-            MissionToken::Energy(asset) => asset.into(),
+            MissionToken::Money(asset) => asset.into(),
         }
     }
-}
-
-#[derive(Component)]
-struct Rotate {
-    axis: Vec3,
-    angle: f32,
 }
 
 fn main() {
@@ -89,121 +92,206 @@ fn main() {
         .add_plugin(LookAtPlugin)
         .add_plugin(FollowUIPlugin)
         .add_plugin(MissionPlugin)
+        .add_plugin(MissionBehaviorPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
+        .add_system(cop::cop_spawner)
+        .add_system(robber::robber_spawner)
         .add_system(rotate_system)
-        .add_system(ui::follow_ui)
+        .add_system(ui::follow_ui::<Cop>)
+        .add_system(ui::follow_ui::<Robber>)
+        .add_system(simulate_transfer::<Cop>)
+        .add_system(simulate_transfer::<Robber>)
         .run();
 }
 
-fn build_wallet(commands: &mut Commands) -> Entity {
+fn gen_id() -> String {
+    format!("{:0<64x}", rand::random::<u128>())
+}
+
+fn build_wallet(commands: &mut Commands, money: u64) -> Entity {
     WalletBuilder::<MissionToken>::default()
-        .id("d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
+        .id(&gen_id())
         .with_account(|account| {
             account
-                .id("9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+                .id(&gen_id())
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(10000.into()));
+                    asset.amount(MissionToken::Money(Asset(Amount(money.into()))));
                 })
                 .with_asset(|asset| {
-                    asset.amount(MissionToken::Time(1000.into()));
-                });
-        })
-        .with_account(|account| {
-            account
-                .id("ede3354e133f9c8e337ddd6ee5415ed4b4ffe5fc7d21e933f4930a3730e5b21c")
-                .with_asset(|asset| {
-                    asset.amount(MissionToken::Energy(5000.into()));
+                    asset.amount(MissionToken::Time(0.into()));
                 });
         })
         .build(commands)
 }
 
-fn spawn_robot_gif(
+fn simulate_transfer<T>(
+    robot_query: Query<&Children, With<T>>,
+    wallet_query: Query<&Children, With<Wallet>>,
+    account_query: Query<&Children, With<Account>>,
+    mut tokens_query: Query<&mut MissionToken>,
+) where
+    T: Component + Robot + Clone + Copy,
+{
+    for robot_childrens in robot_query.iter() {
+        for child in robot_childrens.iter() {
+            if let Ok(wallet_childrens) = wallet_query.get(*child) {
+                for wallet_child in wallet_childrens.iter() {
+                    if let Ok(account_children) = account_query.get(*wallet_child) {
+                        for account_child in account_children.iter() {
+                            if let Ok(mut token) = tokens_query.get_mut(*account_child) {
+                                match *token {
+                                    MissionToken::Money(asset) => {
+                                        *token = MissionToken::Money(Asset(Amount(*asset.0 + 1)));
+                                    }
+                                    MissionToken::Time(asset) => {
+                                        *token = MissionToken::Money(Asset(Amount(*asset.0 + 1)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn spawn_robot_gif<T>(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     video_materials: &mut ResMut<Assets<VideoMaterial>>,
-    asset_server: Res<AssetServer>,
-    camera_entity: Entity,
-) -> Entity {
+    asset_server: &Res<AssetServer>,
+    camera_entity: &Entity,
+    asset_name: &str,
+    angle: f32,
+    robot: &mut T,
+) -> Entity
+where
+    T: Component + Robot + Clone + Copy,
+{
     let video_material = VideoMaterial {
         color: Color::rgb(1.0, 1.0, 1.0),
         alpha_mode: AlphaMode::Blend,
         ..Default::default()
     };
-    let video_asset: Handle<GifAsset> = asset_server.load("videos/robot.gif");
+    let video_asset: Handle<GifAsset> =
+        asset_server.load(format!("videos/mission/{}.gif", asset_name));
     let video_rotation =
         Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
     let video_position = Vec3::new(0.0, 0.5, -2.0);
+    let follow_ui_entity = commands
+        .spawn(SpatialBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
+            ..Default::default()
+        })
+        .insert(FollowUI {
+            min_distance: 0.1,
+            max_distance: 20.0,
+            min_height: -5.0,
+            max_height: 5.0,
+            max_view_angle: 45.0,
+            ..default()
+        })
+        .insert(SmoothLookAt {
+            target: Some(*camera_entity),
+            yaw_ease: EaseFunction::SineInOut,
+            pitch_ease: EaseFunction::SineInOut,
+            ..default()
+        })
+        .insert(ui::RobotPanel)
+        .insert(Name::new("FollowUI"))
+        .id();
+
+    // attach follow_ui to robot
+    robot.set_follow_ui(follow_ui_entity);
+
+    let video_entity = commands
+        .spawn(SpatialBundle {
+            transform: Transform::from_translation(video_position).with_rotation(video_rotation),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(MaterialMeshBundle {
+                    mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                    material: video_materials.add(video_material),
+                    transform: Transform::from_rotation(Quat::from_euler(
+                        EulerRot::YXZ,
+                        0.0,
+                        -std::f32::consts::FRAC_PI_2,
+                        0.0,
+                    )),
+                    ..default()
+                })
+                .insert(VideoPlayer {
+                    start_frame: 0,
+                    end_frame: 80,
+                    framerate: 20.0,
+                    playing: true,
+                    ..default()
+                })
+                .insert(video_asset)
+                .insert(Name::new("Video: RenderTarget"));
+        })
+        .insert(Name::new(format!("Video: {}", asset_name)))
+        .insert(SmoothLookAt {
+            target: Some(*camera_entity),
+            yaw_ease: EaseFunction::SineInOut,
+            pitch_ease: EaseFunction::SineInOut,
+            ..default()
+        })
+        .id();
+
+    commands
+        .entity(video_entity)
+        .push_children(&[follow_ui_entity]);
 
     commands
         .spawn(SpatialBundle { ..default() })
         .insert(Rotate {
             axis: Vec3::Y,
-            angle: 0.6,
+            angle,
         })
-        .with_children(|parent| {
-            parent
-                .spawn(SpatialBundle {
-                    transform: Transform::from_translation(video_position)
-                        .with_rotation(video_rotation),
-                    ..default()
-                })
-                .with_children(|parent| {
-                    parent
-                        .spawn(MaterialMeshBundle {
-                            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
-                            material: video_materials.add(video_material),
-                            transform: Transform::from_rotation(Quat::from_euler(
-                                EulerRot::YXZ,
-                                0.0,
-                                -std::f32::consts::FRAC_PI_2,
-                                0.0,
-                            )),
-                            ..default()
-                        })
-                        .insert(VideoPlayer {
-                            start_frame: 0,
-                            end_frame: 80,
-                            framerate: 20.0,
-                            playing: true,
-                            ..default()
-                        })
-                        .insert(video_asset)
-                        .insert(Name::new("Video: RenderTarget"));
-                })
-                .insert(Name::new("Video: Robot"))
-                .insert(SmoothLookAt {
-                    target: Some(camera_entity),
-                    yaw_ease: EaseFunction::SineInOut,
-                    pitch_ease: EaseFunction::SineInOut,
-                    ..default()
-                })
-                .with_children(|parent| {
-                    parent
-                        .spawn(SpatialBundle {
-                            transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
-                            ..Default::default()
-                        })
-                        .insert(FollowUI {
-                            min_distance: 0.1,
-                            max_distance: 20.0,
-                            min_height: -5.0,
-                            max_height: 5.0,
-                            max_view_angle: 45.0,
-                            ..default()
-                        })
-                        .insert(SmoothLookAt {
-                            target: Some(camera_entity),
-                            yaw_ease: EaseFunction::SineInOut,
-                            pitch_ease: EaseFunction::SineInOut,
-                            ..default()
-                        })
-                        .insert(ui::RobotPanel)
-                        .insert(Name::new("FollowUI: Axes"));
-                });
-        })
-        .insert(Name::new("Robot"))
+        .insert(CanRotate)
+        .push_children(&[video_entity])
+        .insert(*robot)
+        .insert(Name::new(format!("{}", asset_name)))
+        .id()
+}
+
+fn spawn_robot_with_wallet<T>(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    video_materials: &mut ResMut<Assets<VideoMaterial>>,
+    asset_server: &Res<AssetServer>,
+    camera_entity: &Entity,
+    asset_name: &str,
+    angle: f32,
+    robot: &mut T,
+) -> Entity
+where
+    T: Component + Robot + Copy + Clone,
+{
+    // robot gif
+    let robot_entity = spawn_robot_gif(
+        commands,
+        meshes,
+        video_materials,
+        asset_server,
+        camera_entity,
+        asset_name,
+        angle,
+        robot,
+    );
+
+    // wallet with multiple accounts using MissionTokens
+    let wallet_entity = build_wallet(commands, robot.get_money());
+
+    // attach wallet to robot
+    commands
+        .entity(robot_entity)
+        .push_children(&[wallet_entity])
         .id()
 }
 
@@ -211,7 +299,6 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    mut video_materials: ResMut<Assets<VideoMaterial>>,
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
@@ -260,7 +347,7 @@ fn setup(
     });
 
     // orbit camera
-    let camera_entity = commands
+    commands
         .spawn(Camera3dBundle {
             ..Default::default()
         })
@@ -269,8 +356,7 @@ fn setup(
             distance: 10.0,
             ..Default::default()
         })
-        .insert(FollowUICamera)
-        .id();
+        .insert(FollowUICamera);
 
     // FPS on screen
     commands.spawn(TextBundle {
@@ -296,23 +382,6 @@ fn setup(
         },
         ..Default::default()
     });
-
-    // robot gif
-    let robot_entity = spawn_robot_gif(
-        &mut commands,
-        &mut meshes,
-        &mut video_materials,
-        asset_server,
-        camera_entity,
-    );
-
-    // wallet with multiple accounts using MissionTokens
-    let wallet_entity = build_wallet(&mut commands);
-
-    // attach wallet to robot
-    commands
-        .entity(robot_entity)
-        .push_children(&[wallet_entity]);
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
@@ -325,7 +394,7 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     };
 }
 
-fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform)>) {
+fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform), With<CanRotate>>) {
     for (rotate, mut transform) in query.iter_mut() {
         transform.rotate(Quat::from_axis_angle(
             rotate.axis,
