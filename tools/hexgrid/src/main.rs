@@ -4,27 +4,26 @@ use std::{
 };
 
 use bevy::{prelude::*, render::view::NoFrustumCulling};
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
 use simula_hexgrid::hexgrid::*;
-use simula_action::ActionPlugin;
 
 fn main() {
     App::new()
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
-        .add_plugins(DefaultPlugins
-            .set(WindowPlugin {
-                window: WindowDescriptor {
-                    title: "[Simbotic] Simula - Hexgrid".to_string(),
-                    width: 940.,
-                    height: 528.,
-                    ..default()
-                },
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                title: "[Simbotic] Simula - Hexgrid".to_string(),
+                width: 940.,
+                height: 528.,
                 ..default()
-            }))
-        .add_plugin(WorldInspectorPlugin::new())
+            },
+            ..default()
+        }))
+        .add_plugin(WorldInspectorPlugin)
         .add_plugin(HexgridPlugin)
         .add_plugin(ActionPlugin)
         .add_startup_system(hexgrid_setup)

@@ -8,7 +8,7 @@ use bevy::{
 };
 use bevy_egui::EguiPlugin;
 use bevy_egui::{egui, EguiContext};
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::{flycam::*, orbitcam::*};
 #[cfg(feature = "gif")]
@@ -42,7 +42,7 @@ fn main() {
             ..default()
         }))
         .add_plugin(EguiPlugin)
-        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -346,9 +346,7 @@ fn setup(
                         playing: true,
                         _loop: false,
                     })
-                    .insert(Visibility {
-                        is_visible: true,
-                    })
+                    .insert(Visibility { is_visible: true })
                     .insert(Name::new("Robot: Body"));
                 parent
                     .spawn(AxesBundle {
@@ -472,7 +470,9 @@ fn video_control_window(
                         let mut src = video.1.to_owned();
                         src.playing = true;
                         commands.entity(video.0.to_owned()).insert(src);
-                        commands.entity(video.0.to_owned()).insert(Visibility{is_visible: true});
+                        commands
+                            .entity(video.0.to_owned())
+                            .insert(Visibility { is_visible: true });
                     }
                     deleted_video_sources.0 = HashMap::new();
                 });

@@ -20,6 +20,7 @@ impl Plugin for MissionPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Account>()
             .register_type::<AccountId>()
+            .register_type::<Asset<1, 2>>()
             .register_type::<Wallet>()
             .register_type::<WalletId>();
     }

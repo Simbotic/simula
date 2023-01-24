@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// A delay will succeed after a specified amount of time.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Delay {
     #[serde(default)]
     pub duration: f64,

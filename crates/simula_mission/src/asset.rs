@@ -1,9 +1,9 @@
 use bevy::prelude::*;
-use bevy_egui::egui::Ui;
-use bevy_inspector_egui::{Context, Inspectable};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromReflect)]
+#[derive(
+    Reflect, Default, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromReflect,
+)]
 pub struct Amount(pub i128);
 
 impl From<i128> for Amount {
@@ -52,24 +52,37 @@ impl std::ops::Add for Amount {
 
 /// An asset for a specific class
 #[derive(
-    Default, Component, Reflect, Deref, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromReflect
+    Default,
+    Component,
+    Reflect,
+    Deref,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    FromReflect,
 )]
 pub struct Asset<const CLASS_ID: u64, const ASSET_ID: u64>(pub Amount);
 
-impl<const CLASS_ID: u64, const ASSET_ID: u64> Inspectable for Asset<CLASS_ID, ASSET_ID> {
-    type Attributes = ();
+// TODO: Check how to work without Inspectable here
+// impl<const CLASS_ID: u64, const ASSET_ID: u64> Inspectable for Asset<CLASS_ID, ASSET_ID> {
+//     type Attributes = ();
 
-    fn ui(&mut self, ui: &mut Ui, _options: Self::Attributes, _context: &mut Context) -> bool {
-        let changed;
-        ui.label(format!("Asset<{}, {}>", CLASS_ID, ASSET_ID));
-        let mut amount_text = self.0 .0.to_string();
-        changed = ui.text_edit_singleline(&mut amount_text).changed();
-        if changed {
-            self.0 .0 = amount_text.parse().unwrap();
-        }
-        changed
-    }
-}
+//     fn ui(&mut self, ui: &mut Ui, _options: Self::Attributes, _context: &mut Context) -> bool {
+//         let changed;
+//         ui.label(format!("Asset<{}, {}>", CLASS_ID, ASSET_ID));
+//         let mut amount_text = self.0 .0.to_string();
+//         changed = ui.text_edit_singleline(&mut amount_text).changed();
+//         if changed {
+//             self.0 .0 = amount_text.parse().unwrap();
+//         }
+//         changed
+//     }
+// }
 
 impl<const CLASS_ID: u64, const ASSET_ID: u64> Asset<CLASS_ID, ASSET_ID> {
     pub fn new(balance: Amount) -> Self {

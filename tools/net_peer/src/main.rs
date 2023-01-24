@@ -1,8 +1,9 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
-    prelude::*, log::LogPlugin
+    log::LogPlugin,
+    prelude::*,
 };
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_authority::{Minion, NetAuthorityPlugin, Worker};
 use simula_camera::flycam::*;
@@ -18,21 +19,27 @@ fn main() {
 
     app.insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                title: "[Simbotic] Simula - NetPeer".to_string(),
-                width: 940.,
-                height: 528.,
-                ..default()
-            },
-            ..default()
-        }).set(LogPlugin {
-            filter: "info,wgpu_core=warn,wgpu_hal=warn,simula_socket=debug,simula_net=debug".into(),
-            level: bevy::log::Level::DEBUG,
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    window: WindowDescriptor {
+                        title: "[Simbotic] Simula - NetPeer".to_string(),
+                        width: 940.,
+                        height: 528.,
+                        ..default()
+                    },
+                    ..default()
+                })
+                .set(LogPlugin {
+                    filter:
+                        "info,wgpu_core=warn,wgpu_hal=warn,simula_socket=debug,simula_net=debug"
+                            .into(),
+                    level: bevy::log::Level::DEBUG,
+                }),
+        )
         .add_plugin(NetPlugin)
         .add_plugin(NetAuthorityPlugin)
-        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(FlyCameraPlugin)

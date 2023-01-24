@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Any will run all of its children in parallel until one of them succeed.
 /// If all of them fail, the Any node will fail.
-#[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
+#[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Any;
 
 impl BehaviorInfo for Any {

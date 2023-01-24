@@ -1,11 +1,10 @@
 use crate::prng::*;
 use bevy::prelude::*;
-use bevy_inspector_egui::Inspectable;
 use enum_iterator::Sequence;
 use std::fmt::Display;
 use std::{f32::consts::PI, time::Duration};
 
-#[derive(Reflect, Clone, Sequence, Display, Inspectable)]
+#[derive(Reflect, Clone, Sequence, Display)]
 pub enum SignalFunction {
     Identity,
     Sine,

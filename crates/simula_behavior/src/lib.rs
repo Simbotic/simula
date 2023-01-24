@@ -1,9 +1,6 @@
 use actions::*;
 use asset::{BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading, BehaviorDocument};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
-use bevy_inspector_egui::{
-    egui, options::EntityAttributes, Context, Inspectable, RegisterInspectable,
-};
 use composites::*;
 use decorators::*;
 use serde::Deserialize;
@@ -31,7 +28,6 @@ pub mod prelude {
         BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess,
         BehaviorTree, BehaviorType,
     };
-    pub use bevy_inspector_egui::{Inspectable, RegisterInspectable};
 }
 
 pub struct BehaviorPlugin;
@@ -105,24 +101,6 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
-            .register_inspectable::<BehaviorTree>()
-            .register_inspectable::<BehaviorNode>()
-            .register_inspectable::<BehaviorSuccess>()
-            .register_inspectable::<BehaviorRunning>()
-            .register_inspectable::<BehaviorFailure>()
-            .register_inspectable::<BehaviorCursor>()
-            .register_inspectable::<BehaviorParent>()
-            .register_inspectable::<BehaviorChildren>()
-            .register_inspectable::<BehaviorType>()
-            .register_inspectable::<Debug>()
-            .register_inspectable::<Delay>()
-            .register_inspectable::<Selector>()
-            .register_inspectable::<Sequencer>()
-            .register_inspectable::<All>()
-            .register_inspectable::<Any>()
-            .register_inspectable::<Inverter>()
-            .register_inspectable::<Repeater>()
-            .register_inspectable::<Succeeder>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_system_to_stage(
@@ -142,13 +120,13 @@ impl Plugin for BehaviorPlugin {
 }
 
 /// A marker added to currently running behaviors
-#[derive(Default, Debug, Reflect, Clone, Component, Inspectable)]
+#[derive(Default, Debug, Reflect, Clone, Component)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorCursor;
 
 /// A marker added to entities that want to run a behavior
-#[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorRunning {
@@ -156,25 +134,25 @@ pub struct BehaviorRunning {
 }
 
 /// A marker added to behaviors that complete with success
-#[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorSuccess;
 
 /// A marker added to behaviors that complete with failure
-#[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorFailure;
 
 /// A marker added to behaviors that are stopped without completing
-#[derive(Debug, Default, Reflect, Clone, Copy, Component, Inspectable, PartialEq)]
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorStopped;
 
 /// A marker added to behavior node entities
-#[derive(Debug, Default, Reflect, Clone, Component, Inspectable)]
+#[derive(Debug, Default, Reflect, Clone, Component)]
 #[reflect(Component)]
 pub struct BehaviorNode {
     pub typ: BehaviorType,
@@ -184,7 +162,7 @@ pub struct BehaviorNode {
 }
 
 /// A component to point to the parent of a behavior node
-#[derive(Deref, Debug, Default, Reflect, Clone, Component, Inspectable)]
+#[derive(Deref, Debug, Default, Reflect, Clone, Component)]
 #[reflect(Component)]
 pub struct BehaviorParent(Option<Entity>);
 
@@ -193,30 +171,31 @@ pub struct BehaviorParent(Option<Entity>);
 #[reflect(Component)]
 pub struct BehaviorChildren(Vec<Entity>);
 
-impl Inspectable for BehaviorChildren {
-    type Attributes = ();
+// TODO: Check if this is still needed
+// impl Inspectable for BehaviorChildren {
+//     type Attributes = ();
 
-    fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
-        let world = if let Some(world) = context.world() {
-            world
-        } else {
-            return false;
-        };
-        ui.vertical(|ui| {
-            for child in self.iter_mut() {
-                if let Some(name) = world.get::<Name>(*child) {
-                    ui.collapsing(format!("{} ({})", name.to_string(), child.index()), |ui| {
-                        child.ui(ui, EntityAttributes { despawnable: false }, context);
-                    });
-                }
-            }
-        });
-        false
-    }
-}
+//     fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
+//         let world = if let Some(world) = context.world() {
+//             world
+//         } else {
+//             return false;
+//         };
+//         ui.vertical(|ui| {
+//             for child in self.iter_mut() {
+//                 if let Some(name) = world.get::<Name>(*child) {
+//                     ui.collapsing(format!("{} ({})", name.to_string(), child.index()), |ui| {
+//                         child.ui(ui, EntityAttributes { despawnable: false }, context);
+//                     });
+//                 }
+//             }
+//         });
+//         false
+//     }
+// }
 
 /// A component added to identify the type of a behavior node
-#[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Inspectable)]
+#[derive(Debug, Default, PartialEq, Reflect, Clone, Component)]
 #[reflect(Component)]
 pub enum BehaviorType {
     #[default]
@@ -228,7 +207,7 @@ pub enum BehaviorType {
 /// A component to provide static behavior node info
 pub trait BehaviorInfo
 where
-    Self: Inspectable + Reflect + Component + Clone + Default + Sized + 'static,
+    Self: Reflect + Component + Clone + Default + Sized + 'static,
 {
     const TYPE: BehaviorType;
     const NAME: &'static str;
@@ -257,7 +236,7 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 }
 
 /// A component added to identify the root of a behavior tree
-#[derive(Default, Reflect, Clone, Component, Inspectable)]
+#[derive(Default, Reflect, Clone, Component)]
 #[reflect(Component)]
 pub struct BehaviorTree {
     pub root: Option<Entity>,

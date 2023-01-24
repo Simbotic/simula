@@ -1,0 +1,18 @@
+(
+    root:(
+        "Loop forever",
+        Repeater((repeat:Forever)),
+        [
+            (
+                "RobberEscapeCop",
+                Sequencer(()),
+                [
+                    ("RobberCaptured", RobberCaptured(())),
+                    ("RobberRun", RobberRun(())),
+                    ("RobberRest", RobberRest(())),
+                    ("RobberBribe", RobberBribe(())),
+                ]
+            )
+        ]
+    )
+)

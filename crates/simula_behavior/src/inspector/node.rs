@@ -3,16 +3,12 @@ use crate::{
     BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::{
-    egui::{self, Rounding},
-    options::EntityAttributes,
-    Context, Inspectable,
-};
+use bevy_inspector_egui::egui::{self, Rounding};
 
 #[derive(Default, Clone)]
 pub struct BehaviorInspectorNodeAttributes;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Reflect)]
 pub struct BehaviorInspectorNode {
     pub entity: Option<Entity>,
 }
@@ -39,40 +35,38 @@ fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
     }
 }
 
-macro_rules! some_or_return {
-    ( $e:expr ) => {
-        match $e {
-            Some(x) => x,
-            None => return false,
-        }
-    };
-}
-
-impl Inspectable for BehaviorInspectorNode {
-    type Attributes = BehaviorInspectorNodeAttributes;
-
-    fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
-        let mut changed = false;
-
-        let entity = some_or_return!(self.entity);
-        let world = some_or_return!(unsafe { context.world_mut() });
-        let behavior_name = some_or_return!(world.get::<Name>(entity));
-        let behavior_node = some_or_return!(world.get::<BehaviorNode>(entity));
-        let behavior_children = some_or_return!(world.get::<BehaviorChildren>(entity));
-
-        let behavior_running = world.get::<BehaviorRunning>(entity);
-        let behavior_failure = world.get::<BehaviorFailure>(entity);
-        let behavior_success = world.get::<BehaviorSuccess>(entity);
-        let behavior_cursor = world.get::<BehaviorCursor>(entity);
-
+pub fn behavior_inspector_node_ui(
+    behaviors_query: &Query<(
+        &Name,
+        &BehaviorNode,
+        &BehaviorChildren,
+        Option<&BehaviorRunning>,
+        Option<&BehaviorFailure>,
+        Option<&BehaviorSuccess>,
+        Option<&BehaviorCursor>,
+    )>,
+    node: &mut BehaviorInspectorNode,
+    ui: &mut egui::Ui,
+) {
+    let node_entity = node.entity.unwrap();
+    if let Ok((
+        behavior_name,
+        behavior_node,
+        behavior_children,
+        behavior_running,
+        behavior_failure,
+        behavior_success,
+        behavior_cursor,
+    )) = behaviors_query.get(node_entity)
+    {
         let cursor_stroke = if behavior_cursor.is_some() {
             egui::Stroke::new(3.0, color_from_hex("#FF00FF").unwrap())
         } else {
-            egui::Stroke::none()
+            egui::Stroke::NONE
         };
 
         ui.set_min_width(100.0);
-        ui.push_id(format!("bhtins-{}", entity.index()), |ui| {
+        ui.push_id(format!("bhtins-{}", node_entity.index()), |ui| {
             ui.vertical(|ui| {
                 // Node frame
                 egui::Frame::none()
@@ -119,9 +113,9 @@ impl Inspectable for BehaviorInspectorNode {
 
                         ui.collapsing("", |ui| {
                             ui.set_max_width(250.0);
-                            if let Some(entity) = &mut self.entity {
-                                let attributes = EntityAttributes { despawnable: false };
-                                changed |= entity.ui(ui, attributes, context);
+                            if let Some(_) = &mut node.entity {
+                                // TODO: Add a way to display the value of the node using Bevy Inspector
+                                // maybe? ui_for_value();
                             }
                         });
                     });
@@ -131,13 +125,10 @@ impl Inspectable for BehaviorInspectorNode {
                         let mut child_node = BehaviorInspectorNode {
                             entity: Some(*child),
                         };
-                        let child_attributes = BehaviorInspectorNodeAttributes {};
-                        changed |= child_node.ui(ui, child_attributes, context);
+                        behavior_inspector_node_ui(&behaviors_query, &mut child_node, ui);
                     }
                 });
             });
         });
-
-        changed
     }
 }

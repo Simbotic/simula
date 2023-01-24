@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 /// Subtree connects a behavior subtree to the current behavior tree.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Subtree<T: BehaviorSpawner> {
     /// Behavior asset to load.
     pub asset: String,
@@ -12,14 +12,13 @@ pub struct Subtree<T: BehaviorSpawner> {
     #[serde(default)]
     pub unload: bool,
     #[serde(skip)]
-    #[inspectable(ignore)]
     #[reflect(ignore)]
     phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> BehaviorInfo for Subtree<T>
 where
-    T: BehaviorSpawner + Inspectable,
+    T: BehaviorSpawner + Reflect,
 {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Subtree";

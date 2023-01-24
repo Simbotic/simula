@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, Inspectable)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Debug {
     #[serde(default)]
     pub message: String,

@@ -1,4 +1,4 @@
-use crate::{VideoPlayer, VideoMaterial};
+use crate::{VideoMaterial, VideoPlayer};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,

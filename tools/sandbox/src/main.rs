@@ -6,7 +6,7 @@ use bevy::{
     render::view::{NoFrustumCulling, RenderLayers},
 };
 use bevy_egui::{egui, EguiContext, EguiPlugin};
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use enum_iterator::all;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
@@ -69,7 +69,7 @@ fn main() {
         .add_plugin(NetPlugin)
         .add_plugin(NetAuthorityPlugin)
         .add_plugin(EguiPlugin)
-        .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)

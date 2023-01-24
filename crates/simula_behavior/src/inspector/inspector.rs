@@ -1,14 +1,16 @@
 use crate::{
-    inspector::{BehaviorInspectorNode, BehaviorInspectorNodeAttributes},
-    BehaviorTree,
+    inspector::BehaviorInspectorNode, BehaviorChildren, BehaviorCursor, BehaviorFailure,
+    BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorTree,
 };
 use bevy::prelude::*;
-use bevy_inspector_egui::{egui, Context, Inspectable};
+use bevy_inspector_egui::{bevy_egui, egui};
+
+use super::node::behavior_inspector_node_ui;
 
 #[derive(Default, Clone, Resource)]
 pub struct BehaviorInspectorAttributes;
 
-#[derive(Default, Clone, Resource)]
+#[derive(Default, Clone, Resource, Reflect)]
 pub struct BehaviorInspector {
     pub selected: BehaviorInspectorItem,
 }
@@ -26,7 +28,7 @@ impl BehaviorInspector {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Reflect)]
 pub struct BehaviorInspectorItem {
     pub entity: Option<Entity>,
     pub name: String,
@@ -50,32 +52,28 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
     format!("{}{}", entity, item.name)
 }
 
-macro_rules! some_or_return {
-    ( $e:expr ) => {
-        match $e {
-            Some(x) => x,
-            None => return false,
-        }
-    };
-}
-
-impl Inspectable for BehaviorInspector {
-    type Attributes = BehaviorInspectorAttributes;
-
-    fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
-        let mut changed = false;
-
-        let world = some_or_return!(unsafe { context.world_mut() });
-
+pub fn behavior_inspector_ui(
+    mut egui_context: ResMut<bevy_egui::EguiContext>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
+    behavior_trees: Query<(Entity, Option<&Name>, &BehaviorTree)>,
+    behaviors_query: Query<(
+        &Name,
+        &BehaviorNode,
+        &BehaviorChildren,
+        Option<&BehaviorRunning>,
+        Option<&BehaviorFailure>,
+        Option<&BehaviorSuccess>,
+        Option<&BehaviorCursor>,
+    )>,
+) {
+    egui::Window::new("UI").show(egui_context.ctx_mut(), |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
-            .selected_text(item_label(&self.selected))
+            .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
                 let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
-                    let mut behavior_trees =
-                        world.query_filtered::<(Entity, Option<&Name>), With<BehaviorTree>>();
                     behavior_trees
-                        .iter(world)
-                        .map(|(entity, name)| BehaviorInspectorItem {
+                        .iter()
+                        .map(|(entity, name, _)| BehaviorInspectorItem {
                             entity: Some(entity),
                             name: name.unwrap_or(&Name::new("")).to_string(),
                         })
@@ -85,12 +83,12 @@ impl Inspectable for BehaviorInspector {
                 for selectable_behavior in selectable_behaviors {
                     if ui
                         .selectable_label(
-                            self.selected == selectable_behavior,
+                            behavior_inspector.selected == selectable_behavior,
                             item_label(&selectable_behavior),
                         )
                         .clicked()
                     {
-                        self.selected = selectable_behavior;
+                        behavior_inspector.selected = selectable_behavior;
                     }
                 }
             });
@@ -98,22 +96,21 @@ impl Inspectable for BehaviorInspector {
         if let BehaviorInspectorItem {
             entity: Some(entity),
             name,
-        } = &self.selected
+        } = &behavior_inspector.selected
         {
-            let behavior_tree = some_or_return!(world.get::<BehaviorTree>(*entity));
-            let mut node = BehaviorInspectorNode {
-                entity: behavior_tree.root,
-            };
-            egui::Window::new(format!("Behavior: {}", name))
-                .title_bar(true)
-                .resizable(true)
-                .collapsible(true)
-                .scroll2([true, true])
-                .show(ui.ctx(), |ui| {
-                    changed |= node.ui(ui, BehaviorInspectorNodeAttributes::default(), context);
-                });
+            if let Ok((_, _, behavior_tree)) = behavior_trees.get(*entity) {
+                let mut node = BehaviorInspectorNode {
+                    entity: behavior_tree.root,
+                };
+                egui::Window::new(format!("Behavior: {}", name))
+                    .title_bar(true)
+                    .resizable(true)
+                    .collapsible(true)
+                    .scroll2([true, true])
+                    .show(ui.ctx(), |ui| {
+                        behavior_inspector_node_ui(&behaviors_query, &mut node, ui);
+                    });
+            }
         }
-
-        changed
-    }
+    });
 }

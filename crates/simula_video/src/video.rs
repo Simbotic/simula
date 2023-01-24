@@ -138,7 +138,12 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
             } else {
                 true
             };
-            (entity, src.size, visibility, computed_visibility.is_visible())
+            (
+                entity,
+                src.size,
+                visibility,
+                computed_visibility.is_visible(),
+            )
         })
         .collect();
 
