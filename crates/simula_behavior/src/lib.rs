@@ -120,7 +120,7 @@ impl Plugin for BehaviorPlugin {
 }
 
 /// A marker added to currently running behaviors
-#[derive(Default, Debug, Reflect, Clone, Component)]
+#[derive(Default, Debug, Reflect, Clone, Copy, Component)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub struct BehaviorCursor;

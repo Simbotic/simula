@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy_inspector_egui::{
     bevy_egui::{self},
     egui,
-    restricted_world_view::RestrictedWorldView,
 };
 
 use super::node::behavior_inspector_node_ui;
@@ -58,6 +57,7 @@ pub fn behavior_inspector_ui(world: &mut World) {
     let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
     let app_type_registry = world.resource::<AppTypeRegistry>().clone();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
+
     egui::Window::new("UI").show(egui_context.ctx_mut(), |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
@@ -97,14 +97,13 @@ pub fn behavior_inspector_ui(world: &mut World) {
                 };
                 let type_registry = app_type_registry.0.clone();
                 let type_registry = type_registry.read();
-                let mut world = RestrictedWorldView::new(world);
                 egui::Window::new(format!("Behavior: {}", name))
                     .title_bar(true)
                     .resizable(true)
                     .collapsible(true)
                     .scroll2([true, true])
                     .show(ui.ctx(), |ui| {
-                        behavior_inspector_node_ui(&mut world, &mut node, ui, &type_registry);
+                        behavior_inspector_node_ui(world, &mut node, ui, &type_registry);
                     });
             }
         }
