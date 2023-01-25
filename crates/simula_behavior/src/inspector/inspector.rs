@@ -1,9 +1,10 @@
-use crate::{
-    inspector::BehaviorInspectorNode, BehaviorChildren, BehaviorCursor, BehaviorFailure,
-    BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorTree,
-};
+use crate::{inspector::BehaviorInspectorNode, BehaviorTree};
 use bevy::prelude::*;
-use bevy_inspector_egui::{bevy_egui, egui};
+use bevy_inspector_egui::{
+    bevy_egui::{self},
+    egui,
+    restricted_world_view::RestrictedWorldView,
+};
 
 use super::node::behavior_inspector_node_ui;
 
@@ -52,27 +53,18 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
     format!("{}{}", entity, item.name)
 }
 
-pub fn behavior_inspector_ui(
-    mut egui_context: ResMut<bevy_egui::EguiContext>,
-    mut behavior_inspector: ResMut<BehaviorInspector>,
-    behavior_trees: Query<(Entity, Option<&Name>, &BehaviorTree)>,
-    behaviors_query: Query<(
-        &Name,
-        &BehaviorNode,
-        &BehaviorChildren,
-        Option<&BehaviorRunning>,
-        Option<&BehaviorFailure>,
-        Option<&BehaviorSuccess>,
-        Option<&BehaviorCursor>,
-    )>,
-) {
+pub fn behavior_inspector_ui(world: &mut World) {
+    let mut egui_context = world.resource_mut::<bevy_egui::EguiContext>().clone();
+    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
+    let app_type_registry = world.resource::<AppTypeRegistry>().clone();
+    let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
     egui::Window::new("UI").show(egui_context.ctx_mut(), |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
                 let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
                     behavior_trees
-                        .iter()
+                        .iter(world)
                         .map(|(entity, name, _)| BehaviorInspectorItem {
                             entity: Some(entity),
                             name: name.unwrap_or(&Name::new("")).to_string(),
@@ -88,6 +80,7 @@ pub fn behavior_inspector_ui(
                         )
                         .clicked()
                     {
+                        let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
                         behavior_inspector.selected = selectable_behavior;
                     }
                 }
@@ -98,17 +91,20 @@ pub fn behavior_inspector_ui(
             name,
         } = &behavior_inspector.selected
         {
-            if let Ok((_, _, behavior_tree)) = behavior_trees.get(*entity) {
+            if let Ok((_, _, behavior_tree)) = behavior_trees.get(world, *entity) {
                 let mut node = BehaviorInspectorNode {
                     entity: behavior_tree.root,
                 };
+                let type_registry = app_type_registry.0.clone();
+                let type_registry = type_registry.read();
+                let mut world = RestrictedWorldView::new(world);
                 egui::Window::new(format!("Behavior: {}", name))
                     .title_bar(true)
                     .resizable(true)
                     .collapsible(true)
                     .scroll2([true, true])
                     .show(ui.ctx(), |ui| {
-                        behavior_inspector_node_ui(&behaviors_query, &mut node, ui);
+                        behavior_inspector_node_ui(&mut world, &mut node, ui, &type_registry);
                     });
             }
         }
