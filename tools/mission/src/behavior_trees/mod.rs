@@ -12,7 +12,7 @@ impl Plugin for MissionBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(BehaviorPlugin)
             .add_plugin(BehaviorInspectorPlugin)
-            // .add_plugin(CopBehaviorPlugin)
+            .add_plugin(CopBehaviorPlugin)
             .add_plugin(RobberBehaviorPlugin);
     }
 }

@@ -57,7 +57,7 @@ pub fn setup_behavior(
     asset_server: Res<AssetServer>,
 ) {
     for robber in query.iter() {
-        let document: Handle<BehaviorAsset> = asset_server.load("behaviors/debug_sequence.bht.ron");
+        let document: Handle<BehaviorAsset> = asset_server.load("behaviors/mission/robber.bht.ron");
         let behavior = BehaviorTree::from_asset::<RobberBehavior>(None, &mut commands, document);
         if let Some(root) = behavior.root {
             commands.entity(root).insert(BehaviorCursor);
