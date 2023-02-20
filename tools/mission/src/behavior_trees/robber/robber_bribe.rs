@@ -3,9 +3,8 @@ use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
 use crate::{
-    common::{CanRotate, Robot},
-    cop::{Cop, CopBribed, CopChase, CopRest},
-    robber::{Robber, RobberRun},
+    common::Robot,
+    components::{cop::*, robber::*},
 };
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
@@ -17,9 +16,9 @@ impl BehaviorInfo for RobberBribeAction {
     const DESC: &'static str = "The Cop gets bribed by the Robber, loses energy and it's unable to capture the Robber for a while";
 }
 
-pub const BRIBE_COST: u64 = 100;
-pub const BRIBE_ENERGY_COST: u64 = 50;
-pub const ROBBER_BRIBE_RANGE: f32 = 0.35;
+pub const BRIBE_COST: u64 = (ROBBER_STARTING_MONEY / 5) as u64;
+pub const BRIBE_ENERGY_COST: u64 = (ROBBER_STARTING_ENERGY / 10) as u64;
+pub const ROBBER_BRIBE_RADIUS: f32 = 1.0;
 
 pub fn run(
     mut commands: Commands,
@@ -34,13 +33,12 @@ pub fn run(
                     let robber_money = robber.get_money();
                     let robber_energy = robber.get_energy();
                     if robber_money < BRIBE_COST || robber_energy < BRIBE_ENERGY_COST {
-                        commands.entity(action_entity).insert(BehaviorFailure);
+                        commands.entity(action_entity).insert(BehaviorSuccess);
                         return;
                     }
-                    let cop_rotation = robber_transform.rotation;
-                    let robber_rotation = cop_transform.rotation;
-                    let rotation_diff = cop_rotation.y - robber_rotation.y;
-                    if rotation_diff < ROBBER_BRIBE_RANGE && rotation_diff > -ROBBER_BRIBE_RANGE {
+                    let distance =
+                        (cop_transform.translation - robber_transform.translation).length();
+                    if distance <= ROBBER_BRIBE_RADIUS {
                         let cop_money = cop.get_money();
                         let cop_energy = cop.get_energy();
                         let bribe_cop_penalty = BRIBE_ENERGY_COST * 2;
@@ -54,7 +52,6 @@ pub fn run(
                         }
                         commands
                             .entity(cop_entity)
-                            .remove::<CanRotate>()
                             .remove::<CopChase>()
                             .remove::<CopRest>()
                             .insert(CopBribed);

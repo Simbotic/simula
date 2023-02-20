@@ -4,9 +4,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use common::{CanRotate, Robot, Rotate};
-use cop::Cop;
-use robber::Robber;
+use common::{Movement, Robot};
+use components::{bank::Bank, cop::Cop, robber::Robber};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::ease::EaseFunction;
@@ -26,13 +25,14 @@ use simula_viz::{
 
 pub mod behavior_trees;
 pub mod common;
-pub mod cop;
-pub mod robber;
+pub mod components;
 pub mod ui;
+pub mod utils;
 
 pub const CLASS_ID: u64 = 1000;
 pub const TIME_ASSET_ID: u64 = 0;
 pub const MONEY_ASSET_ID: u64 = 1;
+pub const MOVEMENT_RADIUS: f32 = 3.0;
 
 #[derive(Debug, Reflect, Component, Clone, PartialEq)]
 #[reflect(Component)]
@@ -68,6 +68,7 @@ impl From<MissionToken> for AssetBalance {
 
 fn main() {
     App::new()
+        .register_type::<Movement>()
         .register_type::<MissionToken>()
         .insert_resource(Msaa { samples: 4 })
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
@@ -94,11 +95,13 @@ fn main() {
         .add_plugin(MissionBehaviorPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
-        .add_system(cop::cop_spawner)
-        .add_system(robber::robber_spawner)
-        .add_system(rotate_system)
+        .add_system(components::cop::cop_spawner)
+        .add_system(components::robber::robber_spawner)
+        .add_system(components::bank::bank_spawner)
+        // .add_system(rotate_system)
         .add_system(ui::follow_ui::<Cop>)
         .add_system(ui::follow_ui::<Robber>)
+        .add_system(ui::follow_ui::<Bank>)
         .add_system(simulate_transfer::<Cop>)
         .add_system(simulate_transfer::<Robber>)
         .run();
@@ -163,7 +166,7 @@ fn spawn_robot_gif<T>(
     asset_server: &Res<AssetServer>,
     camera_entity: &Entity,
     asset_name: &str,
-    angle: f32,
+    duration: f32,
     robot: &mut T,
 ) -> Entity
 where
@@ -179,6 +182,7 @@ where
     let video_rotation =
         Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
     let video_position = Vec3::new(0.0, 0.5, -2.0);
+
     let follow_ui_entity = commands
         .spawn(SpatialBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 1.0, 0.0)),
@@ -240,19 +244,27 @@ where
             pitch_ease: EaseFunction::SineInOut,
             ..default()
         })
+        .push_children(&[follow_ui_entity])
         .id();
 
-    commands
-        .entity(video_entity)
-        .push_children(&[follow_ui_entity]);
+    let points = vec![
+        Vec3::new(-MOVEMENT_RADIUS, 0.0, MOVEMENT_RADIUS),
+        Vec3::new(MOVEMENT_RADIUS, 0.0, MOVEMENT_RADIUS),
+        Vec3::new(MOVEMENT_RADIUS, 0.0, -MOVEMENT_RADIUS),
+        Vec3::new(-MOVEMENT_RADIUS, 0.0, -MOVEMENT_RADIUS),
+    ];
+
+    let direction = (points[1] - points[0]).normalize();
 
     commands
         .spawn(SpatialBundle { ..default() })
-        .insert(Rotate {
-            axis: Vec3::Y,
-            angle,
+        .insert(Movement {
+            points,
+            duration,
+            elapsed: 0.0,
+            direction,
+            index: 0,
         })
-        .insert(CanRotate)
         .push_children(&[video_entity])
         .insert(*robot)
         .insert(Name::new(format!("{}", asset_name)))
@@ -266,7 +278,7 @@ fn spawn_robot_with_wallet<T>(
     asset_server: &Res<AssetServer>,
     camera_entity: &Entity,
     asset_name: &str,
-    angle: f32,
+    duration: f32,
     robot: &mut T,
 ) -> Entity
 where
@@ -280,7 +292,7 @@ where
         asset_server,
         camera_entity,
         asset_name,
-        angle,
+        duration,
         robot,
     );
 
@@ -391,13 +403,4 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
             }
         }
     };
-}
-
-fn rotate_system(time: Res<Time>, mut query: Query<(&Rotate, &mut Transform), With<CanRotate>>) {
-    for (rotate, mut transform) in query.iter_mut() {
-        transform.rotate(Quat::from_axis_angle(
-            rotate.axis,
-            rotate.angle * time.delta_seconds(),
-        ));
-    }
 }

@@ -5,12 +5,17 @@
         [
             (
                 "CopChaseRobber",
-                Sequencer(()),
+                Any(()),
                 [
-                    ("CopBribed", CopBribed(())),
-                    ("CopChase", CopChase(())),
-                    ("CopRest", CopRest(())),
-                    ("CopCapture", CopCapture(())),
+                    ("MoveLoop", Repeater((repeat: Forever)),
+                    [
+                        ("CopChase", CopChase(())),
+                    ]),
+                    ("Actions", Sequencer(()), [
+                        ("CopBribed", CopBribed(())),
+                        ("CopRest", CopRest(())),
+                        ("CopCapture", CopCapture(())),
+                    ])
                 ]
             )
         ]

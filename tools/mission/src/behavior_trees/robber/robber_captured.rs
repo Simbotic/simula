@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::{
-    common::CanRotate,
-    robber::{Robber, RobberCaptured, RobberRun},
-};
+use crate::components::robber::*;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct RobberCapturedAction;
@@ -33,7 +30,6 @@ pub fn run(
                     commands
                         .entity(robber_entity)
                         .remove::<RobberCaptured>()
-                        .insert(CanRotate)
                         .insert(RobberRun);
                     info!(
                         "[Robber {:?}] Released from Capture. Started to Run",

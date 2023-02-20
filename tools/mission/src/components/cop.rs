@@ -3,8 +3,8 @@ use simula_video::VideoMaterial;
 
 use crate::{common::Robot, spawn_robot_with_wallet};
 
-pub const COP_STARTING_ENERGY: u64 = 500;
 pub const COP_STARTING_MONEY: u64 = 0;
+pub const COP_STARTING_ENERGY: u64 = 1000;
 
 #[derive(Component)]
 pub struct CopRest;
@@ -68,7 +68,7 @@ pub fn cop_spawner(
                 &asset_server,
                 &camera_entity,
                 "robot_cop",
-                1.3,
+                1.0,
                 &mut Cop {
                     energy: COP_STARTING_ENERGY,
                     money: COP_STARTING_MONEY,

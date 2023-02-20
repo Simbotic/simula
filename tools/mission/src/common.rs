@@ -9,14 +9,12 @@ pub trait Robot {
     fn set_follow_ui(&mut self, entity: Entity);
 }
 
-#[derive(Component)]
-pub struct RobotPanel;
-
-#[derive(Component)]
-pub struct Rotate {
-    pub axis: Vec3,
-    pub angle: f32,
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Movement {
+    pub points: Vec<Vec3>,
+    pub duration: f32,
+    pub elapsed: f32,
+    pub direction: Vec3,
+    pub index: usize,
 }
-
-#[derive(Component)]
-pub struct CanRotate;

@@ -3,9 +3,8 @@ use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
 use crate::{
-    common::{CanRotate, Robot},
-    cop::{Cop, CopChase},
-    robber::{Robber, RobberCaptured, RobberRest, RobberRun},
+    common::Robot,
+    components::{cop::*, robber::*},
 };
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
@@ -18,8 +17,8 @@ impl BehaviorInfo for CopCaptureAction {
         "Capture the Robber. The Robber loses all of their energy and money.";
 }
 
-pub const COP_CAPTURE_ENERGY_COST: u64 = 100;
-pub const COP_CAPTURE_RANGE: f32 = 0.25;
+pub const COP_CAPTURE_ENERGY_COST: u64 = (COP_STARTING_ENERGY / 5) as u64;
+pub const COP_CAPTURE_RADIUS: f32 = 0.5;
 
 pub fn run(
     mut commands: Commands,
@@ -34,13 +33,12 @@ pub fn run(
                     let cop_money = cop.get_money();
                     let cop_energy = cop.get_energy();
                     if cop_energy < COP_CAPTURE_ENERGY_COST {
-                        commands.entity(action_entity).insert(BehaviorFailure);
+                        commands.entity(action_entity).insert(BehaviorSuccess);
                         return;
                     }
-                    let robber_rotation = robber_transform.rotation;
-                    let cop_rotation = cop_transform.rotation;
-                    let rotation_diff = robber_rotation.y - cop_rotation.y;
-                    if rotation_diff < COP_CAPTURE_RANGE && rotation_diff > -COP_CAPTURE_RANGE {
+                    let distance =
+                        (robber_transform.translation - cop_transform.translation).length();
+                    if distance <= COP_CAPTURE_RADIUS {
                         let robber_money = robber.get_money();
                         cop.set_energy(cop_energy - COP_CAPTURE_ENERGY_COST);
                         robber.set_money(0);
@@ -48,7 +46,6 @@ pub fn run(
                         cop.set_money(cop_money + robber_money);
                         commands
                             .entity(robber_entity)
-                            .remove::<CanRotate>()
                             .remove::<RobberRun>()
                             .remove::<RobberRest>()
                             .insert(RobberCaptured);

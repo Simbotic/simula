@@ -2,7 +2,7 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::robber::Robber;
+use crate::components::robber::Robber;
 
 pub mod robber_bribe;
 pub mod robber_captured;

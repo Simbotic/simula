@@ -15,14 +15,14 @@ impl Plugin for FollowUIPlugin {
 #[derive(Component)]
 pub struct FollowUICamera;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[component(storage = "SparseSet")]
 pub struct FollowUIVisibility {
     pub screen_pos: Vec3,
     pub alpha: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct FollowUI {
     pub min_distance: f32,
     pub max_distance: f32,

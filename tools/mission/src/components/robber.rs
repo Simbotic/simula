@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use simula_video::VideoMaterial;
 
-use crate::{common::Robot, cop::Cop, spawn_robot_with_wallet};
+use crate::{common::Robot, components::cop::Cop, spawn_robot_with_wallet};
 
 pub const ROBBER_STARTING_MONEY: u64 = 500;
-pub const ROBBER_STARTING_ENERGY: u64 = 500;
+pub const ROBBER_STARTING_ENERGY: u64 = 1000;
 
 #[derive(Component)]
 pub struct RobberRest;
@@ -62,9 +62,9 @@ pub fn robber_spawner(
         // make sure that we only have one camera in the scene
         if let Ok(camera_entity) = camera_query.get_single() {
             if let Ok(cop_transform) = cop_query.get_single() {
-                let cop_rotation = cop_transform.rotation;
+                let cop_translation = cop_transform.translation;
                 // spawn a robber if the cop is sufficiently rotated
-                if cop_rotation.y > 0.5 || cop_rotation.y < -0.5 {
+                if cop_translation.x > 0.5 || cop_translation.x < -0.5 {
                     let robber_entity = spawn_robot_with_wallet(
                         &mut commands,
                         &mut meshes,
@@ -72,7 +72,7 @@ pub fn robber_spawner(
                         &asset_server,
                         &camera_entity,
                         "robot_robber",
-                        1.5,
+                        0.5,
                         &mut Robber {
                             energy: ROBBER_STARTING_ENERGY,
                             money: ROBBER_STARTING_MONEY,

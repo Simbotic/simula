@@ -2,7 +2,7 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::cop::Cop;
+use crate::components::cop::Cop;
 
 pub mod cop_bribed;
 pub mod cop_capture;

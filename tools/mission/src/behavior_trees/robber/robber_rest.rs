@@ -2,13 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::{
-    common::Robot,
-    robber::{RobberRest, RobberRun, ROBBER_STARTING_ENERGY},
-    CanRotate,
-};
-
-use super::Robber;
+use crate::{common::Robot, components::robber::*};
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct RobberRestAction;
@@ -18,6 +12,8 @@ impl BehaviorInfo for RobberRestAction {
     const NAME: &'static str = "RobberRestAction";
     const DESC: &'static str = "Make the Robber rest if the Robber has no energy";
 }
+
+pub const ROBBER_REST_SPEED: u64 = (ROBBER_STARTING_ENERGY / 20) as u64;
 
 pub fn run(
     mut commands: Commands,
@@ -29,12 +25,10 @@ pub fn run(
             if let Ok(mut robber) = query.get_mut(robber_entity) {
                 let robber_energy = robber.get_energy();
                 if robber_energy < ROBBER_STARTING_ENERGY {
-                    robber.set_energy(robber_energy + 2);
+                    robber.set_energy(robber_energy + ROBBER_REST_SPEED);
                 } else {
                     commands.entity(robber_entity).remove::<RobberRest>();
                     commands.entity(robber_entity).insert(RobberRun);
-                    commands.entity(robber_entity).insert(CanRotate);
-                    commands.entity(action_entity).insert(BehaviorFailure);
                     info!("[Robber {:?}] Started to Run", robber_entity);
                     return;
                 }

@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::{
-    common::CanRotate,
-    cop::{CopBribed, CopChase},
-};
+use crate::components::cop::*;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct CopBribedAction;
@@ -33,7 +30,6 @@ pub fn run(
                     commands
                         .entity(cop_entity)
                         .remove::<CopBribed>()
-                        .insert(CanRotate)
                         .insert(CopChase);
                     info!(
                         "[Cop {:?}] Stopped admiring the money. Started to Chase",
