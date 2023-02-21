@@ -1,16 +1,10 @@
 use bevy::prelude::*;
 use simula_video::VideoMaterial;
 
-use crate::{common::Robot, spawn_robot_with_wallet};
+use crate::{behaviors::movement::RobotMove, common::Robot, spawn_robot_with_wallet};
 
 pub const COP_STARTING_MONEY: u64 = 0;
-pub const COP_STARTING_ENERGY: u64 = 1000;
-
-#[derive(Component)]
-pub struct CopRest;
-
-#[derive(Component)]
-pub struct CopChase;
+pub const COP_STARTING_ENERGY: u64 = 500;
 
 #[derive(Component)]
 pub struct CopBribed;
@@ -46,6 +40,10 @@ impl Robot for Cop {
     fn set_follow_ui(&mut self, entity: Entity) {
         self.follow_ui = Some(entity);
     }
+
+    fn starting_energy(&self) -> u64 {
+        COP_STARTING_ENERGY
+    }
 }
 
 pub fn cop_spawner(
@@ -75,7 +73,7 @@ pub fn cop_spawner(
                     follow_ui: None,
                 },
             );
-            commands.entity(cop_entity).insert(CopChase);
+            commands.entity(cop_entity).insert(RobotMove);
         }
     }
 }

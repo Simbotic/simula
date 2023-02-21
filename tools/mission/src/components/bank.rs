@@ -4,6 +4,11 @@ use simula_viz::{follow_ui::FollowUI, lookat::SmoothLookAt};
 
 use crate::{common::Robot, ui};
 
+pub const BANK_MAX_MONEY: u64 = 1000;
+
+#[derive(Component)]
+pub struct BankGenerate;
+
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Bank {
     money: u64,
@@ -35,6 +40,10 @@ impl Robot for Bank {
     fn set_follow_ui(&mut self, entity: Entity) {
         self.follow_ui = Some(entity);
     }
+
+    fn starting_energy(&self) -> u64 {
+        500
+    }
 }
 
 pub fn bank_spawner(
@@ -58,7 +67,7 @@ pub fn bank_spawner(
 
             let texture_rotation =
                 Quat::from_euler(EulerRot::YXZ, -std::f32::consts::FRAC_PI_3 * 0.0, 0.0, 0.0);
-            let texture_position = Vec3::new(-3.0, 0.5, -2.0);
+            let texture_position = Vec3::new(-2.0, 0.5, -1.0);
 
             let follow_ui_entity = commands
                 .spawn(SpatialBundle {
@@ -82,8 +91,6 @@ pub fn bank_spawner(
                 .insert(ui::RobotPanel)
                 .insert(Name::new("FollowUI"))
                 .id();
-
-            info!("{:#?}", follow_ui_entity);
 
             let texture_entity = commands
                 .spawn(SpatialBundle {

@@ -1,0 +1,16 @@
+(
+    root:(
+        "Loop forever",
+        Repeater((repeat:Forever)),
+        [
+            (
+                "BankGenerateMoney",
+                Sequencer(()),
+                [
+                    ("BankBeingStealed", Debug((duration: 1.0, fail: false))),
+                    ("BankGenerate", Debug((duration: 1.0, fail: false))),
+                ]
+            )
+        ]
+    )
+)

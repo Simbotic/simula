@@ -7,14 +7,8 @@ pub trait Robot {
     fn set_energy(&mut self, energy: u64);
     fn set_money(&mut self, money: u64);
     fn set_follow_ui(&mut self, entity: Entity);
-}
-
-#[derive(Component, Reflect, Default)]
-#[reflect(Component)]
-pub struct Movement {
-    pub points: Vec<Vec3>,
-    pub duration: f32,
-    pub elapsed: f32,
-    pub direction: Vec3,
-    pub index: usize,
+    fn starting_energy(&self) -> u64;
+    fn rest_speed(&self) -> u64 {
+        self.starting_energy() / 25 as u64
+    }
 }

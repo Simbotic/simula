@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use simula_behavior::prelude::*;
 
-use self::{cop::CopBehaviorPlugin, robber::RobberBehaviorPlugin};
-
+pub mod bank;
 pub mod cop;
 pub mod robber;
 
@@ -12,7 +11,8 @@ impl Plugin for MissionBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(BehaviorPlugin)
             .add_plugin(BehaviorInspectorPlugin)
-            .add_plugin(CopBehaviorPlugin)
-            .add_plugin(RobberBehaviorPlugin);
+            .add_plugin(bank::BankBehaviorPlugin)
+            .add_plugin(cop::CopBehaviorPlugin)
+            .add_plugin(robber::RobberBehaviorPlugin);
     }
 }

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
 use crate::{
+    behaviors::{movement::RobotMove, rest::RobotRest},
     common::Robot,
     components::{cop::*, robber::*},
 };
@@ -23,7 +24,7 @@ pub const COP_CAPTURE_RADIUS: f32 = 0.5;
 pub fn run(
     mut commands: Commands,
     action_query: Query<(Entity, &CopCaptureAction, &BehaviorNode), BehaviorRunQuery>,
-    mut query: Query<(&Transform, &mut Cop), With<CopChase>>,
+    mut query: Query<(&Transform, &mut Cop), With<RobotMove>>,
     mut robber_query: Query<(Entity, &Transform, &mut Robber), Without<RobberCaptured>>,
 ) {
     for (action_entity, _, node) in &action_query {
@@ -46,8 +47,8 @@ pub fn run(
                         cop.set_money(cop_money + robber_money);
                         commands
                             .entity(robber_entity)
-                            .remove::<RobberRun>()
-                            .remove::<RobberRest>()
+                            .remove::<RobotMove>()
+                            .remove::<RobotRest>()
                             .insert(RobberCaptured);
                         info!(
                             "[Cop {:?}] Captured Robber {:?} using {} energy",

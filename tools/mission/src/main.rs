@@ -1,10 +1,11 @@
 use behavior_trees::MissionBehaviorPlugin;
+use behaviors::movement::Movement;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use common::{Movement, Robot};
+use common::Robot;
 use components::{bank::Bank, cop::Cop, robber::Robber};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
@@ -24,15 +25,15 @@ use simula_viz::{
 };
 
 pub mod behavior_trees;
+pub mod behaviors;
 pub mod common;
 pub mod components;
 pub mod ui;
-pub mod utils;
 
 pub const CLASS_ID: u64 = 1000;
 pub const TIME_ASSET_ID: u64 = 0;
 pub const MONEY_ASSET_ID: u64 = 1;
-pub const MOVEMENT_RADIUS: f32 = 3.0;
+pub const MOVEMENT_RADIUS: f32 = 2.0;
 
 #[derive(Debug, Reflect, Component, Clone, PartialEq)]
 #[reflect(Component)]

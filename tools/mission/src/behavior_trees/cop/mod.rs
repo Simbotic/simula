@@ -2,12 +2,13 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::components::cop::Cop;
+use crate::{
+    behaviors::{movement, rest},
+    components::cop::Cop,
+};
 
 pub mod cop_bribed;
 pub mod cop_capture;
-pub mod cop_chase;
-pub mod cop_rest;
 
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "731ec6a7-b356-48d4-abb2-eeadee3287fd"]
@@ -20,10 +21,10 @@ pub enum CopBehavior {
     Inverter(Inverter),
     Any(Any),
     All(All),
-    CopChase(cop_chase::CopChaseAction),
+    CopChase(movement::RobotMoveAction),
     CopCapture(cop_capture::CopCaptureAction),
     CopBribed(cop_bribed::CopBribedAction),
-    CopRest(cop_rest::CopRestAction),
+    CopRest(rest::RobotRestAction),
 }
 
 impl Default for CopBehavior {
@@ -75,9 +76,9 @@ impl Plugin for CopBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(behavior_loader::<CopBehavior>)
             .add_system(setup_behavior)
-            .add_system(cop_chase::run)
+            .add_system(movement::run::<Cop>)
             .add_system(cop_capture::run)
             .add_system(cop_bribed::run)
-            .add_system(cop_rest::run);
+            .add_system(rest::run::<Cop>);
     }
 }

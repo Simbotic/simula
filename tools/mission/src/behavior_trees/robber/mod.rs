@@ -2,12 +2,13 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::components::robber::Robber;
+use crate::{
+    behaviors::{movement, rest},
+    components::robber::Robber,
+};
 
 pub mod robber_bribe;
 pub mod robber_captured;
-pub mod robber_rest;
-pub mod robber_run;
 
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "99bd66e1-5e2e-40fb-a639-5fd56667b752"]
@@ -20,10 +21,10 @@ pub enum RobberBehavior {
     Inverter(Inverter),
     Any(Any),
     All(All),
-    RobberRun(robber_run::RobberRunAction),
+    RobberRun(movement::RobotMoveAction),
     RobberBribe(robber_bribe::RobberBribeAction),
     RobberCaptured(robber_captured::RobberCapturedAction),
-    RobberRest(robber_rest::RobberRestAction),
+    RobberRest(rest::RobotRestAction),
 }
 
 impl Default for RobberBehavior {
@@ -73,13 +74,11 @@ pub struct RobberBehaviorPlugin;
 
 impl Plugin for RobberBehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app
-            // behavior assets
-            .add_system(behavior_loader::<RobberBehavior>)
+        app.add_system(behavior_loader::<RobberBehavior>)
             .add_system(setup_behavior)
-            .add_system(robber_run::run)
+            .add_system(movement::run::<Robber>)
             .add_system(robber_bribe::run)
             .add_system(robber_captured::run)
-            .add_system(robber_rest::run);
+            .add_system(rest::run::<Robber>);
     }
 }
