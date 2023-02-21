@@ -58,7 +58,7 @@ pub fn behavior_inspector_ui(world: &mut World) {
     let app_type_registry = world.resource::<AppTypeRegistry>().clone();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
-    egui::Window::new("UI").show(egui_context.ctx_mut(), |ui| {
+    egui::Window::new("Behavior Inspector").show(egui_context.ctx_mut(), |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
