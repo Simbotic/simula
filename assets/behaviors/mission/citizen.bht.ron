@@ -4,18 +4,15 @@
         Repeater((repeat:Forever)),
         [
             (
-                "CopChaseRobber",
+                "CitizenWork",
                 Any(()),
                 [
                     ("MoveLoop", Repeater((repeat: Forever)),
                     [
-                        ("CopChase", CopChase(())),
+                        ("CitizenMove", CitizenMove(())),
                     ]),
                     ("Actions", Sequencer(()), [
-                        ("CopBribed", CopBribed(())),
-                        ("CopAlerted", CopAlerted(())),
-                        ("CopRest", CopRest(())),
-                        ("CopCapture", CopCapture(())),
+                        ("CitizenRest", CitizenRest(())),
                     ])
                 ]
             )

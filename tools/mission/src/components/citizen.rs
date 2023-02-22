@@ -3,17 +3,17 @@ use simula_video::VideoMaterial;
 
 use crate::{behaviors::movement::RobotMove, common::Robot, spawn_robot_with_wallet};
 
-pub const COP_STARTING_MONEY: u64 = 0;
-pub const COP_STARTING_ENERGY: u64 = 500;
+pub const CITIZEN_STARTING_MONEY: u64 = 0;
+pub const CITIZEN_STARTING_ENERGY: u64 = 500;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
-pub struct Cop {
+pub struct Citizen {
     energy: u64,
     money: u64,
     follow_ui: Option<Entity>,
 }
 
-impl Robot for Cop {
+impl Robot for Citizen {
     fn get_energy(&self) -> u64 {
         self.energy
     }
@@ -39,35 +39,35 @@ impl Robot for Cop {
     }
 
     fn starting_energy(&self) -> u64 {
-        COP_STARTING_ENERGY
+        CITIZEN_STARTING_ENERGY
     }
 }
 
-pub fn cop_spawner(
+pub fn citizen_spawner(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut video_materials: ResMut<Assets<VideoMaterial>>,
     asset_server: Res<AssetServer>,
-    query: Query<Entity, With<Cop>>,
+    query: Query<Entity, With<Citizen>>,
     camera_query: Query<Entity, With<Camera>>,
 ) {
     if query.is_empty() {
         if let Ok(camera_entity) = camera_query.get_single() {
-            let cop_entity = spawn_robot_with_wallet(
+            let citizen_entity = spawn_robot_with_wallet(
                 &mut commands,
                 &mut meshes,
                 &mut video_materials,
                 &asset_server,
                 &camera_entity,
-                "robot_cop",
-                1.0,
-                &mut Cop {
-                    energy: COP_STARTING_ENERGY,
-                    money: COP_STARTING_MONEY,
+                "robot_citizen",
+                2.0,
+                &mut Citizen {
+                    energy: CITIZEN_STARTING_ENERGY,
+                    money: CITIZEN_STARTING_MONEY,
                     follow_ui: None,
                 },
             );
-            commands.entity(cop_entity).insert(RobotMove);
+            commands.entity(citizen_entity).insert(RobotMove);
         }
     }
 }

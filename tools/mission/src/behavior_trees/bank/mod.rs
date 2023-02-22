@@ -2,12 +2,13 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::components::bank::Bank;
+use crate::{behaviors::rest, components::bank::Bank};
 
 pub mod bank_generate;
+pub mod bank_stealed;
 
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
-#[uuid = "731ec6a7-b356-48d4-abb2-eeadee3287fd"]
+#[uuid = "929645ce-09c9-489d-9c2f-c45c5d6105d5"]
 pub enum BankBehavior {
     Debug(Debug),
     Delay(Delay),
@@ -17,6 +18,9 @@ pub enum BankBehavior {
     Inverter(Inverter),
     Any(Any),
     All(All),
+    BankGenerate(bank_generate::BankGenerateAction),
+    BankRest(rest::RobotRestAction),
+    BankStealed(bank_stealed::BankStealedAction),
 }
 
 impl Default for BankBehavior {
@@ -36,6 +40,9 @@ impl BehaviorSpawner for BankBehavior {
             BankBehavior::Inverter(inverter) => BehaviorInfo::insert_with(commands, inverter),
             BankBehavior::Any(any) => BehaviorInfo::insert_with(commands, any),
             BankBehavior::All(all) => BehaviorInfo::insert_with(commands, all),
+            BankBehavior::BankGenerate(action) => BehaviorInfo::insert_with(commands, action),
+            BankBehavior::BankRest(action) => BehaviorInfo::insert_with(commands, action),
+            BankBehavior::BankStealed(action) => BehaviorInfo::insert_with(commands, action),
         }
     }
 }
@@ -63,6 +70,9 @@ pub struct BankBehaviorPlugin;
 impl Plugin for BankBehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(behavior_loader::<BankBehavior>)
-            .add_system(setup_behavior);
+            .add_system(setup_behavior)
+            .add_system(bank_generate::run)
+            .add_system(rest::run::<Bank>)
+            .add_system(bank_stealed::run);
     }
 }

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use simula_behavior::prelude::*;
 
 pub mod bank;
+pub mod citizen;
 pub mod cop;
 pub mod robber;
 
@@ -12,6 +13,7 @@ impl Plugin for MissionBehaviorPlugin {
         app.add_plugin(BehaviorPlugin)
             .add_plugin(BehaviorInspectorPlugin)
             .add_plugin(bank::BankBehaviorPlugin)
+            .add_plugin(citizen::CitizenBehaviorPlugin)
             .add_plugin(cop::CopBehaviorPlugin)
             .add_plugin(robber::RobberBehaviorPlugin);
     }

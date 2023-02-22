@@ -15,6 +15,7 @@
                         ("RobberCaptured", RobberCaptured(())),
                         ("RobberRest", RobberRest(())),
                         ("RobberBribe", RobberBribe(())),
+                        ("RobberSteal", RobberSteal(())),
                     ]),
                 ]
             )

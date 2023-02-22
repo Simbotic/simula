@@ -2,7 +2,9 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::{behaviors::movement::RobotMove, common::Robot};
+use crate::common::Robot;
+
+use super::movement::RobotMove;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct RobotRestAction;
@@ -14,6 +16,7 @@ impl BehaviorInfo for RobotRestAction {
 }
 
 #[derive(Component)]
+#[component(storage = "SparseSet")]
 pub struct RobotRest;
 
 pub fn run<T>(
@@ -31,9 +34,10 @@ pub fn run<T>(
                 if robot_energy < robot.starting_energy() {
                     robot.set_energy(robot_energy + robot_rest_speed);
                 } else {
-                    commands.entity(robot_entity).remove::<RobotRest>();
-                    commands.entity(robot_entity).insert(RobotMove);
-                    info!("[Robot {:?}] Started to Move", robot_entity);
+                    commands
+                        .entity(robot_entity)
+                        .remove::<RobotRest>()
+                        .insert(RobotMove);
                     return;
                 }
             }

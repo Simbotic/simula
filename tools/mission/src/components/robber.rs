@@ -5,11 +5,8 @@ use crate::{
     behaviors::movement::RobotMove, common::Robot, components::cop::Cop, spawn_robot_with_wallet,
 };
 
-pub const ROBBER_STARTING_MONEY: u64 = 500;
+pub const ROBBER_STARTING_MONEY: u64 = 100;
 pub const ROBBER_STARTING_ENERGY: u64 = 500;
-
-#[derive(Component)]
-pub struct RobberCaptured;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Robber {
@@ -58,13 +55,11 @@ pub fn robber_spawner(
     camera_query: Query<Entity, With<Camera>>,
 ) {
     if query.is_empty() {
-        // attempt to spawn a robber
-        // make sure that we only have one camera in the scene
         if let Ok(camera_entity) = camera_query.get_single() {
             if let Ok(cop_transform) = cop_query.get_single() {
                 let cop_translation = cop_transform.translation;
                 // spawn a robber if the cop is sufficiently rotated
-                if cop_translation.x > 0.5 || cop_translation.x < -0.5 {
+                if cop_translation.x > 1.0 && cop_translation.x > -1.0 {
                     let robber_entity = spawn_robot_with_wallet(
                         &mut commands,
                         &mut meshes,
@@ -72,7 +67,7 @@ pub fn robber_spawner(
                         &asset_server,
                         &camera_entity,
                         "robot_robber",
-                        0.85,
+                        0.75,
                         &mut Robber {
                             energy: ROBBER_STARTING_ENERGY,
                             money: ROBBER_STARTING_MONEY,

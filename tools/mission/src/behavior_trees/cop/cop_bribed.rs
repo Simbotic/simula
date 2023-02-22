@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::{behaviors::movement::RobotMove, components::cop::*};
+use crate::behaviors::movement::RobotMove;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct CopBribedAction;
@@ -12,6 +12,10 @@ impl BehaviorInfo for CopBribedAction {
     const NAME: &'static str = "CopBribedAction";
     const DESC: &'static str = "Handle the state of the Cop";
 }
+
+#[derive(Component)]
+#[component(storage = "SparseSet")]
+pub struct CopBribed;
 
 pub const COP_BRIBED_TICK_DURATION: u64 = 40;
 

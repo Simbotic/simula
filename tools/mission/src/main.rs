@@ -6,7 +6,6 @@ use bevy::{
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use common::Robot;
-use components::{bank::Bank, cop::Cop, robber::Robber};
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::ease::EaseFunction;
@@ -99,12 +98,11 @@ fn main() {
         .add_system(components::cop::cop_spawner)
         .add_system(components::robber::robber_spawner)
         .add_system(components::bank::bank_spawner)
-        // .add_system(rotate_system)
-        .add_system(ui::follow_ui::<Cop>)
-        .add_system(ui::follow_ui::<Robber>)
-        .add_system(ui::follow_ui::<Bank>)
-        .add_system(simulate_transfer::<Cop>)
-        .add_system(simulate_transfer::<Robber>)
+        .add_system(components::citizen::citizen_spawner)
+        .add_system(ui::follow_ui::<components::cop::Cop>)
+        .add_system(ui::follow_ui::<components::robber::Robber>)
+        .add_system(ui::follow_ui::<components::bank::Bank>)
+        .add_system(ui::follow_ui::<components::citizen::Citizen>)
         .run();
 }
 
@@ -128,7 +126,7 @@ fn build_wallet(commands: &mut Commands, money: u64) -> Entity {
         .build(commands)
 }
 
-fn simulate_transfer<T>(
+fn _simulate_transfer<T>(
     robot_query: Query<&Children, With<T>>,
     wallet_query: Query<&Children, With<Wallet>>,
     account_query: Query<&Children, With<Account>>,

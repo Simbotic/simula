@@ -7,6 +7,7 @@ use crate::{
     components::cop::Cop,
 };
 
+pub mod cop_alerted;
 pub mod cop_bribed;
 pub mod cop_capture;
 
@@ -25,6 +26,7 @@ pub enum CopBehavior {
     CopCapture(cop_capture::CopCaptureAction),
     CopBribed(cop_bribed::CopBribedAction),
     CopRest(rest::RobotRestAction),
+    CopAlerted(cop_alerted::CopAlertedAction),
 }
 
 impl Default for CopBehavior {
@@ -48,6 +50,7 @@ impl BehaviorSpawner for CopBehavior {
             CopBehavior::CopCapture(action) => BehaviorInfo::insert_with(commands, action),
             CopBehavior::CopBribed(action) => BehaviorInfo::insert_with(commands, action),
             CopBehavior::CopRest(action) => BehaviorInfo::insert_with(commands, action),
+            CopBehavior::CopAlerted(action) => BehaviorInfo::insert_with(commands, action),
         }
     }
 }
@@ -79,6 +82,7 @@ impl Plugin for CopBehaviorPlugin {
             .add_system(movement::run::<Cop>)
             .add_system(cop_capture::run)
             .add_system(cop_bribed::run)
-            .add_system(rest::run::<Cop>);
+            .add_system(rest::run::<Cop>)
+            .add_system(cop_alerted::run);
     }
 }

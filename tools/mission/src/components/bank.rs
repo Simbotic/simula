@@ -2,12 +2,11 @@ use bevy::prelude::*;
 use simula_core::ease::EaseFunction;
 use simula_viz::{follow_ui::FollowUI, lookat::SmoothLookAt};
 
-use crate::{common::Robot, ui};
+use crate::{behavior_trees::bank::bank_generate::BankGenerate, common::Robot, ui};
 
+pub const BANK_STARTING_MONEY: u64 = 500;
+pub const BANK_STARTING_ENERGY: u64 = 500;
 pub const BANK_MAX_MONEY: u64 = 1000;
-
-#[derive(Component)]
-pub struct BankGenerate;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Bank {
@@ -42,7 +41,7 @@ impl Robot for Bank {
     }
 
     fn starting_energy(&self) -> u64 {
-        500
+        BANK_STARTING_ENERGY
     }
 }
 
@@ -113,7 +112,7 @@ pub fn bank_spawner(
                         })
                         .insert(Name::new("Texture: RenderTarget"));
                 })
-                .insert(Name::new("Texture: Robot: Bank"))
+                .insert(Name::new("Robot: Bank"))
                 .insert(SmoothLookAt {
                     target: Some(camera_entity),
                     yaw_ease: EaseFunction::SineInOut,
@@ -121,17 +120,17 @@ pub fn bank_spawner(
                     max_yaw: 20.0,
                     ..default()
                 })
+                .insert(Bank {
+                    money: BANK_STARTING_MONEY,
+                    energy: BANK_STARTING_ENERGY,
+                    follow_ui: Some(follow_ui_entity),
+                })
+                .insert(BankGenerate)
                 .push_children(&[follow_ui_entity])
                 .id();
 
             commands
                 .spawn(SpatialBundle { ..default() })
-                .insert(Bank {
-                    money: 0,
-                    energy: 0,
-                    follow_ui: Some(follow_ui_entity),
-                })
-                .insert(Name::new("Robot: Bank"))
                 .push_children(&[texture_entity]);
         }
     }

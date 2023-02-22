@@ -13,6 +13,10 @@ impl BehaviorInfo for RobberCapturedAction {
     const DESC: &'static str = "Handle when the Robber is captured";
 }
 
+#[derive(Component)]
+#[component(storage = "SparseSet")]
+pub struct RobberCaptured;
+
 pub const ROBBER_CAPTURED_TICK_DURATION: u64 = 200;
 
 pub fn run(

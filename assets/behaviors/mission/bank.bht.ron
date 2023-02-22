@@ -7,8 +7,9 @@
                 "BankGenerateMoney",
                 Sequencer(()),
                 [
-                    ("BankBeingStealed", Debug((duration: 1.0, fail: false))),
-                    ("BankGenerate", Debug((duration: 1.0, fail: false))),
+                    ("BankStealed", BankStealed(())),
+                    ("BankGenerate", BankGenerate(())),
+                    ("BankRest", BankRest(())),
                 ]
             )
         ]

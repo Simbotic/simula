@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::{common::Robot, components::bank::*};
+use crate::{behaviors::rest::RobotRest, common::Robot, components::bank::*};
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct BankGenerateAction;
@@ -12,6 +12,9 @@ impl BehaviorInfo for BankGenerateAction {
     const NAME: &'static str = "BankGenerateAction";
     const DESC: &'static str = "Make the Bank generate money if the Bank has energy until a certain amount of money is reached.";
 }
+
+#[derive(Component)]
+pub struct BankGenerate;
 
 pub fn run(
     mut commands: Commands,
@@ -25,9 +28,12 @@ pub fn run(
                 let bank_money = bank.get_money();
                 if bank_energy > 0 && bank_money < BANK_MAX_MONEY {
                     bank.set_money(bank_money + 1);
-                    bank.set_energy(bank_energy - 1);
+                    bank.set_energy(bank_energy - 5);
                 } else {
-                    commands.entity(bank_entity).remove::<BankGenerate>();
+                    commands
+                        .entity(bank_entity)
+                        .remove::<BankGenerate>()
+                        .insert(RobotRest);
                     info!("[Bank {:?}] Started to Rest", bank_entity);
                     return;
                 }

@@ -9,6 +9,7 @@ use crate::{
 
 pub mod robber_bribe;
 pub mod robber_captured;
+pub mod robber_steal;
 
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "99bd66e1-5e2e-40fb-a639-5fd56667b752"]
@@ -25,6 +26,7 @@ pub enum RobberBehavior {
     RobberBribe(robber_bribe::RobberBribeAction),
     RobberCaptured(robber_captured::RobberCapturedAction),
     RobberRest(rest::RobotRestAction),
+    RobberSteal(robber_steal::RobberStealAction),
 }
 
 impl Default for RobberBehavior {
@@ -48,6 +50,7 @@ impl BehaviorSpawner for RobberBehavior {
             RobberBehavior::RobberBribe(action) => BehaviorInfo::insert_with(commands, action),
             RobberBehavior::RobberCaptured(action) => BehaviorInfo::insert_with(commands, action),
             RobberBehavior::RobberRest(action) => BehaviorInfo::insert_with(commands, action),
+            RobberBehavior::RobberSteal(action) => BehaviorInfo::insert_with(commands, action),
         }
     }
 }
@@ -79,6 +82,7 @@ impl Plugin for RobberBehaviorPlugin {
             .add_system(movement::run::<Robber>)
             .add_system(robber_bribe::run)
             .add_system(robber_captured::run)
-            .add_system(rest::run::<Robber>);
+            .add_system(rest::run::<Robber>)
+            .add_system(robber_steal::run);
     }
 }

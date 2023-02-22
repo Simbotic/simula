@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
 use crate::{
+    behavior_trees::robber::robber_captured::RobberCaptured,
     behaviors::{movement::RobotMove, rest::RobotRest},
     common::Robot,
     components::{cop::*, robber::*},
