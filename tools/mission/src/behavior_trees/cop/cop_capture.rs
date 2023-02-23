@@ -25,7 +25,7 @@ pub const COP_CAPTURE_RADIUS: f32 = 0.5;
 pub fn run(
     mut commands: Commands,
     action_query: Query<(Entity, &CopCaptureAction, &BehaviorNode), BehaviorRunQuery>,
-    mut query: Query<(&Transform, &mut Cop), With<RobotMove>>,
+    mut query: Query<(&Transform, &mut Cop)>,
     mut robber_query: Query<(Entity, &Transform, &mut Robber), Without<RobberCaptured>>,
 ) {
     for (action_entity, _, node) in &action_query {
@@ -59,10 +59,10 @@ pub fn run(
                             "[Robber {:?}] Captured by Cop {:?} with {} money",
                             robber_entity, cop_entity, robber_money
                         );
+                        commands.entity(action_entity).insert(BehaviorSuccess);
                     }
                 }
             }
         }
-        commands.entity(action_entity).insert(BehaviorSuccess);
     }
 }

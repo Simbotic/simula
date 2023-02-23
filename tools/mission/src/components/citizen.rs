@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use simula_video::VideoMaterial;
 
-use crate::{behaviors::movement::RobotMove, common::Robot, spawn_robot_with_wallet};
+use crate::{common::Robot, spawn_robot_with_wallet};
 
 pub const CITIZEN_STARTING_MONEY: u64 = 0;
 pub const CITIZEN_STARTING_ENERGY: u64 = 500;
@@ -53,7 +53,7 @@ pub fn citizen_spawner(
 ) {
     if query.is_empty() {
         if let Ok(camera_entity) = camera_query.get_single() {
-            let citizen_entity = spawn_robot_with_wallet(
+            spawn_robot_with_wallet(
                 &mut commands,
                 &mut meshes,
                 &mut video_materials,

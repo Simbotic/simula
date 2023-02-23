@@ -17,8 +17,6 @@ impl BehaviorInfo for CopAlertedAction {
 #[component(storage = "SparseSet")]
 pub struct CopAlerted;
 
-pub const COP_BRIBED_TICK_DURATION: u64 = 40;
-
 pub fn run(
     mut commands: Commands,
     action_query: Query<(Entity, &CopAlertedAction, &BehaviorNode), BehaviorRunQuery>,
@@ -30,8 +28,8 @@ pub fn run(
                 cop_movement.duration = 0.5;
                 commands.entity(cop_entity).remove::<CopAlerted>();
                 info!("[Cop {:?}] Started to Alert and moves faster", cop_entity);
+                commands.entity(action_entity).insert(BehaviorSuccess);
             }
         }
-        commands.entity(action_entity).insert(BehaviorSuccess);
     }
 }

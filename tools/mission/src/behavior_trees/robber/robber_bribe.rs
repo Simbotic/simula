@@ -18,14 +18,14 @@ impl BehaviorInfo for RobberBribeAction {
     const DESC: &'static str = "The Cop gets bribed by the Robber, loses energy and it's unable to capture the Robber for a while";
 }
 
-pub const BRIBE_COST: u64 = (ROBBER_STARTING_MONEY / 5) as u64;
+pub const BRIBE_COST: u64 = (ROBBER_STARTING_MONEY / 2) as u64;
 pub const BRIBE_ENERGY_COST: u64 = (ROBBER_STARTING_ENERGY / 10) as u64;
 pub const ROBBER_BRIBE_RADIUS: f32 = 1.0;
 
 pub fn run(
     mut commands: Commands,
     action_query: Query<(Entity, &RobberBribeAction, &BehaviorNode), BehaviorRunQuery>,
-    mut query: Query<(&Transform, &mut Robber), With<RobotMove>>,
+    mut query: Query<(&Transform, &mut Robber)>,
     mut cop_query: Query<(Entity, &Transform, &mut Cop), Without<CopBribed>>,
 ) {
     for (action_entity, _, node) in &action_query {
@@ -34,13 +34,12 @@ pub fn run(
                 for (cop_entity, cop_transform, mut cop) in cop_query.iter_mut() {
                     let robber_money = robber.get_money();
                     let robber_energy = robber.get_energy();
-                    if robber_money < BRIBE_COST || robber_energy < BRIBE_ENERGY_COST {
-                        commands.entity(action_entity).insert(BehaviorSuccess);
-                        return;
-                    }
                     let distance =
                         (cop_transform.translation - robber_transform.translation).length();
-                    if distance <= ROBBER_BRIBE_RADIUS {
+                    if robber_money >= BRIBE_COST
+                        && robber_energy >= BRIBE_ENERGY_COST
+                        && distance <= ROBBER_BRIBE_RADIUS
+                    {
                         let cop_money = cop.get_money();
                         let cop_energy = cop.get_energy();
                         let bribe_cop_penalty = BRIBE_ENERGY_COST * 2;
@@ -56,7 +55,7 @@ pub fn run(
                             .entity(cop_entity)
                             .remove::<RobotMove>()
                             .remove::<RobotRest>()
-                            .insert(CopBribed);
+                            .insert(CopBribed::new());
                         info!(
                             "[Robber {:?}] Bribed Cop with {} money using {} energy",
                             robber_entity, BRIBE_COST, BRIBE_ENERGY_COST
@@ -65,10 +64,10 @@ pub fn run(
                             "[Cop {:?}] Got bribed with {} money. Lost {} energy admiring the money",
                             cop_entity, BRIBE_COST, bribe_cop_penalty
                         );
+                        commands.entity(action_entity).insert(BehaviorSuccess);
                     }
                 }
             }
         }
-        commands.entity(action_entity).insert(BehaviorSuccess);
     }
 }

@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use simula_video::VideoMaterial;
 
-use crate::{
-    behaviors::movement::RobotMove, common::Robot, components::cop::Cop, spawn_robot_with_wallet,
-};
+use crate::{common::Robot, components::cop::Cop, spawn_robot_with_wallet};
 
 pub const ROBBER_STARTING_MONEY: u64 = 100;
 pub const ROBBER_STARTING_ENERGY: u64 = 500;
@@ -60,7 +58,7 @@ pub fn robber_spawner(
                 let cop_translation = cop_transform.translation;
                 // spawn a robber if the cop is sufficiently rotated
                 if cop_translation.x > 1.0 && cop_translation.x > -1.0 {
-                    let robber_entity = spawn_robot_with_wallet(
+                    spawn_robot_with_wallet(
                         &mut commands,
                         &mut meshes,
                         &mut video_materials,

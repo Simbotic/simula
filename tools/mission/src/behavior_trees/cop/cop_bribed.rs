@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
-use crate::behaviors::movement::RobotMove;
+use crate::components::cop::Cop;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct CopBribedAction;
@@ -15,33 +15,39 @@ impl BehaviorInfo for CopBribedAction {
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct CopBribed;
+pub struct CopBribed {
+    timer: Timer,
+}
 
-pub const COP_BRIBED_TICK_DURATION: u64 = 40;
+impl CopBribed {
+    pub fn new() -> Self {
+        Self {
+            timer: Timer::from_seconds(3.0, TimerMode::Once),
+        }
+    }
+}
 
 pub fn run(
     mut commands: Commands,
     action_query: Query<(Entity, &CopBribedAction, &BehaviorNode), BehaviorRunQuery>,
-    query: Query<Entity, With<CopBribed>>,
-    mut status_duration: Local<u64>,
+    mut query: Query<(&Cop, &mut CopBribed)>,
+    time: Res<Time>,
 ) {
     for (action_entity, _, node) in &action_query {
         if let Some(cop_entity) = node.tree {
-            if query.get(cop_entity).is_ok() {
-                *status_duration += 1;
-                if *status_duration > COP_BRIBED_TICK_DURATION {
-                    *status_duration = 0;
-                    commands
-                        .entity(cop_entity)
-                        .remove::<CopBribed>()
-                        .insert(RobotMove);
+            if let Ok((_cop, mut bribed)) = query.get_mut(cop_entity) {
+                bribed.timer.tick(time.delta());
+                if bribed.timer.finished() {
+                    commands.entity(cop_entity).remove::<CopBribed>();
                     info!(
                         "[Cop {:?}] Stopped admiring the money. Started to Chase",
                         cop_entity
                     );
+                    commands.entity(action_entity).insert(BehaviorSuccess);
                 }
+            } else {
+                commands.entity(action_entity).insert(BehaviorFailure);
             }
         }
-        commands.entity(action_entity).insert(BehaviorSuccess);
     }
 }

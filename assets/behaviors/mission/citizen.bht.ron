@@ -3,19 +3,10 @@
         "Loop forever",
         Repeater((repeat:Forever)),
         [
-            (
-                "CitizenWork",
-                Any(()),
-                [
-                    ("MoveLoop", Repeater((repeat: Forever)),
-                    [
-                        ("CitizenMove", CitizenMove(())),
-                    ]),
-                    ("Actions", Sequencer(()), [
-                        ("CitizenRest", CitizenRest(())),
-                    ])
-                ]
-            )
+            ("Actions", Sequencer(()), [
+                ("CitizenMove", CitizenMove(())),
+                ("CitizenRest", CitizenRest(())),
+            ]),
         ]
     )
 )

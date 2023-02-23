@@ -4,8 +4,6 @@ use simula_behavior::prelude::*;
 
 use crate::common::Robot;
 
-use super::rest::RobotRest;
-
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct RobotMoveAction;
 
@@ -73,14 +71,17 @@ pub fn run<T>(
         ),
         BehaviorRunQuery,
     >,
-    mut query: Query<&mut T>,
+    mut query: Query<(&mut T, Option<&RobotMove>)>,
 ) where
     T: Component + Robot,
 {
     for (action_entity, _, node, mut running) in &mut action_query {
         if let Some(robot_entity) = node.tree {
-            if let Ok(mut robot) = query.get_mut(robot_entity) {
+            if let Ok((mut robot, robot_move)) = query.get_mut(robot_entity) {
                 let robot_energy = robot.get_energy();
+                if running.on_enter_handled && robot_move.is_none() {
+                    commands.entity(action_entity).insert(BehaviorSuccess);
+                }
                 if robot_energy > 0 {
                     if !running.on_enter_handled {
                         running.on_enter_handled = true;

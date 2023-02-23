@@ -4,8 +4,8 @@
         Repeater((repeat:Forever)),
         [
             ("Actions", Sequencer(()), [
-                ("RobberCaptured", RobberCaptured(())),
-                ("RobotDoing", All(()), [
+                ("NotCapturedIsGood", Inverter(()), [("RobberCaptured", RobberCaptured(()))]),
+                ("RobotDoing", Any(()), [
                     ("RobberRun", RobberRun(())),
                     ("RobberBribe", RobberBribe(())),
                     ("RobberSteal", RobberSteal(())),
