@@ -103,6 +103,7 @@ fn main() {
         .add_system(ui::follow_ui::<components::robber::Robber>)
         .add_system(ui::follow_ui::<components::bank::Bank>)
         .add_system(ui::follow_ui::<components::citizen::Citizen>)
+        .add_system(behaviors::movement::calculate_movement)
         .run();
 }
 

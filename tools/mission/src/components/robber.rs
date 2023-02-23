@@ -74,7 +74,6 @@ pub fn robber_spawner(
                             follow_ui: None,
                         },
                     );
-                    commands.entity(robber_entity).insert(RobotMove);
                 }
             }
         }

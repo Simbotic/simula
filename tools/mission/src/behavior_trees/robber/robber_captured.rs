@@ -15,22 +15,29 @@ impl BehaviorInfo for RobberCapturedAction {
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct RobberCaptured;
+pub struct RobberCaptured {
+    timer: Timer,
+}
 
-pub const ROBBER_CAPTURED_TICK_DURATION: u64 = 200;
+impl RobberCaptured {
+    pub fn new() -> Self {
+        Self {
+            timer: Timer::from_seconds(10.0, TimerMode::Once),
+        }
+    }
+}
 
 pub fn run(
+    time: Res<Time>,
     mut commands: Commands,
     action_query: Query<(Entity, &RobberCapturedAction, &BehaviorNode), BehaviorRunQuery>,
-    query: Query<&mut Robber, With<RobberCaptured>>,
-    mut status_duration: Local<u64>,
+    mut query: Query<(&mut Robber, &mut RobberCaptured)>,
 ) {
     for (action_entity, _, node) in &action_query {
         if let Some(robber_entity) = node.tree {
-            if query.get(robber_entity).is_ok() {
-                *status_duration += 1;
-                if *status_duration > ROBBER_CAPTURED_TICK_DURATION {
-                    *status_duration = 0;
+            if let Ok((_robber, mut captured)) = query.get_mut(robber_entity) {
+                captured.timer.tick(time.delta());
+                if captured.timer.finished() {
                     commands
                         .entity(robber_entity)
                         .remove::<RobberCaptured>()
@@ -39,9 +46,9 @@ pub fn run(
                         "[Robber {:?}] Released from Capture. Started to Run",
                         robber_entity
                     );
+                    commands.entity(action_entity).insert(BehaviorSuccess);
                 }
             }
         }
-        commands.entity(action_entity).insert(BehaviorSuccess);
     }
 }

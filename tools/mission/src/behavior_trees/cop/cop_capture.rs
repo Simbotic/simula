@@ -50,7 +50,7 @@ pub fn run(
                             .entity(robber_entity)
                             .remove::<RobotMove>()
                             .remove::<RobotRest>()
-                            .insert(RobberCaptured);
+                            .insert(RobberCaptured::new());
                         info!(
                             "[Cop {:?}] Captured Robber {:?} using {} energy",
                             cop_entity, robber_entity, COP_CAPTURE_ENERGY_COST

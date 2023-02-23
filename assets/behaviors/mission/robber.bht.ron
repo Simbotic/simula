@@ -3,22 +3,15 @@
         "Loop forever",
         Repeater((repeat:Forever)),
         [
-            (
-                "RobberEscapeCop",
-                Any(()),
-                [
-                    ("MoveLoop", Repeater((repeat: Forever)),
-                    [
-                        ("RobberRun", RobberRun(())),
-                    ]),
-                    ("Actions", Sequencer(()), [
-                        ("RobberCaptured", RobberCaptured(())),
-                        ("RobberRest", RobberRest(())),
-                        ("RobberBribe", RobberBribe(())),
-                        ("RobberSteal", RobberSteal(())),
-                    ]),
-                ]
-            )
+            ("Actions", Sequencer(()), [
+                ("RobberCaptured", RobberCaptured(())),
+                ("RobotDoing", All(()), [
+                    ("RobberRun", RobberRun(())),
+                    ("RobberBribe", RobberBribe(())),
+                    ("RobberSteal", RobberSteal(())),
+                ]),
+                ("RobberRest", RobberRest(())),
+            ]),
         ]
     )
 )

@@ -67,7 +67,6 @@ pub fn cop_spawner(
                     follow_ui: None,
                 },
             );
-            commands.entity(cop_entity).insert(RobotMove);
         }
     }
 }

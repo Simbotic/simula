@@ -29,58 +29,69 @@ pub struct Movement {
     pub index: usize,
 }
 
-pub fn calculate_movement(time: &Res<Time>, transform: &mut Transform, movement: &mut Movement) {
-    // Update the elapsed time
-    movement.elapsed += time.delta_seconds();
+pub fn calculate_movement(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &mut Movement), With<RobotMove>>,
+) {
+    for (mut transform, mut movement) in query.iter_mut() {
+        // Update the elapsed time
+        movement.elapsed += time.delta_seconds();
 
-    // Calculate the lerp factor based on the elapsed time
-    let t = movement.elapsed / movement.duration;
-    let t = t.clamp(0.0, 1.0);
+        // Calculate the lerp factor based on the elapsed time
+        let t = movement.elapsed / movement.duration;
+        let t = t.clamp(0.0, 1.0);
 
-    // Get the start and end points for this segment of the rectangular path
-    let start = movement.points[movement.index];
-    let end = movement.points[(movement.index + 1) % 4];
+        // Get the start and end points for this segment of the rectangular path
+        let start = movement.points[movement.index];
+        let end = movement.points[(movement.index + 1) % 4];
 
-    // Interpolate the position between the start and end points
-    let position = start.lerp(end, t);
+        // Interpolate the position between the start and end points
+        let position = start.lerp(end, t);
 
-    // Update the transform component
-    transform.translation = position;
+        // Update the transform component
+        transform.translation = position;
 
-    // Check if the object has reached the end of the current segment of the rectangular path
-    if t >= 1.0 {
-        movement.index = (movement.index + 1) % 4;
-        movement.elapsed = 0.0;
-        movement.direction = (movement.points[movement.index]
-            - movement.points[(movement.index + 3) % 4])
-            .normalize();
+        // Check if the object has reached the end of the current segment of the rectangular path
+        if t >= 1.0 {
+            movement.index = (movement.index + 1) % 4;
+            movement.elapsed = 0.0;
+            movement.direction = (movement.points[movement.index]
+                - movement.points[(movement.index + 3) % 4])
+                .normalize();
+        }
     }
 }
 
 pub fn run<T>(
     mut commands: Commands,
-    action_query: Query<(Entity, &RobotMoveAction, &BehaviorNode), BehaviorRunQuery>,
-    mut query: Query<(&mut T, &mut Movement, &mut Transform), With<RobotMove>>,
-    time: Res<Time>,
+    mut action_query: Query<
+        (
+            Entity,
+            &RobotMoveAction,
+            &BehaviorNode,
+            &mut BehaviorRunning,
+        ),
+        BehaviorRunQuery,
+    >,
+    mut query: Query<&mut T>,
 ) where
     T: Component + Robot,
 {
-    for (action_entity, _, node) in &action_query {
+    for (action_entity, _, node, mut running) in &mut action_query {
         if let Some(robot_entity) = node.tree {
-            if let Ok((mut robot, mut movement, mut transform)) = query.get_mut(robot_entity) {
+            if let Ok(mut robot) = query.get_mut(robot_entity) {
                 let robot_energy = robot.get_energy();
                 if robot_energy > 0 {
-                    calculate_movement(&time, &mut transform, &mut movement);
+                    if !running.on_enter_handled {
+                        running.on_enter_handled = true;
+                        commands.entity(robot_entity).insert(RobotMove);
+                    }
                     robot.set_energy(robot_energy - 1);
                 } else {
-                    commands
-                        .entity(robot_entity)
-                        .remove::<RobotMove>()
-                        .insert(RobotRest);
-                    return;
+                    commands.entity(robot_entity).remove::<RobotMove>();
+                    commands.entity(action_entity).insert(BehaviorSuccess);
                 }
             }
         }
-        commands.entity(action_entity).insert(BehaviorSuccess);
     }
 }

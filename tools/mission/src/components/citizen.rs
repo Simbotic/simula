@@ -67,7 +67,6 @@ pub fn citizen_spawner(
                     follow_ui: None,
                 },
             );
-            commands.entity(citizen_entity).insert(RobotMove);
         }
     }
 }
