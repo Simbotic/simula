@@ -228,7 +228,7 @@ where
 pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]) {
     commands
         .entity(parent)
-        .insert(BehaviorChildren(children.iter().copied().collect()));
+        .insert(BehaviorChildren(children.to_vec()));
     for child in children {
         commands.entity(*child).insert(BehaviorParent(Some(parent)));
     }
@@ -421,12 +421,7 @@ fn complete_behavior(
             name.to_string()
         );
         if let Some(trace) = trace.as_mut() {
-            trace.push(format!(
-                "[{}] {} {}",
-                entity.index(),
-                state,
-                name.to_string(),
-            ));
+            trace.push(format!("[{}] {} {}", entity.index(), state, name,));
         }
         commands.entity(entity).remove::<BehaviorRunning>();
         commands.entity(entity).remove::<BehaviorCursor>();
@@ -468,7 +463,7 @@ fn start_behavior(
             name.to_string()
         );
         if let Some(trace) = trace.as_mut() {
-            trace.push(format!("[{}] STARTED {}", entity.index(), name.to_string(),));
+            trace.push(format!("[{}] STARTED {}", entity.index(), name));
         }
         commands.entity(entity).insert(BehaviorRunning::default());
     }

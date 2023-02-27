@@ -9,6 +9,6 @@ pub trait Robot {
     fn set_follow_ui(&mut self, entity: Entity);
     fn starting_energy(&self) -> u64;
     fn rest_speed(&self) -> u64 {
-        self.starting_energy() / 25 as u64
+        self.starting_energy() / 25_u64
     }
 }

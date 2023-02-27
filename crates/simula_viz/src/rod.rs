@@ -351,7 +351,7 @@ impl From<Rod> for RodMesh {
                 let north11 = vert_next_lat_north + j + 1;
                 let north10 = vert_curr_lat_north + j + 1;
 
-                tris[k + 0] = north00 as u32;
+                tris[k] = north00 as u32;
                 tris[k + 1] = north11 as u32;
                 tris[k + 2] = north10 as u32;
 
@@ -365,7 +365,7 @@ impl From<Rod> for RodMesh {
                 let south11 = vert_next_lat_south + j + 1;
                 let south10 = vert_curr_lat_south + j + 1;
 
-                tris[m + 0] = south00 as u32;
+                tris[m] = south00 as u32;
                 tris[m + 1] = south11 as u32;
                 tris[m + 2] = south10 as u32;
 
@@ -396,7 +396,7 @@ impl From<Rod> for RodMesh {
                 let cy11 = vert_next_lat + j + 1;
                 let cy10 = vert_curr_lat + j + 1;
 
-                tris[k + 0] = cy00 as u32;
+                tris[k] = cy00 as u32;
                 tris[k + 1] = cy11 as u32;
                 tris[k + 2] = cy10 as u32;
 

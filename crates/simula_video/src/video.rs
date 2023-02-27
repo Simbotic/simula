@@ -43,7 +43,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .and_then(|document| document.create_element("video").ok())
                 .and_then(|video| video.dyn_into::<web_sys::HtmlVideoElement>().ok())
         })
-        .and_then(|video| {
+        .map(|video| {
             // Hide video element
             video.set_hidden(true);
             video
@@ -62,7 +62,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .and_then(|document| document.body())
                 .and_then(|body| body.append_child(&video).ok());
 
-            Some(video)
+            video
         });
 
     // Create canvas element video will render to
@@ -73,7 +73,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .and_then(|document| document.create_element("canvas").ok())
                 .and_then(|canvas| canvas.dyn_into::<web_sys::HtmlCanvasElement>().ok())
         })
-        .and_then(|canvas| {
+        .map(|canvas| {
             // Hide canvas element
             canvas.set_hidden(true);
             canvas
@@ -90,7 +90,7 @@ fn video_canvas(src: &VideoSrc) -> Option<VideoCanvas> {
                 .and_then(|document| document.body())
                 .and_then(|body| body.append_child(&canvas).ok());
 
-            Some(canvas)
+            canvas
         });
 
     if let (Some(video), Some(canvas)) = (video, canvas) {
@@ -238,13 +238,13 @@ pub(crate) fn update_video_state(world: &mut World) {
     }
 }
 
-pub(crate) fn detect_video_removal(mut world: &mut World) {
+pub(crate) fn detect_video_removal(world: &mut World) {
     let removals = world.removed::<VideoSrc>();
-    let videos: Vec<Entity> = removals.to_owned().map(|v| v.clone()).collect();
+    let videos: Vec<Entity> = removals.to_owned().collect();
 
     for entity in videos {
         world.entity_mut(entity).remove::<VideoTag>();
-        let video_res = (&mut world).get_non_send_resource_mut::<VideoResource>();
+        let video_res = world.get_non_send_resource_mut::<VideoResource>();
         if let Some(mut video_res) = video_res {
             let video_canvas = video_res.videos.get(&entity);
 

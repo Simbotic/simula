@@ -124,35 +124,35 @@ impl From<Box> for VoxelsMesh {
         #[rustfmt::skip]
         let vertices = &[
             // front
-            ([sp.min.x, sp.min.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.min.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.max.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.max.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.min.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.max.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.max.y, sp.max.z], [0., 0., -1.0], sp.color.as_rgba_f32()),
             // back
-            ([sp.min.x, sp.max.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.max.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.min.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.min.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.max.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.max.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.min.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.min.y, sp.min.z], [0., 0., 1.0],  sp.color.as_rgba_f32()),
             // right
-            ([sp.max.x, sp.min.y, sp.min.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.max.y, sp.min.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.max.y, sp.max.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.min.y, sp.max.z], [1.0, 0., 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.min.z], [1.0, 0., 0.],  sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.max.y, sp.min.z], [1.0, 0., 0.],  sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.max.y, sp.max.z], [1.0, 0., 0.],  sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.min.y, sp.max.z], [1.0, 0., 0.],  sp.color.as_rgba_f32()),
             // left
-            ([sp.min.x, sp.min.y, sp.max.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.max.y, sp.max.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.max.y, sp.min.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.min.y, sp.min.z], [-1.0, 0., 0.], sp.color.as_rgba_f32().into()),
+            ([sp.min.x, sp.min.y, sp.max.z], [-1.0, 0., 0.], sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.max.y, sp.max.z], [-1.0, 0., 0.], sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.max.y, sp.min.z], [-1.0, 0., 0.], sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.min.y, sp.min.z], [-1.0, 0., 0.], sp.color.as_rgba_f32()),
             // up
-            ([sp.max.x, sp.max.y, sp.min.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.max.y, sp.min.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.max.y, sp.max.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.max.y, sp.max.z], [0., 1.0, 0.],  sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.max.y, sp.min.z], [0., 1.0, 0.],  sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.max.y, sp.min.z], [0., 1.0, 0.],  sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.max.y, sp.max.z], [0., 1.0, 0.],  sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.max.y, sp.max.z], [0., 1.0, 0.],  sp.color.as_rgba_f32()),
             // bottom
-            ([sp.max.x, sp.min.y, sp.max.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.min.y, sp.max.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
-            ([sp.min.x, sp.min.y, sp.min.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
-            ([sp.max.x, sp.min.y, sp.min.z], [0., -1.0, 0.], sp.color.as_rgba_f32().into()),
+            ([sp.max.x, sp.min.y, sp.max.z], [0., -1.0, 0.], sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.min.y, sp.max.z], [0., -1.0, 0.], sp.color.as_rgba_f32()),
+            ([sp.min.x, sp.min.y, sp.min.z], [0., -1.0, 0.], sp.color.as_rgba_f32()),
+            ([sp.max.x, sp.min.y, sp.min.z], [0., -1.0, 0.], sp.color.as_rgba_f32()),
         ];
 
         let mut positions = Vec::with_capacity(24);
@@ -190,9 +190,9 @@ impl From<Voxel> for VoxelsMesh {
     }
 }
 
-fn merge(voxels: &Vec<Voxel>) -> VoxelsMesh {
+fn merge(voxels: &[Voxel]) -> VoxelsMesh {
     let mut mesh = VoxelsMesh::default();
-    voxels.into_iter().fold(&mut mesh, |mesh, voxel| {
+    voxels.iter().fold(&mut mesh, |mesh, voxel| {
         let voxel_mesh: VoxelsMesh = (*voxel).into();
         mesh.extend(&voxel_mesh);
         mesh
@@ -200,18 +200,12 @@ fn merge(voxels: &Vec<Voxel>) -> VoxelsMesh {
     mesh
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Default)]
 pub struct Voxels {
     pub voxels: Vec<Voxel>,
 }
 
-impl Default for Voxels {
-    fn default() -> Self {
-        Self { voxels: Vec::new() }
-    }
-}
-
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct VoxelsBundle {
     pub voxels: Voxels,
     pub mesh: Handle<Mesh>,
@@ -220,20 +214,6 @@ pub struct VoxelsBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-}
-
-impl Default for VoxelsBundle {
-    fn default() -> Self {
-        VoxelsBundle {
-            voxels: Voxels::default(),
-            mesh: Default::default(),
-            material: Default::default(),
-            transform: Transform::default(),
-            global_transform: GlobalTransform::default(),
-            visibility: Visibility::default(),
-            computed_visibility: ComputedVisibility::default(),
-        }
-    }
 }
 
 #[derive(AsBindGroup, Debug, Clone, TypeUuid)]

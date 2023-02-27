@@ -74,7 +74,7 @@ use std::{
     time::Duration,
 };
 
-#[derive(PartialEq, PartialOrd, Ord, Eq, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Clone, Copy, Default)]
 pub struct NodeIndex(pub petgraph::stable_graph::NodeIndex<petgraph::stable_graph::DefaultIx>);
 
 impl Deref for NodeIndex {
@@ -87,12 +87,6 @@ impl Deref for NodeIndex {
 impl DerefMut for NodeIndex {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
-    }
-}
-
-impl Default for NodeIndex {
-    fn default() -> Self {
-        NodeIndex(Default::default())
     }
 }
 

@@ -21,7 +21,7 @@ pub struct PeerId {
 impl PeerId {
     pub fn new(id: &Uuid) -> Self {
         Self {
-            uuid: id.clone(),
+            uuid: *id,
             id: id.to_string(),
         }
     }
@@ -141,11 +141,7 @@ fn run(
 
         // Add new peers to world
         for net_peer in connected_peers {
-            if peers
-                .iter()
-                .find(|(_, peer)| peer.id.uuid == *net_peer)
-                .is_none()
-            {
+            if !peers.iter().any(|(_, peer)| peer.id.uuid == *net_peer) {
                 commands
                     .spawn_empty()
                     .insert(RemotePeer {
@@ -192,7 +188,7 @@ impl Default for NetId {
     fn default() -> Self {
         let id = Uuid::new_v4();
         Self {
-            uuid: id.clone(),
+            uuid: id,
             id: id.to_string(),
         }
     }
@@ -318,7 +314,7 @@ pub fn replicate<T>(
 
         // Receive data from peers
         for (peer_id, message) in messages.messages.iter() {
-            if let Ok(message) = bincode::deserialize::<Payload<T>>(&message) {
+            if let Ok(message) = bincode::deserialize::<Payload<T>>(message) {
                 trace!(
                     "Received from: {} net message: {}",
                     peer_id,
@@ -342,7 +338,7 @@ pub fn replicate<T>(
                             let cached;
                             let entity = if let Some(entity) = cache.get(&net_id) {
                                 cached = true;
-                                entity.clone()
+                                *entity
                             } else {
                                 cached = false;
                                 let entity = commands

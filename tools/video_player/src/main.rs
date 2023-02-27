@@ -76,7 +76,6 @@ fn setup(
                 divisions: 10,
                 start_color: Color::BLUE,
                 end_color: Color::RED,
-                ..default()
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),

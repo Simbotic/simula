@@ -38,12 +38,8 @@ pub fn run(
             {
                 if let Some(child_parent) = **child_parent {
                     if entity == child_parent {
-                        // Child failed, so we succeed
-                        if child_failure.is_some() {
-                            commands.entity(entity).insert(BehaviorSuccess);
-                        }
-                        // Child succeeded, so we succeed
-                        else if child_success.is_some() {
+                        // Child succeeded or failed, so we succeed
+                        if child_success.is_some() || child_failure.is_some() {
                             commands.entity(entity).insert(BehaviorSuccess);
                         }
                         // Child is ready, pass on cursor

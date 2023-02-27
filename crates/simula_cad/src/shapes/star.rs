@@ -44,7 +44,7 @@ pub fn star(num_points: u64, color: Color) -> Star {
 
     let star = fj::Sweep::from_path(footprint.into(), [0., 0., h]);
 
-    Star { sweep: star.into() }
+    Star { sweep: star }
 }
 
 impl ShapeMesh for Star {
@@ -63,8 +63,7 @@ impl ShapeMesh for Star {
 
         let positions: Vec<[f32; 3]> = points
             .iter()
-            .map(|points| points.map(|point| point.coords.components.map(|s| s.into_f32())))
-            .flat_map(|vs| vs)
+            .flat_map(|points| points.map(|point| point.coords.components.map(|s| s.into_f32())))
             .collect();
 
         let normals: Vec<[f32; 3]> = points
@@ -77,14 +76,13 @@ impl ShapeMesh for Star {
 
         let uvs: Vec<[f32; 2]> = points
             .iter()
-            .map(|points| points.map(|point| point.coords.components.map(|s| s.into_f32())))
-            .flat_map(|vs| vs)
+            .flat_map(|points| points.map(|point| point.coords.components.map(|s| s.into_f32())))
             .map(|vs| [vs[0], vs[1]])
             .collect();
 
-        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions.clone());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals.clone());
-        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs.clone());
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
 
         mesh
     }

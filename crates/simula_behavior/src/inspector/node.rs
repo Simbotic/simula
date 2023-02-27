@@ -2,7 +2,7 @@ use crate::{
     color_hex_utils::color_from_hex, BehaviorChildren, BehaviorCursor, BehaviorFailure,
     BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
-use bevy::{ecs::query::WorldQuery, prelude::*, reflect::TypeRegistryInternal};
+use bevy::{ecs::query::WorldQuery, prelude::*};
 use bevy_inspector_egui::{
     bevy_inspector,
     egui::{self, Rounding},
@@ -25,9 +25,9 @@ fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
         } else if behavior.name == "Sequencer" {
             color_from_hex("#36980D").unwrap()
         } else if behavior.name == "All" {
-            color_from_hex("#36980D").unwrap()
+            color_from_hex("#588157").unwrap()
         } else if behavior.name == "Any" {
-            color_from_hex("#CC0100").unwrap()
+            color_from_hex("#9B2226").unwrap()
         } else {
             color_from_hex("#000000").unwrap()
         }
@@ -65,21 +65,20 @@ pub fn behavior_inspector_node_ui(
     world: &mut World,
     node: &mut BehaviorInspectorNode,
     ui: &mut egui::Ui,
-    type_registry: &TypeRegistryInternal,
 ) {
     let mut behaviors = world.query::<BehaviorQuery>();
     let behaviors: Vec<Behavior> = behaviors
         .iter(world)
         .filter(|item| item.entity == node.entity.unwrap())
         .map(|item| Behavior {
-            entity: item.entity.clone(),
+            entity: item.entity,
             name: item.name.clone(),
             node: item.node.clone(),
             children: item.children.clone(),
-            running: item.running.clone().copied(),
-            failure: item.failure.clone().copied(),
-            success: item.success.clone().copied(),
-            cursor: item.cursor.clone().copied(),
+            running: item.running.copied(),
+            failure: item.failure.copied(),
+            success: item.success.copied(),
+            cursor: item.cursor.copied(),
         })
         .collect::<Vec<_>>();
 
@@ -135,7 +134,7 @@ pub fn behavior_inspector_node_ui(
                                 ui.painter()
                                     .circle_filled(rect.center(), r, egui::Color32::GRAY);
                             }
-                            ui.label(egui::RichText::new(&*behavior.name.as_str()).small());
+                            ui.label(egui::RichText::new(behavior.name.as_str()).small());
                         });
 
                         ui.collapsing("", |ui| {
@@ -150,7 +149,7 @@ pub fn behavior_inspector_node_ui(
                         let mut child_node = BehaviorInspectorNode {
                             entity: Some(*child),
                         };
-                        behavior_inspector_node_ui(world, &mut child_node, ui, type_registry);
+                        behavior_inspector_node_ui(world, &mut child_node, ui);
                     }
                 });
             });

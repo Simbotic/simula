@@ -33,12 +33,10 @@ pub fn run(
             } in nodes.iter_many(children.iter())
             {
                 if let Some(child_parent) = **child_parent {
-                    if entity == child_parent {
-                        if child_success.is_some() {
-                            // Child succeeded, so we succeed
-                            should_succeed = true;
-                            break;
-                        }
+                    if entity == child_parent && child_success.is_some() {
+                        // Child succeeded, so we succeed
+                        should_succeed = true;
+                        break;
                     }
                 }
             }

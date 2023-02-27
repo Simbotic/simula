@@ -67,7 +67,7 @@ pub fn behavior_loader<T>(
     for (entity, queued_asset) in queued_assets.iter() {
         if let Some(loaded_asset) = loaded_assets.get(&queued_asset.document) {
             let BehaviorAsset { document, .. } = loaded_asset;
-            let document: BehaviorDocument<T> = ron::de::from_str(&document).unwrap();
+            let document: BehaviorDocument<T> = ron::de::from_str(document).unwrap();
             let BehaviorDocument { root } = document;
             BehaviorTree::insert_tree::<T>(entity, queued_asset.parent, &mut commands, &root);
             commands.entity(entity).remove::<BehaviorAssetLoading<T>>();

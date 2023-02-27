@@ -20,7 +20,7 @@ impl Default for Axes {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct AxesBundle {
     pub axes: Axes,
     pub lines: Lines,
@@ -30,21 +30,6 @@ pub struct AxesBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-}
-
-impl Default for AxesBundle {
-    fn default() -> Self {
-        AxesBundle {
-            axes: Default::default(),
-            lines: Default::default(),
-            mesh: Default::default(),
-            material: Default::default(),
-            transform: Default::default(),
-            global_transform: Default::default(),
-            visibility: Visibility::default(),
-            computed_visibility: ComputedVisibility::default(),
-        }
-    }
 }
 
 fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<Handle<LinesMaterial>>>) {

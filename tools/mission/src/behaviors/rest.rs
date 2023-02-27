@@ -38,7 +38,7 @@ pub fn run<T>(
             if let Ok((mut robot, robot_rest)) = query.get_mut(robot_entity) {
                 let robot_energy = robot.get_energy();
                 let robot_rest_speed: f32 = robot.rest_speed() as f32 * 1000f32;
-                if robot_energy <= 0 && !running.on_enter_handled {
+                if robot_energy == 0 && !running.on_enter_handled {
                     running.on_enter_handled = true;
                     commands.entity(robot_entity).insert(RobotRest);
                 }

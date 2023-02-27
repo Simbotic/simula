@@ -267,7 +267,7 @@ where
         })
         .push_children(&[video_entity])
         .insert(*robot)
-        .insert(Name::new(format!("{}", asset_name)))
+        .insert(Name::new(asset_name.to_string()))
         .id()
 }
 
@@ -322,7 +322,6 @@ fn setup(
                 divisions: 10,
                 start_color: grid_color,
                 end_color: grid_color,
-                ..Default::default()
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),

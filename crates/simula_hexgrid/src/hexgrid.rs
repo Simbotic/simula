@@ -299,14 +299,7 @@ pub fn select_tile(
                     let mut s = 0.95;
 
                     //lowers saturation of out of bound tiles
-                    if z <= 0 {
-                        s = 0.8
-                    } else if z > 2048 {
-                        s = 0.8
-                    }
-                    if x <= 0 {
-                        s = 0.8
-                    } else if x > 2048 {
+                    if z <= 0 || z > 2048 || x <= 0 || x > 2048 {
                         s = 0.8
                     }
 
@@ -558,7 +551,7 @@ pub fn ui_system_pathfinding_window(
     let end_node = (node_start_end.endx, node_start_end.endy);
 
     if node_start_end.queue_end != end_node {
-        if node_start_end.destination_reached == false {
+        if !node_start_end.destination_reached {
             calculate_path_event.send(CalculatePathEvent);
         }
     } else {
@@ -596,8 +589,8 @@ fn pathfinding_window(
                             .clamp_range::<i32>(0..=2048),
                     );
                     if ui.button("Random").clicked() {
-                        node_start_end.startx = rand::thread_rng().gen_range(0..=2048) as i32;
-                        node_start_end.starty = rand::thread_rng().gen_range(0..=2048) as i32;
+                        node_start_end.startx = rand::thread_rng().gen_range(0..=2048);
+                        node_start_end.starty = rand::thread_rng().gen_range(0..=2048);
                     }
                 });
                 ui.horizontal(|ui| {
@@ -609,8 +602,8 @@ fn pathfinding_window(
                         egui::DragValue::new(&mut node_start_end.endy).clamp_range::<i32>(0..=2048),
                     );
                     if ui.button("Random").clicked() {
-                        node_start_end.endx = rand::thread_rng().gen_range(0..=2048) as i32;
-                        node_start_end.endy = rand::thread_rng().gen_range(0..=2048) as i32;
+                        node_start_end.endx = rand::thread_rng().gen_range(0..=2048);
+                        node_start_end.endy = rand::thread_rng().gen_range(0..=2048);
                     }
                 });
                 ui.horizontal(|ui| {
@@ -621,7 +614,7 @@ fn pathfinding_window(
                 });
                 ui.horizontal(|ui| {
                     ui.label("Shortest Path: ");
-                    if node_start_end.destination_reached == true
+                    if node_start_end.destination_reached
                         && node_start_end.queue_end == (node_start_end.endx, node_start_end.endy)
                     {
                         ui.add(
@@ -629,8 +622,8 @@ fn pathfinding_window(
                                 .wrap(true),
                         );
                     }
-                    if node_start_end.destination_reached == false {
-                        ui.add(egui::Label::new(format!("Finding Path...")));
+                    if !node_start_end.destination_reached {
+                        ui.add(egui::Label::new("Finding Path...".to_string()));
                     }
                 });
             });
@@ -751,8 +744,8 @@ fn render_next_tiles(
                     });
                 }
                 if ui.button("Random").clicked() {
-                    shortest_path.tile_coord_x = rand::thread_rng().gen_range(0..=2048) as i32;
-                    shortest_path.tile_coord_z = rand::thread_rng().gen_range(0..=2048) as i32;
+                    shortest_path.tile_coord_x = rand::thread_rng().gen_range(0..=2048);
+                    shortest_path.tile_coord_z = rand::thread_rng().gen_range(0..=2048);
                 }
             });
         });
@@ -773,7 +766,7 @@ pub fn hexagon_pathfinder(
         // the hexagon arrangement you are using
         let orientation = HexOrientation::FlatTopOddUp;
 
-        if node_start_end.destination_reached == true {
+        if node_start_end.destination_reached {
             node_start_end.nodes_weighted = HashMap::new();
             // calculate a weighting for each node based on its distance from the end node
             for (k, v) in shortest_path.nodes.iter() {
@@ -803,7 +796,7 @@ pub fn hexagon_pathfinder(
 
             node_start_end.queue_node = vec![(
                 start_node,
-                node_start_end.start_weight.clone(), // we haven't moved so starting node score is just its weight
+                node_start_end.start_weight, // we haven't moved so starting node score is just its weight
                 Vec::<(i32, i32)>::new(),
                 0.0,
             )];
@@ -901,7 +894,7 @@ pub fn hexagon_pathfinder(
                 .queue_node
                 .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-            node_start_end.queue_end = node_start_end.queue_node[0].0.clone();
+            node_start_end.queue_end = node_start_end.queue_node[0].0;
 
             if counter >= 3000 {
                 break;

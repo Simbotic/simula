@@ -72,15 +72,13 @@ pub fn follow_ui(
             let ui_front = ui_global_transform.forward();
             let view_angle = Vec3::angle_between(-camera_front, ui_front).to_degrees();
 
-            let screen_pos;
-            if true
-                && camera_height > follow_ui.min_height
+            let screen_pos = if camera_height > follow_ui.min_height
                 && camera_height < follow_ui.max_height
                 && camera_distance > follow_ui.min_distance
                 && camera_distance < follow_ui.max_distance
                 && view_angle < follow_ui.max_view_angle
             {
-                screen_pos = if let Some(mut screen_pos) =
+                if let Some(mut screen_pos) =
                     camera.world_to_ndc(camera_global_transform, ui_global_transform.translation())
                 {
                     if screen_pos.z > 0.0 {
@@ -89,8 +87,8 @@ pub fn follow_ui(
                                 map_range(screen_pos.x, (-1.0, 1.0), (0.0, window.width()));
                             screen_pos.y =
                                 map_range(screen_pos.y, (-1.0, 1.0), (window.height(), 0.0));
-                            screen_pos.x = screen_pos.x - follow_ui.size.x / 2.0;
-                            screen_pos.y = screen_pos.y - follow_ui.size.y / 2.0;
+                            screen_pos.x -= follow_ui.size.x / 2.0;
+                            screen_pos.y -= follow_ui.size.y / 2.0;
                             Some(screen_pos)
                         } else {
                             // No primary window
@@ -106,7 +104,7 @@ pub fn follow_ui(
                 }
             } else {
                 // out of range
-                screen_pos = None;
+                None
             };
 
             if let Some(screen_pos) = screen_pos {

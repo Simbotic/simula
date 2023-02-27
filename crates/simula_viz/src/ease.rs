@@ -28,7 +28,7 @@ pub fn ease_lines(time: Res<Time>, mut easings: Query<(&mut EaseLine, &mut Lines
         }
 
         // Draw the animated ease line
-        let t = (time.elapsed_seconds() % 1.0) as f32;
+        let t = time.elapsed_seconds() % 1.0;
         let t = t.calc(ease_line.ease_func);
         lines.line_colored(Vec3::new(0.0, t, 0.0), Vec3::new(1.0, t, 0.0), Color::GREEN);
 

@@ -17,8 +17,7 @@ pub fn map_range<
     let value = value - from_min;
     let value = value / from_range;
     let value = value * to_range;
-    let value = value + to_min;
-    value
+    value + to_min
 }
 
 // Map a value from one range to another, clamped to the output range
@@ -37,8 +36,7 @@ pub fn map_range_clamped<
     let value = value - from_min;
     let value = value / from_range;
     let value = value * to_range;
-    let value = value + to_min;
-    value
+    value + to_min
 }
 
 // Map a value from one range to another with an ease function
@@ -65,8 +63,7 @@ pub fn map_range_eased<
     let value = value / from_range;
     let value = value.ease_calc(ease);
     let value = value * to_range;
-    let value = value + to_min;
-    value
+    value + to_min
 }
 
 pub trait EasingCalc<T>

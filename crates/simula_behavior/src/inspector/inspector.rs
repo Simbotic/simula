@@ -55,7 +55,6 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
 pub fn behavior_inspector_ui(world: &mut World) {
     let mut egui_context = world.resource_mut::<bevy_egui::EguiContext>().clone();
     let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
-    let app_type_registry = world.resource::<AppTypeRegistry>().clone();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
     egui::Window::new("Behavior Inspector").show(egui_context.ctx_mut(), |ui| {
@@ -95,15 +94,13 @@ pub fn behavior_inspector_ui(world: &mut World) {
                 let mut node = BehaviorInspectorNode {
                     entity: behavior_tree.root,
                 };
-                let type_registry = app_type_registry.0.clone();
-                let type_registry = type_registry.read();
                 egui::Window::new(format!("Behavior: {}", name))
                     .title_bar(true)
                     .resizable(true)
                     .collapsible(true)
                     .scroll2([true, true])
                     .show(ui.ctx(), |ui| {
-                        behavior_inspector_node_ui(world, &mut node, ui, &type_registry);
+                        behavior_inspector_node_ui(world, &mut node, ui);
                     });
             }
         }

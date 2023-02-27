@@ -63,7 +63,7 @@ fn spline_lines(
                 lines.sphere_colored(segment.p3, 0.1, gizmo.p3_color);
 
                 for i in 0..100 {
-                    let t0 = (i + 0) as f32 / 100.00;
+                    let t0 = i as f32 / 100.00;
                     let t1 = (i + 1) as f32 / 100.00;
                     let p0 = segment.get_point(t0);
                     let p1 = segment.get_point(t1);

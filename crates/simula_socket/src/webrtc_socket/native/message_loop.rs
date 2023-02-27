@@ -104,8 +104,8 @@ async fn message_loop_impl(
                     match event {
                         PeerEvent::NewPeer(peer_uuid) => {
                             let (signal_sender, signal_receiver) = futures_channel::mpsc::unbounded();
-                            handshake_signals.insert(peer_uuid.clone(), signal_sender);
-                            let signal_peer = SignalPeer::new(peer_uuid.clone(), requests_sender.clone());
+                            handshake_signals.insert(peer_uuid, signal_sender);
+                            let signal_peer = SignalPeer::new(peer_uuid, requests_sender.clone());
                             let handshake_fut = handshake_offer(signal_peer, signal_receiver, new_connected_peers_tx.clone(), messages_from_peers_tx.clone(), config);
                             let (to_peer_data_tx, to_peer_data_rx) = futures_channel::mpsc::unbounded();
                             connected_peers.insert(peer_uuid, to_peer_data_tx);
@@ -115,9 +115,9 @@ async fn message_loop_impl(
                             disconnected_peers_tx.unbounded_send(peer_uuid).expect("fail to send disconnected peer");
                         }
                         PeerEvent::Signal { sender, data } => {
-                            let from_peer_sender = handshake_signals.entry(sender.clone()).or_insert_with(|| {
+                            let from_peer_sender = handshake_signals.entry(sender).or_insert_with(|| {
                                 let (from_peer_sender, from_peer_receiver) = futures_channel::mpsc::unbounded();
-                                let signal_peer = SignalPeer::new(sender.clone(), requests_sender.clone());
+                                let signal_peer = SignalPeer::new(sender, requests_sender.clone());
                                 let (to_peer_data_tx, to_peer_data_rx) = futures_channel::mpsc::unbounded();
                                 // We didn't start signalling with this peer, assume we're the accepting part
                                 let handshake_fut = handshake_accept(signal_peer, from_peer_receiver, new_connected_peers_tx.clone(), messages_from_peers_tx.clone(), config);
@@ -258,7 +258,7 @@ async fn handshake_offer(
     let data_channel = create_data_channel(
         &connection,
         channel_ready_tx,
-        signal_peer.id.clone(),
+        signal_peer.id,
         new_peer_tx,
         from_peer_message_tx,
     )
@@ -333,7 +333,7 @@ async fn handshake_accept(
     let data_channel = create_data_channel(
         &connection,
         channel_ready_tx,
-        signal_peer.id.clone(),
+        signal_peer.id,
         new_peer_tx,
         from_peer_message_tx,
     )
@@ -443,11 +443,11 @@ async fn create_data_channel(
         .await
         .unwrap();
 
-    let peer_id2 = peer_id.clone();
+    let peer_id2 = peer_id;
     channel.on_open(Box::new(move || {
         debug!("Data channel ready");
         Box::pin(async move {
-            new_peer_tx.send(peer_id2.clone()).await.unwrap();
+            new_peer_tx.send(peer_id2).await.unwrap();
             channel_ready.try_send(1).unwrap();
         })
     }));
@@ -478,7 +478,7 @@ async fn setup_data_channel(
         let packet = (*message.data).into();
         debug!("rx {:?}", packet);
         from_peer_message_tx
-            .unbounded_send((peer_id.clone(), packet))
+            .unbounded_send((peer_id, packet))
             .unwrap();
         Box::pin(async move {})
     }));

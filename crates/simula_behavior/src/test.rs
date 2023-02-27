@@ -88,7 +88,7 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
     // Run app
     let mut iters = 0;
     while iters < MAX_ITERS {
-        iters = iters + 1;
+        iters += 1;
         app.update();
     }
 

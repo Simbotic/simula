@@ -183,15 +183,15 @@ pub enum ActionMapButton {
     Gamepad(Gamepad, GamepadButton),
 }
 
-impl Into<ActionMapButton> for KeyCode {
-    fn into(self) -> ActionMapButton {
-        ActionMapButton::Keyboard(self)
+impl From<KeyCode> for ActionMapButton {
+    fn from(key_code: KeyCode) -> Self {
+        ActionMapButton::Keyboard(key_code)
     }
 }
 
-impl Into<ActionMapButton> for MouseButton {
-    fn into(self) -> ActionMapButton {
-        ActionMapButton::MouseButton(self)
+impl From<MouseButton> for ActionMapButton {
+    fn from(button: MouseButton) -> Self {
+        ActionMapButton::MouseButton(button)
     }
 }
 
@@ -279,17 +279,15 @@ pub fn action_map<T, W>(
                 // Handle on_exit
                 match action_map_input.button {
                     ActionMapButton::Keyboard(key_code) => {
-                        if keyboard_action.on_exit(key_code) {
-                            if action.on(action_map_input.action) {
-                                wants_exit.insert(action_map_input.action);
-                            }
+                        if keyboard_action.on_exit(key_code) && action.on(action_map_input.action) {
+                            wants_exit.insert(action_map_input.action);
                         }
                     }
                     ActionMapButton::MouseButton(mouse_button) => {
-                        if mouse_button_action.on_exit(mouse_button) {
-                            if action.on(action_map_input.action) {
-                                wants_exit.insert(action_map_input.action);
-                            }
+                        if mouse_button_action.on_exit(mouse_button)
+                            && action.on(action_map_input.action)
+                        {
+                            wants_exit.insert(action_map_input.action);
                         }
                     }
                     _ => panic!("Not implemented"),
@@ -322,9 +320,9 @@ pub enum AxisMapSource {
     GamepadAxis(Gamepad, GamepadAxis),
 }
 
-impl Into<AxisMapSource> for MouseAxis {
-    fn into(self) -> AxisMapSource {
-        AxisMapSource::MouseAxis(self)
+impl From<MouseAxis> for AxisMapSource {
+    fn from(axis: MouseAxis) -> AxisMapSource {
+        AxisMapSource::MouseAxis(axis)
     }
 }
 

@@ -13,7 +13,7 @@ impl BehaviorInfo for CopBribedAction {
     const DESC: &'static str = "Handle the state of the Cop";
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 #[component(storage = "SparseSet")]
 pub struct CopBribed {
     timer: Timer,

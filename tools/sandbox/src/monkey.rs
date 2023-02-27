@@ -103,23 +103,23 @@ fn monkey_setup(mut commands: Commands) {
         AxisMapInput {
             axis: MonkeyMove::Front,
             source: AxisMapSource::Keyboard {
-                positive: KeyCode::W.into(),
-                negative: KeyCode::S.into(),
+                positive: KeyCode::W,
+                negative: KeyCode::S,
             },
         },
         AxisMapInput {
             axis: MonkeyMove::Right,
             source: AxisMapSource::Keyboard {
-                positive: KeyCode::D.into(),
-                negative: KeyCode::A.into(),
+                positive: KeyCode::D,
+                negative: KeyCode::A,
             },
         },
         // Arrows
         AxisMapInput {
             axis: MonkeyMove::Strafe,
             source: AxisMapSource::Keyboard {
-                positive: KeyCode::Right.into(),
-                negative: KeyCode::Left.into(),
+                positive: KeyCode::Right,
+                negative: KeyCode::Left,
             },
         },
         // Mouse wheel

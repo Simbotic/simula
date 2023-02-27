@@ -180,7 +180,6 @@ fn setup(
                 divisions: 10,
                 start_color: Color::BLUE,
                 end_color: Color::RED,
-                ..default()
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),
@@ -325,7 +324,6 @@ fn setup(
                         axes: Axes {
                             size: 1.,
                             inner_offset: 1.,
-                            ..default()
                         },
                         mesh: meshes.add(line_mesh.clone()),
                         material: lines_materials.add(LinesMaterial {}),
@@ -519,9 +517,7 @@ fn setup(
             kd: 0.0,
             ..default()
         })
-        .insert(SignalControlLine {
-            points: points.clone(),
-        })
+        .insert(SignalControlLine { points })
         .insert(Name::new("Signal: Controller"));
 
     // force graph

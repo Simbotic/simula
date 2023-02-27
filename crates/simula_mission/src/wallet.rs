@@ -17,7 +17,7 @@ pub struct Wallet {
 
 impl ToString for WalletId {
     fn to_string(&self) -> String {
-        hex::encode(&self)
+        hex::encode(self)
     }
 }
 
@@ -36,7 +36,7 @@ impl TryFrom<&[u8]> for WalletId {
             inner.copy_from_slice(data);
             Ok(WalletId {
                 raw_id: inner,
-                id: hex::encode(&inner),
+                id: hex::encode(inner),
             })
         } else {
             Err(())
@@ -54,7 +54,7 @@ impl TryFrom<String> for WalletId {
                 inner.copy_from_slice(&hex_dec);
                 Ok(WalletId {
                     raw_id: inner,
-                    id: hex::encode(&inner),
+                    id: hex::encode(inner),
                 })
             } else {
                 Err(())
@@ -67,7 +67,7 @@ impl TryFrom<String> for WalletId {
 
 impl std::fmt::Debug for WalletId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self))
+        write!(f, "{}", hex::encode(self))
     }
 }
 
@@ -85,7 +85,7 @@ impl<'de> Deserialize<'de> for WalletId {
     where
         D: Deserializer<'de>,
     {
-        let wallet_id_hex = hex::decode(&String::deserialize(deserializer)?)
+        let wallet_id_hex = hex::decode(String::deserialize(deserializer)?)
             .map_err(|e| de::Error::custom(format!("{:?}", e)))?;
         WalletId::try_from(wallet_id_hex.as_ref())
             .map_err(|e| de::Error::custom(format!("{:?}", e)))

@@ -238,30 +238,30 @@ fn setup(
             AxisMapInput {
                 axis: OrbitCameraMotion::Up,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::W.into(),
-                    negative: KeyCode::S.into(),
+                    positive: KeyCode::W,
+                    negative: KeyCode::S,
                 },
             },
             AxisMapInput {
                 axis: OrbitCameraMotion::Right,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::A.into(),
-                    negative: KeyCode::D.into(),
+                    positive: KeyCode::A,
+                    negative: KeyCode::D,
                 },
             },
             // Arrows
             AxisMapInput {
                 axis: OrbitCameraMotion::Right,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::Left.into(),
-                    negative: KeyCode::Right.into(),
+                    positive: KeyCode::Left,
+                    negative: KeyCode::Right,
                 },
             },
             AxisMapInput {
                 axis: OrbitCameraMotion::Up,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::Up.into(),
-                    negative: KeyCode::Down.into(),
+                    positive: KeyCode::Up,
+                    negative: KeyCode::Down,
                 },
             },
             // Mouse X Y

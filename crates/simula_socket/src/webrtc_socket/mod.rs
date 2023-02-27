@@ -148,7 +148,7 @@ impl WebRtcSocket {
 
         (
             Self {
-                id: id.clone(),
+                id,
                 messages_from_peers,
                 peer_messages_out: peer_messages_out_tx,
                 new_connected_peers,
@@ -171,7 +171,7 @@ impl WebRtcSocket {
         debug!("waiting for peers to join");
         let mut addrs = vec![];
         while let Some(id) = self.new_connected_peers.next().await {
-            addrs.push(id.clone());
+            addrs.push(id);
             if addrs.len() == peers {
                 debug!("all peers joined");
                 self.peers.extend(addrs.clone());
@@ -185,7 +185,7 @@ impl WebRtcSocket {
     pub fn accept_new_connections(&mut self) -> Vec<PeerId> {
         let mut ids = Vec::new();
         while let Ok(Some(id)) = self.new_connected_peers.try_next() {
-            self.peers.push(id.clone());
+            self.peers.push(id);
             ids.push(id);
         }
         ids

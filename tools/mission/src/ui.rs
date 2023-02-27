@@ -27,8 +27,8 @@ pub fn follow_ui<T>(
                 .title_bar(false)
                 .show(egui_context.ctx_mut(), |ui| {
                     ui.label(name.to_string());
-                    ui.label(format!("Energy: {}", robot.get_energy().to_string()));
-                    ui.label(format!("Money: {}", robot.get_money().to_string()));
+                    ui.label(format!("Energy: {}", robot.get_energy()));
+                    ui.label(format!("Money: {}", robot.get_money()));
                 });
         }
     }

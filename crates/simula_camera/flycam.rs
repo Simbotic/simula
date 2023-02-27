@@ -35,8 +35,7 @@ fn forward_vector(rotation: &Quat) -> Vec3 {
 
 fn forward_xy_vector(rotation: &Quat) -> Vec3 {
     let f = forward_vector(rotation);
-    let f_flattened = Vec3::new(f.x, 0.0, f.z).normalize();
-    f_flattened
+    Vec3::new(f.x, 0.0, f.z).normalize()
 }
 
 fn strafe_vector(rotation: &Quat) -> Vec3 {
@@ -196,23 +195,23 @@ fn setup(
             AxisMapInput {
                 axis: FlyCameraMotion::Up,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::E.into(),
-                    negative: KeyCode::Q.into(),
+                    positive: KeyCode::E,
+                    negative: KeyCode::Q,
                 },
             },
             // WASD
             AxisMapInput {
                 axis: FlyCameraMotion::Forward,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::W.into(),
-                    negative: KeyCode::S.into(),
+                    positive: KeyCode::W,
+                    negative: KeyCode::S,
                 },
             },
             AxisMapInput {
                 axis: FlyCameraMotion::Strafe,
                 source: AxisMapSource::Keyboard {
-                    positive: KeyCode::A.into(),
-                    negative: KeyCode::D.into(),
+                    positive: KeyCode::A,
+                    negative: KeyCode::D,
                 },
             },
             // Mouse X Y

@@ -33,17 +33,11 @@ impl Line {
 pub const MAX_LINES: usize = 128000;
 pub const MAX_POINTS: usize = MAX_LINES * 2;
 
-#[derive(Component, Clone, Reflect)]
+#[derive(Component, Clone, Reflect, Default)]
 #[reflect(Component)]
 pub struct Lines {
     #[reflect(ignore)]
     pub lines: Vec<Line>,
-}
-
-impl Default for Lines {
-    fn default() -> Self {
-        Self { lines: Vec::new() }
-    }
 }
 
 impl Lines {
@@ -107,7 +101,7 @@ impl Lines {
         let rot = std::f32::consts::PI / 2.0;
         // Draw horizontal ring
         for vs in 0..res {
-            let a0 = (vs + 0) as f32 * arc;
+            let a0 = vs as f32 * arc;
             let a1 = (vs + 1) as f32 * arc;
             let x0 = a0.sin();
             let z0 = a0.cos();
@@ -124,7 +118,7 @@ impl Lines {
             let r0 = va as f32 * rot;
             let r0 = Quat::from_rotation_y(r0);
             for vi in 0..res {
-                let a0 = (vi + 0) as f32 * arc;
+                let a0 = vi as f32 * arc;
                 let a1 = (vi + 1) as f32 * arc;
                 let x0 = a0.sin();
                 let y0 = a0.cos();
@@ -140,7 +134,7 @@ impl Lines {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct LinesBundle {
     pub lines: Lines,
     pub mesh: Handle<Mesh>,
@@ -149,20 +143,6 @@ pub struct LinesBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-}
-
-impl Default for LinesBundle {
-    fn default() -> Self {
-        LinesBundle {
-            lines: Lines::default(),
-            mesh: Default::default(),
-            material: Default::default(),
-            transform: Transform::default(),
-            global_transform: GlobalTransform::default(),
-            visibility: Visibility::default(),
-            computed_visibility: ComputedVisibility::default(),
-        }
-    }
 }
 
 #[derive(Default, AsBindGroup, TypeUuid, Debug, Clone)]
@@ -213,8 +193,8 @@ fn generate_lines(
             let i = idx * 2;
             points[i] = line.start.into();
             points[i + 1] = line.end.into();
-            colors[i] = line.start_color.as_rgba_f32().into();
-            colors[i + 1] = line.end_color.as_rgba_f32().into();
+            colors[i] = line.start_color.as_rgba_f32();
+            colors[i + 1] = line.end_color.as_rgba_f32();
         }
 
         if let Some(mesh) = meshes.get_mut(&mesh_handle.clone()) {

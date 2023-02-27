@@ -58,7 +58,6 @@ fn setup(
                 divisions: 10,
                 start_color: grid_color,
                 end_color: grid_color,
-                ..Default::default()
             },
             mesh: meshes.add(line_mesh.clone()),
             material: lines_materials.add(LinesMaterial {}),

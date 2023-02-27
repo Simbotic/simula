@@ -24,7 +24,7 @@ impl Default for Grid {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct GridBundle {
     pub grid: Grid,
     pub lines: Lines,
@@ -34,21 +34,6 @@ pub struct GridBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
-}
-
-impl Default for GridBundle {
-    fn default() -> Self {
-        GridBundle {
-            grid: Default::default(),
-            lines: Default::default(),
-            mesh: Default::default(),
-            material: Default::default(),
-            transform: Default::default(),
-            global_transform: Default::default(),
-            visibility: Visibility::default(),
-            computed_visibility: ComputedVisibility::default(),
-        }
-    }
 }
 
 fn grid_lines(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {

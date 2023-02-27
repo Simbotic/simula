@@ -32,7 +32,7 @@ pub(crate) fn setup_raw_srcs(
 ) {
     for (entity, camera, src) in srcs.iter() {
         if let RenderTarget::Image(image) = &camera.target {
-            if let Some(image) = images.get(&image) {
+            if let Some(image) = images.get(image) {
                 let size = image.size();
 
                 if size.x as u32 != src.size.x || size.y as u32 != src.size.y {
@@ -95,7 +95,7 @@ pub(crate) fn extract_raw_srcs(
 ) {
     for (entity, buffer, camera) in srcs.iter() {
         if let RenderTarget::Image(image) = &camera.target {
-            if images.get(&image).is_some() {
+            if images.get(image).is_some() {
                 commands.get_or_spawn(entity).insert(RawSrcBlit {
                     image: image.clone(),
                     buffer: buffer.buffer.clone(),

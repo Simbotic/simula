@@ -35,7 +35,7 @@ pub fn signal_generator_lines(
             lines.line_colored(start, end, color);
         }
 
-        hue = hue + hue_dt;
+        hue += hue_dt;
     }
 }
 
@@ -66,7 +66,7 @@ pub fn signal_control_lines(
             control_line.points[num_points - 1].y,
             time.delta(),
         );
-        control_line.points[num_points - 1].y = control_line.points[num_points - 1].y + control;
+        control_line.points[num_points - 1].y += control;
 
         let color = Color::Hsla {
             hue,
@@ -81,6 +81,6 @@ pub fn signal_control_lines(
             lines.line_colored(start, end, color);
         }
 
-        hue = hue + hue_dt;
+        hue += hue_dt;
     }
 }

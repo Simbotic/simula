@@ -30,7 +30,7 @@ impl Spline {
                 break;
             }
             segments.push(Curve::new(
-                points[i + 0],
+                points[i],
                 points[i + 1],
                 points[i + 2],
                 points[i + 3],

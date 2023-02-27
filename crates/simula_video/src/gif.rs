@@ -61,28 +61,26 @@ pub fn run(
         if !visibility.is_visible() {
             continue;
         }
-        if let Some(material) = materials.get_mut(&material) {
+        if let Some(material) = materials.get_mut(material) {
             if let Some(gif) = gifs.get_mut(asset) {
                 if let Some(image) = gif.images.get(&video.current_frame) {
                     material.video_texture = Some(image.clone());
-                } else {
-                    if video.current_frame <= gif.frames.len() {
-                        debug!("video image: {:?} {:?}", gif.path, video);
-                        let frame = gif.frames[video.current_frame].clone();
-                        let image = images.add(Image::new(
-                            Extent3d {
-                                width: frame.width(),
-                                height: frame.height(),
-                                depth_or_array_layers: 1,
-                            },
-                            TextureDimension::D2,
-                            frame.into_raw(),
-                            TextureFormat::Rgba8UnormSrgb,
-                        ));
-                        gif.images.insert(video.current_frame, image.clone());
-                        material.alpha_scaler = 1.0;
-                        material.video_texture = Some(image);
-                    }
+                } else if video.current_frame <= gif.frames.len() {
+                    debug!("video image: {:?} {:?}", gif.path, video);
+                    let frame = gif.frames[video.current_frame].clone();
+                    let image = images.add(Image::new(
+                        Extent3d {
+                            width: frame.width(),
+                            height: frame.height(),
+                            depth_or_array_layers: 1,
+                        },
+                        TextureDimension::D2,
+                        frame.into_raw(),
+                        TextureFormat::Rgba8UnormSrgb,
+                    ));
+                    gif.images.insert(video.current_frame, image.clone());
+                    material.alpha_scaler = 1.0;
+                    material.video_texture = Some(image);
                 }
             }
         }

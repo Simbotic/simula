@@ -19,7 +19,7 @@ pub struct Account {
 
 impl ToString for AccountId {
     fn to_string(&self) -> String {
-        hex::encode(&self)
+        hex::encode(self)
     }
 }
 
@@ -38,7 +38,7 @@ impl TryFrom<&[u8]> for AccountId {
             inner.copy_from_slice(data);
             Ok(AccountId {
                 raw_id: inner,
-                id: hex::encode(&inner),
+                id: hex::encode(inner),
             })
         } else {
             Err(())
@@ -56,7 +56,7 @@ impl TryFrom<String> for AccountId {
                 inner.copy_from_slice(&hex_dec);
                 Ok(AccountId {
                     raw_id: inner,
-                    id: hex::encode(&inner),
+                    id: hex::encode(inner),
                 })
             } else {
                 Err(())
@@ -69,7 +69,7 @@ impl TryFrom<String> for AccountId {
 
 impl std::fmt::Debug for AccountId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self))
+        write!(f, "{}", hex::encode(self))
     }
 }
 
@@ -87,7 +87,7 @@ impl<'de> Deserialize<'de> for AccountId {
     where
         D: Deserializer<'de>,
     {
-        let account_id_hex = hex::decode(&String::deserialize(deserializer)?)
+        let account_id_hex = hex::decode(String::deserialize(deserializer)?)
             .map_err(|e| de::Error::custom(format!("{:?}", e)))?;
         AccountId::try_from(account_id_hex.as_ref())
             .map_err(|e| de::Error::custom(format!("{:?}", e)))
