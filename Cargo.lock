@@ -1531,6 +1531,7 @@ dependencies = [
  "enum-display-derive",
  "enum-iterator",
  "rand 0.8.5",
+ "regex",
  "simula_action",
  "simula_camera",
  "simula_core",

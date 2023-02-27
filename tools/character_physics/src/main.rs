@@ -1,11 +1,11 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    render::primitives::Aabb,
     transform::TransformSystem,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
+use regex::Regex;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_viz::{
@@ -13,6 +13,7 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::{LineMesh, LinesMaterial, LinesPlugin},
 };
+use std::time::Duration;
 
 fn main() {
     App::new()
@@ -28,7 +29,10 @@ fn main() {
             ..default()
         }))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(RapierDebugRenderPlugin {
+            mode: DebugRenderMode::COLLIDER_SHAPES,
+            ..Default::default()
+        })
         .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -36,10 +40,9 @@ fn main() {
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
-        .add_startup_system(setup_physics)
         .add_startup_system(setup)
-        // .add_system(setup_scene_once_loaded)
         .add_system(debug_info)
+        .add_system(drop_box)
         .add_system_to_stage(
             CoreStage::PostUpdate,
             setup_scene_once_loaded.after(TransformSystem::TransformPropagate),
@@ -54,17 +57,25 @@ fn setup(
     line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    // Character
+    // character
     commands
         .spawn(SceneBundle {
-            scene: asset_server.load("models/character/CharacterPhysics.glb#Scene0"),
+            scene: asset_server.load("models/character/X_Bot/Character.glb#Scene0"),
             ..default()
         })
-        // .insert(KinematicCharacterController::new(0.5, 0))
         .insert(Name::new("Character"));
     commands.insert_resource(Animations(vec![
-        asset_server.load("models/character/CharacterPhysics.glb#Animation0")
+        asset_server.load("models/character/X_Bot/Martelo_Do_Chau.glb#Animation0")
     ]));
+
+    // ground
+    let ground_size = 200.1;
+    let ground_height = 0.1;
+    commands.spawn((
+        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
+        Collider::cuboid(ground_size, ground_height, ground_size),
+        Name::new("Ground"),
+    ));
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -164,22 +175,23 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     };
 }
 
-pub fn setup_physics(mut commands: Commands) {
-    let ground_size = 200.1;
-    let ground_height = 0.1;
-    commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
-        Collider::cuboid(ground_size, ground_height, ground_size),
-        Name::new("Ground"),
-    ));
-
-    commands.spawn((
-        TransformBundle::from(Transform::from_xyz(0.0, 3.0, 0.0)),
-        RigidBody::Dynamic,
-        Collider::cuboid(0.1, 0.1, 0.1),
-        ColliderDebugColor(Color::SEA_GREEN),
-        Name::new("Box"),
-    ));
+// Drop box every few seconds
+fn drop_box(mut commands: Commands, time: Res<Time>, mut timer: Local<Timer>) {
+    timer.tick(time.delta());
+    if timer.finished() {
+        timer.reset();
+        timer.set_duration(Duration::from_secs(1));
+        let box_size = 0.2;
+        let x = rand::random::<f32>() * 2.0 - 0.5;
+        let z = rand::random::<f32>() + 0.5;
+        commands.spawn((
+            TransformBundle::from(Transform::from_xyz(x, 3.0, z)),
+            RigidBody::Dynamic,
+            Collider::cuboid(box_size, box_size, box_size),
+            ColliderDebugColor(Color::SEA_GREEN),
+            Name::new("Box"),
+        ));
+    }
 }
 
 #[derive(Resource)]
@@ -191,55 +203,141 @@ fn setup_scene_once_loaded(
     mut player: Query<(Entity, &mut AnimationPlayer)>,
     names: Query<&Name>,
     children: Query<&Children>,
-    transforms: Query<&GlobalTransform>,
+    transforms: Query<&Transform>,
+    global_transforms: Query<&GlobalTransform>,
     mut done: Local<bool>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if !*done {
         if let Ok((anim_entity, mut player)) = player.get_single_mut() {
+            print_hierarchy(anim_entity, &names, &children, 0);
+            create_colliders(
+                &mut commands,
+                anim_entity,
+                &transforms,
+                &global_transforms,
+                &names,
+                &children,
+                &mut meshes,
+                &mut materials,
+            );
             player.play(animations.0[0].clone_weak()).repeat();
-            create_colliders(&mut commands, anim_entity, &transforms, &names, &children);
             *done = true;
         }
     }
 }
 
-// Iterate recursively over all bones and create a collider for each bone, starting from a parent entity.
-// Colliders are created as children of the bone entity. All colliders are rounded cylinders.
-// The length of the cylinder is the distance between the bone and its parent.
+#[derive(Component)]
+struct Bone;
+
 fn create_colliders(
     commands: &mut Commands,
-    parent: Entity,
-    transforms: &Query<&GlobalTransform>,
+    bone: Entity,
+    transforms: &Query<&Transform>,
+    global_transforms: &Query<&GlobalTransform>,
     names: &Query<&Name>,
     children_query: &Query<&Children>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-    if let Ok(children) = children_query.get(parent) {
-        for child in children.iter() {
-            if let Ok(name) = names.get(*child) {
-                // name starts with mixamorig:
-                if name.starts_with("mixamorig:") {
-                    if let Ok(transform) = transforms.get(parent) {
-                        if let Ok(child_transform) = transforms.get(*child) {
-                            //
-                            let length =
-                                (child_transform.translation() - transform.translation()).length();
-                            let radius = 0.05;
-                            commands.entity(*child).with_children(|parent| {
-                                parent.spawn((
-                                    Transform::from_translation(Vec3::new(0.0, length / 2.0, 0.0)),
-                                    RigidBody::Dynamic,
-                                    Collider::round_cylinder(length, radius, radius),
-                                    ColliderDebugColor(Color::rgb(0.0, 1.0, 0.0)),
-                                    Name::new(format!("Collider: {}", name)),
-                                ));
-                            });
-                        }
+    commands.entity(bone).insert(Bone);
+
+    let bone_global_transform = global_transforms.get(bone);
+    let bone_name = names.get(bone);
+    let bone_children = children_query.get(bone);
+
+    let (bone_global_transform, bone_name, bone_children) =
+        match (bone_global_transform, bone_name, bone_children) {
+            (Ok(bone_global_transform), Ok(bone_name), Ok(bone_children)) => {
+                (bone_global_transform, bone_name, bone_children)
+            }
+            _ => return,
+        };
+
+    if bone_name.starts_with("mixamorig:") {
+        let (sum, count) =
+            bone_children
+                .iter()
+                .fold((Vec3::ZERO, 0), |(mut sum, mut count), child| {
+                    if let Ok(child_global_transform) = global_transforms.get(*child) {
+                        sum += child_global_transform.translation();
+                        count += 1;
                     }
-                    create_colliders(commands, *child, transforms, &names, &children_query);
-                }
-            } else {
-                continue;
+                    (sum, count)
+                });
+
+        let bone_end = sum / count as f32;
+        let bone_end = bone_global_transform
+            .compute_matrix()
+            .inverse()
+            .transform_point3(bone_end);
+
+        let bone_length = bone_end.length();
+        let bone_radius = if bone_name.contains("Spine") {
+            bone_length * 0.5
+        } else if bone_name.contains("Head") {
+            bone_length * 0.2
+        } else if bone_name.contains("Leg") {
+            bone_length * 0.08
+        } else {
+            bone_length * 0.1
+        };
+
+        if count > 0 {
+            commands.entity(bone).with_children(|parent| {
+                parent.spawn((
+                    Transform::from_translation(bone_end / 2.0),
+                    GlobalTransform::default(),
+                    RigidBody::KinematicPositionBased,
+                    // Collider::round_cylinder(length * 2.0, 0.2, 0.1),
+                    Collider::round_cylinder(bone_length / 2.0, bone_radius, bone_radius * 1.0),
+                    ColliderDebugColor(Color::rgb(0.0, 1.0, 0.0)),
+                    Name::new(format!("collider:{}", bone_name)),
+                ));
+            });
+        }
+    }
+
+    let re_hand = Regex::new(r"mixamorig:.*Hand.").expect("failed to compile regex");
+    let re_foot = Regex::new(r"mixamorig:.*Hand.").expect("mixamorig:.*Foot$");
+
+    if !re_hand.is_match(bone_name) || !re_foot.is_match(bone_name) {
+        if let Ok(children) = children_query.get(bone) {
+            for child in children.iter() {
+                create_colliders(
+                    commands,
+                    *child,
+                    transforms,
+                    global_transforms,
+                    names,
+                    children_query,
+                    meshes,
+                    materials,
+                );
             }
         }
+    }
+}
+
+// Print the name of the entity and all its children. Indentation is used to show the hierarchy.
+fn print_hierarchy(
+    entity: Entity,
+    names: &Query<&Name>,
+    children_query: &Query<&Children>,
+    indent: usize,
+) {
+    let name = names.get(entity);
+    let children = children_query.get(entity);
+
+    let (name, children) = match (name, children) {
+        (Ok(name), Ok(children)) => (name, children),
+        _ => return,
+    };
+
+    println!("{}{}", " ".repeat(indent), name);
+
+    for child in children.iter() {
+        print_hierarchy(*child, names, children_query, indent + 2);
     }
 }
