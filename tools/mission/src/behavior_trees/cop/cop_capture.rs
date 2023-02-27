@@ -24,7 +24,7 @@ impl BehaviorInfo for CopCaptureAction {
         "Capture the Robber. The Robber loses all of their energy and money.";
 }
 
-pub const COP_CAPTURE_ENERGY_COST: u64 = (COP_STARTING_ENERGY / 5) as u64;
+pub const COP_CAPTURE_ENERGY_COST: f32 = COP_STARTING_ENERGY / 5.0;
 pub const COP_CAPTURE_RADIUS: f32 = 0.5;
 
 pub fn run(
@@ -49,7 +49,7 @@ pub fn run(
                         let robber_money = robber.get_money();
                         cop.set_energy(cop_energy - COP_CAPTURE_ENERGY_COST);
                         robber.set_money(0);
-                        robber.set_energy(0);
+                        robber.set_energy(0.0);
                         cop.set_money(cop_money + robber_money);
                         commands
                             .entity(robber_entity)

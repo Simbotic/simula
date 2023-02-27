@@ -21,7 +21,7 @@ impl BehaviorInfo for BankStealedAction {
 #[component(storage = "SparseSet")]
 pub struct BankStealed;
 
-pub const BANK_ALERT_ENERGY_COST: u64 = (BANK_STARTING_ENERGY / 2) as u64;
+pub const BANK_ALERT_ENERGY_COST: f32 = BANK_STARTING_ENERGY / 2.0;
 
 pub fn run(
     mut commands: Commands,

@@ -19,7 +19,7 @@ impl BehaviorInfo for RobberBribeAction {
 }
 
 pub const BRIBE_COST: u64 = (ROBBER_STARTING_MONEY / 2) as u64;
-pub const BRIBE_ENERGY_COST: u64 = (ROBBER_STARTING_ENERGY / 10) as u64;
+pub const BRIBE_ENERGY_COST: f32 = ROBBER_STARTING_ENERGY / 10.0;
 pub const ROBBER_BRIBE_RADIUS: f32 = 1.0;
 
 pub fn run(
@@ -42,14 +42,14 @@ pub fn run(
                     {
                         let cop_money = cop.get_money();
                         let cop_energy = cop.get_energy();
-                        let bribe_cop_penalty = BRIBE_ENERGY_COST * 2;
+                        let bribe_cop_penalty = BRIBE_ENERGY_COST * 2.0;
                         robber.set_money(robber_money - BRIBE_COST);
                         robber.set_energy(robber_energy - BRIBE_ENERGY_COST);
                         cop.set_money(cop_money + BRIBE_COST);
                         if cop_energy > bribe_cop_penalty {
                             cop.set_energy(cop_energy - bribe_cop_penalty);
                         } else {
-                            cop.set_energy(0);
+                            cop.set_energy(0.0);
                         }
                         commands
                             .entity(cop_entity)

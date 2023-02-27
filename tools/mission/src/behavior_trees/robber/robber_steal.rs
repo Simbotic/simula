@@ -19,7 +19,7 @@ impl BehaviorInfo for RobberStealAction {
 }
 
 pub const ROBBER_STEAL_RADIUS: f32 = 1.0;
-pub const STEAL_ENERGY_COST: u64 = (ROBBER_STARTING_ENERGY / 4) as u64;
+pub const STEAL_ENERGY_COST: f32 = ROBBER_STARTING_ENERGY / 4.0;
 
 pub fn run(
     mut commands: Commands,

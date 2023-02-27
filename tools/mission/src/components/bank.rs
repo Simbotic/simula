@@ -2,16 +2,16 @@ use bevy::prelude::*;
 use simula_core::ease::EaseFunction;
 use simula_viz::{follow_ui::FollowUI, lookat::SmoothLookAt};
 
-use crate::{behavior_trees::bank::bank_generate::BankGenerate, common::Robot, ui};
+use crate::{common::Robot, ui};
 
 pub const BANK_STARTING_MONEY: u64 = 50;
-pub const BANK_STARTING_ENERGY: u64 = 500;
+pub const BANK_STARTING_ENERGY: f32 = 500.0;
 pub const BANK_MAX_MONEY: u64 = 500;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Bank {
     money: u64,
-    energy: u64,
+    energy: f32,
     follow_ui: Option<Entity>,
 }
 
@@ -24,11 +24,11 @@ impl Robot for Bank {
         self.money = money;
     }
 
-    fn get_energy(&self) -> u64 {
+    fn get_energy(&self) -> f32 {
         self.energy
     }
 
-    fn set_energy(&mut self, energy: u64) {
+    fn set_energy(&mut self, energy: f32) {
         self.energy = energy;
     }
 
@@ -40,7 +40,7 @@ impl Robot for Bank {
         self.follow_ui = Some(entity);
     }
 
-    fn starting_energy(&self) -> u64 {
+    fn starting_energy(&self) -> f32 {
         BANK_STARTING_ENERGY
     }
 }
@@ -125,7 +125,6 @@ pub fn bank_spawner(
                     energy: BANK_STARTING_ENERGY,
                     follow_ui: Some(follow_ui_entity),
                 })
-                .insert(BankGenerate)
                 .push_children(&[follow_ui_entity])
                 .id();
 

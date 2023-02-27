@@ -37,16 +37,15 @@ pub fn run(
                 if running.on_enter_handled && generate.is_none() {
                     commands.entity(action_entity).insert(BehaviorSuccess);
                 }
-                if bank_energy > 0 && bank_money < BANK_MAX_MONEY {
+                if bank_energy > 0.0 && bank_money < BANK_MAX_MONEY {
                     if !running.on_enter_handled {
                         running.on_enter_handled = true;
                         commands.entity(bank_entity).insert(BankGenerate);
                     }
                     bank.set_money(bank_money + 1);
-                    bank.set_energy(bank_energy - 1);
+                    bank.set_energy(bank_energy - 1.0);
                 } else {
                     commands.entity(bank_entity).remove::<BankGenerate>();
-                    info!("[Bank {:?}] Started to Rest", bank_entity);
                     commands.entity(action_entity).insert(BehaviorSuccess);
                     return;
                 }

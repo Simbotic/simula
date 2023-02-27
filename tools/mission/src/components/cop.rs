@@ -4,18 +4,18 @@ use simula_video::VideoMaterial;
 use crate::{common::Robot, spawn_robot_with_wallet};
 
 pub const COP_STARTING_MONEY: u64 = 0;
-pub const COP_STARTING_ENERGY: u64 = 500;
+pub const COP_STARTING_ENERGY: f32 = 500.0;
 pub const COP_SPEED: f32 = 1.0;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Cop {
-    energy: u64,
+    energy: f32,
     money: u64,
     follow_ui: Option<Entity>,
 }
 
 impl Robot for Cop {
-    fn get_energy(&self) -> u64 {
+    fn get_energy(&self) -> f32 {
         self.energy
     }
 
@@ -27,7 +27,7 @@ impl Robot for Cop {
         self.follow_ui
     }
 
-    fn set_energy(&mut self, energy: u64) {
+    fn set_energy(&mut self, energy: f32) {
         self.energy = energy;
     }
 
@@ -39,7 +39,7 @@ impl Robot for Cop {
         self.follow_ui = Some(entity);
     }
 
-    fn starting_energy(&self) -> u64 {
+    fn starting_energy(&self) -> f32 {
         COP_STARTING_ENERGY
     }
 }

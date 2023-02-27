@@ -82,12 +82,12 @@ pub fn run<T>(
                 if running.on_enter_handled && robot_move.is_none() {
                     commands.entity(action_entity).insert(BehaviorSuccess);
                 }
-                if robot_energy > 0 {
+                if robot_energy > 0.0 {
                     if !running.on_enter_handled {
                         running.on_enter_handled = true;
                         commands.entity(robot_entity).insert(RobotMove);
                     }
-                    robot.set_energy(robot_energy - 1);
+                    robot.set_energy(robot_energy - 1.0);
                 } else {
                     commands.entity(robot_entity).remove::<RobotMove>();
                     commands.entity(action_entity).insert(BehaviorSuccess);
