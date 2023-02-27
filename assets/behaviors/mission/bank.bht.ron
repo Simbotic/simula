@@ -7,8 +7,8 @@
                 "BankGenerateMoney",
                 Sequencer(()),
                 [
-                    ("BankStealed", BankStealed(())),
                     ("BankGenerate", BankGenerate(())),
+                    ("NotStealedIsGood", Inverter(()), [("BankStealed", BankStealed(()))]),
                     ("BankRest", BankRest(())),
                 ]
             )

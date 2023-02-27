@@ -4,9 +4,9 @@ use simula_viz::{follow_ui::FollowUI, lookat::SmoothLookAt};
 
 use crate::{behavior_trees::bank::bank_generate::BankGenerate, common::Robot, ui};
 
-pub const BANK_STARTING_MONEY: u64 = 500;
+pub const BANK_STARTING_MONEY: u64 = 50;
 pub const BANK_STARTING_ENERGY: u64 = 500;
-pub const BANK_MAX_MONEY: u64 = 1000;
+pub const BANK_MAX_MONEY: u64 = 500;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Bank {

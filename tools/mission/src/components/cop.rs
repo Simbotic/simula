@@ -5,6 +5,7 @@ use crate::{common::Robot, spawn_robot_with_wallet};
 
 pub const COP_STARTING_MONEY: u64 = 0;
 pub const COP_STARTING_ENERGY: u64 = 500;
+pub const COP_SPEED: f32 = 1.0;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Cop {
@@ -60,7 +61,7 @@ pub fn cop_spawner(
                 &asset_server,
                 &camera_entity,
                 "robot_cop",
-                1.0,
+                COP_SPEED,
                 &mut Cop {
                     energy: COP_STARTING_ENERGY,
                     money: COP_STARTING_MONEY,

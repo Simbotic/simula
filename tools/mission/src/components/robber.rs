@@ -5,6 +5,7 @@ use crate::{common::Robot, components::cop::Cop, spawn_robot_with_wallet};
 
 pub const ROBBER_STARTING_MONEY: u64 = 100;
 pub const ROBBER_STARTING_ENERGY: u64 = 500;
+pub const ROBBER_SPEED: f32 = 0.75;
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct Robber {
@@ -65,7 +66,7 @@ pub fn robber_spawner(
                         &asset_server,
                         &camera_entity,
                         "robot_robber",
-                        0.75,
+                        ROBBER_SPEED,
                         &mut Robber {
                             energy: ROBBER_STARTING_ENERGY,
                             money: ROBBER_STARTING_MONEY,

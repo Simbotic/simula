@@ -4,10 +4,15 @@ use simula_behavior::prelude::*;
 
 use crate::{
     behavior_trees::robber::robber_captured::RobberCaptured,
-    behaviors::{movement::RobotMove, rest::RobotRest},
+    behaviors::{
+        movement::{Movement, RobotMove},
+        rest::RobotRest,
+    },
     common::Robot,
     components::{cop::*, robber::*},
 };
+
+use super::cop_alerted::CopAlerted;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct CopCaptureAction;
@@ -25,12 +30,12 @@ pub const COP_CAPTURE_RADIUS: f32 = 0.5;
 pub fn run(
     mut commands: Commands,
     action_query: Query<(Entity, &CopCaptureAction, &BehaviorNode), BehaviorRunQuery>,
-    mut query: Query<(&Transform, &mut Cop)>,
+    mut query: Query<(&Transform, &mut Cop, Option<&CopAlerted>, &mut Movement)>,
     mut robber_query: Query<(Entity, &Transform, &mut Robber), Without<RobberCaptured>>,
 ) {
     for (action_entity, _, node) in &action_query {
         if let Some(cop_entity) = node.tree {
-            if let Ok((cop_transform, mut cop)) = query.get_mut(cop_entity) {
+            if let Ok((cop_transform, mut cop, alerted, mut movement)) = query.get_mut(cop_entity) {
                 for (robber_entity, robber_transform, mut robber) in robber_query.iter_mut() {
                     let cop_money = cop.get_money();
                     let cop_energy = cop.get_energy();
@@ -59,6 +64,14 @@ pub fn run(
                             "[Robber {:?}] Captured by Cop {:?} with {} money",
                             robber_entity, cop_entity, robber_money
                         );
+                        if alerted.is_some() {
+                            commands.entity(cop_entity).remove::<CopAlerted>();
+                            movement.duration = COP_SPEED;
+                            info!(
+                                "[Cop {:?}] Captured Robber {:?} and is no longer alerted",
+                                cop_entity, robber_entity
+                            )
+                        }
                         commands.entity(action_entity).insert(BehaviorSuccess);
                     }
                 }
