@@ -24,15 +24,19 @@ impl Default for Axes {
 pub struct AxesBundle {
     pub axes: Axes,
     pub lines: Lines,
-    pub mesh: Handle<Mesh>,
-    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
 }
 
-fn system(mut query: Query<(&mut Lines, &Axes, &Visibility), With<Handle<LinesMaterial>>>) {
+fn add_lines(mut commands: Commands, query: Query<Entity, (With<Axes>, Without<Lines>)>) {
+    for entity in query.iter() {
+        commands.entity(entity).insert(Lines::default());
+    }
+}
+
+fn update(mut query: Query<(&mut Lines, &Axes, &Visibility), With<Handle<LinesMaterial>>>) {
     let transform = Transform::default();
     for (mut lines, axes, visibility) in query.iter_mut() {
         if visibility.is_visible {
@@ -53,6 +57,8 @@ pub struct AxesPlugin;
 
 impl Plugin for AxesPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Axes>().add_system(system);
+        app.register_type::<Axes>()
+            .add_system(update)
+            .add_system(add_lines);
     }
 }

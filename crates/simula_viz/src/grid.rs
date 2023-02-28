@@ -28,15 +28,19 @@ impl Default for Grid {
 pub struct GridBundle {
     pub grid: Grid,
     pub lines: Lines,
-    pub mesh: Handle<Mesh>,
-    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
 }
 
-fn grid_lines(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {
+fn add_lines(mut commands: Commands, query: Query<Entity, (With<Grid>, Without<Lines>)>) {
+    for entity in query.iter() {
+        commands.entity(entity).insert(Lines::default());
+    }
+}
+
+fn update(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {
     for (mut lines, grid, visibility) in query.iter_mut() {
         if visibility.is_visible {
             let center = grid.divisions / 2;
@@ -72,6 +76,8 @@ pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Grid>().add_system(grid_lines);
+        app.register_type::<Grid>()
+            .add_system(update)
+            .add_system(add_lines);
     }
 }

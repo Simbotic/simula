@@ -8,7 +8,7 @@ use simula_camera::orbitcam::*;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, LinesMaterial, LinesPlugin},
+    lines::LinesPlugin,
 };
 
 fn main() {
@@ -36,13 +36,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    line_mesh: Res<LineMesh>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
@@ -53,8 +47,6 @@ fn setup(
                 start_color: grid_color,
                 end_color: grid_color,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
         })
@@ -67,8 +59,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..Default::default()
         })

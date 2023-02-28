@@ -11,7 +11,7 @@ use simula_net::{NetId, NetPlugin, Replicate};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, LinesMaterial, LinesPlugin},
+    lines::LinesPlugin,
 };
 
 fn main() {
@@ -52,13 +52,7 @@ fn main() {
     app.run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    line_mesh: Res<LineMesh>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, asset_server: Res<AssetServer>) {
     // network minion that will only communicate with authority
     commands
         .spawn_empty()
@@ -93,8 +87,6 @@ fn setup(
                 start_color: Color::BLUE,
                 end_color: Color::RED,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..default()
         })
@@ -107,8 +99,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..default()
         })
@@ -121,8 +111,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..default()
         })
@@ -135,8 +123,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..default()
         })
@@ -149,8 +135,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..default()
         })

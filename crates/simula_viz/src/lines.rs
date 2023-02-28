@@ -137,8 +137,6 @@ impl Lines {
 #[derive(Bundle, Default)]
 pub struct LinesBundle {
     pub lines: Lines,
-    pub mesh: Handle<Mesh>,
-    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -163,8 +161,35 @@ impl Plugin for LinesPlugin {
         let line_mesh = LineMesh(mesh);
         app.insert_resource(line_mesh);
 
-        app.add_system(generate_lines)
+        app.add_system(add_material)
+            .add_system(add_mesh)
+            .add_system(generate_lines)
             .add_plugin(MaterialPlugin::<LinesMaterial>::default());
+    }
+}
+
+// Add LinesMaterial to lines without a material
+fn add_material(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<LinesMaterial>>,
+    lines: Query<Entity, (With<Lines>, Without<Handle<LinesMaterial>>)>,
+) {
+    for entity in &lines {
+        let material = materials.add(LinesMaterial::default());
+        commands.entity(entity).insert(material);
+    }
+}
+
+// Add mesh to lines without a mesh
+fn add_mesh(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    lines: Query<Entity, (With<Lines>, Without<Handle<Mesh>>)>,
+    line_mesh: Res<LineMesh>,
+) {
+    for entity in &lines {
+        let mesh = meshes.add(line_mesh.clone());
+        commands.entity(entity).insert(mesh);
     }
 }
 

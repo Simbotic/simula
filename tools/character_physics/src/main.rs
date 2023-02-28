@@ -11,7 +11,7 @@ use simula_camera::orbitcam::*;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, LinesMaterial, LinesPlugin},
+    lines::LinesPlugin,
 };
 use std::time::Duration;
 
@@ -30,7 +30,7 @@ fn main() {
         }))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin {
-            mode: DebugRenderMode::COLLIDER_SHAPES,
+            // mode: DebugRenderMode::COLLIDER_SHAPES,
             ..Default::default()
         })
         .add_plugin(WorldInspectorPlugin)
@@ -50,13 +50,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    line_mesh: Res<LineMesh>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, asset_server: Res<AssetServer>) {
     // character
     commands
         .spawn(SceneBundle {
@@ -88,8 +82,6 @@ fn setup(
                 end_color: grid_color,
                 ..Default::default()
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
         })
@@ -102,8 +94,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..Default::default()
         })
@@ -202,20 +192,58 @@ fn setup_scene_once_loaded(
     animations: Res<Animations>,
     mut player: Query<(Entity, &mut AnimationPlayer)>,
     names: Query<&Name>,
-    children: Query<&Children>,
+    parent_query: Query<&Parent>,
+    children_query: Query<&Children>,
     global_transforms: Query<&GlobalTransform>,
     mut done: Local<bool>,
 ) {
     if !*done {
         if let Ok((anim_entity, mut player)) = player.get_single_mut() {
-            print_hierarchy(anim_entity, &names, &children, 0);
-            create_colliders(
+            print_hierarchy(anim_entity, &names, &children_query, 0);
+
+            // let mut ragdoll = Entity::default();
+
+            // commands.entity(anim_entity).with_children(|parent| {
+            //     ragdoll = parent.spawn(SpatialBundle {
+            //         ..Default::default()
+            //     }).id();
+            // });
+
+            // if let Ok(parent_anim) = parent_query.get(anim_entity) {
+            //     commands.entity(anim_entity).with_children(|parent| {
+            //         let ragdoll = parent
+            //             .spawn(SpatialBundle {
+            //                 ..Default::default()
+            //             })
+            //             .id();
+
+            //         create_ragdoll(
+            //             &mut commands,
+            //             ragdoll,
+            //             anim_entity,
+            //             anim_entity,
+            //             &global_transforms,
+            //             &names,
+            //             &children_query,
+            //         );
+            //     });
+
+            let ragdoll = commands
+                .spawn(SpatialBundle {
+                    ..Default::default()
+                })
+                .id();
+
+            create_ragdoll(
                 &mut commands,
+                ragdoll,
+                anim_entity,
                 anim_entity,
                 &global_transforms,
                 &names,
-                &children,
+                &children_query,
             );
+
             player.play(animations.0[0].clone_weak()).repeat();
             *done = true;
         }
@@ -225,10 +253,11 @@ fn setup_scene_once_loaded(
 #[derive(Component)]
 struct Bone;
 
-fn create_colliders(
+fn create_ragdoll(
     commands: &mut Commands,
+    ragdoll: Entity,
+    root: Entity,
     bone: Entity,
-    // transforms: &Query<&Transform>,
     global_transforms: &Query<&GlobalTransform>,
     names: &Query<&Name>,
     children_query: &Query<&Children>,
@@ -247,7 +276,17 @@ fn create_colliders(
             _ => return,
         };
 
-    if bone_name.starts_with("mixamorig:") {
+    // ignore fingers and toes
+    let re_fingers = Regex::new(r"mixamorig:.*Hand.+$").expect("failed to compile regex");
+    let re_toes = Regex::new(r"mixamorig:.*Toe.+$").expect("failed to compile regex");
+    if re_fingers.is_match(bone_name) || re_toes.is_match(bone_name) {
+        return;
+    }
+
+    if bone_name.starts_with("mixamorig:")
+        && !re_fingers.is_match(bone_name)
+        && !re_toes.is_match(bone_name)
+    {
         // compute bone end
         let (sum, count) =
             bone_children
@@ -269,7 +308,15 @@ fn create_colliders(
         let bone_length = bone_end.length();
         let bone_radius = if bone_name.contains("Spine") {
             bone_length * 0.5
+        } else if bone_name.contains("Hips") {
+            0.05
+        } else if bone_name.contains("Neck") {
+            bone_length * 0.2
         } else if bone_name.contains("Head") {
+            bone_length * 0.2
+        } else if bone_name.contains("Hand") {
+            bone_length * 0.3
+        } else if bone_name.contains("Foot") {
             bone_length * 0.2
         } else if bone_name.contains("Leg") {
             bone_length * 0.08
@@ -291,25 +338,117 @@ fn create_colliders(
         }
     }
 
-    // ignore fingers and toes
-    let re_fingers = Regex::new(r"mixamorig:.*Hand.").expect("failed to compile regex");
-    let re_toes = Regex::new(r"mixamorig:.*Foot$").expect("failed to compile regex");
+    // recursively create colliders for all children
+    if let Ok(children) = children_query.get(bone) {
+        for child in children.iter() {
+            create_ragdoll(
+                commands,
+                ragdoll,
+                root,
+                *child,
+                global_transforms,
+                names,
+                children_query,
+            );
+        }
+    }
+}
 
-    if !re_fingers.is_match(bone_name) || !re_toes.is_match(bone_name) {
-        if let Ok(children) = children_query.get(bone) {
-            // recursively create colliders for all children
-            for child in children.iter() {
-                create_colliders(
-                    commands,
-                    *child,
-                    // transforms,
-                    global_transforms,
-                    names,
-                    children_query,
-                    // meshes,
-                    // materials,
-                );
+fn create_skeleton(
+    commands: &mut Commands,
+    root: Entity,
+    bone: Entity,
+    global_transforms: &Query<&GlobalTransform>,
+    names: &Query<&Name>,
+    children_query: &Query<&Children>,
+) {
+    let bone_global_transform = global_transforms.get(bone);
+    let bone_name = names.get(bone);
+    let bone_children = children_query.get(bone);
+
+    let (bone_global_transform, bone_name, bone_children) =
+        match (bone_global_transform, bone_name, bone_children) {
+            (Ok(bone_global_transform), Ok(bone_name), Ok(bone_children)) => {
+                (bone_global_transform, bone_name, bone_children)
             }
+            _ => return,
+        };
+
+    // ignore fingers and toes
+    let re_fingers = Regex::new(r"mixamorig:.*Hand.+$").expect("failed to compile regex");
+    let re_toes = Regex::new(r"mixamorig:.*Toe.+$").expect("failed to compile regex");
+    if re_fingers.is_match(bone_name) || re_toes.is_match(bone_name) {
+        return;
+    }
+
+    if bone_name.starts_with("mixamorig:")
+        && !re_fingers.is_match(bone_name)
+        && !re_toes.is_match(bone_name)
+    {
+        commands.entity(bone).insert(Bone);
+
+        // compute bone end
+        let (sum, count) =
+            bone_children
+                .iter()
+                .fold((Vec3::ZERO, 0), |(mut sum, mut count), child| {
+                    if let Ok(child_global_transform) = global_transforms.get(*child) {
+                        sum += child_global_transform.translation();
+                        count += 1;
+                    }
+                    (sum, count)
+                });
+        let bone_end = sum / count as f32;
+        let bone_end = bone_global_transform
+            .compute_matrix()
+            .inverse()
+            .transform_point3(bone_end);
+
+        // adjust bone radius based on bone name
+        let bone_length = bone_end.length();
+        let bone_radius = if bone_name.contains("Spine") {
+            bone_length * 0.5
+        } else if bone_name.contains("Hips") {
+            0.05
+        } else if bone_name.contains("Neck") {
+            bone_length * 0.2
+        } else if bone_name.contains("Head") {
+            bone_length * 0.2
+        } else if bone_name.contains("Hand") {
+            bone_length * 0.3
+        } else if bone_name.contains("Foot") {
+            bone_length * 0.2
+        } else if bone_name.contains("Leg") {
+            bone_length * 0.08
+        } else {
+            bone_length * 0.1
+        };
+
+        if count > 0 {
+            commands.entity(bone).with_children(|parent| {
+                parent.spawn((
+                    Transform::from_translation(bone_end / 2.0),
+                    GlobalTransform::default(),
+                    RigidBody::KinematicPositionBased,
+                    Collider::round_cylinder(bone_length / 2.0, bone_radius, bone_radius * 1.0),
+                    ColliderDebugColor(Color::rgb(0.0, 1.0, 0.0)),
+                    Name::new(format!("collider:{}", bone_name)),
+                ));
+            });
+        }
+    }
+
+    // recursively create colliders for all children
+    if let Ok(children) = children_query.get(bone) {
+        for child in children.iter() {
+            create_skeleton(
+                commands,
+                root,
+                *child,
+                global_transforms,
+                names,
+                children_query,
+            );
         }
     }
 }

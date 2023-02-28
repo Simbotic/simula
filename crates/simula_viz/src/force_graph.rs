@@ -1,4 +1,4 @@
-use crate::lines::{Lines, LinesMaterial};
+use crate::lines::Lines;
 use bevy::prelude::*;
 use simula_core::force_graph;
 
@@ -41,8 +41,6 @@ pub struct ForceGraphBundle<
 > {
     pub graph: ForceGraph<UserNodeData, UserEdgeData>,
     pub lines: Lines,
-    pub mesh: Handle<Mesh>,
-    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,

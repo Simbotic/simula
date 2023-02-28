@@ -6,11 +6,10 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::spline::Spline;
-use simula_net::NetPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, LinesMaterial, LinesPlugin},
+    lines::LinesPlugin,
     spline::{SplineBundle, SplinePlugin},
 };
 
@@ -27,7 +26,6 @@ fn main() {
             },
             ..default()
         }))
-        .add_plugin(NetPlugin)
         .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -42,13 +40,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    line_mesh: Res<LineMesh>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
@@ -59,8 +51,6 @@ fn setup(
                 start_color: grid_color,
                 end_color: grid_color,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
         })
@@ -73,8 +63,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 10.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..Default::default()
         })
@@ -148,8 +136,6 @@ fn setup(
     let spline = commands
         .spawn(SplineBundle {
             spline,
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 2.0, 0.0),
             ..Default::default()
         })
@@ -163,8 +149,6 @@ fn setup(
                 size: 1.0,
                 inner_offset: 0.0,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
         })
@@ -180,8 +164,6 @@ fn setup(
                 size: 1.0,
                 inner_offset: 0.0,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
         })

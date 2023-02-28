@@ -10,7 +10,7 @@ use simula_camera::flycam::*;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, LinesMaterial, LinesPlugin},
+    lines::LinesPlugin,
 };
 
 fn main() {
@@ -51,10 +51,7 @@ struct Animations(Vec<Handle<AnimationClip>>);
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    line_mesh: Res<LineMesh>,
     mut fast_materials: ResMut<Assets<FastMaterial>>,
-    mut stan_materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     // load animations
@@ -107,8 +104,6 @@ fn setup(
                 end_color: grid_color,
                 ..Default::default()
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..Default::default()
         })
@@ -121,8 +116,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..Default::default()
         })
@@ -209,7 +202,6 @@ pub struct FastMaterial {
 // Replace StandardMaterial with FastMaterial
 fn replace_materials(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut fast_materials: ResMut<Assets<FastMaterial>>,
     mut stan_materials: ResMut<Assets<StandardMaterial>>,
     mut query: Query<(Entity, &Handle<Mesh>, &Handle<StandardMaterial>)>,

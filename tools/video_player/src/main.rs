@@ -1,7 +1,6 @@
 use bevy::{
     core_pipeline::clear_color::ClearColorConfig,
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
-    // log::LogPlugin,
     prelude::*,
     render::view::RenderLayers,
     utils::HashMap,
@@ -23,7 +22,7 @@ use simula_video::{GstSink, GstSrc};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, LinesMaterial, LinesPlugin},
+    lines::LinesPlugin,
 };
 
 fn main() {
@@ -64,8 +63,6 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut video_materials: ResMut<Assets<VideoMaterial>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
-    line_mesh: Res<LineMesh>,
     asset_server: Res<AssetServer>,
 ) {
     // grid
@@ -77,8 +74,6 @@ fn setup(
                 start_color: Color::BLUE,
                 end_color: Color::RED,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..default()
         })
@@ -91,8 +86,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..default()
         })
@@ -105,8 +98,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..default()
         })
@@ -119,8 +110,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..default()
         })
@@ -133,8 +122,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..default()
         })
@@ -261,8 +248,6 @@ fn setup(
                                     size: 1.,
                                     ..default()
                                 },
-                                mesh: meshes.add(line_mesh.clone()),
-                                material: lines_materials.add(LinesMaterial {}),
                                 ..default()
                             })
                             .insert(Name::new("LookAt Coords"));
@@ -277,8 +262,6 @@ fn setup(
                             ..default()
                         },
                         visibility: Visibility { is_visible: false },
-                        mesh: meshes.add(line_mesh.clone()),
-                        material: lines_materials.add(LinesMaterial {}),
                         ..default()
                     })
                     .insert(Name::new("LookAt Coords"));
@@ -353,8 +336,6 @@ fn setup(
                             size: 1.,
                             ..default()
                         },
-                        mesh: meshes.add(line_mesh.clone()),
-                        material: lines_materials.add(LinesMaterial {}),
                         ..default()
                     })
                     .insert(Name::new("LookAt Coords"));

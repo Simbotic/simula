@@ -34,7 +34,7 @@ use simula_viz::{
     follow_ui::{FollowUI, FollowUICamera, FollowUIPlugin, FollowUIVisibility},
     force_graph::{ForceGraph, ForceGraphBundle},
     grid::{Grid, GridBundle, GridPlugin},
-    lines::{LineMesh, Lines, LinesBundle, LinesMaterial, LinesPlugin},
+    lines::{Lines, LinesBundle, LinesPlugin},
     lookat::{LookAtPlugin, SmoothLookAt},
     pointcloud::{PointData, Pointcloud, PointcloudPlugin},
     signal::{
@@ -107,9 +107,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut voxels_materials: ResMut<Assets<VoxelsMaterial>>,
-    mut lines_materials: ResMut<Assets<LinesMaterial>>,
     mut video_materials: ResMut<Assets<VideoMaterial>>,
-    line_mesh: Res<LineMesh>,
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
@@ -181,8 +179,6 @@ fn setup(
                 start_color: Color::BLUE,
                 end_color: Color::RED,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
             ..default()
         })
@@ -195,8 +191,6 @@ fn setup(
                 size: 1.,
                 inner_offset: 5.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.01, 0.0),
             ..default()
         })
@@ -209,8 +203,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(7.0, 0.0, 0.0),
             ..default()
         })
@@ -228,8 +220,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 7.0, 0.0),
             ..default()
         })
@@ -247,8 +237,6 @@ fn setup(
                 size: 3.,
                 inner_offset: 0.,
             },
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 0.0, -7.0),
             ..default()
         })
@@ -325,8 +313,6 @@ fn setup(
                             size: 1.,
                             inner_offset: 1.,
                         },
-                        mesh: meshes.add(line_mesh.clone()),
-                        material: lines_materials.add(LinesMaterial {}),
                         transform: Transform::from_xyz(0.0, 1.0, 0.0),
                         ..default()
                     })
@@ -451,8 +437,6 @@ fn setup(
                 let name = ease_func.to_string();
                 parent
                     .spawn(LinesBundle {
-                        mesh: meshes.add(line_mesh.clone()),
-                        material: lines_materials.add(LinesMaterial {}),
                         transform: Transform::from_xyz(
                             ((i / 3) as f32) * 1.5,
                             3.0 - ((i % 3) as f32),
@@ -477,8 +461,6 @@ fn setup(
         let name = signal_func.to_string();
         commands
             .spawn(LinesBundle {
-                mesh: meshes.add(line_mesh.clone()),
-                material: lines_materials.add(LinesMaterial {}),
                 transform: Transform::from_xyz(0.0, 3.0 - (i as f32 * 0.2), 0.0),
                 ..default()
             })
@@ -497,8 +479,6 @@ fn setup(
     // control signals
     commands
         .spawn(LinesBundle {
-            mesh: meshes.add(line_mesh.clone()),
-            material: lines_materials.add(LinesMaterial {}),
             transform: Transform::from_xyz(0.0, 4.0, 0.0),
             ..default()
         })
@@ -522,8 +502,6 @@ fn setup(
 
     // force graph
     let mut graph_bundle = ForceGraphBundle::<SandboxNodeData, SandboxEdgeData> {
-        mesh: meshes.add(line_mesh.clone()),
-        material: lines_materials.add(LinesMaterial {}),
         transform: Transform::from_xyz(0.0, 3.5, 0.0),
         ..default()
     };
@@ -686,8 +664,6 @@ fn setup(
                                     size: 1.,
                                     ..default()
                                 },
-                                mesh: meshes.add(line_mesh.clone()),
-                                material: lines_materials.add(LinesMaterial {}),
                                 ..default()
                             })
                             .insert(Name::new("LookAt Coords"));
@@ -702,8 +678,6 @@ fn setup(
                             ..default()
                         },
                         visibility: Visibility { is_visible: false },
-                        mesh: meshes.add(line_mesh.clone()),
-                        material: lines_materials.add(LinesMaterial {}),
                         ..default()
                     })
                     .insert(Name::new("LookAt Coords"));

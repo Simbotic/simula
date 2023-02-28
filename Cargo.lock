@@ -5844,7 +5844,6 @@ dependencies = [
  "simula_action",
  "simula_camera",
  "simula_core",
- "simula_net",
  "simula_viz",
 ]
 

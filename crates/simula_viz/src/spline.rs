@@ -40,17 +40,13 @@ pub struct SplineBundle {
     pub spline: Spline,
     pub spline_gizmo: SplineGizmo,
     pub lines: Lines,
-    pub mesh: Handle<Mesh>,
-    pub material: Handle<LinesMaterial>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
 }
 
-fn spline_lines(
-    mut query: Query<(&mut Lines, &Spline, &SplineGizmo, &Visibility), With<Handle<LinesMaterial>>>,
-) {
+fn spline_lines(mut query: Query<(&mut Lines, &Spline, &SplineGizmo, &Visibility)>) {
     for (mut lines, spline, gizmo, visibility) in query.iter_mut() {
         if visibility.is_visible {
             for segment in &spline.segments {
