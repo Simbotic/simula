@@ -203,11 +203,8 @@ fn setup_scene_once_loaded(
     mut player: Query<(Entity, &mut AnimationPlayer)>,
     names: Query<&Name>,
     children: Query<&Children>,
-    transforms: Query<&Transform>,
     global_transforms: Query<&GlobalTransform>,
     mut done: Local<bool>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     if !*done {
         if let Ok((anim_entity, mut player)) = player.get_single_mut() {
@@ -215,12 +212,9 @@ fn setup_scene_once_loaded(
             create_colliders(
                 &mut commands,
                 anim_entity,
-                &transforms,
                 &global_transforms,
                 &names,
                 &children,
-                &mut meshes,
-                &mut materials,
             );
             player.play(animations.0[0].clone_weak()).repeat();
             *done = true;
@@ -234,12 +228,10 @@ struct Bone;
 fn create_colliders(
     commands: &mut Commands,
     bone: Entity,
-    transforms: &Query<&Transform>,
+    // transforms: &Query<&Transform>,
     global_transforms: &Query<&GlobalTransform>,
     names: &Query<&Name>,
     children_query: &Query<&Children>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
     commands.entity(bone).insert(Bone);
 
@@ -256,6 +248,7 @@ fn create_colliders(
         };
 
     if bone_name.starts_with("mixamorig:") {
+        // compute bone end
         let (sum, count) =
             bone_children
                 .iter()
@@ -266,13 +259,13 @@ fn create_colliders(
                     }
                     (sum, count)
                 });
-
         let bone_end = sum / count as f32;
         let bone_end = bone_global_transform
             .compute_matrix()
             .inverse()
             .transform_point3(bone_end);
 
+        // adjust bone radius based on bone name
         let bone_length = bone_end.length();
         let bone_radius = if bone_name.contains("Spine") {
             bone_length * 0.5
@@ -290,7 +283,6 @@ fn create_colliders(
                     Transform::from_translation(bone_end / 2.0),
                     GlobalTransform::default(),
                     RigidBody::KinematicPositionBased,
-                    // Collider::round_cylinder(length * 2.0, 0.2, 0.1),
                     Collider::round_cylinder(bone_length / 2.0, bone_radius, bone_radius * 1.0),
                     ColliderDebugColor(Color::rgb(0.0, 1.0, 0.0)),
                     Name::new(format!("collider:{}", bone_name)),
@@ -299,28 +291,29 @@ fn create_colliders(
         }
     }
 
-    let re_hand = Regex::new(r"mixamorig:.*Hand.").expect("failed to compile regex");
-    let re_foot = Regex::new(r"mixamorig:.*Hand.").expect("mixamorig:.*Foot$");
+    // ignore fingers and toes
+    let re_fingers = Regex::new(r"mixamorig:.*Hand.").expect("failed to compile regex");
+    let re_toes = Regex::new(r"mixamorig:.*Foot$").expect("failed to compile regex");
 
-    if !re_hand.is_match(bone_name) || !re_foot.is_match(bone_name) {
+    if !re_fingers.is_match(bone_name) || !re_toes.is_match(bone_name) {
         if let Ok(children) = children_query.get(bone) {
+            // recursively create colliders for all children
             for child in children.iter() {
                 create_colliders(
                     commands,
                     *child,
-                    transforms,
+                    // transforms,
                     global_transforms,
                     names,
                     children_query,
-                    meshes,
-                    materials,
+                    // meshes,
+                    // materials,
                 );
             }
         }
     }
 }
 
-// Print the name of the entity and all its children. Indentation is used to show the hierarchy.
 fn print_hierarchy(
     entity: Entity,
     names: &Query<&Name>,
