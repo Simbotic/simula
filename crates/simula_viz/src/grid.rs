@@ -42,32 +42,35 @@ fn add_lines(mut commands: Commands, query: Query<Entity, (With<Grid>, Without<L
 
 fn update(mut query: Query<(&mut Lines, &Grid, &Visibility), With<Handle<LinesMaterial>>>) {
     for (mut lines, grid, visibility) in query.iter_mut() {
-        if visibility.is_visible {
-            let center = grid.divisions / 2;
-            let step = grid.size / grid.divisions;
-            let half_size: i64 = (grid.size / 2).into();
+        match visibility {
+            Visibility::Visible | Visibility::Inherited => {
+                let center = grid.divisions / 2;
+                let step = grid.size / grid.divisions;
+                let half_size: i64 = (grid.size / 2).into();
 
-            let i = 0..=grid.divisions;
-            let k = -half_size..=half_size;
+                let i = 0..=grid.divisions;
+                let k = -half_size..=half_size;
 
-            if step == 0 {
-                continue;
-            }
-
-            for (i, k) in i.zip(k.step_by(step as usize)) {
-                let mut start_color = grid.start_color;
-                if i == center {
-                    start_color = start_color + start_color * 0.3;
+                if step == 0 {
+                    continue;
                 }
 
-                let x_a = Vec3::new(-half_size as f32, 0., k as f32);
-                let x_b = Vec3::new(half_size as f32, 0., k as f32);
-                lines.line_gradient(x_a, x_b, start_color, grid.end_color);
+                for (i, k) in i.zip(k.step_by(step as usize)) {
+                    let mut start_color = grid.start_color;
+                    if i == center {
+                        start_color = start_color + start_color * 0.3;
+                    }
 
-                let z_a = Vec3::new(k as f32, 0., -half_size as f32);
-                let z_b = Vec3::new(k as f32, 0., half_size as f32);
-                lines.line_gradient(z_a, z_b, start_color, grid.end_color);
+                    let x_a = Vec3::new(-half_size as f32, 0., k as f32);
+                    let x_b = Vec3::new(half_size as f32, 0., k as f32);
+                    lines.line_gradient(x_a, x_b, start_color, grid.end_color);
+
+                    let z_a = Vec3::new(k as f32, 0., -half_size as f32);
+                    let z_b = Vec3::new(k as f32, 0., half_size as f32);
+                    lines.line_gradient(z_a, z_b, start_color, grid.end_color);
+                }
             }
+            Visibility::Hidden => {}
         }
     }
 }

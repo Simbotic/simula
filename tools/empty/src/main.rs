@@ -1,8 +1,9 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
+    window::PresentMode,
 };
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+// use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_viz::{
@@ -13,18 +14,20 @@ use simula_viz::{
 
 fn main() {
     App::new()
-        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 title: "[Simbotic] Simula - Empty".to_string(),
-                width: 940.,
-                height: 528.,
+                resolution: (940., 528.).into(),
+                present_mode: PresentMode::AutoVsync,
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            },
+            }),
             ..default()
         }))
-        .add_plugin(WorldInspectorPlugin)
+        // .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)

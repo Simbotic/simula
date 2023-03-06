@@ -22,7 +22,7 @@ pub mod axis;
 #[reflect(Component)]
 pub struct MainActionInput;
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemLabel)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
 pub struct ActionPlugin;
 
 impl Plugin for ActionPlugin {
@@ -34,23 +34,23 @@ impl Plugin for ActionPlugin {
             .register_type::<HashSet<KeyCode>>()
             .register_type::<HashSet<MouseButton>>()
             .register_type::<HashMap<MouseAxis, f32>>()
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
+            .add_system(
                 keyboard_action_system
                     .after(EguiSystem::ProcessInput)
-                    .before(EguiSystem::BeginFrame),
+                    .before(EguiSystem::BeginFrame)
+                    .in_base_set(CoreSet::PreUpdate),
             )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
+            .add_system(
                 mouse_button_action_system
                     .after(EguiSystem::ProcessInput)
-                    .before(EguiSystem::BeginFrame),
+                    .before(EguiSystem::BeginFrame)
+                    .in_base_set(CoreSet::PreUpdate),
             )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
+            .add_system(
                 mouse_axis_system
                     .after(EguiSystem::ProcessInput)
-                    .before(EguiSystem::BeginFrame),
+                    .before(EguiSystem::BeginFrame)
+                    .in_base_set(CoreSet::PreUpdate),
             )
             .add_startup_system(setup);
     }

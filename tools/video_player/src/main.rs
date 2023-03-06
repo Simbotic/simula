@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
     render::view::RenderLayers,
     utils::HashMap,
+    window::PresentMode,
 };
 use bevy_egui::EguiPlugin;
 use bevy_egui::{egui, EguiContext};
@@ -28,16 +29,18 @@ use simula_viz::{
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(Msaa { samples: 4 })
+    app.insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .insert_resource(DeletedEntityVideoResource(HashMap::new()))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                title: "[Simbotic] Simula - Sandbox".to_string(),
-                width: 940.,
-                height: 528.,
+            primary_window: Some(Window {
+                title: "[Simbotic] Simula - Video Player".to_string(),
+                resolution: (940., 528.).into(),
+                present_mode: PresentMode::AutoVsync,
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            },
+            }),
             ..default()
         }))
         .add_plugin(EguiPlugin)
@@ -155,7 +158,7 @@ fn setup(
                     ..default()
                 },
                 camera: Camera {
-                    priority: -1,
+                    order: -1,
                     target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
                     ..default()
                 },
@@ -220,7 +223,10 @@ fn setup(
                     .with_children(|parent| {
                         parent
                             .spawn(MaterialMeshBundle {
-                                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                                mesh: meshes.add(Mesh::from(shape::Plane {
+                                    size: 1.0,
+                                    ..default()
+                                })),
                                 material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
                                     EulerRot::YXZ,
@@ -261,7 +267,7 @@ fn setup(
                             size: 3.,
                             ..default()
                         },
-                        visibility: Visibility { is_visible: false },
+                        visibility: Visibility::Hidden,
                         ..default()
                     })
                     .insert(Name::new("LookAt Coords"));
@@ -314,7 +320,10 @@ fn setup(
             .with_children(|parent| {
                 parent
                     .spawn(MaterialMeshBundle {
-                        mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                        mesh: meshes.add(Mesh::from(shape::Plane {
+                            size: 1.0,
+                            ..default()
+                        })),
                         material: video_materials.add(video_material),
                         transform: Transform::from_rotation(Quat::from_rotation_x(
                             -std::f32::consts::FRAC_PI_2,
@@ -328,7 +337,7 @@ fn setup(
                         playing: true,
                         _loop: false,
                     })
-                    .insert(Visibility { is_visible: true })
+                    .insert(Visibility::Visible)
                     .insert(Name::new("Robot: Body"));
                 parent
                     .spawn(AxesBundle {
@@ -382,7 +391,10 @@ fn setup(
     };
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane {
+                size: 1.0,
+                ..default()
+            })),
             material: materials.add(rt_material),
             transform: Transform::from_xyz(-2.5, 0.5, -3.0)
                 .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
@@ -452,7 +464,7 @@ fn video_control_window(
                         commands.entity(video.0.to_owned()).insert(src);
                         commands
                             .entity(video.0.to_owned())
-                            .insert(Visibility { is_visible: true });
+                            .insert(Visibility::Visible);
                     }
                     deleted_video_sources.0 = HashMap::new();
                 });
@@ -462,7 +474,15 @@ fn video_control_window(
                 .then(|| {
                     for (_, _, visible) in video_sources.iter_mut() {
                         if let Some(mut visible) = visible {
-                            visible.is_visible = !visible.is_visible;
+                            match visible {
+                                Visibility::Visible => {
+                                    *visible = Visibility::Hidden;
+                                }
+                                Visibility::Hidden => {
+                                    *visible = Visibility::Visible;
+                                }
+                                Visibility::Inherited => {}
+                            }
                         }
                     }
                 });

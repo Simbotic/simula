@@ -22,6 +22,8 @@ pub fn common_render_target_image(size: UVec2) -> Image {
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT
                 | TextureUsages::COPY_SRC,
+            // TODO: Bevy 0.10 [Check]
+            view_formats: &[],
         },
         ..default()
     };

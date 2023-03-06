@@ -4,16 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.9.1", features = [
-	"render",
+bevy = { version = "0.10", features = [
+	"bevy_render",
 	"bevy_winit",
 	"ktx2", 
 	"zstd", 
 	"zlib",
 ] }
+# TODO: Temporal until bevy_egui is updated to bevy 0.10
+bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "bevy_main" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_core = { path = "../../crates/simula_core" }
-bevy-inspector-egui = "0.17.0"
 bytemuck = "1.12.3"
 rand = "0.8.5"
 

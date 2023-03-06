@@ -11,14 +11,14 @@ use bevy::{
         render_asset::RenderAssets,
         //render_component::{ExtractComponent, ExtractComponentPlugin},
         render_phase::{
-            AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
-            SetItemPipeline, TrackedRenderPass,
+            AddRenderCommand, DrawFunctions, PhaseItem, RenderCommand, RenderCommandResult,
+            RenderPhase, SetItemPipeline, TrackedRenderPass,
         },
         render_resource::*,
         renderer::RenderDevice,
         view::{ExtractedView, Msaa},
         RenderApp,
-        RenderStage,
+        RenderSet,
     },
 };
 use bytemuck::{Pod, Zeroable};
@@ -28,9 +28,10 @@ pub struct Pointcloud(pub Vec<PointData>);
 impl ExtractComponent for Pointcloud {
     type Query = &'static Pointcloud;
     type Filter = ();
+    type Out = Self;
 
-    fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Self {
-        Pointcloud(item.0.clone())
+    fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Option<Self::Out> {
+        Some(Pointcloud(item.0.clone()))
     }
 }
 
@@ -43,8 +44,8 @@ impl Plugin for PointcloudPlugin {
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<PointcloudPipeline>()
             .init_resource::<SpecializedMeshPipelines<PointcloudPipeline>>()
-            .add_system_to_stage(RenderStage::Queue, queue_pointclouds)
-            .add_system_to_stage(RenderStage::Prepare, prepare_pointclouds);
+            .add_system(queue_pointclouds.in_set(RenderSet::Queue))
+            .add_system(prepare_pointclouds.in_set(RenderSet::Prepare));
     }
 }
 
@@ -75,7 +76,7 @@ fn queue_pointclouds(
         .get_id::<DrawCustom>()
         .unwrap();
 
-    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples);
+    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
 
     for (view, mut transparent_phase) in views.iter_mut() {
         let view_matrix = view.transform.compute_matrix();
@@ -170,10 +171,10 @@ impl SpecializedMeshPipeline for PointcloudPipeline {
             ],
         });
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
-        descriptor.layout = Some(vec![
+        descriptor.layout = vec![
             self.mesh_pipeline.view_layout.clone(),
             self.mesh_pipeline.mesh_layout.clone(),
-        ]);
+        ];
 
         Ok(descriptor)
     }
@@ -187,22 +188,18 @@ type DrawCustom = (
 );
 
 struct DrawMeshInstanced;
-impl EntityRenderCommand for DrawMeshInstanced {
-    type Param = (
-        SRes<RenderAssets<Mesh>>,
-        SQuery<Read<Handle<Mesh>>>,
-        SQuery<Read<InstanceBuffer>>,
-    );
+impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
+    type Param = SRes<RenderAssets<Mesh>>;
+    type ViewWorldQuery = ();
+    type ItemWorldQuery = (Read<Handle<Mesh>>, Read<InstanceBuffer>);
     #[inline]
     fn render<'w>(
-        _view: Entity,
-        item: Entity,
-        (meshes, mesh_query, instance_buffer_query): SystemParamItem<'w, '_, Self::Param>,
+        _item: &P,
+        _view: (),
+        (mesh_handle, instance_buffer): (&'w Handle<Mesh>, &'w InstanceBuffer),
+        meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let mesh_handle = mesh_query.get(item).unwrap();
-        let instance_buffer = instance_buffer_query.get_inner(item).unwrap();
-
         let gpu_mesh = match meshes.into_inner().get(mesh_handle) {
             Some(gpu_mesh) => gpu_mesh,
             None => return RenderCommandResult::Failure,

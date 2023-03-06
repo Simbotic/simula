@@ -4,6 +4,7 @@ use bevy::{
     // log::LogPlugin,
     prelude::*,
     render::view::{NoFrustumCulling, RenderLayers},
+    window::PresentMode,
 };
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -54,15 +55,17 @@ fn main() {
         .register_type::<ForceGraph<SandboxNodeData, SandboxEdgeData>>()
         .register_type::<SimulationParameters>()
         .register_type::<SandboxNode>()
-        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 title: "[Simbotic] Simula - Sandbox".to_string(),
-                width: 940.,
-                height: 528.,
+                resolution: (940., 528.).into(),
+                present_mode: PresentMode::AutoVsync,
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            },
+            }),
             ..default()
         }))
         // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
@@ -153,7 +156,10 @@ fn setup(
     // plane
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane {
+                size: 1.0,
+                ..default()
+            })),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             transform: Transform::from_xyz(2.0, 0.01, 2.0),
             ..default()
@@ -276,7 +282,7 @@ fn setup(
                     ..default()
                 },
                 camera: Camera {
-                    priority: -1,
+                    order: -1,
                     target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
                     ..default()
                 },
@@ -630,7 +636,10 @@ fn setup(
                     .with_children(|parent| {
                         parent
                             .spawn(MaterialMeshBundle {
-                                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                                mesh: meshes.add(Mesh::from(shape::Plane {
+                                    size: 1.0,
+                                    ..default()
+                                })),
                                 material: video_materials.add(video_material),
                                 transform: Transform::from_rotation(Quat::from_euler(
                                     EulerRot::YXZ,
@@ -677,7 +686,7 @@ fn setup(
                             size: 3.,
                             ..default()
                         },
-                        visibility: Visibility { is_visible: false },
+                        visibility: Visibility::Hidden,
                         ..default()
                     })
                     .insert(Name::new("LookAt Coords"));
@@ -752,7 +761,10 @@ fn setup(
     };
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+            mesh: meshes.add(Mesh::from(shape::Plane {
+                size: 1.0,
+                ..default()
+            })),
             material: materials.add(rt_material),
             transform: Transform::from_xyz(-2.5, 0.5, -3.0)
                 .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
