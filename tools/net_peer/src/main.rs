@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
     window::PresentMode,
 };
-// use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::{quick::WorldInspectorPlugin};
 use simula_action::ActionPlugin;
 use simula_authority::{Minion, NetAuthorityPlugin, Worker};
 use simula_camera::flycam::*;
@@ -42,7 +42,7 @@ fn main() {
         )
         .add_plugin(NetPlugin)
         .add_plugin(NetAuthorityPlugin)
-        // .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(FlyCameraPlugin)

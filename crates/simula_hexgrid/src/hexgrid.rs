@@ -19,7 +19,7 @@ use bevy::{
         RenderApp, RenderSet,
     },
 };
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::{egui, EguiContexts};
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
 use simula_camera::orbitcam::*;
@@ -537,7 +537,7 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
 }
 
 pub fn ui_system_pathfinding_window(
-    mut egui_ctx: ResMut<EguiContext>,
+    mut egui_ctx: EguiContexts,
     mut node_start_end: ResMut<NodeStartEnd>,
     mut shortest_path: ResMut<ShortestPathBuilder>,
     mut calculate_path_event: EventWriter<CalculatePathEvent>,
@@ -560,7 +560,7 @@ pub fn ui_system_pathfinding_window(
 }
 
 fn pathfinding_window(
-    egui_ctx: &mut ResMut<EguiContext>,
+    egui_ctx: &mut EguiContexts,
     node_start_end: &mut ResMut<NodeStartEnd>,
     shortest_path: &mut ResMut<ShortestPathBuilder>,
     mut calculate_path_event: EventWriter<CalculatePathEvent>,
@@ -625,7 +625,7 @@ fn pathfinding_window(
 }
 
 pub fn ui_render_next_tiles(
-    mut egui_ctx: ResMut<EguiContext>,
+    mut egui_ctx: EguiContexts,
     render_path_event: EventWriter<RenderPathEvent>,
     shortest_path: ResMut<ShortestPathBuilder>,
 ) {
@@ -633,7 +633,7 @@ pub fn ui_render_next_tiles(
 }
 
 fn render_next_tiles(
-    egui_ctx: &mut ResMut<EguiContext>,
+    egui_ctx: &mut EguiContexts,
     mut render_path_event: EventWriter<RenderPathEvent>,
     mut shortest_path: ResMut<ShortestPathBuilder>,
 ) {

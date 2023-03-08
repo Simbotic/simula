@@ -7,7 +7,7 @@ use bevy::{
     window::PresentMode,
 };
 use bevy_egui::EguiPlugin;
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::{egui, EguiContexts};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::{flycam::*, orbitcam::*};
@@ -44,7 +44,7 @@ fn main() {
             ..default()
         }))
         .add_plugin(EguiPlugin)
-        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -417,7 +417,7 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
 
 fn video_control_window(
     mut commands: Commands,
-    mut egui_ctx: ResMut<EguiContext>,
+    mut egui_ctx: EguiContexts,
     mut video_sources: Query<(Entity, &mut VideoSrc, Option<&mut Visibility>)>,
     mut deleted_video_sources: ResMut<DeletedEntityVideoResource>,
 ) {
@@ -474,7 +474,8 @@ fn video_control_window(
                 .then(|| {
                     for (_, _, visible) in video_sources.iter_mut() {
                         if let Some(mut visible) = visible {
-                            match visible {
+                            let visible_match = visible.clone();
+                            match visible_match {
                                 Visibility::Visible => {
                                     *visible = Visibility::Hidden;
                                 }

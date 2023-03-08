@@ -36,7 +36,7 @@ fn main() {
             // mode: DebugRenderMode::COLLIDER_SHAPES,
             ..Default::default()
         })
-        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -46,10 +46,11 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(drop_box)
-        // .add_system_to_stage(
-        //     CoreStage::PostUpdate,
-        //     setup_scene_once_loaded.after(TransformSystem::TransformPropagate),
-        // )
+        .add_system(
+            setup_scene_once_loaded
+                .after(TransformSystem::TransformPropagate)
+                .in_base_set(CoreSet::PostUpdate),
+        )
         .run();
 }
 

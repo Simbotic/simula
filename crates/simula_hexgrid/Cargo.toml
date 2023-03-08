@@ -11,8 +11,7 @@ bevy = { version = "0.10", features = [
 	"zstd", 
 	"zlib",
 ] }
-# TODO: Temporal until bevy_egui is updated to bevy 0.10
-bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "bevy_main" }
+bevy_egui = "0.20.0"
 simula_camera = { path = "../../crates/simula_camera" }
 simula_core = { path = "../../crates/simula_core" }
 bytemuck = "1.12.3"

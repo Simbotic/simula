@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::{egui, EguiContexts};
 use simula_viz::follow_ui::{FollowUI, FollowUIVisibility};
 
 use crate::common::Robot;
@@ -8,7 +8,7 @@ use crate::common::Robot;
 pub struct RobotPanel;
 
 pub fn follow_ui<T>(
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<RobotPanel>>,
     robot_query: Query<(&Name, &T)>,
 ) where

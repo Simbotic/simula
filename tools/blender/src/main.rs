@@ -3,8 +3,9 @@ use bevy::{
     prelude::*,
     reflect::TypeUuid,
     render::render_resource::{AsBindGroup, ShaderRef},
+    window::PresentMode,
 };
-// use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::flycam::*;
 use simula_viz::{
@@ -33,7 +34,7 @@ fn main() {
             ..default()
         }))
         .add_plugin(MaterialPlugin::<FastMaterial>::default())
-        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(FlyCameraPlugin)

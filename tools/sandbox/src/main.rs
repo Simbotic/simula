@@ -6,7 +6,7 @@ use bevy::{
     render::view::{NoFrustumCulling, RenderLayers},
     window::PresentMode,
 };
-use bevy_egui::{egui, EguiContext, EguiPlugin};
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use enum_iterator::all;
 use monkey::MonkeyPlugin;
@@ -72,7 +72,7 @@ fn main() {
         .add_plugin(NetPlugin)
         .add_plugin(NetAuthorityPlugin)
         .add_plugin(EguiPlugin)
-        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -830,7 +830,7 @@ struct SandboxPanel;
 
 fn follow_ui(
     time: Res<Time>,
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     follow_uis: Query<(Entity, &FollowUI, &FollowUIVisibility), With<SandboxPanel>>,
 ) {
     for (entity, follow_ui, visibility) in follow_uis.iter() {

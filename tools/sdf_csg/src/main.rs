@@ -8,7 +8,7 @@ use bevy::{
     },
     window::PresentMode,
 };
-// use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_sdf::{
@@ -36,7 +36,7 @@ fn main() {
             }),
             ..default()
         }))
-        // .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)

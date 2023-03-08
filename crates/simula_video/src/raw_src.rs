@@ -64,7 +64,7 @@ pub(crate) fn setup_raw_srcs(
 pub(crate) fn setup_render_graph(app: &mut App) {
     let render_app = app
         .sub_app_mut(RenderApp)
-        .add_system(extract_raw_srcs.in_set(RenderSet::ExtractCommands))
+        .add_system(extract_raw_srcs.in_schedule(ExtractSchedule))
         .add_system(cleanup_raw_srcs.in_set(RenderSet::Cleanup));
 
     let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();

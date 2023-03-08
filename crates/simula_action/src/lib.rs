@@ -11,7 +11,7 @@ use bevy::{
     reflect::FromReflect,
     utils::{HashMap, HashSet},
 };
-use bevy_egui::{EguiContext, EguiSystem};
+use bevy_egui::{EguiContexts, EguiSet};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -36,20 +36,20 @@ impl Plugin for ActionPlugin {
             .register_type::<HashMap<MouseAxis, f32>>()
             .add_system(
                 keyboard_action_system
-                    .after(EguiSystem::ProcessInput)
-                    .before(EguiSystem::BeginFrame)
+                    .after(EguiSet::ProcessInput)
+                    .before(EguiSet::BeginFrame)
                     .in_base_set(CoreSet::PreUpdate),
             )
             .add_system(
                 mouse_button_action_system
-                    .after(EguiSystem::ProcessInput)
-                    .before(EguiSystem::BeginFrame)
+                    .after(EguiSet::ProcessInput)
+                    .before(EguiSet::BeginFrame)
                     .in_base_set(CoreSet::PreUpdate),
             )
             .add_system(
                 mouse_axis_system
-                    .after(EguiSystem::ProcessInput)
-                    .before(EguiSystem::BeginFrame)
+                    .after(EguiSet::ProcessInput)
+                    .before(EguiSet::BeginFrame)
                     .in_base_set(CoreSet::PreUpdate),
             )
             .add_startup_system(setup);
@@ -83,7 +83,7 @@ pub fn print_all_actions(
 }
 
 pub fn keyboard_action_system(
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     mut keyboard_input_events: EventReader<KeyboardInput>,
     mut keyboard_actions: Query<&mut Action<KeyCode>>,
 ) {
@@ -114,7 +114,7 @@ pub fn keyboard_action_system(
 }
 
 pub fn mouse_button_action_system(
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut mouse_button_actions: Query<&mut Action<MouseButton>>,
 ) {
@@ -140,7 +140,7 @@ pub fn mouse_button_action_system(
 const LINE_TO_PIXEL_RATIO: f32 = 0.1;
 
 pub fn mouse_axis_system(
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     mut mouse_motion_input_events: EventReader<MouseMotion>,
     mut mouse_wheel_input_events: EventReader<MouseWheel>,
     mut mouse_axis_actions: Query<&mut ActionAxis<MouseAxis>>,

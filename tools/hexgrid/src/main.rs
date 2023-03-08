@@ -3,8 +3,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use bevy::{prelude::*, render::view::NoFrustumCulling};
-// use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy::{prelude::*, render::view::NoFrustumCulling, window::PresentMode};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_core::prng::*;
@@ -12,7 +12,7 @@ use simula_hexgrid::hexgrid::*;
 
 fn main() {
     App::new()
-        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.125, 0.12, 0.13)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
@@ -25,7 +25,7 @@ fn main() {
             }),
             ..default()
         }))
-        // .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(HexgridPlugin)
         .add_plugin(ActionPlugin)
         .add_startup_system(hexgrid_setup)

@@ -3,6 +3,7 @@ use behaviors::movement::Movement;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
+    window::PresentMode,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use common::Robot;
@@ -70,18 +71,20 @@ fn main() {
     App::new()
         .register_type::<Movement>()
         .register_type::<MissionToken>()
-        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 title: "[Simbotic] Simula - Mission".to_string(),
-                width: 940.,
-                height: 528.,
+                resolution: (940., 528.).into(),
+                present_mode: PresentMode::AutoVsync,
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            },
+            }),
             ..default()
         }))
-        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -217,7 +220,10 @@ where
         .with_children(|parent| {
             parent
                 .spawn(MaterialMeshBundle {
-                    mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                    mesh: meshes.add(Mesh::from(shape::Plane {
+                        size: 1.0,
+                        ..default()
+                    })),
                     material: video_materials.add(video_material),
                     transform: Transform::from_rotation(Quat::from_euler(
                         EulerRot::YXZ,
