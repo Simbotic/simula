@@ -731,7 +731,10 @@ fn setup(
         };
         commands
             .spawn(MaterialMeshBundle {
-                mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                mesh: meshes.add(Mesh::from(shape::Plane {
+                    size: 1.0,
+                    ..default()
+                })),
                 material: video_materials.add(video_material),
                 transform: Transform::from_xyz(2.5, 0.5, -3.0)
                     .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
