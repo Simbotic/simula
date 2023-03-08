@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use simula_core::{
     ease::EaseFunction,
     map_range::{map_range, map_range_eased},
@@ -8,7 +8,7 @@ pub struct FollowUIPlugin;
 
 impl Plugin for FollowUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(CoreStage::PreUpdate, follow_ui);
+        app.add_system(follow_ui.in_base_set(CoreSet::PreUpdate));
     }
 }
 
@@ -47,7 +47,7 @@ impl Default for FollowUI {
 
 pub fn follow_ui(
     mut commands: Commands,
-    windows: Res<Windows>,
+    windows: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<(
         Entity,
         &FollowUI,
@@ -82,7 +82,7 @@ pub fn follow_ui(
                     camera.world_to_ndc(camera_global_transform, ui_global_transform.translation())
                 {
                     if screen_pos.z > 0.0 {
-                        if let Some(window) = windows.get_primary() {
+                        if let Ok(window) = windows.get_single() {
                             screen_pos.x =
                                 map_range(screen_pos.x, (-1.0, 1.0), (0.0, window.width()));
                             screen_pos.y =

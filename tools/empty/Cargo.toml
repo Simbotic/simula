@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.9" }
-bevy-inspector-egui = "0.17.0"
+bevy = { version = "0.10" }
+bevy-inspector-egui = "0.18.0"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }

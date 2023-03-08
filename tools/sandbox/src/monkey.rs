@@ -5,7 +5,7 @@ use simula_action::{
     AxisMapInput, AxisMapSource, MouseAxis,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemLabel)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
 pub struct MonkeyPlugin;
 
 impl Plugin for MonkeyPlugin {

@@ -134,7 +134,10 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
         .iter(world)
         .map(|(entity, src, visibility, computed_visibility)| {
             let visibility = if let Some(visibility) = visibility {
-                visibility.is_visible
+                match visibility {
+                    Visibility::Visible | Visibility::Inherited => true,
+                    Visibility::Hidden => false,
+                }
             } else {
                 true
             };
@@ -240,7 +243,7 @@ pub(crate) fn update_video_state(world: &mut World) {
 
 pub(crate) fn detect_video_removal(world: &mut World) {
     let removals = world.removed::<VideoSrc>();
-    let videos: Vec<Entity> = removals.to_owned().collect();
+    let videos: Vec<Entity> = removals.collect();
 
     for entity in videos {
         world.entity_mut(entity).remove::<VideoTag>();

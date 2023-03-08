@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Duncan <bonsairobo@gmail.com>", "Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [dependencies]
-bevy = "0.9"
+bevy = { version = "0.10" }
 static_assertions = "1.1"
 
 [dev-dependencies]

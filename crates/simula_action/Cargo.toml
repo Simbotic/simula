@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.9", features = ["serialize"] }
-bevy_egui = "0.19.0"
+bevy = { version = "0.10", features = ["serialize"] }
+bevy_egui = "0.20.0"
 simula_core = { path = "../../crates/simula_core" }
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.7.1"

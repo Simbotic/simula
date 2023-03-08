@@ -2,6 +2,7 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
     transform::TransformSystem,
+    window::PresentMode,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
@@ -17,15 +18,17 @@ use std::time::Duration;
 
 fn main() {
     App::new()
-        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 title: "[Simbotic] Simula - Character Physics".to_string(),
-                width: 1920.,
-                height: 1080.,
+                resolution: (1920., 1080.).into(),
+                present_mode: PresentMode::AutoVsync,
+                fit_canvas_to_parent: true,
+                prevent_default_event_handling: false,
                 ..default()
-            },
+            }),
             ..default()
         }))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
@@ -33,7 +36,7 @@ fn main() {
             // mode: DebugRenderMode::COLLIDER_SHAPES,
             ..Default::default()
         })
-        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -43,9 +46,10 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(drop_box)
-        .add_system_to_stage(
-            CoreStage::PostUpdate,
-            setup_scene_once_loaded.after(TransformSystem::TransformPropagate),
+        .add_system(
+            setup_scene_once_loaded
+                .after(TransformSystem::TransformPropagate)
+                .in_base_set(CoreSet::PostUpdate),
         )
         .run();
 }

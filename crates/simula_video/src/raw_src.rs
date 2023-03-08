@@ -3,7 +3,7 @@ use bevy::{
     render::{
         camera::RenderTarget, main_graph::node::CAMERA_DRIVER, render_asset::RenderAssets,
         render_graph::RenderGraph, render_resource::*, renderer::RenderDevice, Extract, RenderApp,
-        RenderStage,
+        RenderSet,
     },
 };
 use crossbeam_channel::{bounded, Receiver, Sender};
@@ -64,13 +64,13 @@ pub(crate) fn setup_raw_srcs(
 pub(crate) fn setup_render_graph(app: &mut App) {
     let render_app = app
         .sub_app_mut(RenderApp)
-        .add_system_to_stage(RenderStage::Extract, extract_raw_srcs)
-        .add_system_to_stage(RenderStage::Cleanup, cleanup_raw_srcs);
+        .add_system(extract_raw_srcs.in_schedule(ExtractSchedule))
+        .add_system(cleanup_raw_srcs.in_set(RenderSet::Cleanup));
 
     let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
     graph.add_node(NODE_NAME, RawSrcNode::default());
-    graph.add_node_edge(CAMERA_DRIVER, NODE_NAME).unwrap();
+    graph.add_node_edge(CAMERA_DRIVER, NODE_NAME);
 }
 
 pub(crate) fn process_raw_srcs(mut srcs: Query<(&RawBuffer, &mut RawSrc)>) {
@@ -163,7 +163,7 @@ impl bevy::render::render_graph::Node for RawSrcNode {
                         * format.block_size as usize,
                 );
 
-                render_context.command_encoder.copy_texture_to_buffer(
+                render_context.command_encoder().copy_texture_to_buffer(
                     src_image.texture.as_image_copy(),
                     ImageCopyBuffer {
                         buffer: &src.buffer,

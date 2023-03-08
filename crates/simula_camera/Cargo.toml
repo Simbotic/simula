@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.9" }
+bevy = { version = "0.10" }
 simula_action = { path = "../../crates/simula_action" }
 
 [lib]

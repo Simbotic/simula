@@ -77,8 +77,8 @@ impl Plugin for NetPlugin {
             .register_type::<Proxy>()
             .register_type::<PeerId>()
             .register_type::<NetId>()
-            .add_system_to_stage(CoreStage::PreUpdate, extract_messages)
-            .add_system_to_stage(CoreStage::PostUpdate, cleanup_proxies)
+            .add_system(extract_messages.in_base_set(CoreSet::PreUpdate))
+            .add_system(cleanup_proxies.in_base_set(CoreSet::PostUpdate))
             .add_startup_system(setup)
             .add_system(run);
     }

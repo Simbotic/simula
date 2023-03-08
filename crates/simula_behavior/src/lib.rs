@@ -103,9 +103,10 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Succeeder>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
-            .add_system_to_stage(
-                CoreStage::PostUpdate,
-                update_added_behavior.pipe(complete_behavior.pipe(start_behavior)),
+            .add_system(
+                update_added_behavior
+                    .pipe(complete_behavior.pipe(start_behavior))
+                    .in_base_set(CoreSet::PostUpdate),
             )
             .add_system(sequencer::run)
             .add_system(selector::run)

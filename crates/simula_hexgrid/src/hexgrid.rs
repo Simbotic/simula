@@ -1,7 +1,6 @@
 use crate::pathfinding::*;
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
-    //core_pipeline::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
     math::prelude::*,
     pbr::{MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup, SetMeshViewBindGroup},
@@ -10,19 +9,17 @@ use bevy::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         mesh::{GpuBufferInfo, MeshVertexBufferLayout},
         render_asset::RenderAssets,
-        //render_component::{ExtractComponent, ExtractComponentPlugin},
         render_phase::{
-            AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase,
-            SetItemPipeline, TrackedRenderPass,
+            AddRenderCommand, DrawFunctions, PhaseItem, RenderCommand, RenderCommandResult,
+            RenderPhase, SetItemPipeline, TrackedRenderPass,
         },
         render_resource::*,
         renderer::RenderDevice,
         view::{ComputedVisibility, ExtractedView, Msaa, NoFrustumCulling, Visibility},
-        RenderApp,
-        RenderStage,
+        RenderApp, RenderSet,
     },
 };
-use bevy_inspector_egui::{bevy_egui::EguiContext, *};
+use bevy_egui::{egui, EguiContexts};
 use bytemuck::{Pod, Zeroable};
 use rand::prelude::*;
 use simula_camera::orbitcam::*;
@@ -202,7 +199,7 @@ pub fn hexgrid_viewer(
                             })
                             .collect(),
                     ),
-                    Visibility { is_visible: false },
+                    Visibility::Hidden,
                     ComputedVisibility::default(),
                     NoFrustumCulling,
                 ))
@@ -260,7 +257,7 @@ pub fn hexgrid_rebuilder(
                             })
                             .collect(),
                     ),
-                    Visibility { is_visible: false },
+                    Visibility::Hidden,
                     ComputedVisibility::default(),
                     NoFrustumCulling,
                 ))
@@ -323,7 +320,7 @@ pub fn select_tile(
                 for mut visibility in tile_visibility.iter_mut() {
                     for ent_despawn in despawn_tile_objects.iter() {
                         for ent in hex_tile_objects.iter() {
-                            visibility.is_visible = true;
+                            *visibility = Visibility::Visible;
                             commands
                                 .entity(ent)
                                 .insert(HexagonTiles)
@@ -342,9 +339,10 @@ pub struct HexgridData(pub Vec<HexData>);
 impl ExtractComponent for HexgridData {
     type Query = &'static HexgridData;
     type Filter = ();
+    type Out = Self;
 
-    fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Self {
-        HexgridData(item.0.clone())
+    fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Option<Self::Out> {
+        Some(HexgridData(item.0.clone()))
     }
 }
 
@@ -357,8 +355,8 @@ impl Plugin for HexgridMaterialPlugin {
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<HexgridPipeline>()
             .init_resource::<SpecializedMeshPipelines<HexgridPipeline>>()
-            .add_system_to_stage(RenderStage::Queue, queue_hexgrids)
-            .add_system_to_stage(RenderStage::Prepare, prepare_hexgrids);
+            .add_system(queue_hexgrids.in_set(RenderSet::Queue))
+            .add_system(prepare_hexgrids.in_set(RenderSet::Prepare));
     }
 }
 
@@ -389,7 +387,7 @@ fn queue_hexgrids(
         .get_id::<DrawCustom>()
         .unwrap();
 
-    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples);
+    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
 
     for (view, mut transparent_phase) in views.iter_mut() {
         let view_matrix = view.transform.compute_matrix();
@@ -484,10 +482,6 @@ impl SpecializedMeshPipeline for HexgridPipeline {
             ],
         });
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
-        descriptor.layout = Some(vec![
-            self.mesh_pipeline.view_layout.clone(),
-            self.mesh_pipeline.mesh_layout.clone(),
-        ]);
 
         Ok(descriptor)
     }
@@ -501,22 +495,18 @@ type DrawCustom = (
 );
 
 pub struct DrawMeshInstanced;
-impl EntityRenderCommand for DrawMeshInstanced {
-    type Param = (
-        SRes<RenderAssets<Mesh>>,
-        SQuery<Read<Handle<Mesh>>>,
-        SQuery<Read<InstanceBuffer>>,
-    );
+impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
+    type Param = SRes<RenderAssets<Mesh>>;
+    type ViewWorldQuery = ();
+    type ItemWorldQuery = (Read<Handle<Mesh>>, Read<InstanceBuffer>);
     #[inline]
     fn render<'w>(
-        _view: Entity,
-        item: Entity,
-        (meshes, mesh_query, instance_buffer_query): SystemParamItem<'w, '_, Self::Param>,
+        _item: &P,
+        _view: (),
+        (mesh_handle, instance_buffer): (&'w Handle<Mesh>, &'w InstanceBuffer),
+        meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let mesh_handle = mesh_query.get(item).unwrap();
-        let instance_buffer = instance_buffer_query.get_inner(item).unwrap();
-
         let gpu_mesh = match meshes.into_inner().get(mesh_handle) {
             Some(gpu_mesh) => gpu_mesh,
             None => return RenderCommandResult::Failure,
@@ -543,7 +533,7 @@ impl EntityRenderCommand for DrawMeshInstanced {
 }
 
 pub fn ui_system_pathfinding_window(
-    mut egui_ctx: ResMut<EguiContext>,
+    mut egui_ctx: EguiContexts,
     mut node_start_end: ResMut<NodeStartEnd>,
     mut shortest_path: ResMut<ShortestPathBuilder>,
     mut calculate_path_event: EventWriter<CalculatePathEvent>,
@@ -566,7 +556,7 @@ pub fn ui_system_pathfinding_window(
 }
 
 fn pathfinding_window(
-    egui_ctx: &mut ResMut<EguiContext>,
+    egui_ctx: &mut EguiContexts,
     node_start_end: &mut ResMut<NodeStartEnd>,
     shortest_path: &mut ResMut<ShortestPathBuilder>,
     mut calculate_path_event: EventWriter<CalculatePathEvent>,
@@ -631,7 +621,7 @@ fn pathfinding_window(
 }
 
 pub fn ui_render_next_tiles(
-    mut egui_ctx: ResMut<EguiContext>,
+    mut egui_ctx: EguiContexts,
     render_path_event: EventWriter<RenderPathEvent>,
     shortest_path: ResMut<ShortestPathBuilder>,
 ) {
@@ -639,7 +629,7 @@ pub fn ui_render_next_tiles(
 }
 
 fn render_next_tiles(
-    egui_ctx: &mut ResMut<EguiContext>,
+    egui_ctx: &mut EguiContexts,
     mut render_path_event: EventWriter<RenderPathEvent>,
     mut shortest_path: ResMut<ShortestPathBuilder>,
 ) {

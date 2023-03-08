@@ -100,7 +100,10 @@ pub fn bank_spawner(
                 .with_children(|parent| {
                     parent
                         .spawn(MaterialMeshBundle {
-                            mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+                            mesh: meshes.add(Mesh::from(shape::Plane {
+                                size: 1.0,
+                                ..default()
+                            })),
                             material: material_handle,
                             transform: Transform::from_rotation(Quat::from_euler(
                                 EulerRot::YXZ,

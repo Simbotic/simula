@@ -1,9 +1,6 @@
 use crate::{inspector::BehaviorInspectorNode, BehaviorTree};
-use bevy::prelude::*;
-use bevy_inspector_egui::{
-    bevy_egui::{self},
-    egui,
-};
+use bevy::{ecs::system::SystemState, prelude::*};
+use bevy_inspector_egui::{bevy_egui::EguiContexts, egui};
 
 use super::node::behavior_inspector_node_ui;
 
@@ -53,11 +50,12 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
 }
 
 pub fn behavior_inspector_ui(world: &mut World) {
-    let mut egui_context = world.resource_mut::<bevy_egui::EguiContext>().clone();
     let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
-    let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
+    let behavior_inspector = world.resource::<BehaviorInspector>().clone();
+    let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
+    let context = system_state.get_mut(world).ctx_mut().clone();
 
-    egui::Window::new("Behavior Inspector").show(egui_context.ctx_mut(), |ui| {
+    egui::Window::new("Behavior Inspector").show(&context, |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
