@@ -482,10 +482,6 @@ impl SpecializedMeshPipeline for HexgridPipeline {
             ],
         });
         descriptor.fragment.as_mut().unwrap().shader = self.shader.clone();
-        descriptor.layout = vec![
-            self.mesh_pipeline.view_layout.clone(),
-            self.mesh_pipeline.mesh_layout.clone(),
-        ];
 
         Ok(descriptor)
     }
