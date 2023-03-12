@@ -1,0 +1,11 @@
+[package]
+name = "simula_cognition"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.10"
+
+simula_core = { path = "../../crates/simula_core" }
+
+[dev-dependencies]

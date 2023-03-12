@@ -1,0 +1,87 @@
+- id: greeting
+  text: "Hello! How can I help you today?"
+  choices:
+    - choice: "I want to buy something."
+      next_id: "buy_something"
+    - choice: "I have a question."
+      next_id: "ask_question"
+
+- id: buy_something
+  text: "What would you like to buy?"
+  choices:
+    - choice: "A book."
+      next_id: "buy_book"
+    - choice: "A movie."
+      next_id: "buy_movie"
+
+- id: ask_question
+  text: "What is your question?"
+  choices:
+    - choice: "Can you help me with my computer?"
+      next_id: "help_with_computer"
+    - choice: "Do you know the time?"
+      next_id: "tell_time"
+
+- id: buy_book
+  text: "Great choice! Which book do you want to buy?"
+  choices:
+    - choice: "Harry Potter and the Philosopher's Stone"
+      next_id: "harry_potter"
+    - choice: "To Kill a Mockingbird"
+      next_id: "mockingbird"
+
+- id: buy_movie
+  text: "Excellent! Which movie do you want to buy?"
+  choices:
+    - choice: "The Godfather"
+      next_id: "godfather"
+    - choice: "Star Wars: A New Hope"
+      next_id: "star_wars"
+
+- id: help_with_computer
+  text: "What kind of help do you need with your computer?"
+  choices:
+    - choice: "My computer won't turn on."
+      next_id: "computer_wont_turn_on"
+    - choice: "My computer is running slow."
+      next_id: "computer_running_slow"
+
+- id: tell_time
+  text: "The time is currently 2:30pm. Is there anything else you need help with?"
+  choices:
+    - choice: "Yes, I have another question."
+      next_id: "ask_question"
+    - choice: "No, that's all. Thanks!"
+      next_id: "exit"
+
+- id: harry_potter
+  text: "Harry Potter and the Philosopher's Stone costs $10. Would you like to buy it?"
+  choices:
+    - choice: "Yes"
+      next_id: "exit"
+    - choice: "No"
+      next_id: "exit"
+
+- id: mockingbird
+  text: "To Kill a Mockingbird costs $12. Would you like to buy it?"
+  choices:
+    - choice: "Yes"
+      next_id: "exit"
+    - choice: "No"
+      next_id: "exit"
+
+- id: godfather
+  text: "The Godfather costs $15. Would you like to buy it?"
+  choices:
+    - choice: "Yes"
+      next_id: "exit"
+    - choice: "No"
+      next_id: "exit"
+
+- id: star_wars
+  text: "Star Wars: A New Hope costs $20. Would you like to buy it?"
+  choices:
+    - choice: "Yes"
+      next_id: "exit"
+    - choice: "No"
+      next_id: "exit"
