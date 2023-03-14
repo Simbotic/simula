@@ -1,9 +1,13 @@
+import uuid
+import os
 import bpy
 
 module = bpy.data.texts["module.py"].as_module()
 module.require("aiohttp")
+module.require("aiohttp_cors")
 
 import asyncio
+import aiohttp_cors
 from aiohttp import web
 
 async def handle(request):
@@ -76,18 +80,72 @@ async def material(request):
     else:
         return web.json_response({"error": f"Material '{material_name}' not found"}, status=404)
 
+async def texts(request):
+    text_list = [{"name": text.name, "id": text.as_pointer()} for text in bpy.data.texts]
+    return web.json_response({"texts": text_list})
 
-#async def material(request):
-#    material_name = request.match_info.get('material_name')
-#    mat = bpy.data.materials.get(material_name)
-#    if mat:
-#        response_json = {"material": {"name": mat.name, "id": mat.as_pointer()}}
-#        return web.json_response(response_json)
-#    else:
-#        return web.json_response({"error": f"Material '{material_name}' not found"}, status=404)
+async def run_script(request):
+    script_name = request.match_info.get('script_name')
+    script = bpy.data.texts.get(script_name)
+    if script:
+        override = bpy.context.copy()
+        override["edit_text"] = script
+        try:
+            with bpy.context.temp_override(**override):
+                bpy.ops.text.run_script()
+        except Exception as e:
+            print(e)
+            return web.json_response({"error": f"Error while running Text '{script_name}'. Check the system console for error output"}, status=500)
+        response_json = {
+            "script": script_name,
+            "status": "Success"
+        }
+        return web.json_response(response_json)
+    else:
+        return web.json_response({"error": f"Text '{script_name}' not found"}, status=404)
+    
+async def export_scene(request):
+    scene = bpy.context.scene
+    bpy.context.view_layer.objects.active = scene.objects[0]
+    bpy.ops.object.select_all(action='SELECT')
+
+    blend_file_path = bpy.data.filepath
+    folder_path = os.path.dirname(blend_file_path)
+
+    export_folder_path = os.path.join(folder_path, "models")
+    if not os.path.exists(export_folder_path):
+        os.makedirs(export_folder_path)
+
+    file_name = "model-" + str(uuid.uuid4())
+
+    export_path = os.path.join(export_folder_path, file_name + ".gltf")
+
+    bpy.ops.export_scene.gltf(filepath=export_path,
+                                check_existing=False,
+                                export_format='GLTF_EMBEDDED',
+                                export_tangents=True,
+                                export_colors=True,
+                                export_materials='EXPORT',
+                                use_selection=True,
+                                export_apply=True,
+                                export_cameras=False,
+                                export_frame_step=1,
+                                export_animations=False,
+                                export_lights=False)
+
+    bpy.ops.object.select_all(action='DESELECT')
+    
+    return web.json_response({"file_name": file_name})
 
 async def init_app():
     app = web.Application()
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*"
+        )
+    })
     app.add_routes([
         web.get('/version', version),
         web.get('/objects', objects),
@@ -96,8 +154,14 @@ async def init_app():
         web.get('/collection/{collection_name}', collection_objects),
         web.get('/materials', materials),
         web.get('/material/{material_name}', material),
+        web.get('/texts', texts),
+        web.post('/run_script/{script_name}', run_script),
+        web.post('/export_scene', export_scene),
         web.get('/{name}', handle),
     ])
+    
+    for route in list(app.router.routes()):
+        cors.add(route)
     return app
 
 def tick_server():
