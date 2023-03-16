@@ -13,6 +13,7 @@ use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::LinesPlugin,
+    rod::{Rod, RodMesh},
 };
 use std::time::Duration;
 
@@ -55,6 +56,25 @@ fn main() {
 }
 
 fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, asset_server: Res<AssetServer>) {
+    // rod as bone example
+    let rod = Rod {
+        depth: 0.3,
+        north_radius: 0.1,
+        south_radius: 0.2,
+        ..Default::default()
+    };
+    let rod_mesh: RodMesh = rod.into();
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(rod_mesh.mesh),
+            material: asset_server.load("materials/rod.mat"),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..Default::default()
+        })
+        .insert(RigidBody::KinematicPositionBased)
+        .insert(Collider::cylinder(0.1, 0.5))
+        .insert(Name::new("Rod"));
+
     // character
     commands
         .spawn(SceneBundle {
@@ -193,6 +213,8 @@ struct Animations(Vec<Handle<AnimationClip>>);
 
 fn setup_scene_once_loaded(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     animations: Res<Animations>,
     mut player: Query<(Entity, &mut AnimationPlayer)>,
     names: Query<&Name>,
@@ -205,33 +227,6 @@ fn setup_scene_once_loaded(
         if let Ok((anim_entity, mut player)) = player.get_single_mut() {
             print_hierarchy(anim_entity, &names, &children_query, 0);
 
-            // let mut ragdoll = Entity::default();
-
-            // commands.entity(anim_entity).with_children(|parent| {
-            //     ragdoll = parent.spawn(SpatialBundle {
-            //         ..Default::default()
-            //     }).id();
-            // });
-
-            // if let Ok(parent_anim) = parent_query.get(anim_entity) {
-            //     commands.entity(anim_entity).with_children(|parent| {
-            //         let ragdoll = parent
-            //             .spawn(SpatialBundle {
-            //                 ..Default::default()
-            //             })
-            //             .id();
-
-            //         create_ragdoll(
-            //             &mut commands,
-            //             ragdoll,
-            //             anim_entity,
-            //             anim_entity,
-            //             &global_transforms,
-            //             &names,
-            //             &children_query,
-            //         );
-            //     });
-
             let ragdoll = commands
                 .spawn(SpatialBundle {
                     ..Default::default()
@@ -241,6 +236,17 @@ fn setup_scene_once_loaded(
             create_ragdoll(
                 &mut commands,
                 ragdoll,
+                anim_entity,
+                anim_entity,
+                &global_transforms,
+                &names,
+                &children_query,
+            );
+
+            create_skeleton(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
                 anim_entity,
                 anim_entity,
                 &global_transforms,
@@ -360,6 +366,8 @@ fn create_ragdoll(
 
 fn create_skeleton(
     commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
     root: Entity,
     bone: Entity,
     global_transforms: &Query<&GlobalTransform>,
@@ -429,15 +437,33 @@ fn create_skeleton(
         };
 
         if count > 0 {
+            println!("{}: {} {}", bone_name, bone_length, bone_radius);
             commands.entity(bone).with_children(|parent| {
-                parent.spawn((
-                    Transform::from_translation(bone_end / 2.0),
-                    GlobalTransform::default(),
-                    RigidBody::KinematicPositionBased,
-                    Collider::round_cylinder(bone_length / 2.0, bone_radius, bone_radius * 1.0),
-                    ColliderDebugColor(Color::rgb(0.0, 1.0, 0.0)),
-                    Name::new(format!("collider:{}", bone_name)),
-                ));
+                // create bone using RodMesh
+                let rod = Rod {
+                    depth: bone_length,
+                    north_radius: bone_radius * 0.1,
+                    south_radius: bone_radius * 1.0,
+                    ..Default::default()
+                };
+                let rod_mesh: RodMesh = rod.into();
+                parent
+                    .spawn(PbrBundle {
+                        mesh: meshes.add(rod_mesh.mesh),
+                        transform: Transform::from_xyz(0.0, bone_length * 0.5, 0.0),
+                        material: materials.add(Color::rgb(1.0, 0.5, 0.3).into()),
+                        ..Default::default()
+                    })
+                    .insert(Name::new("Rod"));
+
+                // parent.spawn((
+                //     Transform::from_translation(bone_end / 2.0),
+                //     GlobalTransform::default(),
+                //     RigidBody::KinematicPositionBased,
+                //     Collider::round_cylinder(bone_length / 2.0, bone_radius, bone_radius * 1.0),
+                //     ColliderDebugColor(Color::rgb(0.0, 1.0, 0.0)),
+                //     Name::new(format!("skeleton_bone:{}", bone_name)),
+                // ));
             });
         }
     }
@@ -447,6 +473,8 @@ fn create_skeleton(
         for child in children.iter() {
             create_skeleton(
                 commands,
+                meshes,
+                materials,
                 root,
                 *child,
                 global_transforms,
