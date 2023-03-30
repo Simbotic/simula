@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy::reflect::FromReflect;
 use bevy::render::camera::Camera;
+use simula_action::touch::TouchSide;
 use simula_action::{
-    action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
-    AxisMapInput, AxisMapSource, MouseAxis,
+    action_axis_map, action_map, touch::TouchAxis, Action, ActionAxis, ActionAxisMap, ActionMap,
+    ActionMapInput, AxisMapInput, AxisMapSource, MouseAxis,
 };
 use std::ops::RangeInclusive;
 
@@ -194,6 +195,13 @@ fn setup(
                 shift: false,
                 alt: false,
             },
+            ActionMapInput {
+                action: OrbitCameraMode::Orbit,
+                button: TouchSide::Left.into(),
+                ctrl: false,
+                shift: false,
+                alt: false,
+            },
             // Pan Mode
             ActionMapInput {
                 action: OrbitCameraMode::Pan,
@@ -226,6 +234,13 @@ fn setup(
             ActionMapInput {
                 action: OrbitCameraMode::Pan,
                 button: MouseButton::Right.into(),
+                ctrl: false,
+                shift: false,
+                alt: false,
+            },
+            ActionMapInput {
+                action: OrbitCameraMode::Pan,
+                button: TouchSide::Right.into(),
                 ctrl: false,
                 shift: false,
                 alt: false,
@@ -277,6 +292,15 @@ fn setup(
             AxisMapInput {
                 axis: OrbitCameraMotion::Zoom,
                 source: AxisMapSource::MouseAxis(MouseAxis::Z),
+            },
+            // Touch
+            AxisMapInput {
+                axis: OrbitCameraMotion::Right,
+                source: AxisMapSource::TouchAxis(TouchAxis::X),
+            },
+            AxisMapInput {
+                axis: OrbitCameraMotion::Up,
+                source: AxisMapSource::TouchAxis(TouchAxis::Y),
             },
         ];
 

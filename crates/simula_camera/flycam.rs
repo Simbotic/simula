@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 use bevy::reflect::FromReflect;
 use simula_action::{
-    action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
-    AxisMapInput, AxisMapSource, MouseAxis,
+    action_axis_map, action_map,
+    touch::{TouchAxis, TouchSide},
+    Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput, AxisMapInput, AxisMapSource,
+    MouseAxis,
 };
 
 #[derive(Component, Reflect)]
@@ -182,13 +184,22 @@ fn setup(
 ) {
     for entity in cameras.iter() {
         let mut action_map = ActionMap::<FlyCameraMode>::default();
-        *action_map = vec![ActionMapInput {
-            action: FlyCameraMode::Look,
-            button: MouseButton::Left.into(),
-            ctrl: false,
-            shift: false,
-            alt: false,
-        }];
+        *action_map = vec![
+            ActionMapInput {
+                action: FlyCameraMode::Look,
+                button: MouseButton::Left.into(),
+                ctrl: false,
+                shift: false,
+                alt: false,
+            },
+            ActionMapInput {
+                action: FlyCameraMode::Look,
+                button: TouchSide::Left.into(),
+                ctrl: false,
+                shift: false,
+                alt: false,
+            },
+        ];
         let mut axis_map: ActionAxisMap<FlyCameraMotion> = Default::default();
         *axis_map = vec![
             // Up/Down
@@ -213,6 +224,15 @@ fn setup(
                     positive: KeyCode::A,
                     negative: KeyCode::D,
                 },
+            },
+            // Touch
+            AxisMapInput {
+                axis: FlyCameraMotion::Forward,
+                source: AxisMapSource::TouchAxis(TouchAxis::Y),
+            },
+            AxisMapInput {
+                axis: FlyCameraMotion::Strafe,
+                source: AxisMapSource::TouchAxis(TouchAxis::X),
             },
             // Mouse X Y
             AxisMapInput {
