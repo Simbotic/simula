@@ -115,12 +115,12 @@ impl Plugin for TouchPlugin {
             .register_type::<HashSet<Touch>>()
             .register_type::<HashMap<TouchAxis, f32>>()
             .register_type::<FingersOnScreen>()
-            .init_resource::<FingersOnScreen>();
-        // .add_systems(
-        //     (touch_system, touch_axis_system)
-        //         .after(EguiSet::ProcessInput)
-        //         .before(EguiSet::BeginFrame)
-        //         .in_base_set(CoreSet::PreUpdate),
-        // );
+            .init_resource::<FingersOnScreen>()
+            .add_systems(
+                (touch_system, touch_axis_system)
+                    .after(EguiSet::ProcessInput)
+                    .before(EguiSet::BeginFrame)
+                    .in_base_set(CoreSet::PreUpdate),
+            );
     }
 }

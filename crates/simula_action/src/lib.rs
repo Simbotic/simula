@@ -14,12 +14,10 @@ use bevy::{
 use bevy_egui::{EguiContexts, EguiSet};
 use std::fmt::Debug;
 use std::hash::Hash;
-use touch::*;
 use touch_sides::*;
 
 pub mod action;
 pub mod axis;
-pub mod touch;
 pub mod touch_sides;
 
 #[derive(Default, Component, Reflect)]
@@ -38,7 +36,6 @@ impl Plugin for ActionPlugin {
             .register_type::<HashSet<KeyCode>>()
             .register_type::<HashSet<MouseButton>>()
             .register_type::<HashMap<MouseAxis, f32>>()
-            .add_plugin(TouchPlugin)
             .add_plugin(TouchSidesPlugin)
             .add_system(
                 keyboard_action_system
@@ -69,8 +66,6 @@ fn setup(mut commands: Commands) {
         .insert(Action::<KeyCode>::default())
         .insert(Action::<MouseButton>::default())
         .insert(ActionAxis::<MouseAxis>::default())
-        // .insert(Action::<Touch>::default())
-        // .insert(ActionAxis::<TouchAxis>::default())
         .insert(Action::<TouchSide>::default())
         .insert(ActionAxis::<TouchSideAxis>::default())
         .insert(Name::new("Main: Action Input"));
@@ -80,7 +75,6 @@ pub fn print_all_actions(
     keyboard_actions: Query<&Action<KeyCode>>,
     mouse_button_actions: Query<&Action<MouseButton>>,
     mouse_axis_actions: Query<&ActionAxis<MouseAxis>>,
-    touch_actions: Query<&Action<Touch>>,
     touch_axis_actions: Query<&ActionAxis<TouchSideAxis>>,
     touch_side_actions: Query<&Action<TouchSide>>,
 ) {
@@ -91,9 +85,6 @@ pub fn print_all_actions(
         info!("{:?}", action);
     }
     for action in mouse_axis_actions.iter() {
-        info!("{:?}", action);
-    }
-    for action in touch_actions.iter() {
         info!("{:?}", action);
     }
     for action in touch_axis_actions.iter() {
@@ -203,7 +194,6 @@ pub enum ActionMapButton {
     Keyboard(KeyCode),
     MouseButton(MouseButton),
     Gamepad(Gamepad, GamepadButton),
-    Touch(Touch),
     TouchSide(TouchSide),
 }
 
@@ -216,12 +206,6 @@ impl From<KeyCode> for ActionMapButton {
 impl From<MouseButton> for ActionMapButton {
     fn from(button: MouseButton) -> Self {
         ActionMapButton::MouseButton(button)
-    }
-}
-
-impl From<Touch> for ActionMapButton {
-    fn from(touch: Touch) -> Self {
-        ActionMapButton::Touch(touch)
     }
 }
 
@@ -255,7 +239,6 @@ where
 pub fn action_map<T, W>(
     keyboard_actions: Query<&Action<KeyCode>, With<MainActionInput>>,
     mouse_button_actions: Query<&Action<MouseButton>, With<MainActionInput>>,
-    // touch_actions: Query<&Action<Touch>, With<MainActionInput>>,
     touch_side_actions: Query<&Action<TouchSide>, With<MainActionInput>>,
     mut actions: Query<&mut Action<T>, With<W>>,
     action_maps: Query<&ActionMap<T>, With<W>>,
@@ -265,7 +248,6 @@ pub fn action_map<T, W>(
 {
     let keyboard_action = keyboard_actions.single();
     let mouse_button_action = mouse_button_actions.single();
-    // let touch_action = touch_actions.single();
     let touch_side_action = touch_side_actions.single();
 
     for mut action in actions.iter_mut() {
@@ -312,15 +294,6 @@ pub fn action_map<T, W>(
                                 wants_on.insert(action_map_input.action);
                             }
                         }
-                        // ActionMapButton::Touch(touch) => {
-                        //     if touch_action.on_enter(touch) {
-                        //         if !action.on(action_map_input.action) {
-                        //             action.enter(action_map_input.action);
-                        //         }
-                        //     } else if touch_action.on(touch) {
-                        //         wants_on.insert(action_map_input.action);
-                        //     }
-                        // }
                         ActionMapButton::TouchSide(touch_side) => {
                             if touch_side_action.on_enter(touch_side) {
                                 if !action.on(action_map_input.action) {
@@ -348,11 +321,6 @@ pub fn action_map<T, W>(
                             wants_exit.insert(action_map_input.action);
                         }
                     }
-                    // ActionMapButton::Touch(touch) => {
-                    //     if touch_action.on_exit(touch) && action.on(action_map_input.action) {
-                    //         wants_exit.insert(action_map_input.action);
-                    //     }
-                    // }
                     ActionMapButton::TouchSide(touch_side) => {
                         if touch_side_action.on_exit(touch_side)
                             && action.on(action_map_input.action)
@@ -388,7 +356,6 @@ pub enum AxisMapSource {
     },
     MouseAxis(MouseAxis),
     GamepadAxis(Gamepad, GamepadAxis),
-    // TouchAxis(TouchAxis),
     TouchSideAxis(TouchSideAxis),
 }
 
@@ -397,12 +364,6 @@ impl From<MouseAxis> for AxisMapSource {
         AxisMapSource::MouseAxis(axis)
     }
 }
-
-// impl From<TouchAxis> for AxisMapSource {
-//     fn from(axis: TouchAxis) -> AxisMapSource {
-//         AxisMapSource::TouchAxis(axis)
-//     }
-// }
 
 impl From<TouchSideAxis> for AxisMapSource {
     fn from(side_axis: TouchSideAxis) -> AxisMapSource {
@@ -431,7 +392,6 @@ where
 pub fn action_axis_map<T, W>(
     keyboard_actions: Query<&Action<KeyCode>, With<MainActionInput>>,
     mouse_axis_actions: Query<&ActionAxis<MouseAxis>, With<MainActionInput>>,
-    // touch_axis_actions: Query<&ActionAxis<TouchAxis>, With<MainActionInput>>,
     touch_side_axis_actions: Query<&ActionAxis<TouchSideAxis>, With<MainActionInput>>,
     mut axes: Query<&mut ActionAxis<T>, With<W>>,
     axis_maps: Query<&ActionAxisMap<T>, With<W>>,
@@ -441,7 +401,6 @@ pub fn action_axis_map<T, W>(
 {
     let keyboard_action = keyboard_actions.single();
     let mouse_axis_action = mouse_axis_actions.single();
-    // let touch_axis_action = touch_axis_actions.single();
     let touch_side_axis_action = touch_side_axis_actions.single();
 
     for mut axis in axes.iter_mut() {
@@ -465,11 +424,6 @@ pub fn action_axis_map<T, W>(
                             value += mouse_value;
                         }
                     }
-                    // AxisMapSource::TouchAxis(touch_axis) => {
-                    //     if let Some(touch_value) = touch_axis_action.get(touch_axis) {
-                    //         value += touch_value;
-                    //     }
-                    // }
                     AxisMapSource::TouchSideAxis(touch_side_axis) => {
                         if let Some(touch_side_value) = touch_side_axis_action.get(touch_side_axis)
                         {
