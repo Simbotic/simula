@@ -85,7 +85,7 @@ pub fn touch_axis_system(
     mut touch_axis_actions: Query<&mut ActionAxis<TouchAxis>>,
 ) {
     if egui_context.ctx_mut().wants_pointer_input() {
-        info!("Egui wants pointer input");
+        debug!("Egui wants pointer input");
         return;
     }
     let mut exy = Vec2::new(0., 0.);
