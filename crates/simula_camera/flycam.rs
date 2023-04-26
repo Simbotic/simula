@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 use bevy::reflect::FromReflect;
 use simula_action::{
-    action_axis_map, action_map, touch_sides::{TouchSideAxis, TouchAxis, TouchSide}, Action, ActionAxis, ActionAxisMap,
-    ActionMap, ActionMapInput, AxisMapInput, AxisMapSource, MouseAxis,
+    action_axis_map, action_map,
+    touch_sides::{TouchAxis, TouchSide, TouchSideAxis},
+    Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput, AxisMapInput, AxisMapSource,
+    MouseAxis,
 };
 
 #[derive(Component, Reflect)]

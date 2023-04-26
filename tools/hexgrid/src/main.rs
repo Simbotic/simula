@@ -50,11 +50,7 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
                 (-51..77)
                     .flat_map(|x| (-51..77).map(move |z| (x as f32, z as f32)))
                     .map(|(x, z)| HexData {
-                        position: Vec3::new(
-                            x * -1.5,
-                            0.0,
-                            z * 1.732 + (0.866 * ((x) % 2.0)),
-                        ),
+                        position: Vec3::new(x * -1.5, 0.0, z * 1.732 + (0.866 * ((x) % 2.0))),
                         scale: 1.,
                         color: Color::hsla(238.0, 0.95, 0.59, 0.0).as_rgba_u32(),
                     })
@@ -74,7 +70,7 @@ pub fn hexgrid_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
             ..default()
         })
         .insert(OrbitCamera {
-            pan_sensitivity: 2000.0,
+            pan_sensitivity: 80.0,
             center: Vec3::ZERO,
             ..Default::default()
         })

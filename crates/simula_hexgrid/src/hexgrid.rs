@@ -166,10 +166,14 @@ pub fn hexgrid_viewer(
 
                 _ => {}
             }
-            orbit_camera.center.z =
-                ((shortest_path.render_min_row + shortest_path.render_size * 1 / 2) as f32) * 1.5 * 1.15;
-            orbit_camera.center.x =
-                (-(shortest_path.render_min_column as i32 + shortest_path.render_size * 1 / 2) as f32) * 1.732 / 1.15;
+            orbit_camera.center.z = ((shortest_path.render_min_row
+                + shortest_path.render_size * 1 / 2) as f32)
+                * 1.5
+                * 1.15;
+            orbit_camera.center.x = (-(shortest_path.render_min_column as i32
+                + shortest_path.render_size * 1 / 2) as f32)
+                * 1.732
+                / 1.15;
 
             commands
                 .spawn_empty()
@@ -229,7 +233,7 @@ pub fn hexgrid_rebuilder(
 
             shortest_path.render_min_column =
                 -shortest_path.render_size * 1 / 2 - (orbit_camera.center.x / 1.732 * 1.15) as i32;
-                
+
             shortest_path.render_max_column =
                 shortest_path.render_min_column + shortest_path.render_size;
 
