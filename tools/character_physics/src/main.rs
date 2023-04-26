@@ -13,7 +13,7 @@ use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::LinesPlugin,
-    rod::{Rod, RodMesh},
+    rod::Rod,
 };
 use std::time::Duration;
 
@@ -63,10 +63,9 @@ fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, asset_server:
         south_radius: 0.2,
         ..Default::default()
     };
-    let rod_mesh: RodMesh = rod.into();
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(rod_mesh.mesh),
+            mesh: meshes.add(Mesh::from(rod)),
             material: asset_server.load("materials/rod.mat"),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..Default::default()
@@ -439,17 +438,16 @@ fn create_skeleton(
         if count > 0 {
             println!("{}: {} {}", bone_name, bone_length, bone_radius);
             commands.entity(bone).with_children(|parent| {
-                // create bone using RodMesh
+                // create bone using rod mesh
                 let rod = Rod {
                     depth: bone_length,
                     north_radius: bone_radius * 0.1,
                     south_radius: bone_radius * 1.0,
                     ..Default::default()
                 };
-                let rod_mesh: RodMesh = rod.into();
                 parent
                     .spawn(PbrBundle {
-                        mesh: meshes.add(rod_mesh.mesh),
+                        mesh: meshes.add(Mesh::from(rod)),
                         transform: Transform::from_xyz(0.0, bone_length * 0.5, 0.0),
                         material: materials.add(Color::rgb(1.0, 0.5, 0.3).into()),
                         ..Default::default()

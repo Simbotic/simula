@@ -364,12 +364,11 @@ fn setup(
         });
 
     // rod mesh
-    let rod_mesh = simula_viz::rod::Rod { ..default() };
-    let rod_mesh = simula_viz::rod::RodMesh::from(rod_mesh);
+    let rod = simula_viz::rod::Rod { ..default() };
     commands
         .spawn_empty()
         .insert(PbrBundle {
-            mesh: meshes.add(rod_mesh.mesh),
+            mesh: meshes.add(Mesh::from(rod)),
             material: materials.add(StandardMaterial {
                 base_color: Color::PINK,
                 ..default()

@@ -33,6 +33,7 @@ pub struct Rod {
     /// Manner in which UV coordinates are distributed vertically.
     pub uv_profile: RodUvProfile,
 }
+
 impl Default for Rod {
     fn default() -> Self {
         Rod {
@@ -45,6 +46,13 @@ impl Default for Rod {
             longitudes: 32,
             uv_profile: RodUvProfile::Uniform,
         }
+    }
+}
+
+impl From<Rod> for Mesh {
+    fn from(value: Rod) -> Self {
+        let rod_mesh = RodMesh::from(value);
+        rod_mesh.mesh
     }
 }
 
@@ -68,7 +76,7 @@ impl Default for RodUvProfile {
 
 pub struct RodMesh {
     pub rod: Rod,
-    pub mesh: Mesh,
+    mesh: Mesh,
     pub vs: Vec<[f32; 3]>,
     pub vns: Vec<[f32; 3]>,
     pub vts: Vec<[f32; 2]>,
