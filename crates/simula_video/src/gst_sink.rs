@@ -42,8 +42,7 @@ struct MissingElement(#[error(not(source))] &'static str);
 struct ErrorMessage {
     src: String,
     error: String,
-    debug: Option<String>,
-    source: glib::Error,
+    debug: Option<glib::GString>,
 }
 
 pub(crate) fn setup_gst_sink() {}
@@ -195,7 +194,6 @@ fn pipeline_loop(pipeline: gst::Pipeline) -> Result<(), Error> {
                         .unwrap_or_else(|| String::from("None")),
                     error: err.error().to_string(),
                     debug: err.debug(),
-                    source: err.error(),
                 }
                 .into());
             }
