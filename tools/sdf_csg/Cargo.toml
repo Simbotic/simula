@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.10" }
-bevy-inspector-egui = "0.18.0"
+bevy-inspector-egui = "0.18"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
@@ -14,6 +14,6 @@ simula_action = { path = "../../crates/simula_action" }
 simula_sdf = { path = "../../crates/simula_sdf" }
 
 rand = "0.8.5"
-enum-iterator = "1.2"
+enum-iterator = "1.4"
 enum-display-derive = "0.1.1"
 

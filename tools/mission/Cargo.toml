@@ -8,8 +8,8 @@ default = []
 
 [dependencies]
 bevy = { version = "0.10" }
-bevy_egui = "0.20.0"
-bevy-inspector-egui = "0.18.0"
+bevy_egui = "0.20"
+bevy-inspector-egui = "0.18"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
@@ -21,5 +21,5 @@ simula_behavior = { path = "../../crates/simula_behavior" }
 
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.8.5"
-enum-iterator = "1.2"
+enum-iterator = "1.4"
 enum-display-derive = "0.1.1"
