@@ -167,14 +167,15 @@ pub fn hexgrid_viewer(
                 _ => {}
             }
             orbit_camera.center.z =
-                (shortest_path.render_min_row + shortest_path.render_size * 2 / 5) as f32;
+                ((shortest_path.render_min_row + shortest_path.render_size * 1 / 2) as f32) * 1.5 * 1.15;
             orbit_camera.center.x =
-                -(shortest_path.render_min_column + shortest_path.render_size * 2 / 5) as f32;
+                (-(shortest_path.render_min_column as i32 + shortest_path.render_size * 1 / 2) as f32) * 1.732 / 1.15;
 
             commands
                 .spawn_empty()
                 .insert((
                     meshes.add(Mesh::from(shape::Capsule {
+                        radius: 1.,
                         depth: 0.5,
                         latitudes: 4,
                         longitudes: 6,
@@ -186,15 +187,15 @@ pub fn hexgrid_viewer(
                         (shortest_path.render_min_column..shortest_path.render_max_column)
                             .flat_map(|x| {
                                 (shortest_path.render_min_row..shortest_path.render_max_row)
-                                    .map(move |z| (x as f32 / 10.0, z as f32 / 10.0))
+                                    .map(move |z| (x as f32, z as f32))
                             })
                             .map(|(x, z)| HexData {
                                 position: Vec3::new(
-                                    x * -10.0 + 2.0,
+                                    x * -1.5,
                                     0.0,
-                                    z * 10.0 + (0.5 * ((x * 10.0) % 2.0)),
+                                    z * 1.732 + (0.866 * ((x) % 2.0)),
                                 ),
-                                scale: 1.3,
+                                scale: 1.,
                                 color: Color::hsla(238.0, 0.95, 0.59, 0.1).as_rgba_u32(),
                             })
                             .collect(),
@@ -222,10 +223,13 @@ pub fn hexgrid_rebuilder(
     for orbit_camera in orbit_camera.iter() {
         if mouse_button_input.pressed(MouseButton::Right) {
             shortest_path.render_min_row =
-                orbit_camera.center.z as i32 - shortest_path.render_size * 2 / 5;
+                (orbit_camera.center.z / 1.5 / 1.15) as i32 - shortest_path.render_size * 1 / 2;
+
             shortest_path.render_max_row = shortest_path.render_min_row + shortest_path.render_size;
+
             shortest_path.render_min_column =
-                -shortest_path.render_size * 2 / 5 - orbit_camera.center.x as i32;
+                -shortest_path.render_size * 1 / 2 - (orbit_camera.center.x / 1.732 * 1.15) as i32;
+                
             shortest_path.render_max_column =
                 shortest_path.render_min_column + shortest_path.render_size;
 
@@ -233,6 +237,7 @@ pub fn hexgrid_rebuilder(
                 .spawn_empty()
                 .insert((
                     meshes.add(Mesh::from(shape::Capsule {
+                        radius: 1.,
                         depth: 0.5,
                         latitudes: 4,
                         longitudes: 6,
@@ -244,15 +249,15 @@ pub fn hexgrid_rebuilder(
                         (shortest_path.render_min_column..shortest_path.render_max_column)
                             .flat_map(|x| {
                                 (shortest_path.render_min_row..shortest_path.render_max_row)
-                                    .map(move |z| (x as f32 / 10.0, z as f32 / 10.0))
+                                    .map(move |z| (x as f32, z as f32))
                             })
                             .map(|(x, z)| HexData {
                                 position: Vec3::new(
-                                    x * -10.0 + 2.0,
+                                    x * -1.5,
                                     0.0,
-                                    z * 10.0 + (0.5 * ((x * 10.0) % 2.0)),
+                                    z * 1.732 + (0.866 * ((x) % 2.0)),
                                 ),
-                                scale: 1.3,
+                                scale: 1.,
                                 color: Color::hsla(238.0, 0.95, 0.59, 0.1).as_rgba_u32(),
                             })
                             .collect(),
