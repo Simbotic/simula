@@ -10,7 +10,6 @@ bevy-inspector-egui = "0.18.0"
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
-simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
 simula_mission = { path = "../../crates/simula_mission" }
 
@@ -22,8 +21,5 @@ serde = { version = "1.0", features = ["derive"] }
 ron = "0.7.1"
 smallvec = "1.10"
 pretty-type-name = "1.0"
-
-# egui_node_graph = { rev = "5cfdcab5573d76e209cd89e58666619bebf12473", git = "https://github.com/Simbotic/egui_node_graph.git", features = ["persistence"] }
-# egui_node_graph = { path = "../../../egui_node_graph/egui_node_graph", features = ["persistence"] }
 
 [dev-dependencies]

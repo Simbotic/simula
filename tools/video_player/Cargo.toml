@@ -20,7 +20,6 @@ wgpu-types = "0.15.1"
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
-simula_net = { path = "../../crates/simula_net" }
 simula_action = { path = "../../crates/simula_action" }
 simula_video = { path = "../../crates/simula_video" }
 

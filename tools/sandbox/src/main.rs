@@ -12,7 +12,6 @@ use enum_iterator::all;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
-use simula_authority::{Minion, NetAuthorityPlugin, Worker};
 #[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::{flycam::*, orbitcam::*};
@@ -21,7 +20,6 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator, SignalPlugin},
 };
-use simula_net::{NetId, NetPlugin, Replicate};
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
@@ -69,8 +67,6 @@ fn main() {
             ..default()
         }))
         // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
-        .add_plugin(NetPlugin)
-        .add_plugin(NetAuthorityPlugin)
         .add_plugin(EguiPlugin)
         .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
@@ -114,31 +110,6 @@ fn setup(
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    // network minion that will only communicate with authority
-    commands
-        .spawn_empty()
-        .insert(Minion::default())
-        .insert(NetId::default())
-        .insert(Name::new("Minion"));
-
-    // network worker that will sync with everyone
-    commands
-        .spawn_empty()
-        .insert(Worker::default())
-        .insert(Replicate::<Worker>::default())
-        .insert(NetId::default())
-        .insert(Name::new("Worker"));
-
-    // network minion worker that will sync worker state with others
-    // but only minion state with authority
-    commands
-        .spawn_empty()
-        .insert(Minion::default())
-        .insert(Worker::default())
-        .insert(Replicate::<Worker>::default())
-        .insert(NetId::default())
-        .insert(Name::new("MinionWorker"));
-
     #[cfg(not(target_arch = "wasm32"))]
     {
         // CAD shape

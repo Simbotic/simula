@@ -335,7 +335,7 @@ fn setup(
                         size: UVec2 { x: 320, y: 176 },
                         src: "assets/videos/mov_bbb.mp4".into(),
                         playing: true,
-                        _loop: false,
+                        _loop: true,
                     })
                     .insert(Visibility::Visible)
                     .insert(Name::new("Robot: Body"));
