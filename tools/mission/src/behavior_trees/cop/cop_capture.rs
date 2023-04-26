@@ -39,13 +39,9 @@ pub fn run(
                 for (robber_entity, robber_transform, mut robber) in robber_query.iter_mut() {
                     let cop_money = cop.get_money();
                     let cop_energy = cop.get_energy();
-                    if cop_energy < COP_CAPTURE_ENERGY_COST {
-                        commands.entity(action_entity).insert(BehaviorSuccess);
-                        return;
-                    }
                     let distance =
                         (robber_transform.translation - cop_transform.translation).length();
-                    if distance <= COP_CAPTURE_RADIUS {
+                    if cop_energy >= COP_CAPTURE_ENERGY_COST && distance <= COP_CAPTURE_RADIUS {
                         let robber_money = robber.get_money();
                         cop.set_energy(cop_energy - COP_CAPTURE_ENERGY_COST);
                         robber.set_money(0);
