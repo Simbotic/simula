@@ -4186,6 +4186,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "simula_octree"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "simula_sdf"
 version = "0.1.0"
 dependencies = [
