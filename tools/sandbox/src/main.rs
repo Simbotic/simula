@@ -59,6 +59,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "[Simbotic] Simula - Sandbox".to_string(),
                 resolution: (940., 528.).into(),
+                canvas: Some("#bevy".to_owned()),
                 present_mode: PresentMode::AutoVsync,
                 fit_canvas_to_parent: true,
                 prevent_default_event_handling: false,

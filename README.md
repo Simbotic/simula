@@ -67,6 +67,11 @@ cargo run --target wasm32-unknown-unknown
 
 It will automatically run a minimal local webserver and open your simulation in your browser.
 
+### Trunk
+```
+trunk --config tools/sandbox/Trunk.toml serve
+```
+
 ## P2P Networking
 
 Launch signaling server:

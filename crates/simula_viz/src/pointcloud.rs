@@ -1,6 +1,5 @@
 use bevy::{
     core_pipeline::core_3d::Transparent3d,
-    //core_pipeline::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
     math::prelude::*,
     pbr::{MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup, SetMeshViewBindGroup},
@@ -9,7 +8,6 @@ use bevy::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         mesh::{GpuBufferInfo, MeshVertexBufferLayout},
         render_asset::RenderAssets,
-        //render_component::{ExtractComponent, ExtractComponentPlugin},
         render_phase::{
             AddRenderCommand, DrawFunctions, PhaseItem, RenderCommand, RenderCommandResult,
             RenderPhase, SetItemPipeline, TrackedRenderPass,
@@ -17,8 +15,7 @@ use bevy::{
         render_resource::*,
         renderer::RenderDevice,
         view::{ExtractedView, Msaa},
-        RenderApp,
-        RenderSet,
+        RenderApp, RenderSet,
     },
 };
 use bytemuck::{Pod, Zeroable};

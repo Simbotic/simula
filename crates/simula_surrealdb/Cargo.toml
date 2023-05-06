@@ -1,0 +1,11 @@
+[package]
+name = "simula_surrealdb"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
+
+[dependencies]
+bevy = { version = "0.10" }
+surrealdb = "1.0.0-beta.9+20230402"
+
+[dev-dependencies]
