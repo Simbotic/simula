@@ -12,7 +12,6 @@ use enum_iterator::all;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
-#[cfg(not(target_arch = "wasm32"))]
 use simula_cad::shapes::{self, ShapeMesh};
 use simula_camera::{flycam::*, orbitcam::*};
 use simula_core::{
@@ -59,7 +58,6 @@ fn main() {
             primary_window: Some(Window {
                 title: "[Simbotic] Simula - Sandbox".to_string(),
                 resolution: (940., 528.).into(),
-                canvas: Some("#bevy".to_owned()),
                 present_mode: PresentMode::AutoVsync,
                 fit_canvas_to_parent: true,
                 prevent_default_event_handling: false,
@@ -111,19 +109,16 @@ fn setup(
     voxel_mesh: Res<VoxelMesh>,
     asset_server: Res<AssetServer>,
 ) {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        // CAD shape
-        let shape = shapes::star(5, Color::BLUE);
-        commands
-            .spawn(PbrBundle {
-                mesh: meshes.add(shape.to_mesh()),
-                material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
-                transform: Transform::from_xyz(0.0, -10.0, 0.0),
-                ..default()
-            })
-            .insert(Name::new("Shape: Star"));
-    }
+    // CAD shape
+    let shape = shapes::star(5, Color::BLUE);
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(shape.to_mesh()),
+            material: materials.add(Color::rgb(0.0, 0.0, 1.0).into()),
+            transform: Transform::from_xyz(0.0, -10.0, 0.0),
+            ..default()
+        })
+        .insert(Name::new("Shape: Star"));
 
     // plane
     commands

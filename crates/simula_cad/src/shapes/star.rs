@@ -37,8 +37,8 @@ pub fn star(num_points: u64, color: Color) -> Star {
 
     let color = color.as_rgba_u32().to_be_bytes();
 
-    let outer = fj::Sketch::from_points(outer).with_color(color);
-    let inner = fj::Sketch::from_points(inner);
+    let outer = fj::Sketch::from_points(outer).unwrap().with_color(color);
+    let inner = fj::Sketch::from_points(inner).unwrap();
 
     let footprint = fj::Difference2d::from_shapes([outer.into(), inner.into()]);
 

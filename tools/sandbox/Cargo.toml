@@ -26,5 +26,5 @@ enum-iterator = "1.4"
 enum-display-derive = "0.1.1"
 
 # while we wait for WASM support
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 simula_cad = { path = "../../crates/simula_cad" }

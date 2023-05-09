@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 bevy = { version = "0.10" }
 
-fj = "0.17"
-fj-math = "0.17"
-fj-operations = "0.17"
-fj-interop = "0.17"
+fj = "0.46"
+fj-math = "0.46"
+fj-operations = "0.46"
+fj-interop = "0.46"
 
 [dev-dependencies]
