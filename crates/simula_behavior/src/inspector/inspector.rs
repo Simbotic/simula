@@ -1,6 +1,8 @@
 use crate::{inspector::BehaviorInspectorNode, BehaviorTree};
 use bevy::{ecs::system::SystemState, prelude::*};
-use bevy_inspector_egui::{bevy_egui::EguiContexts, egui};
+use bevy_inspector_egui::{
+    bevy_egui::EguiContexts, egui, restricted_world_view::RestrictedWorldView,
+};
 
 use super::node::behavior_inspector_node_ui;
 
@@ -51,11 +53,14 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
 
 pub fn behavior_inspector_ui(world: &mut World) {
     let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
-    let behavior_inspector = world.resource::<BehaviorInspector>().clone();
-    let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
-    let context = system_state.get_mut(world).ctx_mut().clone();
+    let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
-    egui::Window::new("Behavior Inspector").show(&context, |ui| {
+    let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
+
+    let mut context1 = system_state.get_mut(world).ctx_mut().clone();
+    let mut context2 = system_state.get_mut(world).ctx_mut().clone();
+
+    egui::Window::new("Behavior Inspector").show(&mut context1, |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
@@ -92,13 +97,16 @@ pub fn behavior_inspector_ui(world: &mut World) {
                 let mut node = BehaviorInspectorNode {
                     entity: behavior_tree.root,
                 };
+
+                let mut world = RestrictedWorldView::new(world);
+
                 egui::Window::new(format!("Behavior: {}", name))
                     .title_bar(true)
                     .resizable(true)
                     .collapsible(true)
                     .scroll2([true, true])
                     .show(ui.ctx(), |ui| {
-                        behavior_inspector_node_ui(world, &mut node, ui);
+                        behavior_inspector_node_ui(&mut context2, &mut world, &mut node, ui);
                     });
             }
         }

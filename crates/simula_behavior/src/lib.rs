@@ -172,31 +172,8 @@ pub struct BehaviorParent(Option<Entity>);
 #[reflect(Component)]
 pub struct BehaviorChildren(Vec<Entity>);
 
-// TODO: Check if this is still needed
-// impl Inspectable for BehaviorChildren {
-//     type Attributes = ();
-
-//     fn ui(&mut self, ui: &mut egui::Ui, _options: Self::Attributes, context: &mut Context) -> bool {
-//         let world = if let Some(world) = context.world() {
-//             world
-//         } else {
-//             return false;
-//         };
-//         ui.vertical(|ui| {
-//             for child in self.iter_mut() {
-//                 if let Some(name) = world.get::<Name>(*child) {
-//                     ui.collapsing(format!("{} ({})", name.to_string(), child.index()), |ui| {
-//                         child.ui(ui, EntityAttributes { despawnable: false }, context);
-//                     });
-//                 }
-//             }
-//         });
-//         false
-//     }
-// }
-
 /// A component added to identify the type of a behavior node
-#[derive(Debug, Default, PartialEq, Reflect, Clone, Component)]
+#[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Copy)]
 #[reflect(Component)]
 pub enum BehaviorType {
     #[default]

@@ -2,10 +2,11 @@ use crate::{
     color_hex_utils::color_from_hex, BehaviorChildren, BehaviorCursor, BehaviorFailure,
     BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
-use bevy::{ecs::query::WorldQuery, prelude::*};
+use bevy::prelude::*;
 use bevy_inspector_egui::{
     bevy_inspector,
     egui::{self, Rounding},
+    restricted_world_view::RestrictedWorldView,
 };
 
 #[derive(Default, Clone)]
@@ -16,143 +17,132 @@ pub struct BehaviorInspectorNode {
     pub entity: Option<Entity>,
 }
 
-fn titlebar_color(behavior: &BehaviorNode) -> egui::Color32 {
-    if behavior.typ == BehaviorType::Action {
+fn titlebar_color(behavior_type: BehaviorType, behavior_name: &String) -> egui::Color32 {
+    if behavior_type == BehaviorType::Action {
         color_from_hex("#4284F3").unwrap()
-    } else if behavior.typ == BehaviorType::Composite {
-        if behavior.name == "Selector" {
+    } else if behavior_type == BehaviorType::Composite {
+        if behavior_name == "Selector" {
             color_from_hex("#CC0100").unwrap()
-        } else if behavior.name == "Sequencer" {
+        } else if behavior_name == "Sequencer" {
             color_from_hex("#36980D").unwrap()
-        } else if behavior.name == "All" {
-            color_from_hex("#588157").unwrap()
-        } else if behavior.name == "Any" {
-            color_from_hex("#9B2226").unwrap()
+        } else if behavior_name == "All" {
+            color_from_hex("#36980D").unwrap()
+        } else if behavior_name == "Any" {
+            color_from_hex("#CC0100").unwrap()
         } else {
             color_from_hex("#000000").unwrap()
         }
-    } else if behavior.typ == BehaviorType::Decorator {
+    } else if behavior_type == BehaviorType::Decorator {
         color_from_hex("#ACA000").unwrap()
     } else {
         color_from_hex("#3f3f3f").unwrap()
     }
 }
 
-#[derive(WorldQuery)]
-pub struct BehaviorQuery {
-    pub entity: Entity,
-    pub name: &'static Name,
-    pub node: &'static BehaviorNode,
-    pub children: &'static BehaviorChildren,
-    pub running: Option<&'static BehaviorRunning>,
-    pub failure: Option<&'static BehaviorFailure>,
-    pub success: Option<&'static BehaviorSuccess>,
-    pub cursor: Option<&'static BehaviorCursor>,
-}
-
-pub struct Behavior {
-    pub entity: Entity,
-    pub name: Name,
-    pub node: BehaviorNode,
-    pub children: BehaviorChildren,
-    pub running: Option<BehaviorRunning>,
-    pub failure: Option<BehaviorFailure>,
-    pub success: Option<BehaviorSuccess>,
-    pub cursor: Option<BehaviorCursor>,
-}
-
 pub fn behavior_inspector_node_ui(
-    world: &mut World,
+    context: &mut egui::Context,
+    world: &mut RestrictedWorldView,
     node: &mut BehaviorInspectorNode,
     ui: &mut egui::Ui,
 ) {
-    let mut behaviors = world.query::<BehaviorQuery>();
-    let behaviors: Vec<Behavior> = behaviors
-        .iter(world)
-        .filter(|item| item.entity == node.entity.unwrap())
-        .map(|item| Behavior {
-            entity: item.entity,
-            name: item.name.clone(),
-            node: item.node.clone(),
-            children: item.children.clone(),
-            running: item.running.copied(),
-            failure: item.failure.copied(),
-            success: item.success.copied(),
-            cursor: item.cursor.copied(),
-        })
-        .collect::<Vec<_>>();
+    let Some(node_entity) = node.entity else {return;};
+    let (
+        behavior_name,
+        behavior_node,
+        behavior_children,
+        behavior_running,
+        behavior_failure,
+        behavior_success,
+        behavior_cursor,
+    ) = {
+        let world = unsafe { world.world().world_mut() };
+        let Some(behavior_name) = world.get::<Name>(node_entity) else {return;};
+        let Some(behavior_node) = world.get::<BehaviorNode>(node_entity) else {return;};
+        let Some(behavior_children) = world.get::<BehaviorChildren>(node_entity)  else {return;};
 
-    let node_entity = node.entity.unwrap();
-    for behavior in behaviors {
-        // Cursor stroke (if cursor is on this node
-        let cursor_stroke = if behavior.cursor.is_some() {
-            egui::Stroke::new(3.0, color_from_hex("#FF00FF").unwrap())
-        } else {
-            egui::Stroke::NONE
-        };
+        let behavior_running = world.get::<BehaviorRunning>(node_entity);
+        let behavior_failure = world.get::<BehaviorFailure>(node_entity);
+        let behavior_success = world.get::<BehaviorSuccess>(node_entity);
+        let behavior_cursor = world.get::<BehaviorCursor>(node_entity);
 
-        ui.set_min_width(100.0);
-        ui.push_id(format!("bhtins-{}", node_entity.index()), |ui| {
-            ui.vertical(|ui| {
-                // Node frame
-                egui::Frame::none()
-                    .stroke(cursor_stroke)
-                    .fill(color_from_hex("#303030").unwrap())
-                    .rounding(Rounding::same(3.0))
-                    .show(ui, |ui| {
-                        egui::Frame::none()
-                            .inner_margin(egui::Vec2::new(4.0, 1.0))
-                            .rounding(Rounding::same(3.0))
-                            .fill(titlebar_color(&behavior.node))
-                            .show(ui, |ui| {
-                                ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
-                                ui.horizontal(|ui| {
-                                    ui.set_min_width(100.0);
-                                    ui.label(
-                                        egui::RichText::new(behavior.name.to_string()).strong(),
-                                    );
-                                });
+        (
+            behavior_name,
+            behavior_node,
+            behavior_children,
+            behavior_running,
+            behavior_failure,
+            behavior_success,
+            behavior_cursor,
+        )
+    };
+
+    // Cursor stroke, if cursor is on this node
+    let cursor_stroke = if behavior_cursor.is_some() {
+        egui::Stroke::new(3.0, color_from_hex("#FF00FF").unwrap())
+    } else {
+        egui::Stroke::NONE
+    };
+
+    ui.set_min_width(100.0);
+    ui.push_id(format!("bhtins-{}", node_entity.index()), |ui| {
+        ui.vertical(|ui| {
+            // Node frame
+            egui::Frame::none()
+                .stroke(cursor_stroke)
+                .fill(color_from_hex("#303030").unwrap())
+                .rounding(Rounding::same(3.0))
+                .show(ui, |ui| {
+                    egui::Frame::none()
+                        .inner_margin(egui::Vec2::new(4.0, 1.0))
+                        .rounding(Rounding::same(3.0))
+                        .fill(titlebar_color(behavior_node.typ, &behavior_node.name))
+                        .show(ui, |ui| {
+                            ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                            ui.horizontal(|ui| {
+                                ui.set_min_width(100.0);
+                                ui.label(egui::RichText::new(behavior_name).strong());
                             });
-                        ui.horizontal(|ui| {
-                            let r = 3.0;
-                            let size = egui::Vec2::splat(2.0 * r + 5.0);
-                            let (rect, _response) =
-                                ui.allocate_at_least(size, egui::Sense::hover());
-                            if behavior.failure.is_some() {
-                                ui.painter()
-                                    .circle_filled(rect.center(), r, egui::Color32::RED);
-                            } else if behavior.success.is_some() {
-                                ui.painter().circle_filled(
-                                    rect.center(),
-                                    r,
-                                    egui::Color32::DARK_GREEN,
-                                );
-                            } else if behavior.running.is_some() {
-                                ui.painter()
-                                    .circle_filled(rect.center(), r, egui::Color32::GREEN);
-                            } else {
-                                ui.painter()
-                                    .circle_filled(rect.center(), r, egui::Color32::GRAY);
-                            }
-                            ui.label(egui::RichText::new(behavior.name.as_str()).small());
                         });
-
-                        ui.collapsing("", |ui| {
-                            ui.set_max_width(250.0);
-                            let mut behavior_node_clone = behavior.node.clone();
-                            bevy_inspector::ui_for_value(&mut behavior_node_clone, ui, world);
-                        });
+                    ui.horizontal(|ui| {
+                        let r = 3.0;
+                        let size = egui::Vec2::splat(2.0 * r + 5.0);
+                        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
+                        if behavior_failure.is_some() {
+                            ui.painter()
+                                .circle_filled(rect.center(), r, egui::Color32::RED);
+                        } else if behavior_success.is_some() {
+                            ui.painter()
+                                .circle_filled(rect.center(), r, egui::Color32::DARK_GREEN);
+                        } else if behavior_running.is_some() {
+                            ui.painter()
+                                .circle_filled(rect.center(), r, egui::Color32::GREEN);
+                        } else {
+                            ui.painter()
+                                .circle_filled(rect.center(), r, egui::Color32::GRAY);
+                        }
+                        ui.label(egui::RichText::new(behavior_name).small());
                     });
 
-                ui.horizontal(|ui| {
-                    for child in behavior.children.iter() {
-                        let mut child_node = BehaviorInspectorNode {
-                            entity: Some(*child),
-                        };
-                        behavior_inspector_node_ui(world, &mut child_node, ui);
-                    }
+                    ui.collapsing("", |ui| {
+                        ui.set_max_width(250.0);
+                        unsafe {
+                            bevy_inspector::ui_for_entity(
+                                world.world().world_mut(),
+                                node_entity,
+                                ui,
+                            );
+                        }
+                    });
                 });
+
+            ui.horizontal(|ui| {
+                for child in behavior_children.iter() {
+                    let mut child_node = BehaviorInspectorNode {
+                        entity: Some(*child),
+                    };
+                    behavior_inspector_node_ui(context, world, &mut child_node, ui);
+                }
             });
         });
-    }
+    });
 }
