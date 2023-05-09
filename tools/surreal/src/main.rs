@@ -6,6 +6,7 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
+use simula_surrealdb::SurrealPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -20,7 +21,6 @@ fn main() {
             primary_window: Some(Window {
                 title: "[Simbotic] Simula - Surreal DB".to_string(),
                 resolution: (940., 528.).into(),
-                canvas: Some("#bevy".to_owned()),
                 present_mode: PresentMode::AutoVsync,
                 fit_canvas_to_parent: true,
                 prevent_default_event_handling: false,
@@ -35,6 +35,7 @@ fn main() {
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
+        .add_plugin(SurrealPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .run();
