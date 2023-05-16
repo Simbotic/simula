@@ -431,11 +431,13 @@ impl From<Rod> for RodMesh {
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vns.clone());
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, vts.clone());
         mesh.set_indices(Some(Indices::U32(tris.clone())));
+        mesh.generate_tangents()
+            .expect("Failed to generate tangents");
 
         let mut vxs = vec![];
         vxs.resize(vs.len(), [0f32; 4]);
 
-        let mut rod = RodMesh {
+        RodMesh {
             rod,
             mesh,
             vs,
@@ -443,40 +445,6 @@ impl From<Rod> for RodMesh {
             vts,
             vxs,
             tris,
-        };
-        mikktspace::generate_tangents(&mut rod);
-        rod.mesh
-            .insert_attribute(Mesh::ATTRIBUTE_TANGENT, rod.vxs.clone());
-        rod
-    }
-}
-
-impl mikktspace::Geometry for RodMesh {
-    fn num_faces(&self) -> usize {
-        self.tris.len() / 3
-    }
-
-    fn num_vertices_of_face(&self, _face: usize) -> usize {
-        3
-    }
-
-    fn position(&self, face: usize, vert: usize) -> [f32; 3] {
-        let idx = self.tris[face * 3 + vert] as usize;
-        self.vs[idx]
-    }
-
-    fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
-        let idx = self.tris[face * 3 + vert] as usize;
-        self.vns[idx]
-    }
-
-    fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
-        let idx = self.tris[face * 3 + vert] as usize;
-        self.vts[idx]
-    }
-
-    fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
-        let idx = self.tris[face * 3 + vert] as usize;
-        self.vxs[idx] = tangent;
+        }
     }
 }

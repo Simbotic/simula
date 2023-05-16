@@ -8,18 +8,10 @@ bevy = { version = "0.10" }
 bevy-inspector-egui = "0.18"
 
 simula_core = { path = "../../crates/simula_core" }
-simula_camera = { path = "../../crates/simula_camera" }
-simula_viz = { path = "../../crates/simula_viz" }
-simula_action = { path = "../../crates/simula_action" }
-simula_mission = { path = "../../crates/simula_mission" }
+simula_script = { path = "../../crates/simula_script" }
 
-anyhow = "1.0"
 rand = "0.8.5"
-enum-iterator = "1.4"
-enum-display-derive = "0.1.1"
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.8"
-smallvec = "1.10"
-pretty-type-name = "1.0"
 
 [dev-dependencies]
