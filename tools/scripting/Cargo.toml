@@ -1,0 +1,15 @@
+[package]
+name = "scripting"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.10" }
+bevy-inspector-egui = "0.18"
+
+simula_core = { path = "../../crates/simula_core" }
+simula_camera = { path = "../../crates/simula_camera" }
+simula_viz = { path = "../../crates/simula_viz" }
+simula_action = { path = "../../crates/simula_action" }
+simula_script = { path = "../../crates/simula_script" }
+
