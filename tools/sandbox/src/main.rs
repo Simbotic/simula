@@ -13,7 +13,7 @@ use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
 use simula_action::ActionPlugin;
 use simula_cad::shapes::{self, ShapeMesh};
-use simula_camera::{flycam::*, orbitcam::*};
+use simula_camera::flycam::*;
 use simula_core::{
     ease::EaseFunction,
     force_graph::{NodeData, NodeIndex, SimulationParameters},
@@ -63,6 +63,7 @@ fn main() {
                 prevent_default_event_handling: false,
                 ..default()
             }),
+
             ..default()
         }))
         // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
@@ -70,7 +71,6 @@ fn main() {
         .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(OrbitCameraPlugin)
         .add_plugin(FlyCameraPlugin)
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
@@ -92,7 +92,7 @@ fn main() {
         .add_system(rotate_system)
         .add_system(force_graph_test);
 
-    // bevy_mod_debugdump::print_schedule(&mut app);
+    // bevy_mod_debugdump::print_main_schedule(&mut app);
     // bevy_mod_debugdump::print_render_schedule(&mut app);
     // bevy_mod_debugdump::print_render_graph(&mut app);
 

@@ -6,28 +6,35 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
+use simula_script::ScriptPlugin;
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::LinesPlugin,
 };
-use simula_script::ScriptPlugin;
 
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "[Simbotic] Simula - Scripting".to_string(),
-                resolution: (940., 528.).into(),
-                present_mode: PresentMode::AutoVsync,
-                fit_canvas_to_parent: true,
-                prevent_default_event_handling: false,
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "[Simbotic] Simula - Scripting".to_string(),
+                        resolution: (940., 528.).into(),
+                        present_mode: PresentMode::AutoVsync,
+                        fit_canvas_to_parent: true,
+                        prevent_default_event_handling: false,
+                        ..default()
+                    }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    watch_for_changes: true,
+                    ..Default::default()
+                }),
+        )
         .add_plugin(WorldInspectorPlugin::default())
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())

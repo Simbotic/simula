@@ -10,7 +10,8 @@ bevy = { version = "0.10" }
 # bevy_console = { path = "../../../bevy-console" }
 bevy_console = { git = "https://github.com/Simbotic/bevy-console.git", rev = "29691b8d48b98ef7aeddc9ea0fd4d514afe844a9" }
 
-rhai = { version = "0.14" }
+rhai = { version = "0.14", features = ["sync"]}
 clap = { version = "=4.2.7", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

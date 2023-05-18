@@ -3,8 +3,8 @@ use bevy::reflect::FromReflect;
 use simula_action::{
     action_axis_map, action_map,
     touch_sides::{TouchAxis, TouchSide, TouchSideAxis},
-    Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput, AxisMapInput, AxisMapSource,
-    MouseAxis,
+    Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput, ActionStage, AxisMapInput,
+    AxisMapSource, MouseAxis,
 };
 
 #[derive(Component, Reflect)]
@@ -149,9 +149,15 @@ impl Plugin for FlyCameraPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<FlyCamera>()
             .add_system(setup)
-            .add_system(action_map::<FlyCameraMode, FlyCamera>)
-            .add_system(action_axis_map::<FlyCameraMotion, FlyCamera>)
-            .add_system(Self::camera_motion);
+            .add_systems(
+                (
+                    action_map::<FlyCameraMode, FlyCamera>,
+                    action_axis_map::<FlyCameraMotion, FlyCamera>,
+                    Self::camera_motion,
+                )
+                    .chain()
+                    .after(ActionStage::Update),
+            );
     }
 }
 

@@ -35,7 +35,7 @@ impl AssetLoader for BehaviorAssetLoader {
         Box::pin(async move {
             let asset = BehaviorAsset {
                 path: load_context.path().display().to_string(),
-                document: std::str::from_utf8(bytes).unwrap_or_default().to_string(),
+                document: std::str::from_utf8(bytes)?.to_string(),
             };
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())

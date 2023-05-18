@@ -27,6 +27,12 @@ pub struct MainActionInput;
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
 pub struct ActionPlugin;
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ActionStage {
+    PreUpdate,
+    Update,
+}
+
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<MainActionInput>()
@@ -37,23 +43,21 @@ impl Plugin for ActionPlugin {
             .register_type::<HashSet<MouseButton>>()
             .register_type::<HashMap<MouseAxis, f32>>()
             .add_plugin(TouchSidesPlugin)
-            .add_system(
-                keyboard_action_system
+            .configure_set(
+                ActionStage::PreUpdate
                     .after(EguiSet::ProcessInput)
                     .before(EguiSet::BeginFrame)
                     .in_base_set(CoreSet::PreUpdate),
             )
-            .add_system(
-                mouse_button_action_system
-                    .after(EguiSet::ProcessInput)
-                    .before(EguiSet::BeginFrame)
-                    .in_base_set(CoreSet::PreUpdate),
-            )
-            .add_system(
-                mouse_axis_system
-                    .after(EguiSet::ProcessInput)
-                    .before(EguiSet::BeginFrame)
-                    .in_base_set(CoreSet::PreUpdate),
+            .configure_set(ActionStage::Update.in_base_set(CoreSet::Update))
+            .add_systems(
+                (
+                    keyboard_action_system,
+                    mouse_button_action_system,
+                    mouse_axis_system,
+                )
+                    .chain()
+                    .in_set(ActionStage::PreUpdate),
             )
             .add_startup_system(setup);
     }
