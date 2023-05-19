@@ -1,5 +1,5 @@
 pub mod debug;
-pub mod delay;
+pub mod wait;
 
 pub use debug::*;
-pub use delay::*;
+pub use wait::*;

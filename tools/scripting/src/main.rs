@@ -68,7 +68,7 @@ pub enum DebugBehavior {
     Repeater(Repeater),
     Inverter(Inverter),
     Succeeder(Succeeder),
-    Delay(Delay),
+    Wait(Wait),
     // Substrees are typed, let's allow loading this same type as subtree
     Subtree(Subtree<DebugBehavior>),
 }
@@ -90,7 +90,7 @@ impl BehaviorSpawner for DebugBehavior {
             DebugBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
         }
     }

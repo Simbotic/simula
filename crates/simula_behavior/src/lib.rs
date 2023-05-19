@@ -92,7 +92,7 @@ impl Plugin for BehaviorPlugin {
             .register_type::<BehaviorChildren>()
             .register_type::<BehaviorType>()
             .register_type::<Debug>()
-            .register_type::<Delay>()
+            .register_type::<Wait>()
             .register_type::<Selector>()
             .register_type::<Sequencer>()
             .register_type::<All>()
@@ -115,7 +115,7 @@ impl Plugin for BehaviorPlugin {
             .add_system(repeater::run)
             .add_system(inverter::run)
             .add_system(succeeder::run)
-            .add_system(delay::run)
+            .add_system(wait::run)
             .add_system(debug::run)
             .add_system(identity::run);
     }

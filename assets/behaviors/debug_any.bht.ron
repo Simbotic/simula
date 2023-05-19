@@ -6,7 +6,7 @@ Behavior(
             "Wait and do",
             Sequencer(()),
             [
-                ("Wait a bit", Delay((duration: 5.0))),
+                ("Wait a bit", Wait((duration: 5.0))),
                 (
                     "Run until any good",
                     Any(()),
@@ -18,7 +18,7 @@ Behavior(
                             "Wait and do",
                             Sequencer(()),
                             [
-                                ("Wait a bit", Delay((duration: 2.0))),
+                                ("Wait a bit", Wait((duration: 2.0))),
                                 (
                                     "Run until any good",
                                     Any(()),
@@ -30,7 +30,7 @@ Behavior(
                                 )
                             ]
                         ),
-                        ("Wait a bit", Delay((duration: 5.0))),
+                        ("Wait a bit", Wait((duration: 5.0))),
                         ("Nothing over here", Debug((duration: 8.0))),
                     ]
                 )
