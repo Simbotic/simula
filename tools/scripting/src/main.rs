@@ -52,6 +52,8 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(behavior_loader::<DebugBehavior>)
+        // Subtrees are typed, so we need to register them separately
+        .add_system(subtree::run::<DebugBehavior>)
         .run();
 }
 
@@ -67,6 +69,7 @@ pub enum DebugBehavior {
     Inverter(Inverter),
     Succeeder(Succeeder),
     Delay(Delay),
+    // Substrees are typed, let's allow loading this same type as subtree
     Subtree(Subtree<DebugBehavior>),
 }
 
