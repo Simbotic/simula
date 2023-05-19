@@ -2,10 +2,10 @@ use crate::{
     color_hex_utils::color_from_hex, BehaviorChildren, BehaviorCursor, BehaviorFailure,
     BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
-use bevy::prelude::*;
+use bevy::{ecs::component::ComponentId, prelude::*, reflect::TypeRegistry};
 use bevy_inspector_egui::{
-    bevy_inspector,
     egui::{self, Rounding},
+    reflect_inspector::{Context, InspectorUi},
     restricted_world_view::RestrictedWorldView,
 };
 
@@ -40,10 +40,13 @@ fn titlebar_color(behavior_type: BehaviorType, behavior_name: &String) -> egui::
 }
 
 pub fn behavior_inspector_node_ui(
+    row: usize,
+    _col: usize,
     context: &mut egui::Context,
     world: &mut RestrictedWorldView,
     node: &mut BehaviorInspectorNode,
     ui: &mut egui::Ui,
+    type_registry: &TypeRegistry,
 ) {
     let Some(node_entity) = node.entity else {return;};
     let (
@@ -88,6 +91,7 @@ pub fn behavior_inspector_node_ui(
         ui.vertical(|ui| {
             // Node frame
             egui::Frame::none()
+                .outer_margin(egui::Vec2::new(5.0, 5.0))
                 .stroke(cursor_stroke)
                 .fill(color_from_hex("#303030").unwrap())
                 .rounding(Rounding::same(3.0))
@@ -104,6 +108,7 @@ pub fn behavior_inspector_node_ui(
                             });
                         });
                     ui.horizontal(|ui| {
+                        ui.set_max_width(250.0);
                         let r = 3.0;
                         let size = egui::Vec2::splat(2.0 * r + 5.0);
                         let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
@@ -123,26 +128,83 @@ pub fn behavior_inspector_node_ui(
                         ui.label(egui::RichText::new(behavior_name).small());
                     });
 
-                    ui.collapsing("", |ui| {
-                        ui.set_max_width(250.0);
-                        unsafe {
-                            bevy_inspector::ui_for_entity(
-                                world.world().world_mut(),
-                                node_entity,
-                                ui,
-                            );
+                    // Node content
+                    {
+                        let type_registry = type_registry.read();
+
+                        let world_res =
+                            unsafe { RestrictedWorldView::new(world.world().world_mut()) };
+
+                        let mut cx = Context {
+                            world: Some(world_res),
+                            queue: None,
+                        };
+
+                        for (comp_name, _comp_id, comp_type_id) in
+                            components_of_entity(unsafe { world.world().world_mut() }, node_entity)
+                        {
+                            if let Ok((value, _is_changed, _set_changed)) = world
+                                .get_entity_component_reflect(
+                                    node_entity,
+                                    comp_type_id,
+                                    &type_registry,
+                                )
+                            {
+                                ui.group(|ui| {
+                                    ui.label(
+                                        egui::RichText::new(comp_name).color(egui::Color32::GRAY),
+                                    );
+                                    InspectorUi::for_bevy(&type_registry, &mut cx)
+                                        .ui_for_reflect(value, ui);
+                                });
+                            }
                         }
-                    });
+                    }
                 });
 
             ui.horizontal(|ui| {
-                for child in behavior_children.iter() {
+                for (col, child) in behavior_children.iter().enumerate() {
                     let mut child_node = BehaviorInspectorNode {
                         entity: Some(*child),
                     };
-                    behavior_inspector_node_ui(context, world, &mut child_node, ui);
+                    behavior_inspector_node_ui(
+                        row + 1,
+                        col,
+                        context,
+                        world,
+                        &mut child_node,
+                        ui,
+                        type_registry,
+                    );
                 }
             });
         });
     });
+}
+
+fn components_of_entity(
+    world: &mut World,
+    entity: Entity,
+) -> Vec<(String, ComponentId, core::any::TypeId)> {
+    let entity_ref = world.get_entity(entity).unwrap();
+    let archetype = entity_ref.archetype();
+    let mut components: Vec<_> = archetype
+        .components()
+        .filter_map(|component_id| {
+            let info = world.components().get_info(component_id).unwrap();
+            let name = pretty_type_name::pretty_type_name_str(info.name());
+            if name.starts_with("Behavior") {
+                return None;
+            }
+            if name == "Children" || name == "Parent" {
+                return None;
+            }
+            if name == "Name" {
+                return None;
+            }
+            Some((name, component_id, info.type_id().unwrap()))
+        })
+        .collect();
+    components.sort_by(|(name_a, ..), (name_b, ..)| name_a.cmp(name_b));
+    components
 }

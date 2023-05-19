@@ -10,7 +10,7 @@ pub struct Debug {
     pub fail: bool,
     #[serde(default)]
     pub duration: f64,
-    #[serde(default)]
+    #[serde(skip)]
     pub start: f64,
 }
 

@@ -98,6 +98,8 @@ pub fn behavior_inspector_ui(world: &mut World) {
                     entity: behavior_tree.root,
                 };
 
+                let type_registry = world.resource::<AppTypeRegistry>().0.clone();
+
                 let mut world = RestrictedWorldView::new(world);
 
                 egui::Window::new(format!("Behavior: {}", name))
@@ -106,7 +108,15 @@ pub fn behavior_inspector_ui(world: &mut World) {
                     .collapsible(true)
                     .scroll2([true, true])
                     .show(ui.ctx(), |ui| {
-                        behavior_inspector_node_ui(&mut context2, &mut world, &mut node, ui);
+                        behavior_inspector_node_ui(
+                            0,
+                            0,
+                            &mut context2,
+                            &mut world,
+                            &mut node,
+                            ui,
+                            &type_registry,
+                        );
                     });
             }
         }
