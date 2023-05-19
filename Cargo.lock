@@ -1498,8 +1498,6 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_rapier3d",
- "enum-display-derive",
- "enum-iterator",
  "rand",
  "regex",
  "simula_action",
@@ -3054,12 +3052,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
 
 [[package]]
-name = "hex"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
 name = "hexasphere"
 version = "8.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3673,26 +3665,6 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.45.0",
-]
-
-[[package]]
-name = "mission"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy-inspector-egui",
- "bevy_egui",
- "enum-display-derive",
- "enum-iterator",
- "rand",
- "serde",
- "simula_action",
- "simula_behavior",
- "simula_camera",
- "simula_core",
- "simula_mission",
- "simula_video",
- "simula_viz",
 ]
 
 [[package]]
@@ -5093,18 +5065,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simula_mission"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_egui",
- "hex",
- "ron",
- "serde",
- "ta",
-]
-
-[[package]]
 name = "simula_octree"
 version = "0.1.0"
 dependencies = [
@@ -5437,12 +5397,6 @@ dependencies = [
  "toml",
  "version-compare",
 ]
-
-[[package]]
-name = "ta"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "609409d472a0a7d8d4dd9e19891bbdef546b9dce670c3057d0e02192dc541226"
 
 [[package]]
 name = "taffy"
