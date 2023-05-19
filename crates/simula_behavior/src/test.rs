@@ -1,6 +1,6 @@
 use crate::{
-    actions::*, asset::BehaviorDocument, complete_behavior, composites::*, decorators::*,
-    start_behavior, BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTrace, BehaviorTree,
+    actions::*, asset::Behavior, complete_behavior, composites::*, decorators::*, start_behavior,
+    BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTrace, BehaviorTree,
 };
 use bevy::{
     ecs::system::{CommandQueue, EntityCommands},
@@ -24,6 +24,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(succeeder::run);
     app.add_system(delay::run);
     app.add_system(debug::run);
+    app.add_system(identity::run);
     app.init_resource::<BehaviorTrace>();
     app
 }
@@ -40,6 +41,7 @@ pub enum TestBehavior {
     Inverter(Inverter),
     Succeeder(Succeeder),
     Delay(Delay),
+    Identity(Identity),
 }
 
 impl Default for TestBehavior {
@@ -60,13 +62,14 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Identity(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 }
 
 pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
     // Load behavior tree from RON string
-    let document = ron::from_str::<BehaviorDocument<TestBehavior>>(behavior);
+    let document = ron::from_str::<Behavior<TestBehavior>>(behavior);
     assert!(document.is_ok());
     let document = document.unwrap();
     // println!("Loaded behavior tree: \n{:#?}", ron::ser::to_string_pretty(&document, Default::default()).unwrap());
@@ -79,7 +82,7 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
     let mut commands = Commands::new(&mut command_queue, &app.world);
 
     // Spawn tree
-    let entity = BehaviorTree::spawn_tree(None, &mut commands, &document.root);
+    let entity = BehaviorTree::spawn_tree(None, &mut commands, &document);
     commands.entity(entity).insert(BehaviorCursor);
 
     // Apply commands

@@ -1,35 +1,33 @@
-(
-    root:(
-        "Chill until login", Sequencer(()), [
-            ("Explore", Any(()), [
-                ("RepeatForever", Repeater((repeat: Forever)), [
-                    ("OpenURL", Debug((duration: 3.0, fail: true))),
-                ]),
-                ("WASD Locomotion", Debug((duration: 3.0, fail: true))),
-                ("RepeatUntilFail", Repeater((repeat: UntilFail)), [
-                    ("Inverter", Inverter(()), [
-                        ("Auth", Sequencer(()), [
-                            ("Link", Debug((duration: 3.0, fail: false))),
-                            ("Login", Sequencer(()), [
-                            ("Session", Debug((duration: 3.0, fail: false))),
-                            ]),
+Behavior(
+    "Chill until login", Sequencer(()), [
+        ("Explore", Any(()), [
+            ("RepeatForever", Repeater((repeat: Forever)), [
+                ("OpenURL", Debug((duration: 3.0, fail: true))),
+            ]),
+            ("WASD Locomotion", Debug((duration: 3.0, fail: true))),
+            ("RepeatUntilFail", Repeater((repeat: UntilFail)), [
+                ("Inverter", Inverter(()), [
+                    ("Auth", Sequencer(()), [
+                        ("Link", Debug((duration: 3.0, fail: false))),
+                        ("Login", Sequencer(()), [
+                        ("Session", Debug((duration: 3.0, fail: false))),
                         ]),
                     ]),
                 ]),
             ]),
-            ("Repeater", Repeater((repeat: Forever)), [
-                ("Lobby Flow", Any(()), [
-                    ("RepeatForever", Repeater((repeat: Forever)), [
-                        ("OpenURL", Debug((duration: 3.0, fail: true))),
-                    ]),
-                    ("WASD Locomotion", Debug((duration: 3.0, fail: true))),
-                    ("Elevator", Selector(()), [
-                        ("Unlock Elevator", Debug((duration: 3.0, fail: false))),
-                        ("Call Elevator", Debug((duration: 3.0, fail: false))),
-                        ("Pick Floor", Debug((duration: 3.0, fail: false))),
-                    ]),
+        ]),
+        ("Repeater", Repeater((repeat: Forever)), [
+            ("Lobby Flow", Any(()), [
+                ("RepeatForever", Repeater((repeat: Forever)), [
+                    ("OpenURL", Debug((duration: 3.0, fail: true))),
+                ]),
+                ("WASD Locomotion", Debug((duration: 3.0, fail: true))),
+                ("Elevator", Selector(()), [
+                    ("Unlock Elevator", Debug((duration: 3.0, fail: false))),
+                    ("Call Elevator", Debug((duration: 3.0, fail: false))),
+                    ("Pick Floor", Debug((duration: 3.0, fail: false))),
                 ]),
             ]),
-        ],
-    ),
+        ]),
+    ],
 )

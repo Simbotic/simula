@@ -3,15 +3,13 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn repeater_simple() {
     let behavior = r#"
-    (
-        root:(
-            "Do a few times",
-            Repeater((repeat:Times(2))),
-                [
-                    ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
-                ]
-            )
-        )
+    Behavior(
+        "Do a few times",
+        Repeater((repeat:Times(2))),
+        [
+            ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
+        ]
+    )
     "#;
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
@@ -30,21 +28,18 @@ fn repeater_simple() {
 #[test]
 fn repeater_nested() {
     let behavior = r#"
-    (
-        root:
-        (
-            "Do a few times",
-            Repeater((repeat:Times(2))),
-            [
-                (
-                    "Do a few more times",
-                    Repeater((repeat:Times(2))),
-                    [
-                        ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
-                    ]
-                )
-            ]
-        )
+    Behavior(
+        "Do a few times",
+        Repeater((repeat:Times(2))),
+        [
+            (
+                "Do a few more times",
+                Repeater((repeat:Times(2))),
+                [
+                    ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
+                ]
+            )
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -74,19 +69,17 @@ fn repeater_nested() {
 #[test]
 fn repeater_sequence_success() {
     let behavior = r#"
-    (
-        root:(
-            "Do a few times",
-            Repeater((repeat:Times(2))),
-                [(
-                    "Sequencer of two actions",
-                    Sequencer(()),
-                    [
-                        ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
-                        ("Do another action", Debug((message:"Hello, from DebugMessage1!")))
-                    ]
-            )]
-        )
+    Behavior(
+        "Do a few times",
+        Repeater((repeat:Times(2))),
+            [(
+                "Sequencer of two actions",
+                Sequencer(()),
+                [
+                    ("Do an action", Debug((message:"Hello, from DebugMessage0!"))),
+                    ("Do another action", Debug((message:"Hello, from DebugMessage1!")))
+                ]
+        )]
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -114,20 +107,18 @@ fn repeater_sequence_success() {
 #[test]
 fn repeater_sequence_failure() {
     let behavior = r#"
-    (
-        root:(
-            "Do a few times",
-            Repeater((repeat:Times(2))),
-                [(
-                    "Sequencer of a few actions",
-                    Sequencer(()),
-                    [
-                        ("Do an action", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                        ("Do another action", Debug((message:"Hello, from DebugMessage1!")))
-                    ]
-                )
-            ]
-        )
+    Behavior(
+        "Do a few times",
+        Repeater((repeat:Times(2))),
+            [(
+                "Sequencer of a few actions",
+                Sequencer(()),
+                [
+                    ("Do an action", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    ("Do another action", Debug((message:"Hello, from DebugMessage1!")))
+                ]
+            )
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);

@@ -1,11 +1,9 @@
-(
-    root:(
-        "Simple sequence",
-        Sequencer(()),
-        [
-            ("Dont Fail", Debug((fail: false))),
-            ("Take some time", Debug((duration: 1.5))),
-            ("Say hello", Debug((message: "Hello World!"))),
-        ]
-    )
+Behavior(
+    "Simple sequence",
+    Sequencer(()),
+    [
+        ("Dont Fail", Debug((fail: false))),
+        ("Take some time", Debug((duration: 1.5))),
+        ("Say hello", Debug((message: "Hello World!"))),
+    ]
 )

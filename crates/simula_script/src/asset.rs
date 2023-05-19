@@ -1,13 +1,12 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
-    prelude::*,
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
 use rhai::{Engine, AST};
 use serde::Deserialize;
 
-#[derive(Default, Debug, TypeUuid, Deserialize, Component)]
+#[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
 pub struct RhaiScript {
     pub script: String,
@@ -36,5 +35,14 @@ impl AssetLoader for RhaiScriptLoader {
     fn extensions(&self) -> &[&str] {
         static EXTENSIONS: &[&str] = &["rhai"];
         EXTENSIONS
+    }
+}
+
+pub fn from_str(script: &str) -> RhaiScript {
+    let engine = Engine::new();
+    let ast = engine.compile(&script).unwrap();
+    RhaiScript {
+        script: script.into(),
+        ast,
     }
 }

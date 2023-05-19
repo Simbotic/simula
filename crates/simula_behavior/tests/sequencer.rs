@@ -3,16 +3,14 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn sequence_single_success() {
     let behavior = r#"
-    (
-        root:(
-            "Sequencer of a few actions",
-            Sequencer(()),
-            [
-                ("Do action 0", Debug((message:"Hello, from DebugMessage0!"))),
-                ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
-                ("Do action 2", Debug((message:"Hello, from DebugMessage2!"))),
-            ],
-        )
+    Behavior(
+        "Sequencer of a few actions",
+        Sequencer(()),
+        [
+            ("Do action 0", Debug((message:"Hello, from DebugMessage0!"))),
+            ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
+            ("Do action 2", Debug((message:"Hello, from DebugMessage2!"))),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -33,16 +31,14 @@ fn sequence_single_success() {
 #[test]
 fn sequence_single_failure() {
     let behavior = r#"
-    (
-        root:(
-            "Sequencer of a few actions",
-            Sequencer(()), 
-            [
-                ("Do action 0", Debug((message:"Hello, from DebugMessage0!"))),
-                ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
-                ("Do action 2", Debug((message:"Hello, from DebugMessage2!"))),
-            ],
-        )
+    Behavior(
+        "Sequencer of a few actions",
+        Sequencer(()), 
+        [
+            ("Do action 0", Debug((message:"Hello, from DebugMessage0!"))),
+            ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+            ("Do action 2", Debug((message:"Hello, from DebugMessage2!"))),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -61,34 +57,32 @@ fn sequence_single_failure() {
 #[test]
 fn sequence_nested_success() {
     let behavior = r#"
-    (
-        root:(
-            "Sequencer of sequence",
-            Sequencer(()),
-            [
-                (
-                    "Depth 1 sequence",
-                    Sequencer(()),
-                    [
-                        (
-                            "Depth 2 sequence",
-                            Sequencer(()),
-                            [
-                                ("Deep nested action 1", Debug((message:"Hello, from DebugMessage0!"))),
-                            ]
-                        ),
-                        (
-                            "Another depth 2 sequence",
-                            Sequencer(()),
-                            [
-                                ("Deep nested action 2", Debug((message:"Hello, from DebugMessage1!"))),
-                                ("Deep nested action 3", Debug((message:"Hello, from DebugMessage2!"))),
-                            ]
-                        )
-                    ]
-                ),
-            ]
-        )
+    Behavior(
+        "Sequencer of sequence",
+        Sequencer(()),
+        [
+            (
+                "Depth 1 sequence",
+                Sequencer(()),
+                [
+                    (
+                        "Depth 2 sequence",
+                        Sequencer(()),
+                        [
+                            ("Deep nested action 1", Debug((message:"Hello, from DebugMessage0!"))),
+                        ]
+                    ),
+                    (
+                        "Another depth 2 sequence",
+                        Sequencer(()),
+                        [
+                            ("Deep nested action 2", Debug((message:"Hello, from DebugMessage1!"))),
+                            ("Deep nested action 3", Debug((message:"Hello, from DebugMessage2!"))),
+                        ]
+                    )
+                ]
+            ),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -115,34 +109,32 @@ fn sequence_nested_success() {
 #[test]
 fn sequence_nested_failure() {
     let behavior = r#"
-    (
-        root:(
-            "Sequencer of sequence",
-            Sequencer(()),
-            [
-                (
-                    "Nested sequence of sequences",
-                    Sequencer(()),
-                    [
-                        (
-                            "First depth 2 sequence",
-                            Sequencer(()),
-                            [
-                                ("Deep nested action 1", Debug((message:"Hello, from DebugMessage0!"))),
-                            ]
-                        ),
-                        (
-                            "Second depth 2 sequence",
-                            Sequencer(()),
-                            [
-                                ("Deep nested action 2", Debug((message:"Hello, from DebugMessage1!", fail:true))),
-                                ("Deep nested action 3", Debug((message:"Hello, from DebugMessage2!"))),
-                            ]
-                        )
-                    ]
-                ),
-            ]
-        )
+    Behavior(
+        "Sequencer of sequence",
+        Sequencer(()),
+        [
+            (
+                "Nested sequence of sequences",
+                Sequencer(()),
+                [
+                    (
+                        "First depth 2 sequence",
+                        Sequencer(()),
+                        [
+                            ("Deep nested action 1", Debug((message:"Hello, from DebugMessage0!"))),
+                        ]
+                    ),
+                    (
+                        "Second depth 2 sequence",
+                        Sequencer(()),
+                        [
+                            ("Deep nested action 2", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+                            ("Deep nested action 3", Debug((message:"Hello, from DebugMessage2!"))),
+                        ]
+                    )
+                ]
+            ),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -167,34 +159,32 @@ fn sequence_nested_failure() {
 #[test]
 fn sequence_nested_selector_success() {
     let behavior = r#"
-    (
-        root:(
-            "Sequencer of sequence",
-            Sequencer(()),
-            [
-                (
-                    "Nested sequence of sequences",
-                    Sequencer(()),
-                    [
-                        (
-                            "First depth 2 sequence",
-                            Selector(()),
-                            [
-                                ("Unlock doors", Debug((message:"Unlocked the doors!"))),
-                            ]
-                        ),
-                        (
-                            "Second depth 2 sequence",
-                            Sequencer(()),
-                            [
-                                ("Close doors",Debug((message:"Closed doors!"))),
-                                ("Enter door",Debug((message:"Go to selected door!"))),
-                            ]
-                        )
-                    ]
-                ),
-            ]
-        )
+    Behavior(
+        "Sequencer of sequence",
+        Sequencer(()),
+        [
+            (
+                "Nested sequence of sequences",
+                Sequencer(()),
+                [
+                    (
+                        "First depth 2 sequence",
+                        Selector(()),
+                        [
+                            ("Unlock doors", Debug((message:"Unlocked the doors!"))),
+                        ]
+                    ),
+                    (
+                        "Second depth 2 sequence",
+                        Sequencer(()),
+                        [
+                            ("Close doors",Debug((message:"Closed doors!"))),
+                            ("Enter door",Debug((message:"Go to selected door!"))),
+                        ]
+                    )
+                ]
+            ),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);

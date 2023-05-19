@@ -1029,7 +1029,6 @@ dependencies = [
  "codespan-reporting",
  "downcast-rs",
  "encase",
- "flate2",
  "futures-lite",
  "hexasphere",
  "image",
@@ -3068,19 +3067,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa686283ad6dd069f105e5ab091b04c62850d3e4cf5d67debad1933f55023df"
 
 [[package]]
-name = "hexgrid"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy-inspector-egui",
- "rand",
- "simula_action",
- "simula_camera",
- "simula_core",
- "simula_hexgrid",
-]
-
-[[package]]
 name = "hmac"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5050,18 +5036,6 @@ dependencies = [
  "petgraph",
  "rand",
  "serde",
-]
-
-[[package]]
-name = "simula_hexgrid"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_egui",
- "bytemuck",
- "rand",
- "simula_camera",
- "simula_core",
 ]
 
 [[package]]

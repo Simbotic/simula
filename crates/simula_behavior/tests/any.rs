@@ -3,17 +3,14 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn any_simple() {
     let behavior = r#"
-    (
-        root:
-        (
-            "Run until any good",
-            Any(()),
-            [
-                ("Do a thing", Debug((fail: true))),
-                ("Do another", Debug(())),
-                ("Do more", Debug((fail: true))),
-            ]
-        )
+    Behavior(
+        "Run until any good",
+        Any(()),
+        [
+            ("Do a thing", Debug((fail: true))),
+            ("Do another", Debug(())),
+            ("Do more", Debug((fail: true))),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -34,17 +31,14 @@ fn any_simple() {
 #[test]
 fn any_simple_failure() {
     let behavior = r#"
-    (
-        root:
-        (
-            "Run until any good",
-            Any(()),
-            [
-                ("Do a thing", Debug((fail: true))),
-                ("Do another", Debug((fail: true))),
-                ("Do more", Debug((fail: true))),
-            ]
-        )
+    Behavior(
+        "Run until any good",
+        Any(()),
+        [
+            ("Do a thing", Debug((fail: true))),
+            ("Do another", Debug((fail: true))),
+            ("Do more", Debug((fail: true))),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);

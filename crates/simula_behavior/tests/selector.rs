@@ -3,16 +3,14 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn selector_single_success() {
     let behavior = r#"
-    (
-        root:(
-            "Select first successful action",
-            Selector(()),
-            [
-                ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
-                ("Do action 2", Debug((message:"Hello, from DebugMessage2!", fail:true))),
-            ],
-        )
+    Behavior(
+        "Select first successful action",
+        Selector(()),
+        [
+            ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+            ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
+            ("Do action 2", Debug((message:"Hello, from DebugMessage2!", fail:true))),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -31,16 +29,14 @@ fn selector_single_success() {
 #[test]
 fn selector_single_failure() {
     let behavior = r#"
-    (
-        root:(
-            "Select first successful action",
-            Selector(()),
-            [
-                ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
-                ("Do action 2", Debug((message:"Hello, from DebugMessage2!", fail:true))),
-            ],
-        )
+    Behavior(
+        "Select first successful action",
+        Selector(()),
+        [
+            ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+            ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+            ("Do action 2", Debug((message:"Hello, from DebugMessage2!", fail:true))),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -61,29 +57,27 @@ fn selector_single_failure() {
 #[test]
 fn selector_nested_success() {
     let behavior = r#"
-    (
-        root:(
-            "Select first successful selector",
-            Selector(()),
-            [
-                (
-                    "Select first successful action",
-                    Selector(()),
-                    [
-                        ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                        ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
-                    ]
-                ),
-                (
-                    "Another select first successful action",
-                    Selector(()),
-                    [
-                        ("Do action 0", Debug((message:"Hello, from DebugMessage2!"))),
-                        ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
-                    ]
-                ),
-            ],
-        )
+    Behavior(
+        "Select first successful selector",
+        Selector(()),
+        [
+            (
+                "Select first successful action",
+                Selector(()),
+                [
+                    ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    ("Do action 1", Debug((message:"Hello, from DebugMessage1!"))),
+                ]
+            ),
+            (
+                "Another select first successful action",
+                Selector(()),
+                [
+                    ("Do action 0", Debug((message:"Hello, from DebugMessage2!"))),
+                    ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
+                ]
+            ),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -104,29 +98,27 @@ fn selector_nested_success() {
 #[test]
 fn selector_nested_fail_first_then_success() {
     let behavior = r#"
-    (
-        root:(
-            "Select first successful selector",
-            Selector(()),
-            [
-                (
-                    "Select first successful action",
-                    Selector(()),
-                    [
-                        ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                        ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
-                    ]
-                ),
-                (
-                    "Another select first successful",
-                    Selector(()),
-                    [
-                        ("Do action 0", Debug((message:"Hello, from DebugMessage2!"))),
-                        ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
-                    ]
-                ),
-            ],
-        )
+    Behavior(
+        "Select first successful selector",
+        Selector(()),
+        [
+            (
+                "Select first successful action",
+                Selector(()),
+                [
+                    ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+                ]
+            ),
+            (
+                "Another select first successful",
+                Selector(()),
+                [
+                    ("Do action 0", Debug((message:"Hello, from DebugMessage2!"))),
+                    ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
+                ]
+            ),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -151,29 +143,27 @@ fn selector_nested_fail_first_then_success() {
 #[test]
 fn selector_nested_failure() {
     let behavior = r#"
-    (
-        root:(
-            "Select first successful selector",
-            Selector(()),
-            [
-                (
-                    "Select first successful action",
-                    Selector(()),
-                    [
-                        ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                        ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
-                    ]
-                ),
-                (
-                    "Another select first successful",
-                    Selector(()),
-                    [
-                        ("Do action 0", Debug((message:"Hello, from DebugMessage2!", fail:true))),
-                        ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
-                    ]
-                ),
-            ],
-        )
+    Behavior(
+        "Select first successful selector",
+        Selector(()),
+        [
+            (
+                "Select first successful action",
+                Selector(()),
+                [
+                    ("Do action 0", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    ("Do action 1", Debug((message:"Hello, from DebugMessage1!", fail:true))),
+                ]
+            ),
+            (
+                "Another select first successful",
+                Selector(()),
+                [
+                    ("Do action 0", Debug((message:"Hello, from DebugMessage2!", fail:true))),
+                    ("Do action 1", Debug((message:"Hello, from DebugMessage3!", fail:true))),
+                ]
+            ),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);

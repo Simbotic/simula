@@ -3,17 +3,14 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn all_simple() {
     let behavior = r#"
-    (
-        root:
-        (
-            "Run until all good",
-            All(()),
-            [
-                ("Do a thing", Debug(())),
-                ("Do another", Debug(())),
-                ("Do more", Debug(())),
-            ]
-        )
+    Behavior(
+        "Run until all good",
+        All(()),
+        [
+            ("Do a thing", Debug(())),
+            ("Do another", Debug(())),
+            ("Do more", Debug(())),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);
@@ -34,17 +31,14 @@ fn all_simple() {
 #[test]
 fn all_simple_fails() {
     let behavior = r#"
-    (
-        root:
-        (
-            "Run until all good",
-            All(()),
-            [
-                ("Do a thing", Debug(())),
-                ("Do another", Debug((fail: true))),
-                ("Do more", Debug(())),
-            ]
-        )
+    Behavior(
+        "Run until all good",
+        All(()),
+        [
+            ("Do a thing", Debug(())),
+            ("Do another", Debug((fail: true))),
+            ("Do more", Debug(())),
+        ]
     )
     "#;
     let trace = trace_behavior(behavior);

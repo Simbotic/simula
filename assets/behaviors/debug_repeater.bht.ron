@@ -1,4 +1,4 @@
-(root:(
+Behavior(
     "Do a few times",
     Repeater((repeat:Times(2))),
     [(
@@ -7,4 +7,4 @@
         ("Say hi", Debug((message:"Hello, from DebugMessage0!"))),
         ("Say hi again", Debug((message:"Hello, from DebugMessage1!")))
     ])]
-))
+)

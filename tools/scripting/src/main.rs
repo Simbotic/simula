@@ -112,14 +112,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
         let behavior_tree =
             BehaviorTree::from_asset::<DebugBehavior>(None, &mut commands, behavior_handle);
-
-        commands.spawn((
-            BehaviorTree {
-                root: behavior_tree.root,
-                ..Default::default()
-            },
-            Name::new(behavior.to_string()),
-        ));
+        commands.spawn((behavior_tree, Name::new(behavior.to_string())));
     }
 
     // grid

@@ -3,21 +3,19 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn succeeder_success() {
     let behavior = r#"
-    (
-        root:(
-            "Just succeed",
-            Succeeder(()), 
-            [
-                (
-                    "Do a few things",
-                    Sequencer(()),
-                    [
-                        ("Do an action", Debug((message:"Hello, from DebugMessage0!", fail:true))),
-                        ("Do another action", Debug((message:"Hello, from DebugMessage1!"))),
-                    ]
-                ),
-            ],
-        )
+    Behavior(
+        "Just succeed",
+        Succeeder(()), 
+        [
+            (
+                "Do a few things",
+                Sequencer(()),
+                [
+                    ("Do an action", Debug((message:"Hello, from DebugMessage0!", fail:true))),
+                    ("Do another action", Debug((message:"Hello, from DebugMessage1!"))),
+                ]
+            ),
+        ],
     )
     "#;
     let trace = trace_behavior(behavior);

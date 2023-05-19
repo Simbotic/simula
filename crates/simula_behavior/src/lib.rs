@@ -1,5 +1,5 @@
 use actions::*;
-use asset::{BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading, BehaviorDocument};
+use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use composites::*;
 use decorators::*;
@@ -16,8 +16,7 @@ pub mod test;
 pub mod prelude {
     pub use crate::actions::*;
     pub use crate::asset::{
-        behavior_loader, BTNode, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading,
-        BehaviorDocument,
+        behavior_loader, Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading,
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
@@ -101,6 +100,7 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Inverter>()
             .register_type::<Repeater>()
             .register_type::<Succeeder>()
+            .register_type::<Identity>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_systems(
@@ -116,7 +116,8 @@ impl Plugin for BehaviorPlugin {
             .add_system(inverter::run)
             .add_system(succeeder::run)
             .add_system(delay::run)
-            .add_system(debug::run);
+            .add_system(debug::run)
+            .add_system(identity::run);
     }
 }
 
@@ -245,17 +246,17 @@ impl BehaviorTree {
     pub fn from_document<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
-        document: &BehaviorDocument<T>,
+        document: &Behavior<T>,
     ) -> Self
     where
         T: Default + BehaviorSpawner,
     {
-        let entity = Self::spawn_tree(parent, commands, &document.root);
+        let entity = Self::spawn_tree(parent, commands, &document);
         Self { root: Some(entity) }
     }
 
     /// Spawn a behavior tree from a behavior node, and return a BehaviorTree component with tree root
-    pub fn from_node<T>(parent: Option<Entity>, commands: &mut Commands, node: &BTNode<T>) -> Self
+    pub fn from_node<T>(parent: Option<Entity>, commands: &mut Commands, node: &Behavior<T>) -> Self
     where
         T: Default + BehaviorSpawner,
     {
@@ -268,12 +269,12 @@ impl BehaviorTree {
         entity: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
-        node: &BTNode<T>,
+        node: &Behavior<T>,
     ) -> Entity
     where
         T: Default + BehaviorSpawner,
     {
-        let BTNode(name, node_type, nodes) = node;
+        let Behavior(name, node_type, nodes) = node;
         let mut entity_commands = commands.entity(entity);
         node_type.insert(&mut entity_commands);
         entity_commands.insert(Name::new(name.clone()));
@@ -292,7 +293,7 @@ impl BehaviorTree {
     pub fn spawn_tree<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
-        node: &BTNode<T>,
+        node: &Behavior<T>,
     ) -> Entity
     where
         T: Default + BehaviorSpawner,

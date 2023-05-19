@@ -7,7 +7,7 @@ use bevy_console::{
 use clap::Parser;
 use rhai::{Dynamic, Engine, RegisterFn};
 
-mod asset;
+pub mod asset;
 
 /// Evaluate a Rhai expression
 #[derive(Parser, ConsoleCommand)]
@@ -51,7 +51,11 @@ fn raw_commands(mut console_commands: EventReader<ConsoleCommandEntered>) {
     }
 }
 
-fn load_script(asset_server: Res<AssetServer>, mut commands: Commands, _scripts: Res<Assets<RhaiScript>>) {
+fn load_script(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    _scripts: Res<Assets<RhaiScript>>,
+) {
     let script_handle: Handle<RhaiScript> = asset_server.load("scripts/behaviors.rhai");
     commands.spawn(script_handle);
     // if let Some(script) = scripts.get(&script_handle) {

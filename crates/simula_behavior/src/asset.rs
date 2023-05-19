@@ -9,12 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 #[derive(Default, Debug, Serialize, Deserialize)]
-pub struct BTNode<T: Default>(pub String, pub T, #[serde(default)] pub Vec<BTNode<T>>);
-
-#[derive(Default, Debug, Serialize, Deserialize)]
-pub struct BehaviorDocument<T: Default> {
-    pub root: BTNode<T>,
-}
+pub struct Behavior<T: Default>(pub String, pub T, #[serde(default)] pub Vec<Behavior<T>>);
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
@@ -67,15 +62,14 @@ pub fn behavior_loader<T>(
     for (entity, queued_asset) in queued_assets.iter() {
         if let Some(loaded_asset) = loaded_assets.get(&queued_asset.document) {
             let BehaviorAsset { document, .. } = loaded_asset;
-            let document: Result<BehaviorDocument<T>, _> = ron::de::from_str(document);
+            let document: Result<Behavior<T>, _> = ron::de::from_str(document);
             match document {
                 Ok(document) => {
-                    let BehaviorDocument { root } = document;
                     BehaviorTree::insert_tree::<T>(
                         entity,
                         queued_asset.parent,
                         &mut commands,
-                        &root,
+                        &document,
                     );
                 }
                 Err(err) => {
