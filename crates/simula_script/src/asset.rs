@@ -4,8 +4,8 @@ use bevy::{
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
-use rhai::{Engine, Scope, AST};
-use serde::{Deserialize, Serialize};
+use rhai::{Engine, AST};
+use serde::Deserialize;
 
 #[derive(Default, Debug, TypeUuid, Deserialize, Component)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
