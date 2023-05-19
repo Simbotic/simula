@@ -18,7 +18,7 @@ pub struct Subtree<T: BehaviorSpawner> {
 
 impl<T> BehaviorInfo for Subtree<T>
 where
-    T: BehaviorSpawner + Reflect,
+    T: BehaviorSpawner,
 {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Subtree";

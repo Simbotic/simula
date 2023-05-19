@@ -1,10 +1,14 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+    ecs::system::EntityCommands,
     prelude::*,
+    reflect::TypeUuid,
     window::PresentMode,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
+use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_script::ScriptPlugin;
 use simula_viz::{
@@ -43,12 +47,78 @@ fn main() {
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(ScriptPlugin)
+        .add_plugin(BehaviorPlugin)
+        .add_plugin(BehaviorInspectorPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
+        .add_system(behavior_loader::<DebugBehavior>)
         .run();
 }
 
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
+#[uuid = "7CFA1742-7725-416C-B167-95DA01750E1C"]
+pub enum DebugBehavior {
+    Debug(Debug),
+    Selector(Selector),
+    Sequencer(Sequencer),
+    All(All),
+    Any(Any),
+    Repeater(Repeater),
+    Inverter(Inverter),
+    Succeeder(Succeeder),
+    Delay(Delay),
+    Subtree(Subtree<DebugBehavior>),
+}
+
+impl Default for DebugBehavior {
+    fn default() -> Self {
+        Self::Debug(Debug::default())
+    }
+}
+
+impl BehaviorSpawner for DebugBehavior {
+    fn insert(&self, commands: &mut EntityCommands) {
+        match self {
+            DebugBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::All(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Any(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
+        }
+    }
+}
+
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // load debug behaviors
+    let behaviors = [
+        "debug_all",
+        "debug_any_repeat",
+        "debug_any_subtree",
+        "debug_any",
+        "debug_sequence",
+        "debug_defaults",
+        "debug_repeater",
+    ];
+    for behavior in behaviors.iter() {
+        let behavior_handle: Handle<BehaviorAsset> =
+            asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
+        let behavior_tree =
+            BehaviorTree::from_asset::<DebugBehavior>(None, &mut commands, behavior_handle);
+
+        commands.spawn((
+            BehaviorTree {
+                root: behavior_tree.root,
+                ..Default::default()
+            },
+            Name::new(behavior.to_string()),
+        ));
+    }
+
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands

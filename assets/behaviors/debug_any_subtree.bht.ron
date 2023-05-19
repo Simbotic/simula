@@ -32,7 +32,7 @@
                                 ]
                             ),
                             ("Wait a bit", Delay((duration: 5.0))),
-                            ("A Quest", Quest((asset: "behaviors/debug_defaults.bht.ron", unload: true))),
+                            ("A Quest", Subtree((asset: "behaviors/debug_defaults.bht.ron", unload: true))),
                         ]
                     )
                 ]

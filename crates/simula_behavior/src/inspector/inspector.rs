@@ -1,4 +1,4 @@
-use crate::{inspector::BehaviorInspectorNode, BehaviorTree};
+use crate::{inspector::BehaviorInspectorNode, BehaviorCursor, BehaviorNode, BehaviorTree};
 use bevy::{ecs::system::SystemState, prelude::*};
 use bevy_inspector_egui::{
     bevy_egui::EguiContexts, egui, restricted_world_view::RestrictedWorldView,
@@ -51,6 +51,16 @@ fn item_label(item: &BehaviorInspectorItem) -> String {
     format!("{}{}", entity, item.name)
 }
 
+fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
+    let mut query = world.query_filtered::<(Entity, &BehaviorNode), With<BehaviorCursor>>();
+    for (entity, node) in query.iter(world) {
+        if node.tree == Some(tree_entity) {
+            return Some(entity);
+        }
+    }
+    None
+}
+
 pub fn behavior_inspector_ui(world: &mut World) {
     let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
@@ -93,32 +103,49 @@ pub fn behavior_inspector_ui(world: &mut World) {
             name,
         } = &behavior_inspector.selected
         {
-            if let Ok((_, _, behavior_tree)) = behavior_trees.get(world, *entity) {
-                let mut node = BehaviorInspectorNode {
-                    entity: behavior_tree.root,
-                };
+            let (tree_entity, tree_root) = {
+                let Ok((tree_entity, _, behavior_tree)) = behavior_trees.get(world, *entity) else {
+                return;};
+                let Some(tree_root) = behavior_tree.root else {return;};
+                (tree_entity, tree_root)
+            };
 
-                let type_registry = world.resource::<AppTypeRegistry>().0.clone();
+            let mut node = BehaviorInspectorNode {
+                entity: Some(tree_root),
+            };
 
-                let mut world = RestrictedWorldView::new(world);
-
-                egui::Window::new(format!("Behavior: {}", name))
-                    .title_bar(true)
-                    .resizable(true)
-                    .collapsible(true)
-                    .scroll2([true, true])
-                    .show(ui.ctx(), |ui| {
-                        behavior_inspector_node_ui(
-                            0,
-                            0,
-                            &mut context2,
-                            &mut world,
-                            &mut node,
-                            ui,
-                            &type_registry,
-                        );
-                    });
+            match find_cursor(world, tree_entity) {
+                Some(_cursor) => {
+                    ui.label("Running");
+                }
+                None => {
+                    if ui.button("Run").clicked() {
+                        world.entity_mut(tree_root).insert(BehaviorCursor);
+                    }
+                }
             }
+
+            let type_registry = world.resource::<AppTypeRegistry>().0.clone();
+
+            let mut world = RestrictedWorldView::new(world);
+
+            egui::Window::new(format!("Behavior: {}", name))
+                .title_bar(true)
+                .resizable(true)
+                .collapsible(true)
+                .scroll2([true, true])
+                .show(ui.ctx(), |ui| {
+                    behavior_inspector_node_ui(
+                        0,
+                        0,
+                        &mut context2,
+                        &mut world,
+                        &mut node,
+                        ui,
+                        &type_registry,
+                    );
+                });
+            // }
         }
     });
 }

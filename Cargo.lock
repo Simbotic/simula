@@ -4829,7 +4829,9 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "serde",
  "simula_action",
+ "simula_behavior",
  "simula_camera",
  "simula_core",
  "simula_script",

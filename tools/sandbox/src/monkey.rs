@@ -2,7 +2,7 @@ use bevy::input::{keyboard::KeyCode, mouse::MouseButton};
 use bevy::{prelude::*, reflect::FromReflect};
 use simula_action::{
     action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
-    AxisMapInput, AxisMapSource, MouseAxis,
+    ActionStage, AxisMapInput, AxisMapSource, MouseAxis,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash, SystemSet)]
@@ -16,10 +16,16 @@ impl Plugin for MonkeyPlugin {
             .register_type::<ActionMap<MonkeyDo>>()
             .register_type::<ActionAxisMap<MonkeyMove>>()
             .add_startup_system(monkey_setup)
-            .add_system(action_map::<MonkeyDo, MonkeyActor>)
-            .add_system(action_axis_map::<MonkeyMove, MonkeyActor>)
-            .add_system(action_axis_map::<MonkeyLook, MonkeyActor>)
-            .add_system(monkey_play);
+            .add_systems(
+                (
+                    action_map::<MonkeyDo, MonkeyActor>,
+                    action_axis_map::<MonkeyMove, MonkeyActor>,
+                    action_axis_map::<MonkeyLook, MonkeyActor>,
+                    monkey_play,
+                )
+                    .chain()
+                    .after(ActionStage::Update),
+            );
     }
 }
 

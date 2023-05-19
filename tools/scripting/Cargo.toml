@@ -12,4 +12,6 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_action = { path = "../../crates/simula_action" }
 simula_script = { path = "../../crates/simula_script" }
+simula_behavior = { path = "../../crates/simula_behavior" }
 
+serde = { version = "1.0", features = ["derive"] }
