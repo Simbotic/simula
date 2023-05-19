@@ -14,6 +14,4 @@ simula_viz = { path = "../../crates/simula_viz" }
 simula_action = { path = "../../crates/simula_action" }
 
 rand = "0.8.5"
-enum-iterator = "1.4"
-enum-display-derive = "0.1.1"
 regex = "1.7"

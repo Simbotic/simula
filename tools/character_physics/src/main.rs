@@ -217,7 +217,7 @@ fn setup_scene_once_loaded(
     animations: Res<Animations>,
     mut player: Query<(Entity, &mut AnimationPlayer)>,
     names: Query<&Name>,
-    parent_query: Query<&Parent>,
+    _parent_query: Query<&Parent>,
     children_query: Query<&Children>,
     global_transforms: Query<&GlobalTransform>,
     mut done: Local<bool>,
