@@ -49,6 +49,12 @@ pub fn run(
     asset_server: ResMut<AssetServer>,
 ) {
     for (entity, children, gate, script_handle) in &mut gates {
+        if children.len() != 1 {
+            error!("Decorator node requires one child");
+            commands.entity(entity).insert(BehaviorFailure);
+            continue;
+        }
+
         if script_handle.is_none() {
             let script_handle = match &gate.script {
                 Script::Asset(path) => asset_server.load(path),
@@ -65,12 +71,7 @@ pub fn run(
                 }
             };
             commands.entity(entity).insert(script_handle);
-        } else if children.is_empty() {
         } else {
-            if children.len() > 1 {
-                panic!("Decorator node has more than one child");
-            }
-
             if let Some(script_asset) =
                 script_handle.and_then(|script_handle| script_assets.get(script_handle))
             {

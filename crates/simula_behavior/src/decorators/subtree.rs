@@ -48,6 +48,7 @@ pub fn run<T: BehaviorSpawner>(
             }
             commands.entity(entity).insert(behavior);
         } else if children.is_empty() {
+            // Can be empty while loading subtree
         } else {
             if children.len() > 1 {
                 panic!("Decorator node has more than one child");

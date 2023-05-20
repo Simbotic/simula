@@ -2,9 +2,16 @@ use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     reflect::TypeUuid,
     utils::BoxedFuture,
+    prelude::*,
 };
 use rhai::{Engine, EvalAltResult, ParseError, Scope, AST};
 use serde::Deserialize;
+
+#[derive(Resource)]
+pub struct Context {
+    pub engine: Engine,
+    pub scope: Scope<'static>,
+}
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
