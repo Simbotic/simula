@@ -1,10 +1,10 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::{RhaiContext, RhaiScript};
+use simula_script::{Scope, Script};
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize)]
-pub enum Script {
+pub enum Source {
     Asset(String),
     Inline(String),
 }
@@ -15,13 +15,13 @@ pub enum Script {
 #[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Gate {
     /// The script to evaluate
-    pub script: Script,
+    pub script: Source,
 }
 
 impl Default for Gate {
     fn default() -> Self {
         Self {
-            script: Script::Inline("true".into()),
+            script: Source::Inline("true".into()),
         }
     }
 }
@@ -39,16 +39,16 @@ pub fn run(
             Entity,
             &BehaviorChildren,
             &Gate,
-            Option<&Handle<RhaiScript>>,
+            Option<&Handle<Script>>,
             &BehaviorNode,
         ),
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    mut script_assets: ResMut<Assets<RhaiScript>>,
-    asset_server: ResMut<AssetServer>,
     trees: Query<&BehaviorTree>,
-    mut scopes: ResMut<Assets<RhaiContext>>,
+    asset_server: ResMut<AssetServer>,
+    mut scripts: ResMut<Assets<Script>>,
+    mut scopes: ResMut<Assets<Scope>>,
 ) {
     for (entity, children, gate, script_handle, node) in &mut gates {
         if children.len() != 1 {
@@ -59,11 +59,11 @@ pub fn run(
 
         if script_handle.is_none() {
             let script_handle = match &gate.script {
-                Script::Asset(path) => asset_server.load(path),
-                Script::Inline(script) => {
-                    let script_asset = RhaiScript::from_str(script);
+                Source::Asset(path) => asset_server.load(path),
+                Source::Inline(script) => {
+                    let script_asset = Script::from_str(script);
                     match script_asset {
-                        Ok(script_asset) => script_assets.add(script_asset),
+                        Ok(script_asset) => scripts.add(script_asset),
                         Err(err) => {
                             error!("Script errored: {:?}", err);
                             commands.entity(entity).insert(BehaviorFailure);
@@ -95,15 +95,15 @@ pub fn run(
                         }
                         // Child is ready, eval script to see if we should pass on cursor
                         else {
-                            if let Some(script_asset) = script_handle
-                                .and_then(|script_handle| script_assets.get(script_handle))
+                            if let Some(script_asset) =
+                                script_handle.and_then(|script_handle| scripts.get(script_handle))
                             {
                                 if let Some(tree) = node.tree.and_then(|tree| trees.get(tree).ok())
                                 {
-                                    if let Some(context) =
+                                    if let Some(scope) =
                                         tree.scope.as_ref().and_then(|scope| scopes.get_mut(&scope))
                                     {
-                                        let result = script_asset.eval::<bool>(context);
+                                        let result = script_asset.eval::<bool>(scope);
                                         match result {
                                             Ok(true) => {
                                                 // Script returned true, so let the child run

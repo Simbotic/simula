@@ -4,7 +4,7 @@ use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, refl
 use composites::*;
 use decorators::*;
 use serde::Deserialize;
-use simula_script::RhaiContext;
+use simula_script::Scope;
 
 pub mod actions;
 pub mod asset;
@@ -224,7 +224,7 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 #[reflect(Component)]
 pub struct BehaviorTree {
     pub root: Option<Entity>,
-    pub scope: Option<Handle<RhaiContext>>,
+    pub scope: Option<Handle<Scope>>,
 }
 
 impl BehaviorTree {
@@ -234,7 +234,7 @@ impl BehaviorTree {
         parent: Option<Entity>,
         commands: &mut Commands,
         node: Handle<BehaviorAsset>,
-        scope: Option<Handle<RhaiContext>>,
+        scope: Option<Handle<Scope>>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
@@ -259,7 +259,7 @@ impl BehaviorTree {
         parent: Option<Entity>,
         commands: &mut Commands,
         node: &Behavior<T>,
-        scope: Option<Handle<RhaiContext>>,
+        scope: Option<Handle<Scope>>,
     ) -> Self
     where
         T: Default + BehaviorSpawner,

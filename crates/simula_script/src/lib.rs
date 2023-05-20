@@ -1,5 +1,5 @@
-use asset::RhaiScriptLoader;
-pub use asset::{RhaiContext, RhaiScript};
+use asset::ScriptLoader;
+pub use asset::{Scope, Script};
 use bevy::prelude::*;
 use bevy_console::{
     reply, AddConsoleCommand, ConsoleCommand, ConsoleCommandEntered, ConsoleConfiguration,
@@ -23,9 +23,9 @@ pub struct ScriptPlugin;
 impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(ConsolePlugin)
-            .add_asset::<RhaiScript>()
-            .add_asset::<RhaiContext>()
-            .init_asset_loader::<RhaiScriptLoader>()
+            .add_asset::<Script>()
+            .add_asset::<Scope>()
+            .init_asset_loader::<ScriptLoader>()
             .insert_resource(ConsoleConfiguration {
                 ..Default::default()
             })
@@ -52,7 +52,7 @@ fn raw_commands(mut console_commands: EventReader<ConsoleCommandEntered>) {
     }
 }
 
-fn script_changed(mut script_events: EventReader<AssetEvent<RhaiScript>>) {
+fn script_changed(mut script_events: EventReader<AssetEvent<Script>>) {
     for event in script_events.iter() {
         match event {
             AssetEvent::Created { handle } => {

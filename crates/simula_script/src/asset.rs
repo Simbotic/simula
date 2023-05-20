@@ -4,22 +4,21 @@ use bevy::{
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
-use rhai::{Engine, EvalAltResult, Map, ParseError, Scope, AST};
 use serde::Deserialize;
 
 #[derive(TypeUuid)]
 #[uuid = "1EDAA495-674E-45AA-903B-212D088BD991"]
-pub struct RhaiContext {
-    pub engine: Engine,
-    pub scope: Scope<'static>,
+pub struct Scope {
+    engine: rhai::Engine,
+    scope: rhai::Scope<'static>,
 }
 
-impl RhaiContext {
+impl Scope {
     pub fn new() -> Self {
-        let mut engine = Engine::new();
+        let mut engine = rhai::Engine::new();
         engine.on_print(|x| info!("{x}"));
-        let mut scope = Scope::new();
-        let mut global = Map::new();
+        let mut scope = rhai::Scope::new();
+        let mut global = rhai::Map::new();
         global.insert("state".into(), 0.into());
         scope.push("global", global);
         Self { engine, scope }
@@ -28,23 +27,23 @@ impl RhaiContext {
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
-pub struct RhaiScript {
+pub struct Script {
     pub script: String,
     #[serde(skip)]
-    pub ast: AST,
+    ast: rhai::AST,
 }
 
-impl RhaiScript {
-    pub fn from_str(script: &str) -> Result<Self, Box<ParseError>> {
-        let engine = Engine::new();
+impl Script {
+    pub fn from_str(script: &str) -> Result<Self, Box<rhai::ParseError>> {
+        let engine = rhai::Engine::new();
         let ast = engine.compile(&script)?;
-        Ok(RhaiScript {
+        Ok(Script {
             script: script.into(),
             ast,
         })
     }
 
-    pub fn eval<T>(&self, context: &mut RhaiContext) -> Result<T, std::boxed::Box<EvalAltResult>>
+    pub fn eval<T>(&self, context: &mut Scope) -> Result<T, std::boxed::Box<rhai::EvalAltResult>>
     where
         T: Clone + Deserialize<'static> + Send + Sync + 'static,
     {
@@ -58,19 +57,19 @@ impl RhaiScript {
 }
 
 #[derive(Default)]
-pub struct RhaiScriptLoader;
+pub struct ScriptLoader;
 
-impl AssetLoader for RhaiScriptLoader {
+impl AssetLoader for ScriptLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
-            let engine = Engine::new();
+            let engine = rhai::Engine::new();
             let script = String::from_utf8(bytes.to_vec()).unwrap();
             let ast = engine.compile(&script)?;
-            load_context.set_default_asset(LoadedAsset::new(RhaiScript { script, ast }));
+            load_context.set_default_asset(LoadedAsset::new(Script { script, ast }));
             Ok(())
         })
     }

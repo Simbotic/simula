@@ -1,0 +1,9 @@
+Behavior(
+    "Loop forever",
+    Repeater((repeat:Forever)),
+    [
+        ("Delay", Delay((duration: 5.0)), [
+            ("Subtree with gate", Subtree((asset: "behaviors/debug_gate.bht.ron", unload: true))),
+        ]),
+    ]
+)

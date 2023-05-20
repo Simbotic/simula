@@ -32,18 +32,24 @@ pub fn run<T: BehaviorSpawner>(
             Entity,
             &BehaviorChildren,
             &Subtree<T>,
+            &BehaviorNode,
             Option<&BehaviorTree>,
         ),
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
+    trees: Query<&BehaviorTree>,
     asset_server: Res<AssetServer>,
 ) {
-    for (entity, children, subtree, child_tree) in &mut subtrees {
+    for (entity, children, subtree, node, child_tree) in &mut subtrees {
         if child_tree.is_none() {
+            let scope = node
+                .tree
+                .and_then(|tree| trees.get(tree).ok())
+                .and_then(|tree| tree.scope.clone());
             let document: Handle<BehaviorAsset> = asset_server.load(&subtree.asset);
             let behavior =
-                BehaviorTree::from_asset::<T>(Some(entity), &mut commands, document, None);
+                BehaviorTree::from_asset::<T>(Some(entity), &mut commands, document, scope);
             if let Some(root) = behavior.root {
                 add_children(&mut commands, entity, &[root]);
             }

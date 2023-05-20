@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
-use simula_script::{RhaiContext, ScriptPlugin};
+use simula_script::{Scope, ScriptPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -103,7 +103,7 @@ impl BehaviorSpawner for DebugBehavior {
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut scopes: ResMut<Assets<RhaiContext>>,
+    mut scopes: ResMut<Assets<Scope>>,
 ) {
     // load debug behaviors
     let behaviors = [
@@ -116,11 +116,12 @@ fn setup(
         "debug_sequence",
         "debug_defaults",
         "debug_repeater",
+        "debug_subtree_gate"
     ];
     for behavior in behaviors.iter() {
         let behavior_handle: Handle<BehaviorAsset> =
             asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
-        let scope = scopes.add(RhaiContext::new());
+        let scope = scopes.add(Scope::new());
         let behavior_tree = BehaviorTree::from_asset::<DebugBehavior>(
             None,
             &mut commands,
