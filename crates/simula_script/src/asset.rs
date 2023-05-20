@@ -1,16 +1,28 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
+    prelude::*,
     reflect::TypeUuid,
     utils::BoxedFuture,
-    prelude::*,
 };
-use rhai::{Engine, EvalAltResult, ParseError, Scope, AST};
+use rhai::{Engine, EvalAltResult, Map, ParseError, Scope, AST};
 use serde::Deserialize;
 
 #[derive(Resource)]
-pub struct Context {
+pub struct RhaiContext {
     pub engine: Engine,
     pub scope: Scope<'static>,
+}
+
+impl RhaiContext {
+    pub fn new() -> Self {
+        let mut engine = Engine::new();
+        engine.on_print(|x| info!("{x}"));
+        let mut scope = Scope::new();
+        let mut global = Map::new();
+        global.insert("state".into(), 0.into());
+        scope.push("global", global);
+        Self { engine, scope }
+    }
 }
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
@@ -31,13 +43,16 @@ impl RhaiScript {
         })
     }
 
-    pub fn eval<T>(&self) -> Result<T, std::boxed::Box<EvalAltResult>>
+    pub fn eval<T>(&self, context: &mut RhaiContext) -> Result<T, std::boxed::Box<EvalAltResult>>
     where
         T: Clone + Deserialize<'static> + Send + Sync + 'static,
     {
-        let engine = Engine::new();
-        let mut scope = Scope::new();
-        engine.eval_ast_with_scope::<T>(&mut scope, &self.ast)
+        let stack = context.scope.len();
+        let result = context
+            .engine
+            .eval_ast_with_scope::<T>(&mut context.scope, &self.ast);
+        context.scope.rewind(stack);
+        result
     }
 }
 

@@ -1,8 +1,7 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::asset;
-use std::fmt::Debug;
+use simula_script::{RhaiContext, RhaiScript};
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub enum Script {
@@ -40,13 +39,14 @@ pub fn run(
             Entity,
             &BehaviorChildren,
             &Gate,
-            Option<&Handle<asset::RhaiScript>>,
+            Option<&Handle<RhaiScript>>,
         ),
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    mut script_assets: ResMut<Assets<asset::RhaiScript>>,
+    mut script_assets: ResMut<Assets<RhaiScript>>,
     asset_server: ResMut<AssetServer>,
+    mut context: ResMut<RhaiContext>,
 ) {
     for (entity, children, gate, script_handle) in &mut gates {
         if children.len() != 1 {
@@ -59,7 +59,7 @@ pub fn run(
             let script_handle = match &gate.script {
                 Script::Asset(path) => asset_server.load(path),
                 Script::Inline(script) => {
-                    let script_asset = asset::RhaiScript::from_str(script);
+                    let script_asset = RhaiScript::from_str(script);
                     match script_asset {
                         Ok(script_asset) => script_assets.add(script_asset),
                         Err(err) => {
@@ -72,32 +72,6 @@ pub fn run(
             };
             commands.entity(entity).insert(script_handle);
         } else {
-            if let Some(script_asset) =
-                script_handle.and_then(|script_handle| script_assets.get(script_handle))
-            {
-                let result = script_asset.eval::<bool>();
-                match result {
-                    Ok(true) => {
-                        // Script returned true, so let the child run
-                    }
-                    Ok(false) => {
-                        // Script returned false, so we fail
-                        commands.entity(entity).insert(BehaviorFailure);
-                        continue;
-                    }
-                    Err(err) => {
-                        // Script errored, so we fail
-                        error!("Script errored: {:?}", err);
-                        commands.entity(entity).insert(BehaviorFailure);
-                        continue;
-                    }
-                };
-            } else {
-                warn!("Script asset not loaded");
-                commands.entity(entity).insert(BehaviorFailure);
-                continue;
-            }
-
             let child_entity = children[0]; // Safe because we checked for empty
             if let Ok(BehaviorChildQueryItem {
                 child_entity,
@@ -117,10 +91,32 @@ pub fn run(
                         else if child_success.is_some() {
                             commands.entity(entity).insert(BehaviorSuccess);
                         }
-                        // Child is ready, pass on cursor
+                        // Child is ready, eval script to see if we should pass on cursor
                         else {
-                            commands.entity(entity).remove::<BehaviorCursor>();
-                            commands.entity(child_entity).insert(BehaviorCursor);
+                            if let Some(script_asset) = script_handle
+                                .and_then(|script_handle| script_assets.get(script_handle))
+                            {
+                                let result = script_asset.eval::<bool>(&mut context);
+                                match result {
+                                    Ok(true) => {
+                                        // Script returned true, so let the child run
+                                        commands.entity(entity).remove::<BehaviorCursor>();
+                                        commands.entity(child_entity).insert(BehaviorCursor);
+                                    }
+                                    Ok(false) => {
+                                        // Script returned false, so we fail
+                                        commands.entity(entity).insert(BehaviorFailure);
+                                    }
+                                    Err(err) => {
+                                        // Script errored, so we fail
+                                        error!("Script errored: {:?}", err);
+                                        commands.entity(entity).insert(BehaviorFailure);
+                                    }
+                                };
+                            } else {
+                                warn!("Script asset not loaded");
+                                commands.entity(entity).insert(BehaviorFailure);
+                            }
                         }
                     } else {
                         // Child is not ours, so we fail

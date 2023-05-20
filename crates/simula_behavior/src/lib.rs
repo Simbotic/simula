@@ -226,7 +226,8 @@ pub struct BehaviorTree {
 }
 
 impl BehaviorTree {
-    /// Spawn from behavior asset
+    /// Spawn behavior tree from asset.
+    /// A parent is optional, but if it is provided, it must be a behavior node.
     pub fn from_asset<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
@@ -246,20 +247,8 @@ impl BehaviorTree {
         Self { root: Some(entity) }
     }
 
-    /// Spawn a behavior tree from a document, and return a BehaviorTree component with tree root
-    pub fn from_document<T>(
-        parent: Option<Entity>,
-        commands: &mut Commands,
-        document: &Behavior<T>,
-    ) -> Self
-    where
-        T: Default + BehaviorSpawner,
-    {
-        let entity = Self::spawn_tree(parent, commands, &document);
-        Self { root: Some(entity) }
-    }
-
-    /// Spawn a behavior tree from a behavior node, and return a BehaviorTree component with tree root
+    /// Spawn a behavior tree from a behavior node, and return a BehaviorTree component with tree root.
+    /// A parent is optional, but if it is provided, it must be a behavior node.
     pub fn from_node<T>(parent: Option<Entity>, commands: &mut Commands, node: &Behavior<T>) -> Self
     where
         T: Default + BehaviorSpawner,
@@ -268,8 +257,9 @@ impl BehaviorTree {
         Self { root: Some(entity) }
     }
 
-    /// Spawn a behavior tree from a behavior node
-    pub fn insert_tree<T>(
+    /// Spawn a behavior tree from a behavior node.
+    /// A parent is optional, but if it is provided, it must be a behavior node.
+    pub(crate) fn insert_tree<T>(
         entity: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
@@ -293,8 +283,9 @@ impl BehaviorTree {
         entity
     }
 
-    /// Spawn a behavior tree from a behavior node
-    pub fn spawn_tree<T>(
+    /// Spawn a behavior tree from a behavior node.
+    /// A parent is optional, but if it is provided, it must be a behavior node.
+    pub(crate) fn spawn_tree<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
         node: &Behavior<T>,

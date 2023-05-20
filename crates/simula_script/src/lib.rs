@@ -1,4 +1,5 @@
-use asset::{RhaiScript, RhaiScriptLoader};
+use asset::RhaiScriptLoader;
+pub use asset::{RhaiContext, RhaiScript};
 use bevy::prelude::*;
 use bevy_console::{
     reply, AddConsoleCommand, ConsoleCommand, ConsoleCommandEntered, ConsoleConfiguration,
@@ -7,7 +8,7 @@ use bevy_console::{
 use clap::Parser;
 use rhai::{Dynamic, Engine, RegisterFn};
 
-pub mod asset;
+mod asset;
 
 /// Evaluate a Rhai expression
 #[derive(Parser, ConsoleCommand)]
@@ -23,6 +24,7 @@ impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(ConsolePlugin)
             .add_asset::<RhaiScript>()
+            .insert_resource(RhaiContext::new())
             .init_asset_loader::<RhaiScriptLoader>()
             .insert_resource(ConsoleConfiguration {
                 ..Default::default()
