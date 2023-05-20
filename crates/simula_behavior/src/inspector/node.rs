@@ -150,12 +150,17 @@ pub fn behavior_inspector_node_ui(
                                     &type_registry,
                                 )
                             {
-                                ui.group(|ui| {
-                                    ui.label(
-                                        egui::RichText::new(comp_name).color(egui::Color32::GRAY),
-                                    );
-                                    InspectorUi::for_bevy(&type_registry, &mut cx)
-                                        .ui_for_reflect(value, ui);
+                                ui.push_id(comp_type_id, |ui| {
+
+                                    // ui.set_width(250.0);
+                                    ui.group(|ui| {
+                                        
+                                        ui.label(
+                                            egui::RichText::new(comp_name).color(egui::Color32::GRAY),
+                                        );
+                                        InspectorUi::for_bevy(&type_registry, &mut cx)
+                                            .ui_for_reflect(value, ui);
+                                    });
                                 });
                             }
                         }

@@ -70,6 +70,7 @@ pub enum DebugBehavior {
     Succeeder(Succeeder),
     Wait(Wait),
     Delay(Delay),
+    Gate(Gate),
     // Substrees are typed, let's allow loading this same type as subtree
     Subtree(Subtree<DebugBehavior>),
 }
@@ -93,6 +94,7 @@ impl BehaviorSpawner for DebugBehavior {
             DebugBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Gate(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
@@ -102,6 +104,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // load debug behaviors
     let behaviors = [
         "debug_delay",
+        "debug_gate",
         "debug_all",
         "debug_any_repeat",
         "debug_any_subtree",

@@ -3,7 +3,7 @@ use bevy::{
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
-use rhai::{Engine, AST};
+use rhai::{Engine, EvalAltResult, ParseError, Scope, AST};
 use serde::Deserialize;
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
@@ -12,6 +12,26 @@ pub struct RhaiScript {
     pub script: String,
     #[serde(skip)]
     pub ast: AST,
+}
+
+impl RhaiScript {
+    pub fn from_str(script: &str) -> Result<Self, Box<ParseError>> {
+        let engine = Engine::new();
+        let ast = engine.compile(&script)?;
+        Ok(RhaiScript {
+            script: script.into(),
+            ast,
+        })
+    }
+
+    pub fn eval<T>(&self) -> Result<T, std::boxed::Box<EvalAltResult>>
+    where
+        T: Clone + Deserialize<'static> + Send + Sync + 'static,
+    {
+        let engine = Engine::new();
+        let mut scope = Scope::new();
+        engine.eval_ast_with_scope::<T>(&mut scope, &self.ast)
+    }
 }
 
 #[derive(Default)]
@@ -35,14 +55,5 @@ impl AssetLoader for RhaiScriptLoader {
     fn extensions(&self) -> &[&str] {
         static EXTENSIONS: &[&str] = &["rhai"];
         EXTENSIONS
-    }
-}
-
-pub fn from_str(script: &str) -> RhaiScript {
-    let engine = Engine::new();
-    let ast = engine.compile(&script).unwrap();
-    RhaiScript {
-        script: script.into(),
-        ast,
     }
 }

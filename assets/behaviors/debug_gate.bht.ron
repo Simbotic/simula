@@ -1,0 +1,11 @@
+Behavior(
+    "Loop forever",
+    Repeater((repeat:Forever)),
+    [
+        ("Delay", Delay((duration: 5.0)), [
+            ("Can do?", Gate((script: Inline("let a = 2; a > 0"))), [
+                ("Do a thing", Debug((message: "I'm doing a thing!")))
+            ])
+        ]),
+    ]
+)

@@ -26,7 +26,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(wait::run);
     app.add_system(delay::run);
     app.add_system(identity::run);
-    app.add_system(script::run);
+    app.add_system(gate::run);
     app.init_resource::<BehaviorTrace>();
     app
 }
@@ -45,7 +45,7 @@ pub enum TestBehavior {
     Wait(Wait),
     Delay(Delay),
     Identity(Identity),
-    Script(Identity),
+    Gate(Gate),
 }
 
 impl Default for TestBehavior {
@@ -68,7 +68,7 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Identity(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Script(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Gate(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 }

@@ -5,31 +5,41 @@ use simula_script::asset;
 use std::fmt::Debug;
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize)]
-pub enum Source {
+pub enum Script {
     Asset(String),
     Inline(String),
 }
 
-/// Script for running complex logic before and after child execution.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
-pub struct Script {
-    /// Source of the script.
-    pub source: Option<Source>,
+/// Gate evals a script to control the flow of execution. If the script returns
+/// `true`, the child is executed. If the script returns `false`, the child is
+/// not executed.
+#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
+pub struct Gate {
+    /// The script to evaluate
+    pub script: Script,
 }
 
-impl BehaviorInfo for Script {
+impl Default for Gate {
+    fn default() -> Self {
+        Self {
+            script: Script::Inline("true".into()),
+        }
+    }
+}
+
+impl BehaviorInfo for Gate {
     const TYPE: BehaviorType = BehaviorType::Decorator;
-    const NAME: &'static str = "Script";
-    const DESC: &'static str = "Runs complex logic before and after child execution.";
+    const NAME: &'static str = "Gate";
+    const DESC: &'static str = "Gate evals script to control the flow of execution.";
 }
 
 pub fn run(
     mut commands: Commands,
-    mut scripts: Query<
+    mut gates: Query<
         (
             Entity,
             &BehaviorChildren,
-            &Script,
+            &Gate,
             Option<&Handle<asset::RhaiScript>>,
         ),
         BehaviorRunQuery,
@@ -38,15 +48,21 @@ pub fn run(
     mut script_assets: ResMut<Assets<asset::RhaiScript>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    for (entity, children, script, script_handle) in &mut scripts {
+    for (entity, children, gate, script_handle) in &mut gates {
         if script_handle.is_none() {
-            let script_handle = match &script.source {
-                Some(Source::Asset(path)) => asset_server.load(path),
-                Some(Source::Inline(script)) => {
-                    let script_asset = asset::from_str(script);
-                    script_assets.add(script_asset)
+            let script_handle = match &gate.script {
+                Script::Asset(path) => asset_server.load(path),
+                Script::Inline(script) => {
+                    let script_asset = asset::RhaiScript::from_str(script);
+                    match script_asset {
+                        Ok(script_asset) => script_assets.add(script_asset),
+                        Err(err) => {
+                            error!("Script errored: {:?}", err);
+                            commands.entity(entity).insert(BehaviorFailure);
+                            continue;
+                        }
+                    }
                 }
-                None => panic!("Script source is not set"),
             };
             commands.entity(entity).insert(script_handle);
         } else if children.is_empty() {
@@ -54,6 +70,33 @@ pub fn run(
             if children.len() > 1 {
                 panic!("Decorator node has more than one child");
             }
+
+            if let Some(script_asset) =
+                script_handle.and_then(|script_handle| script_assets.get(script_handle))
+            {
+                let result = script_asset.eval::<bool>();
+                match result {
+                    Ok(true) => {
+                        // Script returned true, so let the child run
+                    }
+                    Ok(false) => {
+                        // Script returned false, so we fail
+                        commands.entity(entity).insert(BehaviorFailure);
+                        continue;
+                    }
+                    Err(err) => {
+                        // Script errored, so we fail
+                        error!("Script errored: {:?}", err);
+                        commands.entity(entity).insert(BehaviorFailure);
+                        continue;
+                    }
+                };
+            } else {
+                warn!("Script asset not loaded");
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+
             let child_entity = children[0]; // Safe because we checked for empty
             if let Ok(BehaviorChildQueryItem {
                 child_entity,

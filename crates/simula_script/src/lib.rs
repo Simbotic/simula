@@ -40,8 +40,7 @@ impl Plugin for ScriptPlugin {
                 }
             })
             .add_system(raw_commands.in_set(ConsoleSet::Commands))
-            .add_system(script_changed)
-            .add_startup_system(load_script);
+            .add_system(script_changed);
     }
 }
 
@@ -49,18 +48,6 @@ fn raw_commands(mut console_commands: EventReader<ConsoleCommandEntered>) {
     for ConsoleCommandEntered { command_name, args } in console_commands.iter() {
         debug!(r#"Entered command "{command_name}" with args {:#?}"#, args);
     }
-}
-
-fn load_script(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands,
-    _scripts: Res<Assets<RhaiScript>>,
-) {
-    let script_handle: Handle<RhaiScript> = asset_server.load("scripts/behaviors.rhai");
-    commands.spawn(script_handle);
-    // if let Some(script) = scripts.get(&script_handle) {
-    //     println!("Script {:?} was loaded", script_handle.id());
-    // }
 }
 
 fn script_changed(mut script_events: EventReader<AssetEvent<RhaiScript>>) {
