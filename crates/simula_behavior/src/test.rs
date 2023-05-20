@@ -15,16 +15,18 @@ pub fn test_app(app: &mut App) -> &mut App {
     // Add the behaviors system to the app
     app.add_system(start_behavior);
     app.add_system(complete_behavior);
-    app.add_system(sequencer::run);
+    app.add_system(debug::run);
     app.add_system(selector::run);
+    app.add_system(sequencer::run);
     app.add_system(all::run);
     app.add_system(any::run);
     app.add_system(repeater::run);
     app.add_system(inverter::run);
     app.add_system(succeeder::run);
     app.add_system(wait::run);
-    app.add_system(debug::run);
+    app.add_system(delay::run);
     app.add_system(identity::run);
+    app.add_system(script::run);
     app.init_resource::<BehaviorTrace>();
     app
 }
@@ -41,7 +43,9 @@ pub enum TestBehavior {
     Inverter(Inverter),
     Succeeder(Succeeder),
     Wait(Wait),
+    Delay(Delay),
     Identity(Identity),
+    Script(Identity),
 }
 
 impl Default for TestBehavior {
@@ -62,7 +66,9 @@ impl BehaviorSpawner for TestBehavior {
             TestBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Identity(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Script(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 }

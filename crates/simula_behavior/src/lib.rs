@@ -92,15 +92,17 @@ impl Plugin for BehaviorPlugin {
             .register_type::<BehaviorChildren>()
             .register_type::<BehaviorType>()
             .register_type::<Debug>()
-            .register_type::<Wait>()
             .register_type::<Selector>()
             .register_type::<Sequencer>()
             .register_type::<All>()
             .register_type::<Any>()
-            .register_type::<Inverter>()
             .register_type::<Repeater>()
+            .register_type::<Inverter>()
             .register_type::<Succeeder>()
+            .register_type::<Wait>()
+            .register_type::<Delay>()
             .register_type::<Identity>()
+            .register_type::<Script>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_systems(
@@ -108,16 +110,18 @@ impl Plugin for BehaviorPlugin {
                     .chain()
                     .in_base_set(CoreSet::PostUpdate),
             )
-            .add_system(sequencer::run)
+            .add_system(debug::run)
             .add_system(selector::run)
+            .add_system(sequencer::run)
             .add_system(all::run)
             .add_system(any::run)
             .add_system(repeater::run)
             .add_system(inverter::run)
             .add_system(succeeder::run)
             .add_system(wait::run)
-            .add_system(debug::run)
-            .add_system(identity::run);
+            .add_system(delay::run)
+            .add_system(identity::run)
+            .add_system(script::run);
     }
 }
 

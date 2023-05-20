@@ -23,13 +23,17 @@ impl BehaviorInfo for Debug {
 pub fn run(
     time: Res<Time>,
     mut commands: Commands,
-    mut debug_actions: Query<(Entity, &mut Debug, &mut BehaviorRunning), BehaviorRunQuery>,
+    mut debug_actions: Query<
+        (Entity, &mut Debug, &mut BehaviorRunning, Option<&Name>),
+        BehaviorRunQuery,
+    >,
 ) {
-    for (entity, mut debug_action, mut running) in &mut debug_actions {
+    for (entity, mut debug_action, mut running, name) in &mut debug_actions {
         if !running.on_enter_handled {
             running.on_enter_handled = true;
             debug_action.start = time.elapsed_seconds_f64();
-            debug!("[{}] RUNNING {}", entity.index(), debug_action.message);
+            let name = name.map(|name| name.as_str()).unwrap_or("");
+            info!("[{}:{}] {}", entity.index(), name, debug_action.message);
         }
         let duration = time.elapsed_seconds_f64() - debug_action.start;
         if duration > debug_action.duration {
