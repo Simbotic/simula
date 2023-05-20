@@ -24,7 +24,7 @@ impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(ConsolePlugin)
             .add_asset::<RhaiScript>()
-            .insert_resource(RhaiContext::new())
+            .add_asset::<RhaiContext>()
             .init_asset_loader::<RhaiScriptLoader>()
             .insert_resource(ConsoleConfiguration {
                 ..Default::default()

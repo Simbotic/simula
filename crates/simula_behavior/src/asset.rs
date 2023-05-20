@@ -47,7 +47,7 @@ pub struct BehaviorAssetLoading<T>
 where
     T: TypeUuid + Send + Sync + 'static + Default + Debug,
 {
-    pub document: Handle<BehaviorAsset>,
+    pub node: Handle<BehaviorAsset>,
     pub parent: Option<Entity>,
     pub phantom: std::marker::PhantomData<T>,
 }
@@ -60,7 +60,7 @@ pub fn behavior_loader<T>(
     T: BehaviorSpawner,
 {
     for (entity, queued_asset) in queued_assets.iter() {
-        if let Some(loaded_asset) = loaded_assets.get(&queued_asset.document) {
+        if let Some(loaded_asset) = loaded_assets.get(&queued_asset.node) {
             let BehaviorAsset { document, .. } = loaded_asset;
             let document: Result<Behavior<T>, _> = ron::de::from_str(document);
             match document {

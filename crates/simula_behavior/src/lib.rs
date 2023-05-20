@@ -4,6 +4,7 @@ use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, refl
 use composites::*;
 use decorators::*;
 use serde::Deserialize;
+use simula_script::RhaiContext;
 
 pub mod actions;
 pub mod asset;
@@ -223,6 +224,7 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 #[reflect(Component)]
 pub struct BehaviorTree {
     pub root: Option<Entity>,
+    pub scope: Option<Handle<RhaiContext>>,
 }
 
 impl BehaviorTree {
@@ -231,7 +233,8 @@ impl BehaviorTree {
     pub fn from_asset<T>(
         parent: Option<Entity>,
         commands: &mut Commands,
-        document: Handle<BehaviorAsset>,
+        node: Handle<BehaviorAsset>,
+        scope: Option<Handle<RhaiContext>>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
@@ -239,22 +242,33 @@ impl BehaviorTree {
         let entity = commands
             .spawn_empty()
             .insert(BehaviorAssetLoading::<T> {
-                document,
+                node,
                 parent,
                 ..default()
             })
             .id();
-        Self { root: Some(entity) }
+        Self {
+            root: Some(entity),
+            scope,
+        }
     }
 
     /// Spawn a behavior tree from a behavior node, and return a BehaviorTree component with tree root.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub fn from_node<T>(parent: Option<Entity>, commands: &mut Commands, node: &Behavior<T>) -> Self
+    pub fn from_node<T>(
+        parent: Option<Entity>,
+        commands: &mut Commands,
+        node: &Behavior<T>,
+        scope: Option<Handle<RhaiContext>>,
+    ) -> Self
     where
         T: Default + BehaviorSpawner,
     {
         let entity = Self::spawn_tree(parent, commands, node);
-        Self { root: Some(entity) }
+        Self {
+            root: Some(entity),
+            scope,
+        }
     }
 
     /// Spawn a behavior tree from a behavior node.

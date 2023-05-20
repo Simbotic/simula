@@ -42,7 +42,8 @@ pub fn run<T: BehaviorSpawner>(
     for (entity, children, subtree, child_tree) in &mut subtrees {
         if child_tree.is_none() {
             let document: Handle<BehaviorAsset> = asset_server.load(&subtree.asset);
-            let behavior = BehaviorTree::from_asset::<T>(Some(entity), &mut commands, document);
+            let behavior =
+                BehaviorTree::from_asset::<T>(Some(entity), &mut commands, document, None);
             if let Some(root) = behavior.root {
                 add_children(&mut commands, entity, &[root]);
             }

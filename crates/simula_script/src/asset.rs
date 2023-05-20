@@ -7,7 +7,8 @@ use bevy::{
 use rhai::{Engine, EvalAltResult, Map, ParseError, Scope, AST};
 use serde::Deserialize;
 
-#[derive(Resource)]
+#[derive(TypeUuid)]
+#[uuid = "1EDAA495-674E-45AA-903B-212D088BD991"]
 pub struct RhaiContext {
     pub engine: Engine,
     pub scope: Scope<'static>,

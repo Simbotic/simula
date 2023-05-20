@@ -40,15 +40,17 @@ pub fn run(
             &BehaviorChildren,
             &Gate,
             Option<&Handle<RhaiScript>>,
+            &BehaviorNode,
         ),
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
     mut script_assets: ResMut<Assets<RhaiScript>>,
     asset_server: ResMut<AssetServer>,
-    mut context: ResMut<RhaiContext>,
+    trees: Query<&BehaviorTree>,
+    mut scopes: ResMut<Assets<RhaiContext>>,
 ) {
-    for (entity, children, gate, script_handle) in &mut gates {
+    for (entity, children, gate, script_handle, node) in &mut gates {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
@@ -96,22 +98,37 @@ pub fn run(
                             if let Some(script_asset) = script_handle
                                 .and_then(|script_handle| script_assets.get(script_handle))
                             {
-                                let result = script_asset.eval::<bool>(&mut context);
-                                match result {
-                                    Ok(true) => {
-                                        // Script returned true, so let the child run
-                                        commands.entity(entity).remove::<BehaviorCursor>();
-                                        commands.entity(child_entity).insert(BehaviorCursor);
-                                    }
-                                    Ok(false) => {
-                                        // Script returned false, so we fail
+                                if let Some(tree) = node.tree.and_then(|tree| trees.get(tree).ok())
+                                {
+                                    if let Some(context) =
+                                        tree.scope.as_ref().and_then(|scope| scopes.get_mut(&scope))
+                                    {
+                                        let result = script_asset.eval::<bool>(context);
+                                        match result {
+                                            Ok(true) => {
+                                                // Script returned true, so let the child run
+                                                commands.entity(entity).remove::<BehaviorCursor>();
+                                                commands
+                                                    .entity(child_entity)
+                                                    .insert(BehaviorCursor);
+                                            }
+                                            Ok(false) => {
+                                                // Script returned false, so we fail
+                                                commands.entity(entity).insert(BehaviorFailure);
+                                            }
+                                            Err(err) => {
+                                                // Script errored, so we fail
+                                                error!("Script errored: {:?}", err);
+                                                commands.entity(entity).insert(BehaviorFailure);
+                                            }
+                                        };
+                                    } else {
+                                        error!("No scripting scope for tree");
                                         commands.entity(entity).insert(BehaviorFailure);
                                     }
-                                    Err(err) => {
-                                        // Script errored, so we fail
-                                        error!("Script errored: {:?}", err);
-                                        commands.entity(entity).insert(BehaviorFailure);
-                                    }
+                                } else {
+                                    error!("No tree for behavior");
+                                    commands.entity(entity).insert(BehaviorFailure);
                                 };
                             } else {
                                 warn!("Script asset not loaded");
