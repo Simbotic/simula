@@ -1,5 +1,5 @@
 Behavior(
-    "Loop forever",
+    "Loop Gate",
     Repeater((repeat:Forever)),
     [
         ("Delay", Delay((duration: 5.0)), [
