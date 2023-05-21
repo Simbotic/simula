@@ -38,22 +38,19 @@ pub fn run<T: BehaviorSpawner>(
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    trees: Query<&BehaviorTree>,
     asset_server: Res<AssetServer>,
 ) {
     for (entity, children, subtree, node, child_tree) in &mut subtrees {
         if child_tree.is_none() {
-            let scope = node
-                .tree
-                .and_then(|tree| trees.get(tree).ok())
-                .and_then(|tree| tree.scope.clone());
-            let document: Handle<BehaviorAsset> = asset_server.load(&subtree.asset);
-            let behavior =
-                BehaviorTree::from_asset::<T>(Some(entity), &mut commands, document, scope);
-            if let Some(root) = behavior.root {
-                add_children(&mut commands, entity, &[root]);
+            if let Some(tree) = node.tree {
+                let document: Handle<BehaviorAsset> = asset_server.load(&subtree.asset);
+                let behavior =
+                    BehaviorTree::from_asset::<T>(tree, Some(entity), &mut commands, document);
+                if let Some(root) = behavior.root {
+                    add_children(&mut commands, entity, &[root]);
+                }
+                commands.entity(entity).insert(behavior);
             }
-            commands.entity(entity).insert(behavior);
         } else if children.is_empty() {
             // Can be empty while loading subtree
         } else {

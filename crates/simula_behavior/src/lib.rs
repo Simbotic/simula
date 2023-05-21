@@ -4,7 +4,6 @@ use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, refl
 use composites::*;
 use decorators::*;
 use serde::Deserialize;
-use simula_script::Scope;
 
 pub mod actions;
 pub mod asset;
@@ -38,8 +37,8 @@ where
     T: Reflect + Component + Clone,
 {
     pub behavior: T,
+    pub desc: BehaviorDesc,
     pub node: BehaviorNode,
-    pub typ: BehaviorType,
     pub name: Name,
     pub parent: BehaviorParent,
     pub children: BehaviorChildren,
@@ -52,13 +51,12 @@ where
     fn default() -> Self {
         Self {
             behavior: T::default(),
-            node: BehaviorNode {
+            desc: BehaviorDesc {
                 typ: T::TYPE,
                 name: T::NAME.to_string(),
                 desc: T::DESC.to_string(),
-                tree: None,
             },
-            typ: T::TYPE,
+            node: BehaviorNode::default(),
             name: Name::new(format!("Behavior: {}", T::NAME)),
             parent: BehaviorParent::default(),
             children: BehaviorChildren::default(),
@@ -107,7 +105,7 @@ impl Plugin for BehaviorPlugin {
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_systems(
-                (update_added_behavior, complete_behavior, start_behavior)
+                (complete_behavior, start_behavior)
                     .chain()
                     .in_base_set(CoreSet::PostUpdate),
             )
@@ -162,10 +160,16 @@ pub struct BehaviorStopped;
 #[derive(Debug, Default, Reflect, Clone, Component)]
 #[reflect(Component)]
 pub struct BehaviorNode {
+    pub tree: Option<Entity>,
+}
+
+/// A marker added to behavior node entities
+#[derive(Debug, Default, Reflect, Clone, Component)]
+#[reflect(Component)]
+pub struct BehaviorDesc {
     pub typ: BehaviorType,
     pub name: String,
     pub desc: String,
-    pub tree: Option<Entity>,
 }
 
 /// A component to point to the parent of a behavior node
@@ -224,17 +228,16 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 #[reflect(Component)]
 pub struct BehaviorTree {
     pub root: Option<Entity>,
-    pub scope: Option<Handle<Scope>>,
 }
 
 impl BehaviorTree {
     /// Spawn behavior tree from asset.
     /// A parent is optional, but if it is provided, it must be a behavior node.
     pub fn from_asset<T>(
+        tree: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
         node: Handle<BehaviorAsset>,
-        scope: Option<Handle<Scope>>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
@@ -243,37 +246,27 @@ impl BehaviorTree {
             .spawn_empty()
             .insert(BehaviorAssetLoading::<T> {
                 node,
+                tree,
                 parent,
-                ..default()
+                phantom: std::marker::PhantomData,
             })
             .id();
-        Self {
-            root: Some(entity),
-            scope,
-        }
+        Self { root: Some(entity) }
     }
 
     /// Spawn a behavior tree from a behavior node, and return a BehaviorTree component with tree root.
-    /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub fn from_node<T>(
-        parent: Option<Entity>,
-        commands: &mut Commands,
-        node: &Behavior<T>,
-        scope: Option<Handle<Scope>>,
-    ) -> Self
+    pub fn from_node<T>(commands: &mut Commands, node: &Behavior<T>) -> Self
     where
         T: Default + BehaviorSpawner,
     {
-        let entity = Self::spawn_tree(parent, commands, node);
-        Self {
-            root: Some(entity),
-            scope,
-        }
+        let entity = Self::spawn_tree(commands, node);
+        Self { root: Some(entity) }
     }
 
     /// Spawn a behavior tree from a behavior node.
     /// A parent is optional, but if it is provided, it must be a behavior node.
     pub(crate) fn insert_tree<T>(
+        tree: Entity,
         entity: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
@@ -287,10 +280,18 @@ impl BehaviorTree {
         node_type.insert(&mut entity_commands);
         entity_commands.insert(Name::new(name.clone()));
         entity_commands.insert(BehaviorParent(parent));
+        entity_commands.insert(BehaviorNode { tree: Some(tree) });
+
         let children = nodes
             .iter()
             .map(|node| {
-                Self::insert_tree(commands.spawn_empty().id(), Some(entity), commands, node)
+                Self::insert_tree(
+                    tree,
+                    commands.spawn_empty().id(),
+                    Some(entity),
+                    commands,
+                    node,
+                )
             })
             .collect::<Vec<Entity>>();
         add_children(commands, entity, &children);
@@ -299,16 +300,13 @@ impl BehaviorTree {
 
     /// Spawn a behavior tree from a behavior node.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub(crate) fn spawn_tree<T>(
-        parent: Option<Entity>,
-        commands: &mut Commands,
-        node: &Behavior<T>,
-    ) -> Entity
+    pub(crate) fn spawn_tree<T>(commands: &mut Commands, node: &Behavior<T>) -> Entity
     where
         T: Default + BehaviorSpawner,
     {
+        let tree = commands.spawn_empty().id();
         let entity = commands.spawn_empty().id();
-        Self::insert_tree(entity, parent, commands, node);
+        Self::insert_tree(tree, entity, None, commands, node);
         entity
     }
 }
@@ -479,38 +477,5 @@ fn reset_children(
         if recursively {
             reset_children(true, commands, children, nodes);
         }
-    }
-}
-
-fn update_added_behavior(
-    trees: Query<(Entity, &BehaviorTree)>,
-    mut behaviors: Query<
-        (Entity, &BehaviorChildren, &mut BehaviorNode),
-        (Without<BehaviorTree>, Added<BehaviorNode>),
-    >,
-) {
-    for (tree_entity, tree) in &trees {
-        if let Some(root) = tree.root {
-            set_tree_entity_recursively(&mut behaviors, tree_entity, root);
-        }
-    }
-}
-
-fn set_tree_entity_recursively(
-    behaviors: &mut Query<
-        (Entity, &BehaviorChildren, &mut BehaviorNode),
-        (Without<BehaviorTree>, Added<BehaviorNode>),
-    >,
-    tree_entity: Entity,
-    entity: Entity,
-) {
-    let children = if let Ok((_entity, children, mut node)) = behaviors.get_mut(entity) {
-        node.tree = Some(tree_entity);
-        children.iter().copied().collect::<Vec<Entity>>()
-    } else {
-        vec![]
-    };
-    for child in children {
-        set_tree_entity_recursively(behaviors, tree_entity, child);
     }
 }

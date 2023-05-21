@@ -1,6 +1,6 @@
 use crate::{
     color_hex_utils::color_from_hex, BehaviorChildren, BehaviorCursor, BehaviorFailure,
-    BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,
+    BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,BehaviorDesc
 };
 use bevy::{ecs::component::ComponentId, prelude::*, reflect::TypeRegistry};
 use bevy_inspector_egui::{
@@ -51,7 +51,8 @@ pub fn behavior_inspector_node_ui(
     let Some(node_entity) = node.entity else {return;};
     let (
         behavior_name,
-        behavior_node,
+        behavior_desc,
+        _behavior_node,
         behavior_children,
         behavior_running,
         behavior_failure,
@@ -60,6 +61,7 @@ pub fn behavior_inspector_node_ui(
     ) = {
         let world = unsafe { world.world().world_mut() };
         let Some(behavior_name) = world.get::<Name>(node_entity) else {return;};
+        let Some(behavior_desc) = world.get::<BehaviorDesc>(node_entity) else {return;};
         let Some(behavior_node) = world.get::<BehaviorNode>(node_entity) else {return;};
         let Some(behavior_children) = world.get::<BehaviorChildren>(node_entity)  else {return;};
 
@@ -70,6 +72,7 @@ pub fn behavior_inspector_node_ui(
 
         (
             behavior_name,
+            behavior_desc,
             behavior_node,
             behavior_children,
             behavior_running,
@@ -99,7 +102,7 @@ pub fn behavior_inspector_node_ui(
                     egui::Frame::none()
                         .inner_margin(egui::Vec2::new(4.0, 1.0))
                         .rounding(Rounding::same(3.0))
-                        .fill(titlebar_color(behavior_node.typ, &behavior_node.name))
+                        .fill(titlebar_color(behavior_desc.typ, &behavior_desc.name))
                         .show(ui, |ui| {
                             ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
                             ui.horizontal(|ui| {

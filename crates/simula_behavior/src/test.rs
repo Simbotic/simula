@@ -88,7 +88,7 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
     let mut commands = Commands::new(&mut command_queue, &app.world);
 
     // Spawn tree
-    let entity = BehaviorTree::spawn_tree(None, &mut commands, &document);
+    let entity = BehaviorTree::spawn_tree(&mut commands, &document);
     commands.entity(entity).insert(BehaviorCursor);
 
     // Apply commands

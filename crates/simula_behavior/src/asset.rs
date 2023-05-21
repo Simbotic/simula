@@ -42,12 +42,13 @@ impl AssetLoader for BehaviorAssetLoader {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct BehaviorAssetLoading<T>
 where
     T: TypeUuid + Send + Sync + 'static + Default + Debug,
 {
     pub node: Handle<BehaviorAsset>,
+    pub tree: Entity,
     pub parent: Option<Entity>,
     pub phantom: std::marker::PhantomData<T>,
 }
@@ -66,6 +67,7 @@ pub fn behavior_loader<T>(
             match document {
                 Ok(document) => {
                     BehaviorTree::insert_tree::<T>(
+                        queued_asset.tree,
                         entity,
                         queued_asset.parent,
                         &mut commands,

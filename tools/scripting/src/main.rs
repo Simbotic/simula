@@ -116,21 +116,34 @@ fn setup(
         "debug_sequence",
         "debug_defaults",
         "debug_repeater",
-        "debug_subtree_gate"
+        "debug_subtree_gate",
     ];
     for behavior in behaviors.iter() {
+        // get a handle to a behavior asset from asset server
         let behavior_handle: Handle<BehaviorAsset> =
             asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
+
+        // create a new scope for the behavior tree
         let scope = scopes.add(Scope::new());
+
+        // create a new entity for the behavior tree, and insert the scope
+        let tree_entity = commands
+            .spawn((Name::new(format!("BT: {}", behavior)), scope))
+            .id();
+
+        // create a behavior tree component from the asset
         let behavior_tree = BehaviorTree::from_asset::<DebugBehavior>(
+            tree_entity,
             None,
             &mut commands,
             behavior_handle,
-            Some(scope),
         );
+
+        // insert the behavior tree component into the tree entity and move root to tree entity
         if let Some(root) = behavior_tree.root {
             commands
-                .spawn((behavior_tree, Name::new(format!("BT: {}", behavior))))
+                .entity(tree_entity)
+                .insert(behavior_tree)
                 .add_child(root);
         }
     }

@@ -11,7 +11,7 @@ pub enum Source {
 
 /// Gate evals a script to control the flow of execution. If the script returns
 /// `true`, the child is executed. If the script returns `false`, the child is
-/// not executed.
+/// not executed. The Scope of the script should be at the tree entity.
 #[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Gate {
     /// The script to evaluate
@@ -45,7 +45,7 @@ pub fn run(
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    trees: Query<&BehaviorTree>,
+    scope_handles: Query<&Handle<Scope>>,
     asset_server: ResMut<AssetServer>,
     mut scripts: ResMut<Assets<Script>>,
     mut scopes: ResMut<Assets<Scope>>,
@@ -98,11 +98,10 @@ pub fn run(
                             if let Some(script_asset) =
                                 script_handle.and_then(|script_handle| scripts.get(script_handle))
                             {
-                                if let Some(tree) = node.tree.and_then(|tree| trees.get(tree).ok())
+                                if let Some(scope) =
+                                    node.tree.and_then(|tree| scope_handles.get(tree).ok())
                                 {
-                                    if let Some(scope) =
-                                        tree.scope.as_ref().and_then(|scope| scopes.get_mut(&scope))
-                                    {
+                                    if let Some(scope) = scopes.get_mut(&scope) {
                                         let result = script_asset.eval::<bool>(scope);
                                         match result {
                                             Ok(true) => {
@@ -123,11 +122,11 @@ pub fn run(
                                             }
                                         };
                                     } else {
-                                        error!("No scripting scope for tree");
+                                        error!("Invalid scope handle");
                                         commands.entity(entity).insert(BehaviorFailure);
                                     }
                                 } else {
-                                    error!("No tree for behavior");
+                                    error!("Cannot find scope handle in tree entity");
                                     commands.entity(entity).insert(BehaviorFailure);
                                 };
                             } else {
