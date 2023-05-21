@@ -255,15 +255,6 @@ impl BehaviorTree {
         Self { root: Some(entity) }
     }
 
-    /// Spawn a behavior tree from a behavior node, and return a BehaviorTree component with tree root.
-    pub fn from_node<T>(commands: &mut Commands, node: &Behavior<T>) -> Self
-    where
-        T: Default + BehaviorSpawner,
-    {
-        let entity = Self::spawn_tree(commands, node);
-        Self { root: Some(entity) }
-    }
-
     /// Spawn a behavior tree from a behavior node.
     /// A parent is optional, but if it is provided, it must be a behavior node.
     pub(crate) fn insert_tree<T>(
@@ -296,18 +287,6 @@ impl BehaviorTree {
             })
             .collect::<Vec<Entity>>();
         add_children(commands, entity, &children);
-        entity
-    }
-
-    /// Spawn a behavior tree from a behavior node.
-    /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub(crate) fn spawn_tree<T>(commands: &mut Commands, node: &Behavior<T>) -> Entity
-    where
-        T: Default + BehaviorSpawner,
-    {
-        let tree = commands.spawn_empty().id();
-        let entity = commands.spawn_empty().id();
-        Self::insert_tree(tree, entity, None, commands, node);
         entity
     }
 }

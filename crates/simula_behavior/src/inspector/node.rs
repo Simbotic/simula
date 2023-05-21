@@ -1,6 +1,6 @@
 use crate::{
-    color_hex_utils::color_from_hex, BehaviorChildren, BehaviorCursor, BehaviorFailure,
-    BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,BehaviorDesc
+    color_hex_utils::color_from_hex, BehaviorChildren, BehaviorCursor, BehaviorDesc,
+    BehaviorFailure, BehaviorNode, BehaviorRunning, BehaviorSuccess, BehaviorType,
 };
 use bevy::{ecs::component::ComponentId, prelude::*, reflect::TypeRegistry};
 use bevy_inspector_egui::{
@@ -154,12 +154,11 @@ pub fn behavior_inspector_node_ui(
                                 )
                             {
                                 ui.push_id(comp_type_id, |ui| {
-
                                     // ui.set_width(250.0);
                                     ui.group(|ui| {
-                                        
                                         ui.label(
-                                            egui::RichText::new(comp_name).color(egui::Color32::GRAY),
+                                            egui::RichText::new(comp_name)
+                                                .color(egui::Color32::GRAY),
                                         );
                                         InspectorUi::for_bevy(&type_registry, &mut cx)
                                             .ui_for_reflect(value, ui);
