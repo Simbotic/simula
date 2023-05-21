@@ -8,10 +8,14 @@ use bevy::{
     reflect::TypeUuid,
 };
 use serde::{Deserialize, Serialize};
+use simula_script::{Scope, Script};
 
 pub const MAX_ITERS: usize = 200;
 
 pub fn test_app(app: &mut App) -> &mut App {
+    app.add_plugin(AssetPlugin::default());
+    app.add_asset::<Script>();
+    app.add_asset::<Scope>();
     // Add the behaviors system to the app
     app.add_system(start_behavior);
     app.add_system(complete_behavior);
@@ -88,7 +92,8 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
     let mut commands = Commands::new(&mut command_queue, &app.world);
 
     // Spawn tree
-    let entity = BehaviorTree::spawn_tree(&mut commands, &document);
+    let entity = commands.spawn_empty().id();
+    BehaviorTree::insert_tree(entity, entity, None, &mut commands, &document);
     commands.entity(entity).insert(BehaviorCursor);
 
     // Apply commands

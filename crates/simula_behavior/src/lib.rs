@@ -82,6 +82,7 @@ pub trait BehaviorSpawner:
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<BehaviorTree>()
+            .register_type::<BehaviorDesc>()
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
