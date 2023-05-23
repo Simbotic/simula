@@ -120,7 +120,7 @@ pub fn behavior_inspector_ui(world: &mut World) {
                 }
                 None => {
                     if ui.button("Run").clicked() {
-                        world.entity_mut(tree_root).insert(BehaviorCursor);
+                        world.entity_mut(tree_root).insert(BehaviorCursor::Delegate);
                     }
                 }
             }

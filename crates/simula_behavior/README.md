@@ -132,7 +132,7 @@ let behavior = BehaviorTree::from_document(None, commands, &document);
 let behavior = BehaviorTree::from_document(None, commands, &document);
 
 // Set cursor at root, so it starts running
-commands.entity(behavior.root).insert(BehaviorCursor);
+commands.entity(behavior.root).insert(BehaviorCursor::Delegate);
 
 // New entity to organize behavior. Inserting the behavior component into a new entity and pushing the tree as child is optional, just for organization purposes.
 commands.spawn().insert(behavior).push_children(&[behavior.root]);

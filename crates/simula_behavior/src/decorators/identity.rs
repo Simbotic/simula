@@ -46,7 +46,7 @@ pub fn run(
                     // Child is ready, pass on cursor
                     else {
                         commands.entity(entity).remove::<BehaviorCursor>();
-                        commands.entity(child_entity).insert(BehaviorCursor);
+                        commands.entity(child_entity).insert(BehaviorCursor::Delegate);
                     }
                 } else {
                     // Child is not ours, so we fail

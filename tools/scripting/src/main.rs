@@ -117,6 +117,7 @@ fn setup(
         "debug_sequence",
         "debug_defaults",
         "debug_repeater",
+        "debug_repeat_repeater",
         "debug_subtree_gate",
     ];
     for behavior in behaviors.iter() {

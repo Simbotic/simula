@@ -109,7 +109,7 @@ pub fn run(
                                                 commands.entity(entity).remove::<BehaviorCursor>();
                                                 commands
                                                     .entity(child_entity)
-                                                    .insert(BehaviorCursor);
+                                                    .insert(BehaviorCursor::Delegate);
                                             }
                                             Ok(false) => {
                                                 // Script returned false, so we fail

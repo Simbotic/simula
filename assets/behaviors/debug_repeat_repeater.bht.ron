@@ -1,0 +1,30 @@
+Behavior(
+    "Loop forever",
+    Repeater((repeat:Times(10))),
+    [
+        (
+            "Repeat List",
+            Any(()),
+            [
+                (
+                    "Repeater 1",
+                    Repeater((repeat:Times(3))),
+                    [
+                        ("Delay", Delay((duration: 1.0)), [
+                            ("Do a thing 1", Debug((message: "Doing #1")))
+                        ]),
+                    ]
+                ),
+                (
+                    "Repeater 2",
+                    Repeater((repeat:Times(5))),
+                    [
+                        ("Delay", Delay((duration: 1.0)), [
+                            ("Do a thing 2", Debug((message: "Doing #2")))
+                        ]),
+                    ]
+                ),
+            ]
+        )
+    ]
+)

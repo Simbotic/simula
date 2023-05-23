@@ -27,16 +27,26 @@ impl BehaviorInfo for Repeater {
 pub fn run(
     mut commands: Commands,
     mut repeaters: Query<
-        (Entity, &BehaviorChildren, &mut Repeater),
+        (
+            Entity,
+            &BehaviorChildren,
+            &mut Repeater,
+            &mut BehaviorRunning,
+        ),
         (With<Repeater>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, children, mut repeater) in &mut repeaters {
+    for (entity, children, mut repeater, mut running) in &mut repeaters {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
             continue;
+        }
+
+        if !running.on_enter_handled {
+            running.on_enter_handled = true;
+            repeater.count = 0;
         }
 
         let child_entity = children[0]; // Safe because we checked for empty
@@ -63,13 +73,11 @@ pub fn run(
                                 if times > 0 && repeater.count < times {
                                     commands.entity(entity).remove::<BehaviorRunning>();
                                 } else {
-                                    repeater.count = 0;
                                     commands.entity(entity).insert(BehaviorSuccess);
                                 }
                             }
                             // Until fail, so we succeed
                             Repeat::UntilFail => {
-                                repeater.count = 0;
                                 commands.entity(entity).insert(BehaviorSuccess);
                             }
                         }
@@ -86,7 +94,6 @@ pub fn run(
                                 if times > 0 && repeater.count < times {
                                     commands.entity(entity).remove::<BehaviorRunning>();
                                 } else {
-                                    repeater.count = 0;
                                     commands.entity(entity).insert(BehaviorSuccess);
                                 }
                             }
@@ -100,7 +107,9 @@ pub fn run(
                     else {
                         repeater.count += 1;
                         commands.entity(entity).remove::<BehaviorCursor>();
-                        commands.entity(child_entity).insert(BehaviorCursor);
+                        commands
+                            .entity(child_entity)
+                            .insert(BehaviorCursor::Delegate);
                     }
                 }
             }

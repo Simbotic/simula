@@ -3,6 +3,7 @@ use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use composites::*;
 use decorators::*;
+use ron::de;
 use serde::Deserialize;
 
 pub mod actions;
@@ -129,7 +130,11 @@ impl Plugin for BehaviorPlugin {
 #[derive(Default, Debug, Reflect, Clone, Copy, Component)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
-pub struct BehaviorCursor;
+pub enum BehaviorCursor {
+    #[default]
+    Delegate,
+    Return,
+}
 
 /// A marker added to entities that want to run a behavior
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
@@ -398,7 +403,7 @@ fn complete_behavior(
         // Pass cursor to parent, only if parent is running
         if let Some(parent) = **parent {
             if parents.get(parent).is_ok() {
-                commands.entity(parent).insert(BehaviorCursor);
+                commands.entity(parent).insert(BehaviorCursor::Return);
             }
         }
     }
@@ -407,7 +412,7 @@ fn complete_behavior(
 /// Process ready behaviors, start them
 fn start_behavior(
     mut commands: Commands,
-    ready: Query<(Entity, &BehaviorChildren, &Name), BehaviorReadyQuery>,
+    ready: Query<(Entity, &BehaviorChildren, &Name, &BehaviorCursor), BehaviorReadyQuery>,
     nodes: Query<
         (Entity, &BehaviorChildren),
         Or<(
@@ -419,7 +424,7 @@ fn start_behavior(
     >,
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
-    for (entity, children, name) in &ready {
+    for (entity, children, name, cursor) in &ready {
         // Reset children
         reset_children(false, &mut commands, children, &nodes);
         // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
@@ -431,7 +436,13 @@ fn start_behavior(
         if let Some(trace) = trace.as_mut() {
             trace.push(format!("[{}] STARTED {}", entity.index(), name));
         }
-        commands.entity(entity).insert(BehaviorRunning::default());
+        let on_enter_handled = match cursor {
+            BehaviorCursor::Delegate => false,
+            BehaviorCursor::Return => true,
+        };
+        commands
+            .entity(entity)
+            .insert(BehaviorRunning { on_enter_handled });
     }
 }
 
