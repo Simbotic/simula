@@ -3,7 +3,6 @@ use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use composites::*;
 use decorators::*;
-use ron::de;
 use serde::Deserialize;
 
 pub mod actions;
@@ -131,8 +130,10 @@ impl Plugin for BehaviorPlugin {
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
 pub enum BehaviorCursor {
+    /// Delegate execution to child
     #[default]
     Delegate,
+    /// Return execution to parent
     Return,
 }
 
