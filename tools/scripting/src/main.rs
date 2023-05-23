@@ -108,7 +108,8 @@ fn setup(
     // load debug behaviors
     let behaviors = [
         "debug_delay",
-        "debug_gate",
+        "debug_gate_true",
+        "debug_gate_blackboard",
         "debug_all",
         "debug_any_repeat",
         "debug_any_subtree",

@@ -18,9 +18,9 @@ impl Scope {
         let mut engine = rhai::Engine::new();
         engine.on_print(|x| info!("{x}"));
         let mut scope = rhai::Scope::new();
-        let mut global = rhai::Map::new();
-        global.insert("state".into(), 0.into());
-        scope.push("global", global);
+        let mut blackboard = rhai::Map::new();
+        blackboard.insert("state".into(), 0.into());
+        scope.push("blackboard", blackboard);
         Self { engine, scope }
     }
 }
