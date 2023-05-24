@@ -89,87 +89,95 @@ pub fn behavior_inspector_node_ui(
         egui::Stroke::NONE
     };
 
-    ui.set_min_width(100.0);
     ui.push_id(format!("bhtins-{}", node_entity.index()), |ui| {
-        ui.vertical(|ui| {
-            // Node frame
-            egui::Frame::none()
-                .outer_margin(egui::Vec2::new(5.0, 5.0))
-                .stroke(cursor_stroke)
-                .fill(color_from_hex("#303030").unwrap())
-                .rounding(Rounding::same(3.0))
-                .show(ui, |ui| {
-                    egui::Frame::none()
-                        .inner_margin(egui::Vec2::new(4.0, 1.0))
-                        .rounding(Rounding::same(3.0))
-                        .fill(titlebar_color(behavior_desc.typ, &behavior_desc.name))
-                        .show(ui, |ui| {
-                            ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
-                            ui.horizontal(|ui| {
-                                ui.set_min_width(100.0);
-                                ui.label(egui::RichText::new(behavior_name).strong());
-                            });
-                        });
-                    ui.horizontal(|ui| {
-                        ui.set_max_width(250.0);
-                        let r = 3.0;
-                        let size = egui::Vec2::splat(2.0 * r + 5.0);
-                        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
-                        if behavior_failure.is_some() {
-                            ui.painter()
-                                .circle_filled(rect.center(), r, egui::Color32::RED);
-                        } else if behavior_success.is_some() {
-                            ui.painter()
-                                .circle_filled(rect.center(), r, egui::Color32::DARK_GREEN);
-                        } else if behavior_running.is_some() {
-                            ui.painter()
-                                .circle_filled(rect.center(), r, egui::Color32::GREEN);
-                        } else {
-                            ui.painter()
-                                .circle_filled(rect.center(), r, egui::Color32::GRAY);
-                        }
-                        ui.label(egui::RichText::new(behavior_name).small());
-                    });
-
-                    // Node content
-                    {
-                        let type_registry = type_registry.read();
-
-                        let world_res =
-                            unsafe { RestrictedWorldView::new(world.world().world_mut()) };
-
-                        let mut cx = Context {
-                            world: Some(world_res),
-                            queue: None,
-                        };
-
-                        for (comp_name, _comp_id, comp_type_id) in
-                            components_of_entity(unsafe { world.world().world_mut() }, node_entity)
-                        {
-                            if let Ok((value, _is_changed, _set_changed)) = world
-                                .get_entity_component_reflect(
-                                    node_entity,
-                                    comp_type_id,
-                                    &type_registry,
-                                )
-                            {
-                                ui.push_id(comp_type_id, |ui| {
-                                    // ui.set_width(250.0);
-                                    ui.group(|ui| {
-                                        ui.label(
-                                            egui::RichText::new(comp_name)
-                                                .color(egui::Color32::GRAY),
-                                        );
-                                        InspectorUi::for_bevy(&type_registry, &mut cx)
-                                            .ui_for_reflect(value, ui);
-                                    });
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                // Node frame
+                egui::Frame::none()
+                    .outer_margin(egui::Vec2::new(5.0, 5.0))
+                    .stroke(cursor_stroke)
+                    .fill(color_from_hex("#303030").unwrap())
+                    .rounding(Rounding::same(3.0))
+                    .show(ui, |ui| {
+                        ui.set_width(100.0);
+                        ui.set_height(100.0);
+                        egui::Frame::none()
+                            .inner_margin(egui::Vec2::new(4.0, 1.0))
+                            .rounding(Rounding::same(3.0))
+                            .fill(titlebar_color(behavior_desc.typ, &behavior_desc.name))
+                            .show(ui, |ui| {
+                                ui.visuals_mut().override_text_color = Some(egui::Color32::WHITE);
+                                ui.horizontal(|ui| {
+                                    ui.set_min_width(100.0);
+                                    ui.label(egui::RichText::new(behavior_name).strong());
                                 });
+                            });
+                        ui.horizontal(|ui| {
+                            // ui.set_max_width(250.0);
+                            let r = 3.0;
+                            let size = egui::Vec2::splat(2.0 * r + 5.0);
+                            let (rect, _response) =
+                                ui.allocate_at_least(size, egui::Sense::hover());
+                            if behavior_failure.is_some() {
+                                ui.painter()
+                                    .circle_filled(rect.center(), r, egui::Color32::RED);
+                            } else if behavior_success.is_some() {
+                                ui.painter().circle_filled(
+                                    rect.center(),
+                                    r,
+                                    egui::Color32::DARK_GREEN,
+                                );
+                            } else if behavior_running.is_some() {
+                                ui.painter()
+                                    .circle_filled(rect.center(), r, egui::Color32::GREEN);
+                            } else {
+                                ui.painter()
+                                    .circle_filled(rect.center(), r, egui::Color32::GRAY);
+                            }
+                            ui.label(egui::RichText::new(behavior_name).small());
+                        });
+
+                        // Node content
+                        {
+                            let type_registry = type_registry.read();
+
+                            let world_res =
+                                unsafe { RestrictedWorldView::new(world.world().world_mut()) };
+
+                            let mut cx = Context {
+                                world: Some(world_res),
+                                queue: None,
+                            };
+
+                            for (comp_name, _comp_id, comp_type_id) in components_of_entity(
+                                unsafe { world.world().world_mut() },
+                                node_entity,
+                            ) {
+                                if let Ok((value, _is_changed, _set_changed)) = world
+                                    .get_entity_component_reflect(
+                                        node_entity,
+                                        comp_type_id,
+                                        &type_registry,
+                                    )
+                                {
+                                    ui.push_id(comp_type_id, |ui| {
+                                        // ui.set_width(250.0);
+                                        ui.group(|ui| {
+                                            ui.label(
+                                                egui::RichText::new(comp_name)
+                                                    .color(egui::Color32::GRAY),
+                                            );
+                                            InspectorUi::for_bevy(&type_registry, &mut cx)
+                                                .ui_for_reflect(value, ui);
+                                        });
+                                    });
+                                }
                             }
                         }
-                    }
-                });
+                    });
+            });
 
-            ui.horizontal(|ui| {
+            ui.vertical(|ui| {
                 for (col, child) in behavior_children.iter().enumerate() {
                     let mut child_node = BehaviorInspectorNode {
                         entity: Some(*child),
