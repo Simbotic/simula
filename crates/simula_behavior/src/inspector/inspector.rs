@@ -1,10 +1,10 @@
-use crate::{inspector::BehaviorInspectorNode, BehaviorCursor, BehaviorNode, BehaviorTree, BehaviorSpawner};
-use bevy::{ecs::system::SystemState, prelude::*};
-use bevy_inspector_egui::{
-    bevy_egui::EguiContexts, egui, restricted_world_view::RestrictedWorldView,
+use crate::{
+    inspector::graph::{AllMyNodeTemplates, MyEditorState, MyGraphState, MyResponse},
+    BehaviorCursor, BehaviorNode, BehaviorSpawner, BehaviorTree,
 };
-
-use super::{node::behavior_inspector_node_ui, graph};
+use bevy::{ecs::system::SystemState, prelude::*};
+use bevy_inspector_egui::{bevy_egui::EguiContexts, egui};
+use egui_node_graph::NodeResponse;
 
 #[derive(Default, Clone, Resource)]
 pub struct BehaviorInspectorAttributes;
@@ -62,18 +62,18 @@ fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
 }
 
 pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
-    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut graph::MyGraphState, &mut graph::MyEditorState<T>)>();
+    // let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut graph::MyGraphState, &mut graph::MyEditorState<T>)>();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
     let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
 
-    let mut context1 = system_state.get_mut(world).ctx_mut().clone();
-    let mut context2 = system_state.get_mut(world).ctx_mut().clone();
+    let mut context = system_state.get_mut(world).ctx_mut().clone();
 
-    egui::Window::new("Behavior Inspector").show(&mut context1, |ui| {
+    egui::Window::new("Behavior Inspector").show(&mut context, |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
+                let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut MyGraphState, &mut MyEditorState<T>)>();
                 let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
                     behavior_trees
                         .iter(world)
@@ -104,14 +104,11 @@ pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
         } = &behavior_inspector.selected
         {
             let (tree_entity, tree_root) = {
-                let Ok((tree_entity, _, behavior_tree, _, _)) = behavior_trees.get_mut(world, *entity) else {
+                let mut behavior_trees = world.query_filtered::<(Entity, &BehaviorTree), (With<MyGraphState>, With<MyEditorState<T>>)>();
+                let Ok((tree_entity, behavior_tree)) = behavior_trees.get_mut(world, *entity) else {
                 return;};
                 let Some(tree_root) = behavior_tree.root else {return;};
                 (tree_entity, tree_root)
-            };
-
-            let mut node = BehaviorInspectorNode {
-                entity: Some(tree_root),
             };
 
             match find_cursor(world, tree_entity) {
@@ -125,36 +122,40 @@ pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
                 }
             }
 
-            let type_registry = world.resource::<AppTypeRegistry>().0.clone();
-
-            let mut world = RestrictedWorldView::new(world);
-
             egui::Window::new(format!("Behavior: {}", name))
                 .title_bar(true)
                 .resizable(true)
                 .collapsible(true)
                 .scroll2([true, true])
                 .show(ui.ctx(), |ui| {
+                    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut MyGraphState, &mut MyEditorState<T>)>();
+                    // let mut world = RestrictedWorldView::new(world);
 
-                    let Ok((_, _, _, mut graph_state, mut editor_state)) = behavior_trees.get_mut(unsafe{world.world().world_mut()}, *entity) else {
+                    let Ok((_, _, _, mut graph_state, mut editor_state)) = behavior_trees.get_mut(world, *entity) else {
                         return;};
 
-                        editor_state.draw_graph_editor(
+                        let graph_response = editor_state.draw_graph_editor(
                                             ui,
-                                            graph::AllMyNodeTemplates::<T>::default(),
+                                            AllMyNodeTemplates::<T>::default(),
                                             &mut graph_state,
                                             Vec::default(),
                                         );
-                    
-                    // behavior_inspector_node_ui(
-                    //     0,
-                    //     0,
-                    //     &mut context2,
-                    //     &mut world,
-                    //     &mut node,
-                    //     ui,
-                    //     &type_registry,
-                    // );
+
+                        for response in graph_response.node_responses {
+                            println!("response: {:?}", response);
+                            match response {
+                                NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
+                                    println!("node_id: {:?} {:?}", node_id, data);
+                                    let mut behavior_trees = world.query::<(&BehaviorTree, &mut MyGraphState, &mut MyEditorState<T>)>();
+                                    let Ok((_, mut _graph_state, mut editor_state)) = behavior_trees.get_mut(world, *entity) else {
+                                        continue;};
+                                    if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                        node.user_data.data = Some(data);
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
                 });
         }
     });
