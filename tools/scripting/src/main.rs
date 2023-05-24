@@ -54,6 +54,7 @@ fn main() {
         .add_system(behavior_loader::<DebugBehavior>)
         // Subtrees are typed, so we need to register them separately
         .add_system(subtree::run::<DebugBehavior>)
+        .add_system(simula_behavior::inspector::behavior_inspector_ui::<DebugBehavior>)
         .run();
 }
 
@@ -98,12 +99,100 @@ impl BehaviorSpawner for DebugBehavior {
             DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
+
+    fn label(&self) -> &str {
+        match self {
+            DebugBehavior::Debug(_) => <Debug as BehaviorInfo>::NAME,
+            DebugBehavior::Selector(_) => <Selector as BehaviorInfo>::NAME,
+            DebugBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::NAME,
+            DebugBehavior::All(_) => <All as BehaviorInfo>::NAME,
+            DebugBehavior::Any(_) => <Any as BehaviorInfo>::NAME,
+            DebugBehavior::Repeater(_) => <Repeater as BehaviorInfo>::NAME,
+            DebugBehavior::Inverter(_) => <Inverter as BehaviorInfo>::NAME,
+            DebugBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::NAME,
+            DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::NAME,
+            DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::NAME,
+            DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::NAME,
+            DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::NAME,
+        }
+    }
+
+    fn reflect(&mut self) -> &mut dyn Reflect {
+        match self {
+            DebugBehavior::Debug(data) => data,
+            DebugBehavior::Selector(data) => data,
+            DebugBehavior::Sequencer(data) => data,
+            DebugBehavior::All(data) => data,
+            DebugBehavior::Any(data) => data,
+            DebugBehavior::Repeater(data) => data,
+            DebugBehavior::Inverter(data) => data,
+            DebugBehavior::Succeeder(data) => data,
+            DebugBehavior::Wait(data) => data,
+            DebugBehavior::Delay(data) => data,
+            DebugBehavior::Gate(data) => data,
+            DebugBehavior::Subtree(data) => data,
+        }
+    }
+
+    fn typ(&self) -> BehaviorType {
+        match self {
+            DebugBehavior::Debug(_) => <Debug as BehaviorInfo>::TYPE,
+            DebugBehavior::Selector(_) => <Selector as BehaviorInfo>::TYPE,
+            DebugBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::TYPE,
+            DebugBehavior::All(_) => <All as BehaviorInfo>::TYPE,
+            DebugBehavior::Any(_) => <Any as BehaviorInfo>::TYPE,
+            DebugBehavior::Repeater(_) => <Repeater as BehaviorInfo>::TYPE,
+            DebugBehavior::Inverter(_) => <Inverter as BehaviorInfo>::TYPE,
+            DebugBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::TYPE,
+            DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::TYPE,
+            DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::TYPE,
+            DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::TYPE,
+            DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::TYPE,
+        }
+    }
+
+    fn categories(&self) -> Vec<&'static str> {
+        match self {
+            DebugBehavior::Debug(_) => vec![<Debug as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Selector(_) => vec![<Selector as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Sequencer(_) => vec![<Sequencer as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::All(_) => vec![<All as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Any(_) => vec![<Any as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Repeater(_) => vec![<Repeater as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Inverter(_) => vec![<Inverter as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Succeeder(_) => vec![<Succeeder as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Wait(_) => vec![<Wait as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Delay(_) => vec![<Delay as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Gate(_) => vec![<Gate as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Subtree(_) => {
+                vec![<Subtree<DebugBehavior> as BehaviorInfo>::TYPE.as_ref()]
+            }
+        }
+    }
+
+    fn list() -> Vec<Self> {
+        vec![
+            DebugBehavior::Debug(Debug::default()),
+            DebugBehavior::Selector(Selector::default()),
+            DebugBehavior::Sequencer(Sequencer::default()),
+            DebugBehavior::All(All::default()),
+            DebugBehavior::Any(Any::default()),
+            DebugBehavior::Repeater(Repeater::default()),
+            DebugBehavior::Inverter(Inverter::default()),
+            DebugBehavior::Succeeder(Succeeder::default()),
+            DebugBehavior::Wait(Wait::default()),
+            DebugBehavior::Delay(Delay::default()),
+            DebugBehavior::Gate(Gate::default()),
+            DebugBehavior::Subtree(Subtree::<DebugBehavior>::default()),
+        ]
+    }
 }
 
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut scopes: ResMut<Assets<Scope>>,
+    type_registry: Res<AppTypeRegistry>,
 ) {
     // load debug behaviors
     let behaviors = [
@@ -131,8 +220,13 @@ fn setup(
         // create a new entity for the behavior tree, and insert the scope
         let tree_entity = commands
             .spawn((Name::new(format!("BT: {}", behavior)), scope))
-            .insert(simula_behavior::inspector::graph::MyGraphState::default())
-            .insert(simula_behavior::inspector::graph::MyEditorState::default())
+            .insert(simula_behavior::inspector::graph::MyGraphState {
+                type_registry: type_registry.0.clone(),
+                ..Default::default()
+            })
+            .insert(simula_behavior::inspector::graph::MyEditorState::<
+                DebugBehavior,
+            >::default())
             .id();
 
         // create a behavior tree component from the asset

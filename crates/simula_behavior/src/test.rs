@@ -1,6 +1,6 @@
 use crate::{
     actions::*, asset::Behavior, complete_behavior, composites::*, decorators::*, start_behavior,
-    BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTrace, BehaviorTree,
+    BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTrace, BehaviorTree, BehaviorType,
 };
 use bevy::{
     ecs::system::{CommandQueue, EntityCommands},

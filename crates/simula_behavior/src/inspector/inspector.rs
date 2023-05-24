@@ -1,4 +1,4 @@
-use crate::{inspector::BehaviorInspectorNode, BehaviorCursor, BehaviorNode, BehaviorTree};
+use crate::{inspector::BehaviorInspectorNode, BehaviorCursor, BehaviorNode, BehaviorTree, BehaviorSpawner};
 use bevy::{ecs::system::SystemState, prelude::*};
 use bevy_inspector_egui::{
     bevy_egui::EguiContexts, egui, restricted_world_view::RestrictedWorldView,
@@ -61,8 +61,8 @@ fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
     None
 }
 
-pub fn behavior_inspector_ui(world: &mut World) {
-    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut graph::MyGraphState, &mut graph::MyEditorState)>();
+pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
+    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut graph::MyGraphState, &mut graph::MyEditorState<T>)>();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
     let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
@@ -141,7 +141,7 @@ pub fn behavior_inspector_ui(world: &mut World) {
 
                         editor_state.draw_graph_editor(
                                             ui,
-                                            graph::AllMyNodeTemplates,
+                                            graph::AllMyNodeTemplates::<T>::default(),
                                             &mut graph_state,
                                             Vec::default(),
                                         );

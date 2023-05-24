@@ -4,6 +4,7 @@ use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, refl
 use composites::*;
 use decorators::*;
 use serde::{Deserialize, Serialize};
+use strum::AsRefStr;
 
 pub mod actions;
 pub mod asset;
@@ -78,6 +79,26 @@ pub trait BehaviorSpawner:
     + for<'de> Deserialize<'de>
 {
     fn insert(&self, commands: &mut EntityCommands);
+
+    fn label(&self) -> &str {
+        std::any::type_name::<Self>()
+    }
+
+    fn typ(&self) -> BehaviorType {
+        panic!("BehaviorSpawner::info() not implemented")
+    }
+
+    fn reflect(&mut self) -> &mut dyn Reflect {
+        panic!("BehaviorSpawner::data() not implemented")
+    }
+
+    fn categories(&self) -> Vec<&'static str> {
+        panic!("BehaviorSpawner::categories() not implemented")
+    }
+
+    fn list() -> Vec<Self> {
+        panic!("BehaviorSpawner::list() not implemented")
+    }
 }
 
 impl Plugin for BehaviorPlugin {
@@ -191,7 +212,7 @@ pub struct BehaviorParent(Option<Entity>);
 pub struct BehaviorChildren(Vec<Entity>);
 
 /// A component added to identify the type of a behavior node
-#[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Copy)]
+#[derive(Debug, Default, PartialEq, Reflect, Clone, Component, Copy, AsRefStr)]
 #[reflect(Component)]
 pub enum BehaviorType {
     #[default]
