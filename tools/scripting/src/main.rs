@@ -131,6 +131,8 @@ fn setup(
         // create a new entity for the behavior tree, and insert the scope
         let tree_entity = commands
             .spawn((Name::new(format!("BT: {}", behavior)), scope))
+            .insert(simula_behavior::inspector::graph::MyGraphState::default())
+            .insert(simula_behavior::inspector::graph::MyEditorState::default())
             .id();
 
         // create a behavior tree component from the asset

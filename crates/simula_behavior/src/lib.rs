@@ -3,7 +3,7 @@ use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use composites::*;
 use decorators::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub mod actions;
 pub mod asset;
@@ -74,6 +74,7 @@ pub trait BehaviorSpawner:
     + 'static
     + Default
     + std::fmt::Debug
+    + Serialize
     + for<'de> Deserialize<'de>
 {
     fn insert(&self, commands: &mut EntityCommands);

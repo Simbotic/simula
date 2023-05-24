@@ -6,6 +6,7 @@ use self::inspector::behavior_inspector_ui;
 
 pub mod inspector;
 pub mod node;
+pub mod graph;
 
 pub struct BehaviorInspectorPlugin;
 

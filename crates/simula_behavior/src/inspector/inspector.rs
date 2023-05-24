@@ -4,7 +4,7 @@ use bevy_inspector_egui::{
     bevy_egui::EguiContexts, egui, restricted_world_view::RestrictedWorldView,
 };
 
-use super::node::behavior_inspector_node_ui;
+use super::{node::behavior_inspector_node_ui, graph};
 
 #[derive(Default, Clone, Resource)]
 pub struct BehaviorInspectorAttributes;
@@ -62,7 +62,7 @@ fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
 }
 
 pub fn behavior_inspector_ui(world: &mut World) {
-    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree)>();
+    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut graph::MyGraphState, &mut graph::MyEditorState)>();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
     let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
@@ -77,7 +77,7 @@ pub fn behavior_inspector_ui(world: &mut World) {
                 let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
                     behavior_trees
                         .iter(world)
-                        .map(|(entity, name, _)| BehaviorInspectorItem {
+                        .map(|(entity, name, _, _, _)| BehaviorInspectorItem {
                             entity: Some(entity),
                             name: name.unwrap_or(&Name::new("")).to_string(),
                         })
@@ -104,7 +104,7 @@ pub fn behavior_inspector_ui(world: &mut World) {
         } = &behavior_inspector.selected
         {
             let (tree_entity, tree_root) = {
-                let Ok((tree_entity, _, behavior_tree)) = behavior_trees.get(world, *entity) else {
+                let Ok((tree_entity, _, behavior_tree, _, _)) = behavior_trees.get_mut(world, *entity) else {
                 return;};
                 let Some(tree_root) = behavior_tree.root else {return;};
                 (tree_entity, tree_root)
@@ -135,17 +135,27 @@ pub fn behavior_inspector_ui(world: &mut World) {
                 .collapsible(true)
                 .scroll2([true, true])
                 .show(ui.ctx(), |ui| {
-                    behavior_inspector_node_ui(
-                        0,
-                        0,
-                        &mut context2,
-                        &mut world,
-                        &mut node,
-                        ui,
-                        &type_registry,
-                    );
+
+                    let Ok((_, _, _, mut graph_state, mut editor_state)) = behavior_trees.get_mut(unsafe{world.world().world_mut()}, *entity) else {
+                        return;};
+
+                        editor_state.draw_graph_editor(
+                                            ui,
+                                            graph::AllMyNodeTemplates,
+                                            &mut graph_state,
+                                            Vec::default(),
+                                        );
+                    
+                    // behavior_inspector_node_ui(
+                    //     0,
+                    //     0,
+                    //     &mut context2,
+                    //     &mut world,
+                    //     &mut node,
+                    //     ui,
+                    //     &type_registry,
+                    // );
                 });
-            // }
         }
     });
 }
