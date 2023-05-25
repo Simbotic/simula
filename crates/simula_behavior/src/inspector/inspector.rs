@@ -1,6 +1,6 @@
 use crate::{
     inspector::graph::{AllMyNodeTemplates, MyEditorState, MyGraphState, MyResponse},
-    BehaviorCursor, BehaviorNode, BehaviorSpawner, BehaviorTree,
+    BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree,
 };
 use bevy::{ecs::system::SystemState, prelude::*};
 use bevy_inspector_egui::{bevy_egui::EguiContexts, egui};
@@ -61,7 +61,7 @@ fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
     None
 }
 
-pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
+pub fn behavior_inspector_ui<T: BehaviorFactory>(world: &mut World) {
     let mut behavior_trees = world.query::<(
         Entity,
         Option<&Name>,

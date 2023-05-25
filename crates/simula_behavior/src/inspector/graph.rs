@@ -12,7 +12,7 @@ use std::borrow::Cow;
 /// store additional information that doesn't live in parameters. For this
 /// example, the node data stores the template (i.e. the "type") of the node.
 #[derive(Serialize, Debug)]
-pub struct MyNodeData<T: BehaviorSpawner> {
+pub struct MyNodeData<T: BehaviorFactory> {
     pub data: Option<T>,
 }
 
@@ -52,7 +52,7 @@ impl<T> Default for MyValueType<T> {
 /// will display in the "new node" popup. The user code needs to tell the
 /// library how to convert a NodeTemplate into a Node.
 #[derive(Clone, Copy, Serialize)]
-pub enum MyNodeTemplate<T: BehaviorSpawner> {
+pub enum MyNodeTemplate<T: BehaviorFactory> {
     Root,
     Behavior(T),
 }
@@ -62,7 +62,7 @@ pub enum MyNodeTemplate<T: BehaviorSpawner> {
 /// nodes, handling connections...) are already handled by the library, but this
 /// mechanism allows creating additional side effects from user code.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum MyResponse<T: BehaviorSpawner> {
+pub enum MyResponse<T: BehaviorFactory> {
     SetActiveNode(NodeId),
     ClearActiveNode,
     NodeEdited(NodeId, T),
@@ -99,7 +99,7 @@ impl DataTypeTrait<MyGraphState> for MyDataType {
 // from the templates in the node finder
 impl<T> NodeTemplateTrait for MyNodeTemplate<T>
 where
-    T: BehaviorSpawner,
+    T: BehaviorFactory,
 {
     type NodeData = MyNodeData<T>;
     type DataType = MyDataType;
@@ -194,7 +194,7 @@ pub struct AllMyNodeTemplates<T> {
 
 impl<T> NodeTemplateIter for AllMyNodeTemplates<T>
 where
-    T: BehaviorSpawner,
+    T: BehaviorFactory,
 {
     type Item = MyNodeTemplate<T>;
 
@@ -213,7 +213,7 @@ where
 
 impl<T> WidgetValueTrait for MyValueType<T>
 where
-    T: BehaviorSpawner,
+    T: BehaviorFactory,
 {
     type Response = MyResponse<T>;
     type UserState = MyGraphState;
@@ -237,11 +237,11 @@ where
     }
 }
 
-impl<T> UserResponseTrait for MyResponse<T> where T: BehaviorSpawner {}
+impl<T> UserResponseTrait for MyResponse<T> where T: BehaviorFactory {}
 
 impl<T> NodeDataTrait for MyNodeData<T>
 where
-    T: BehaviorSpawner,
+    T: BehaviorFactory,
 {
     type Response = MyResponse<T>;
     type UserState = MyGraphState;
@@ -261,7 +261,7 @@ where
         user_state: &mut Self::UserState,
     ) -> Vec<NodeResponse<MyResponse<T>, MyNodeData<T>>>
     where
-        T: BehaviorSpawner,
+        T: BehaviorFactory,
         MyResponse<T>: UserResponseTrait,
     {
         let mut responses = vec![];
@@ -286,7 +286,6 @@ where
 }
 
 #[derive(Default, Component, Deref, DerefMut)]
-pub struct MyEditorState<T: BehaviorSpawner>(
+pub struct MyEditorState<T: BehaviorFactory>(
     pub GraphEditorState<MyNodeData<T>, MyDataType, MyValueType<T>, MyNodeTemplate<T>, MyGraphState>,
 );
-

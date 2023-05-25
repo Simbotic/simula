@@ -24,8 +24,8 @@ pub mod prelude {
     pub use crate::inspector::{BehaviorInspector, BehaviorInspectorPlugin};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFailure, BehaviorInfo, BehaviorNode, BehaviorParent,
-        BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSpawner, BehaviorSuccess,
+        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorNode,
+        BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSuccess,
         BehaviorTree, BehaviorType,
     };
 }
@@ -66,7 +66,7 @@ where
 }
 
 /// How to spawn a behavior node
-pub trait BehaviorSpawner:
+pub trait BehaviorFactory:
     Clone
     + Default
     + TypeUuid
@@ -85,19 +85,19 @@ pub trait BehaviorSpawner:
     }
 
     fn typ(&self) -> BehaviorType {
-        panic!("BehaviorSpawner::info() not implemented")
+        panic!("BehaviorFactory::info() not implemented")
     }
 
     fn reflect(&mut self) -> &mut dyn Reflect {
-        panic!("BehaviorSpawner::data() not implemented")
+        panic!("BehaviorFactory::data() not implemented")
     }
 
     fn categories(&self) -> Vec<&'static str> {
-        panic!("BehaviorSpawner::categories() not implemented")
+        panic!("BehaviorFactory::categories() not implemented")
     }
 
     fn list() -> Vec<Self> {
-        panic!("BehaviorSpawner::list() not implemented")
+        panic!("BehaviorFactory::list() not implemented")
     }
 }
 
@@ -293,7 +293,7 @@ impl BehaviorTree {
         node: &Behavior<T>,
     ) -> Entity
     where
-        T: Default + BehaviorSpawner,
+        T: Default + BehaviorFactory,
     {
         let Behavior(name, node_type, nodes) = node;
         let mut entity_commands = commands.entity(entity);

@@ -26,11 +26,11 @@ impl Default for MyBehavior {
 }
 ```
 
-### impl BehaviorSpawner
+### impl BehaviorFactory
 Let the behavior system know how to spawn behavior nodes. Usually the following example is enough.
 
 ```
-impl BehaviorSpawner for MyBehavior {
+impl BehaviorFactory for MyBehavior {
     fn spawn_with(&self, commands: &mut EntityCommands) {
         match self {
             MyBehavior::Debug(data) => BehaviorInfo::spawn_with(commands, data),

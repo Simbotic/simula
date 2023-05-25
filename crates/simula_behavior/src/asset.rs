@@ -1,4 +1,4 @@
-use crate::{BehaviorSpawner, BehaviorTree};
+use crate::{BehaviorFactory, BehaviorTree};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -58,7 +58,7 @@ pub fn behavior_loader<T>(
     loaded_assets: Res<Assets<BehaviorAsset>>,
     queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
 ) where
-    T: BehaviorSpawner,
+    T: BehaviorFactory,
 {
     for (entity, queued_asset) in queued_assets.iter() {
         if let Some(loaded_asset) = loaded_assets.get(&queued_asset.node) {

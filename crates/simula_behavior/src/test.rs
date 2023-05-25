@@ -1,6 +1,6 @@
 use crate::{
     actions::*, asset::Behavior, complete_behavior, composites::*, decorators::*, start_behavior,
-    BehaviorCursor, BehaviorInfo, BehaviorSpawner, BehaviorTrace, BehaviorTree,
+    BehaviorCursor, BehaviorFactory, BehaviorInfo, BehaviorTrace, BehaviorTree,
 };
 use bevy::{
     ecs::system::{CommandQueue, EntityCommands},
@@ -58,7 +58,7 @@ impl Default for TestBehavior {
     }
 }
 
-impl BehaviorSpawner for TestBehavior {
+impl BehaviorFactory for TestBehavior {
     fn insert(&self, commands: &mut EntityCommands) {
         match self {
             TestBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),

@@ -82,7 +82,7 @@ impl Default for DebugBehavior {
     }
 }
 
-impl BehaviorSpawner for DebugBehavior {
+impl BehaviorFactory for DebugBehavior {
     fn insert(&self, commands: &mut EntityCommands) {
         match self {
             DebugBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),

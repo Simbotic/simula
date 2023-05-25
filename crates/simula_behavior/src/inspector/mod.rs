@@ -1,10 +1,10 @@
 use bevy::prelude::*;
-pub use inspector::{BehaviorInspector, BehaviorInspectorAttributes, behavior_inspector_ui};
+pub use inspector::{behavior_inspector_ui, BehaviorInspector, BehaviorInspectorAttributes};
 pub use node::{BehaviorInspectorNode, BehaviorInspectorNodeAttributes};
 
+pub mod graph;
 pub mod inspector;
 pub mod node;
-pub mod graph;
 
 pub struct BehaviorInspectorPlugin;
 
@@ -13,7 +13,7 @@ impl Plugin for BehaviorInspectorPlugin {
         app.insert_resource(BehaviorInspectorAttributes)
             .add_startup_system(setup)
             .insert_resource(BehaviorInspector::default());
-            // .add_system(behavior_inspector_ui);
+        // .add_system(behavior_inspector_ui);
     }
 }
 

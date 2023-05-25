@@ -5,7 +5,7 @@ use std::fmt::Debug;
 
 /// Subtree connects a behavior subtree to the current behavior tree.
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
-pub struct Subtree<T: BehaviorSpawner> {
+pub struct Subtree<T: BehaviorFactory> {
     /// Behavior asset to load.
     pub asset: String,
     /// Unload the subtree when completed.
@@ -18,14 +18,14 @@ pub struct Subtree<T: BehaviorSpawner> {
 
 impl<T> BehaviorInfo for Subtree<T>
 where
-    T: BehaviorSpawner,
+    T: BehaviorFactory,
 {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Subtree";
     const DESC: &'static str = "Connects a behavior subtree to this node";
 }
 
-pub fn run<T: BehaviorSpawner>(
+pub fn run<T: BehaviorFactory>(
     mut commands: Commands,
     mut subtrees: Query<
         (
@@ -82,7 +82,9 @@ pub fn run<T: BehaviorSpawner>(
                         // Child is ready, pass on cursor
                         else {
                             commands.entity(entity).remove::<BehaviorCursor>();
-                            commands.entity(child_entity).insert(BehaviorCursor::Delegate);
+                            commands
+                                .entity(child_entity)
+                                .insert(BehaviorCursor::Delegate);
                         }
                     } else {
                         // Child is not ours, so we fail
