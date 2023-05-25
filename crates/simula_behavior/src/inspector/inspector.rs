@@ -62,18 +62,21 @@ fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
 }
 
 pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
-    // let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut graph::MyGraphState, &mut graph::MyEditorState<T>)>();
+    let mut behavior_trees = world.query::<(
+        Entity,
+        Option<&Name>,
+        &BehaviorTree,
+        &mut MyGraphState,
+        &mut MyEditorState<T>,
+    )>();
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
-
     let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
-
     let mut context = system_state.get_mut(world).ctx_mut().clone();
 
     egui::Window::new("Behavior Inspector").show(&mut context, |ui| {
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
-                let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut MyGraphState, &mut MyEditorState<T>)>();
                 let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
                     behavior_trees
                         .iter(world)
@@ -104,8 +107,7 @@ pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
         } = &behavior_inspector.selected
         {
             let (tree_entity, tree_root) = {
-                let mut behavior_trees = world.query_filtered::<(Entity, &BehaviorTree), (With<MyGraphState>, With<MyEditorState<T>>)>();
-                let Ok((tree_entity, behavior_tree)) = behavior_trees.get_mut(world, *entity) else {
+                let Ok((tree_entity, _, behavior_tree, _, _)) = behavior_trees.get_mut(world, *entity) else {
                 return;};
                 let Some(tree_root) = behavior_tree.root else {return;};
                 (tree_entity, tree_root)
@@ -128,9 +130,6 @@ pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
                 .collapsible(true)
                 .scroll2([true, true])
                 .show(ui.ctx(), |ui| {
-                    let mut behavior_trees = world.query::<(Entity, Option<&Name>, &BehaviorTree, &mut MyGraphState, &mut MyEditorState<T>)>();
-                    // let mut world = RestrictedWorldView::new(world);
-
                     let Ok((_, _, _, mut graph_state, mut editor_state)) = behavior_trees.get_mut(world, *entity) else {
                         return;};
 
@@ -144,11 +143,20 @@ pub fn behavior_inspector_ui<T: BehaviorSpawner>(world: &mut World) {
                         for response in graph_response.node_responses {
                             println!("response: {:?}", response);
                             match response {
+                                NodeResponse::ConnectEventEnded { output, input } => {
+                                    let mut removes = vec![];
+                                    for (other_input, other_output) in editor_state.graph.connections.iter() {
+                                        if *other_output == output {
+                                            if other_input != input {
+                                                removes.push(other_input);
+                                            }
+                                        }
+                                    }
+                                    for other_input in removes {
+                                        editor_state.graph.connections.remove(other_input);
+                                    }
+                                }
                                 NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
-                                    println!("node_id: {:?} {:?}", node_id, data);
-                                    let mut behavior_trees = world.query::<(&BehaviorTree, &mut MyGraphState, &mut MyEditorState<T>)>();
-                                    let Ok((_, mut _graph_state, mut editor_state)) = behavior_trees.get_mut(world, *entity) else {
-                                        continue;};
                                     if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
                                         node.user_data.data = Some(data);
                                     }
