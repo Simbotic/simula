@@ -27,38 +27,26 @@ pub fn run(
         let child_entity = children[0]; // Safe because we checked for empty
         if let Ok(BehaviorChildQueryItem {
             child_entity,
-            child_parent,
+            child_parent: _,
             child_failure,
             child_success,
             child_running: _,
         }) = nodes.get(child_entity)
         {
-            if let Some(child_parent) = **child_parent {
-                if entity == child_parent {
-                    // Child failed, so we fail
-                    if child_failure.is_some() {
-                        commands.entity(entity).insert(BehaviorFailure);
-                    }
-                    // Child succeeded, so we succeed
-                    else if child_success.is_some() {
-                        commands.entity(entity).insert(BehaviorSuccess);
-                    }
-                    // Child is ready, pass on cursor
-                    else {
-                        commands.entity(entity).remove::<BehaviorCursor>();
-                        commands
-                            .entity(child_entity)
-                            .insert(BehaviorCursor::Delegate);
-                    }
-                } else {
-                    // Child is not ours, so we fail
-                    warn!("Child is not ours");
-                    commands.entity(entity).insert(BehaviorFailure);
-                }
-            } else {
-                // Child has no parent, so we fail
-                warn!("Child has no parent");
+            // Child failed, so we fail
+            if child_failure.is_some() {
                 commands.entity(entity).insert(BehaviorFailure);
+            }
+            // Child succeeded, so we succeed
+            else if child_success.is_some() {
+                commands.entity(entity).insert(BehaviorSuccess);
+            }
+            // Child is ready, pass on cursor
+            else {
+                commands.entity(entity).remove::<BehaviorCursor>();
+                commands
+                    .entity(child_entity)
+                    .insert(BehaviorCursor::Delegate);
             }
         }
     }

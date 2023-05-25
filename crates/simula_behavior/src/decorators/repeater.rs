@@ -7,7 +7,8 @@ pub enum Repeat {
     #[default]
     Forever,
     Times(u64),
-    UntilFail,
+    UntilFailure,
+    UntilSuccess,
 }
 
 /// Repeat a child until condition is met
@@ -52,66 +53,70 @@ pub fn run(
         let child_entity = children[0]; // Safe because we checked for empty
         if let Ok(BehaviorChildQueryItem {
             child_entity,
-            child_parent,
+            child_parent: _,
             child_failure,
             child_success,
             child_running: _,
         }) = nodes.get(child_entity)
         {
-            if let Some(child_parent) = **child_parent {
-                if entity == child_parent {
-                    // Child failed
-                    if child_failure.is_some() {
-                        match repeater.repeat {
-                            // Forever, so we reset and repeat
-                            Repeat::Forever => {
-                                commands.entity(entity).remove::<BehaviorRunning>();
-                            }
-                            // Times, so we check if we have reached the limit
-                            Repeat::Times(times) => {
-                                // Repeat until we reach the limit
-                                if times > 0 && repeater.count < times {
-                                    commands.entity(entity).remove::<BehaviorRunning>();
-                                } else {
-                                    commands.entity(entity).insert(BehaviorSuccess);
-                                }
-                            }
-                            // Until fail, so we succeed
-                            Repeat::UntilFail => {
-                                commands.entity(entity).insert(BehaviorSuccess);
-                            }
+            // Child failed
+            if child_failure.is_some() {
+                match repeater.repeat {
+                    // Forever, so we reset and repeat
+                    Repeat::Forever => {
+                        commands.entity(entity).remove::<BehaviorRunning>();
+                    }
+                    // Times, so we check if we have reached the limit
+                    Repeat::Times(times) => {
+                        // Repeat until we reach the limit
+                        if times > 0 && repeater.count < times {
+                            commands.entity(entity).remove::<BehaviorRunning>();
+                        } else {
+                            commands.entity(entity).insert(BehaviorSuccess);
                         }
                     }
-                    // Child succeeded
-                    else if child_success.is_some() {
-                        match repeater.repeat {
-                            // Forever, so we reset and repeat
-                            Repeat::Forever => {
-                                commands.entity(entity).remove::<BehaviorRunning>();
-                            }
-                            // Times, so we check if we have reached the limit
-                            Repeat::Times(times) => {
-                                if times > 0 && repeater.count < times {
-                                    commands.entity(entity).remove::<BehaviorRunning>();
-                                } else {
-                                    commands.entity(entity).insert(BehaviorSuccess);
-                                }
-                            }
-                            // Until fail, so we reset and repeat
-                            Repeat::UntilFail => {
-                                commands.entity(entity).remove::<BehaviorRunning>();
-                            }
-                        }
+                    // Until fail, so we succeed
+                    Repeat::UntilFailure => {
+                        commands.entity(entity).insert(BehaviorSuccess);
                     }
-                    // Child is ready, pass on cursor
-                    else {
-                        repeater.count += 1;
-                        commands.entity(entity).remove::<BehaviorCursor>();
-                        commands
-                            .entity(child_entity)
-                            .insert(BehaviorCursor::Delegate);
+                    // Until success, so we reset and repeat
+                    Repeat::UntilSuccess => {
+                        commands.entity(entity).remove::<BehaviorRunning>();
                     }
                 }
+            }
+            // Child succeeded
+            else if child_success.is_some() {
+                match repeater.repeat {
+                    // Forever, so we reset and repeat
+                    Repeat::Forever => {
+                        commands.entity(entity).remove::<BehaviorRunning>();
+                    }
+                    // Times, so we check if we have reached the limit
+                    Repeat::Times(times) => {
+                        if times > 0 && repeater.count < times {
+                            commands.entity(entity).remove::<BehaviorRunning>();
+                        } else {
+                            commands.entity(entity).insert(BehaviorSuccess);
+                        }
+                    }
+                    // Until fail, so we reset and repeat
+                    Repeat::UntilFailure => {
+                        commands.entity(entity).remove::<BehaviorRunning>();
+                    }
+                    // Until success, so we succeed
+                    Repeat::UntilSuccess => {
+                        commands.entity(entity).insert(BehaviorSuccess);
+                    }
+                }
+            }
+            // Child is ready, pass on cursor
+            else {
+                repeater.count += 1;
+                commands.entity(entity).remove::<BehaviorCursor>();
+                commands
+                    .entity(child_entity)
+                    .insert(BehaviorCursor::Delegate);
             }
         }
     }

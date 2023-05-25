@@ -55,7 +55,9 @@ pub fn run<T: BehaviorFactory>(
             // Can be empty while loading subtree
         } else {
             if children.len() > 1 {
-                panic!("Decorator node has more than one child");
+                error!("Decorator node has more than one child");
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
             }
             let child_entity = children[0]; // Safe because we checked for empty
             if let Ok(BehaviorChildQueryItem {

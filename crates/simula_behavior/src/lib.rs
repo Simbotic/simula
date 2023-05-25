@@ -21,7 +21,7 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::{BehaviorInspector, BehaviorInspectorPlugin};
+    pub use crate::inspector::{behavior_graph_ui, BehaviorInspector, BehaviorInspectorPlugin};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorNode,

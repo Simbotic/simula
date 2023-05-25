@@ -5,7 +5,7 @@ Behavior(
                 ("OpenURL", Debug((duration: 3.0, fail: true))),
             ]),
             ("WASD Locomotion", Debug((duration: 3.0, fail: true))),
-            ("RepeatUntilFail", Repeater((repeat: UntilFail)), [
+            ("RepeatUntilFail", Repeater((repeat: UntilFailure)), [
                 ("Inverter", Inverter(()), [
                     ("Auth", Sequencer(()), [
                         ("Link", Debug((duration: 3.0, fail: false))),

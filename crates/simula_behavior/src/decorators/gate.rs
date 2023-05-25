@@ -77,72 +77,59 @@ pub fn run(
             let child_entity = children[0]; // Safe because we checked for empty
             if let Ok(BehaviorChildQueryItem {
                 child_entity,
-                child_parent,
+                child_parent: _,
                 child_failure,
                 child_success,
                 child_running: _,
             }) = nodes.get(child_entity)
             {
-                if let Some(child_parent) = **child_parent {
-                    if entity == child_parent {
-                        // Child failed, we fail
-                        if child_failure.is_some() {
-                            commands.entity(entity).insert(BehaviorFailure);
-                        }
-                        // Child succeeded, so we succeed
-                        else if child_success.is_some() {
-                            commands.entity(entity).insert(BehaviorSuccess);
-                        }
-                        // Child is ready, eval script to see if we should pass on cursor
-                        else {
-                            if let Some(script_asset) =
-                                script_handle.and_then(|script_handle| scripts.get(script_handle))
-                            {
-                                if let Some(scope) =
-                                    node.tree.and_then(|tree| scope_handles.get(tree).ok())
-                                {
-                                    if let Some(scope) = scopes.get_mut(&scope) {
-                                        let result = script_asset.eval::<bool>(scope);
-                                        match result {
-                                            Ok(true) => {
-                                                // Script returned true, so let the child run
-                                                commands.entity(entity).remove::<BehaviorCursor>();
-                                                commands
-                                                    .entity(child_entity)
-                                                    .insert(BehaviorCursor::Delegate);
-                                            }
-                                            Ok(false) => {
-                                                // Script returned false, so we fail
-                                                commands.entity(entity).insert(BehaviorFailure);
-                                            }
-                                            Err(err) => {
-                                                // Script errored, so we fail
-                                                error!("Script errored: {:?}", err);
-                                                commands.entity(entity).insert(BehaviorFailure);
-                                            }
-                                        };
-                                    } else {
-                                        error!("Invalid scope handle");
+                // Child failed, we fail
+                if child_failure.is_some() {
+                    commands.entity(entity).insert(BehaviorFailure);
+                }
+                // Child succeeded, so we succeed
+                else if child_success.is_some() {
+                    commands.entity(entity).insert(BehaviorSuccess);
+                }
+                // Child is ready, eval script to see if we should pass on cursor
+                else {
+                    if let Some(script_asset) =
+                        script_handle.and_then(|script_handle| scripts.get(script_handle))
+                    {
+                        if let Some(scope) = node.tree.and_then(|tree| scope_handles.get(tree).ok())
+                        {
+                            if let Some(scope) = scopes.get_mut(&scope) {
+                                let result = script_asset.eval::<bool>(scope);
+                                match result {
+                                    Ok(true) => {
+                                        // Script returned true, so let the child run
+                                        commands.entity(entity).remove::<BehaviorCursor>();
+                                        commands
+                                            .entity(child_entity)
+                                            .insert(BehaviorCursor::Delegate);
+                                    }
+                                    Ok(false) => {
+                                        // Script returned false, so we fail
                                         commands.entity(entity).insert(BehaviorFailure);
                                     }
-                                } else {
-                                    error!("Cannot find scope handle in tree entity");
-                                    commands.entity(entity).insert(BehaviorFailure);
+                                    Err(err) => {
+                                        // Script errored, so we fail
+                                        error!("Script errored: {:?}", err);
+                                        commands.entity(entity).insert(BehaviorFailure);
+                                    }
                                 };
                             } else {
-                                warn!("Script asset not loaded");
+                                error!("Invalid scope handle");
                                 commands.entity(entity).insert(BehaviorFailure);
                             }
-                        }
+                        } else {
+                            error!("Cannot find scope handle in tree entity");
+                            commands.entity(entity).insert(BehaviorFailure);
+                        };
                     } else {
-                        // Child is not ours, so we fail
-                        warn!("Child is not ours");
+                        warn!("Script asset not loaded");
                         commands.entity(entity).insert(BehaviorFailure);
                     }
-                } else {
-                    // Child has no parent, so we fail
-                    warn!("Child has no parent");
-                    commands.entity(entity).insert(BehaviorFailure);
                 }
             }
         }

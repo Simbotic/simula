@@ -63,7 +63,7 @@ fn find_cursor(world: &mut World, tree_entity: Entity) -> Option<Entity> {
     None
 }
 
-pub fn behavior_inspector_ui<T: BehaviorFactory>(world: &mut World) {
+pub fn behavior_graph_ui<T: BehaviorFactory>(world: &mut World) {
     let mut behavior_trees = world.query::<(
         Entity,
         Option<&Name>,

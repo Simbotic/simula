@@ -56,42 +56,26 @@ pub fn run(
             let mut should_succeed = true;
             for BehaviorChildQueryItem {
                 child_entity,
-                child_parent,
+                child_parent: _,
                 child_failure,
                 child_success,
                 child_running: _,
             } in nodes.iter_many(children_iter)
             {
-                if let Some(child_parent) = **child_parent {
-                    if entity == child_parent {
-                        if child_failure.is_some() {
-                            // Child failed, so we fail
-                            commands.entity(entity).insert(BehaviorFailure);
-                            sequence.seed = rand::random();
-                            should_succeed = false;
-                            break;
-                        } else if child_success.is_some() {
-                            // Child succeeded, so we move to next child
-                        } else {
-                            // Child is ready, pass on cursor
-                            commands.entity(entity).remove::<BehaviorCursor>();
-                            commands
-                                .entity(child_entity)
-                                .insert(BehaviorCursor::Delegate);
-                            should_succeed = false;
-                            break;
-                        }
-                    } else {
-                        // Child is not ours, so we fail
-                        warn!("Child is not ours");
-                        commands.entity(entity).insert(BehaviorFailure);
-                        should_succeed = false;
-                        break;
-                    }
-                } else {
-                    // Child has no parent, so we fail
-                    warn!("Child has no parent");
+                if child_failure.is_some() {
+                    // Child failed, so we fail
                     commands.entity(entity).insert(BehaviorFailure);
+                    sequence.seed = rand::random();
+                    should_succeed = false;
+                    break;
+                } else if child_success.is_some() {
+                    // Child succeeded, so we move to next child
+                } else {
+                    // Child is ready, pass on cursor
+                    commands.entity(entity).remove::<BehaviorCursor>();
+                    commands
+                        .entity(child_entity)
+                        .insert(BehaviorCursor::Delegate);
                     should_succeed = false;
                     break;
                 }

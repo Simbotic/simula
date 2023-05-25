@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-pub use inspector::{behavior_inspector_ui, BehaviorInspector, BehaviorInspectorAttributes};
+pub use inspector::{behavior_graph_ui, BehaviorInspector, BehaviorInspectorAttributes};
 pub use node::{BehaviorInspectorNode, BehaviorInspectorNodeAttributes};
 
 pub mod graph;

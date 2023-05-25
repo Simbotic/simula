@@ -52,9 +52,8 @@ fn main() {
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(behavior_loader::<DebugBehavior>)
-        // Subtrees are typed, so we need to register them separately
-        .add_system(subtree::run::<DebugBehavior>)
-        .add_system(simula_behavior::inspector::behavior_inspector_ui::<DebugBehavior>)
+        .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
+        .add_system(behavior_graph_ui::<DebugBehavior>)
         .run();
 }
 

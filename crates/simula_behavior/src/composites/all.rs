@@ -42,7 +42,7 @@ pub fn run(
             }
             if should_fail {
                 commands.entity(entity).insert(BehaviorFailure);
-                // If we failed, we don't need to check if any other child
+                // If we failed, we don't need to check any other child
                 continue;
             }
 
@@ -50,41 +50,25 @@ pub fn run(
             let mut should_succeed = true;
             for BehaviorChildQueryItem {
                 child_entity,
-                child_parent,
+                child_parent: _,
                 child_failure: _,
                 child_success,
                 child_running,
             } in nodes.iter_many(children.iter())
             {
-                if let Some(child_parent) = **child_parent {
-                    if entity == child_parent {
-                        if child_success.is_some() {
-                            // Child succeeded, so we move to next child
-                        } else if child_running.is_some() {
-                            // Child running, so we move to next child
-                            commands.entity(entity).remove::<BehaviorCursor>();
-                            should_succeed = false;
-                        } else {
-                            // Child is ready, pass on cursor
-                            commands.entity(entity).remove::<BehaviorCursor>();
-                            commands
-                                .entity(child_entity)
-                                .insert(BehaviorCursor::Delegate);
-                            should_succeed = false;
-                        }
-                    } else {
-                        // Child is not ours, so we fail
-                        warn!("Child is not ours");
-                        commands.entity(entity).insert(BehaviorFailure);
-                        should_succeed = false;
-                        break;
-                    }
-                } else {
-                    // Child has no parent, so we fail
-                    warn!("Child has no parent");
-                    commands.entity(entity).insert(BehaviorFailure);
+                if child_success.is_some() {
+                    // Child succeeded, so we move to next child
+                } else if child_running.is_some() {
+                    // Child running, so we move to next child
+                    commands.entity(entity).remove::<BehaviorCursor>();
                     should_succeed = false;
-                    break;
+                } else {
+                    // Child is ready, pass on cursor
+                    commands.entity(entity).remove::<BehaviorCursor>();
+                    commands
+                        .entity(child_entity)
+                        .insert(BehaviorCursor::Delegate);
+                    should_succeed = false;
                 }
             }
             // If all children succeed, complete with success
