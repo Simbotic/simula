@@ -85,7 +85,11 @@ pub trait BehaviorFactory:
     }
 
     fn typ(&self) -> BehaviorType {
-        panic!("BehaviorFactory::info() not implemented")
+        panic!("BehaviorFactory::typ() not implemented")
+    }
+
+    fn color(&self) -> egui::Color32 {
+        panic!("BehaviorFactory::color() not implemented")
     }
 
     fn reflect(&mut self) -> &mut dyn Reflect {

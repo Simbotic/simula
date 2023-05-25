@@ -13,7 +13,8 @@ use std::borrow::Cow;
 /// example, the node data stores the template (i.e. the "type") of the node.
 #[derive(Serialize, Debug)]
 pub struct MyNodeData<T: BehaviorFactory> {
-    pub data: Option<T>,
+    pub name: String,
+    pub data: MyNodeTemplate<T>,
 }
 
 /// `DataType`s are what defines the possible range of connections when
@@ -51,7 +52,7 @@ impl<T> Default for MyValueType<T> {
 /// NodeTemplate is a mechanism to define node templates. It's what the graph
 /// will display in the "new node" popup. The user code needs to tell the
 /// library how to convert a NodeTemplate into a Node.
-#[derive(Clone, Copy, Serialize)]
+#[derive(Clone, Copy, Serialize, Debug)]
 pub enum MyNodeTemplate<T: BehaviorFactory> {
     Root,
     Behavior(T),
@@ -61,11 +62,12 @@ pub enum MyNodeTemplate<T: BehaviorFactory> {
 /// node in the graph. Most side-effects (creating new nodes, deleting existing
 /// nodes, handling connections...) are already handled by the library, but this
 /// mechanism allows creating additional side effects from user code.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MyResponse<T: BehaviorFactory> {
     SetActiveNode(NodeId),
     ClearActiveNode,
     NodeEdited(NodeId, T),
+    NameEdited(NodeId, String),
 }
 
 /// The graph 'global' state. This state struct is passed around to the node and
@@ -84,7 +86,7 @@ pub struct MyGraphState {
 impl DataTypeTrait<MyGraphState> for MyDataType {
     fn data_type_color(&self, _user_state: &mut MyGraphState) -> egui::Color32 {
         match self {
-            MyDataType::Flow => egui::Color32::from_rgb(238, 207, 109),
+            MyDataType::Flow => egui::Color32::from_rgb(100, 100, 20),
         }
     }
 
@@ -129,11 +131,10 @@ where
     }
 
     fn user_data(&self, _user_state: &mut Self::UserState) -> Self::NodeData {
-        let data = match self {
-            MyNodeTemplate::Root => None,
-            MyNodeTemplate::Behavior(behavior) => Some(behavior.clone()),
-        };
-        MyNodeData { data }
+        MyNodeData {
+            name: "".into(),
+            data: self.clone(),
+        }
     }
 
     fn build_node(
@@ -144,7 +145,7 @@ where
     ) {
         match self {
             MyNodeTemplate::Root => {
-                graph.add_output_param(node_id, "0".into(), MyDataType::Flow);
+                graph.add_output_param(node_id, "".into(), MyDataType::Flow);
             }
             MyNodeTemplate::Behavior(behavior) => match behavior.typ() {
                 BehaviorType::Action => {
@@ -248,6 +249,47 @@ where
     type DataType = MyDataType;
     type ValueType = MyValueType<T>;
 
+    fn titlebar_color(
+        &self,
+        _ui: &egui::Ui,
+        _node_id: NodeId,
+        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        _user_state: &mut Self::UserState,
+    ) -> Option<egui::Color32> {
+        match &self.data {
+            MyNodeTemplate::Root => None,
+            MyNodeTemplate::Behavior(behavior) => Some(behavior.color()),
+        }
+    }
+
+    fn top_bar_ui(
+        &self,
+        ui: &mut egui::Ui,
+        node_id: NodeId,
+        graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        _user_state: &mut Self::UserState,
+    ) -> Vec<NodeResponse<Self::Response, Self>>
+    where
+        Self::Response: UserResponseTrait,
+    {
+        let mut responses = vec![];
+
+        if let Some(node) = graph.nodes.get(node_id) {
+            let mut name = node.user_data.name.clone();
+            if ui.text_edit_singleline(&mut name).changed() {
+                responses.push(NodeResponse::User(MyResponse::NameEdited(node_id, name)));
+            }
+        }
+
+        let r = 3.0;
+        let size = egui::Vec2::splat(2.0 * r + 5.0);
+        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
+        ui.painter()
+            .circle_filled(rect.center(), r, egui::Color32::RED);
+
+        responses
+    }
+
     // This method will be called when drawing each node. This allows adding
     // extra ui elements inside the nodes. In this case, we create an "active"
     // button which introduces the concept of having an active node in the
@@ -268,7 +310,7 @@ where
 
         if let Some(node) = graph.nodes.get(node_id) {
             match &node.user_data.data {
-                Some(behavior) => {
+                MyNodeTemplate::Behavior(behavior) => {
                     let mut behavior = behavior.clone();
                     let type_registry = user_state.type_registry.read();
                     if reflect_inspector::ui_for_value(behavior.reflect(), ui, &type_registry) {
@@ -277,7 +319,7 @@ where
                         )));
                     }
                 }
-                None => {}
+                MyNodeTemplate::Root => {}
             }
         }
 

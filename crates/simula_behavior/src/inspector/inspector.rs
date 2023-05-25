@@ -1,5 +1,7 @@
 use crate::{
-    inspector::graph::{AllMyNodeTemplates, MyEditorState, MyGraphState, MyResponse},
+    inspector::graph::{
+        AllMyNodeTemplates, MyEditorState, MyGraphState, MyNodeTemplate, MyResponse,
+    },
     BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree,
 };
 use bevy::{ecs::system::SystemState, prelude::*};
@@ -158,7 +160,12 @@ pub fn behavior_inspector_ui<T: BehaviorFactory>(world: &mut World) {
                                 }
                                 NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
                                     if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                        node.user_data.data = Some(data);
+                                        node.user_data.data = MyNodeTemplate::Behavior(data);
+                                    }
+                                }
+                                NodeResponse::User(MyResponse::NameEdited(node_id, name)) => {
+                                    if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                        node.user_data.name = name;
                                     }
                                 }
                                 _ => {}

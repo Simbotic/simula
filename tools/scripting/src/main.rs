@@ -8,7 +8,7 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
-use simula_behavior::prelude::*;
+use simula_behavior::{color_hex_utils::color_from_hex, prelude::*};
 use simula_camera::orbitcam::*;
 use simula_script::{Scope, ScriptPlugin};
 use simula_viz::{
@@ -148,6 +148,23 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::TYPE,
             DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::TYPE,
             DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::TYPE,
+        }
+    }
+
+    fn color(&self) -> bevy_inspector_egui::egui::Color32 {
+        match self {
+            DebugBehavior::Debug(_) => color_from_hex("#2C578B").unwrap(),
+            DebugBehavior::Selector(_) => color_from_hex("#880000").unwrap(),
+            DebugBehavior::Sequencer(_) => color_from_hex("#245806").unwrap(),
+            DebugBehavior::All(_) => color_from_hex("#245806").unwrap(),
+            DebugBehavior::Any(_) => color_from_hex("#880000").unwrap(),
+            DebugBehavior::Repeater(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Inverter(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Succeeder(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Wait(_) => color_from_hex("#2C578B").unwrap(),
+            DebugBehavior::Delay(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Gate(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Subtree(_) => color_from_hex("#665600").unwrap(),
         }
     }
 
