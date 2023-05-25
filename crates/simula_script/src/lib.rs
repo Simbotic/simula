@@ -6,7 +6,8 @@ use bevy_console::{
     ConsolePlugin, ConsoleSet,
 };
 use clap::Parser;
-use rhai::{Dynamic, Engine, RegisterFn};
+pub use rhai as script;
+use rhai::RegisterFn;
 
 mod asset;
 
@@ -31,11 +32,11 @@ impl Plugin for ScriptPlugin {
             })
             .add_console_command::<RhaiCommand, _>(|mut cmd: ConsoleCommand<RhaiCommand>| {
                 if let Some(Ok(RhaiCommand { expr })) = cmd.take() {
-                    let mut engine = Engine::new();
+                    let mut engine = script::Engine::new();
                     engine.register_fn("add", |x: i64, y: i64| x + y);
 
                     let expr = expr.join(" ");
-                    match engine.eval::<Dynamic>(&expr) {
+                    match engine.eval::<script::Dynamic>(&expr) {
                         Ok(result) => reply!(cmd, "{}", result),
                         Err(e) => reply!(cmd, "Error: {}", e),
                     }

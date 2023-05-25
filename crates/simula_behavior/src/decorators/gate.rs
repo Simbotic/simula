@@ -127,6 +127,7 @@ pub fn run(
                             commands.entity(entity).insert(BehaviorFailure);
                         };
                     } else {
+                        // TODO: Revisit to consider loading times
                         warn!("Script asset not loaded");
                         commands.entity(entity).insert(BehaviorFailure);
                     }

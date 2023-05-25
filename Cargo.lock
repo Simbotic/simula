@@ -5045,7 +5045,6 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy-inspector-egui",
- "egui",
  "egui_node_graph",
  "pretty-type-name",
  "rand",

@@ -7,7 +7,6 @@ edition = "2021"
 bevy = { version = "0.10" }
 bevy-inspector-egui = "0.18"
 
-egui = { version = "0.21", features = ["serde"] }
 egui_node_graph = { git = "https://github.com/Simbotic/egui_node_graph.git", rev = "3068b8cd9bad3a419682af273c01cd700bda2739", features = [
     "persistence",
 ] }

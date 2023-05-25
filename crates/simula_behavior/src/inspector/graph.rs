@@ -238,6 +238,15 @@ where
     }
 }
 
+fn to_bytes(color: &Color) -> egui::Color32 {
+    egui::Color32::from_rgba_premultiplied(
+        (color.r() * 255.0) as u8,
+        (color.g() * 255.0) as u8,
+        (color.b() * 255.0) as u8,
+        (color.a() * 255.0) as u8,
+    )
+}
+
 impl<T> UserResponseTrait for MyResponse<T> where T: BehaviorFactory {}
 
 impl<T> NodeDataTrait for MyNodeData<T>
@@ -258,7 +267,7 @@ where
     ) -> Option<egui::Color32> {
         match &self.data {
             MyNodeTemplate::Root => None,
-            MyNodeTemplate::Behavior(behavior) => Some(behavior.color()),
+            MyNodeTemplate::Behavior(behavior) => Some(to_bytes(&behavior.color())),
         }
     }
 

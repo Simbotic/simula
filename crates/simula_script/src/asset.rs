@@ -4,23 +4,21 @@ use bevy::{
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
+use rhai as script;
 use serde::Deserialize;
 
 #[derive(TypeUuid)]
 #[uuid = "1EDAA495-674E-45AA-903B-212D088BD991"]
 pub struct Scope {
-    engine: rhai::Engine,
-    scope: rhai::Scope<'static>,
+    pub engine: script::Engine,
+    pub scope: script::Scope<'static>,
 }
 
 impl Scope {
     pub fn new() -> Self {
-        let mut engine = rhai::Engine::new();
+        let mut engine = script::Engine::new();
         engine.on_print(|x| info!("{x}"));
-        let mut scope = rhai::Scope::new();
-        let mut blackboard = rhai::Map::new();
-        blackboard.insert("state".into(), 0.into());
-        scope.push("blackboard", blackboard);
+        let scope = script::Scope::new();
         Self { engine, scope }
     }
 }
@@ -30,12 +28,12 @@ impl Scope {
 pub struct Script {
     pub script: String,
     #[serde(skip)]
-    ast: rhai::AST,
+    ast: script::AST,
 }
 
 impl Script {
-    pub fn from_str(script: &str) -> Result<Self, Box<rhai::ParseError>> {
-        let engine = rhai::Engine::new();
+    pub fn from_str(script: &str) -> Result<Self, Box<script::ParseError>> {
+        let engine = script::Engine::new();
         let ast = engine.compile(&script)?;
         Ok(Script {
             script: script.into(),
@@ -43,7 +41,7 @@ impl Script {
         })
     }
 
-    pub fn eval<T>(&self, context: &mut Scope) -> Result<T, std::boxed::Box<rhai::EvalAltResult>>
+    pub fn eval<T>(&self, context: &mut Scope) -> Result<T, std::boxed::Box<script::EvalAltResult>>
     where
         T: Clone + Deserialize<'static> + Send + Sync + 'static,
     {
@@ -66,7 +64,7 @@ impl AssetLoader for ScriptLoader {
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
-            let engine = rhai::Engine::new();
+            let engine = script::Engine::new();
             let script = String::from_utf8(bytes.to_vec()).unwrap();
             let ast = engine.compile(&script)?;
             load_context.set_default_asset(LoadedAsset::new(Script { script, ast }));

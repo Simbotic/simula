@@ -8,9 +8,9 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
-use simula_behavior::{color_hex_utils::color_from_hex, prelude::*};
+use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
-use simula_script::{Scope, ScriptPlugin};
+use simula_script::{script, Scope, ScriptPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -155,21 +155,21 @@ impl BehaviorFactory for DebugBehavior {
         }
     }
 
-    fn color(&self) -> bevy_inspector_egui::egui::Color32 {
+    fn color(&self) -> Color {
         match self {
-            DebugBehavior::Debug(_) => color_from_hex("#2C578B").unwrap(),
-            DebugBehavior::Selector(_) => color_from_hex("#880000").unwrap(),
-            DebugBehavior::Sequencer(_) => color_from_hex("#245806").unwrap(),
-            DebugBehavior::All(_) => color_from_hex("#245806").unwrap(),
-            DebugBehavior::Any(_) => color_from_hex("#880000").unwrap(),
-            DebugBehavior::Repeater(_) => color_from_hex("#665600").unwrap(),
-            DebugBehavior::Inverter(_) => color_from_hex("#665600").unwrap(),
-            DebugBehavior::Succeeder(_) => color_from_hex("#665600").unwrap(),
-            DebugBehavior::Wait(_) => color_from_hex("#2C578B").unwrap(),
-            DebugBehavior::Delay(_) => color_from_hex("#665600").unwrap(),
-            DebugBehavior::Gate(_) => color_from_hex("#665600").unwrap(),
-            DebugBehavior::Timeout(_) => color_from_hex("#665600").unwrap(),
-            DebugBehavior::Subtree(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Debug(_) => Color::hex("#236").unwrap(),
+            DebugBehavior::Selector(_) => Color::hex("#633").unwrap(),
+            DebugBehavior::Sequencer(_) => Color::hex("#363").unwrap(),
+            DebugBehavior::All(_) => Color::hex("#363").unwrap(),
+            DebugBehavior::Any(_) => Color::hex("#833").unwrap(),
+            DebugBehavior::Repeater(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Inverter(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Succeeder(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Wait(_) => Color::hex("#236").unwrap(),
+            DebugBehavior::Delay(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Gate(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Timeout(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Subtree(_) => Color::hex("#660").unwrap(),
         }
     }
 
@@ -239,11 +239,15 @@ fn setup(
             asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
 
         // create a new scope for the behavior tree
-        let scope = scopes.add(Scope::new());
+        let mut scope = Scope::new();
+        let mut blackboard = script::Map::new();
+        blackboard.insert("state".into(), 0.into());
+        scope.scope.push("blackboard", blackboard);
+        let scope_handle = scopes.add(scope);
 
         // create a new entity for the behavior tree, and insert the scope
         let tree_entity = commands
-            .spawn((Name::new(format!("BT: {}", behavior)), scope))
+            .spawn((Name::new(format!("BT: {}", behavior)), scope_handle))
             .insert(simula_behavior::inspector::graph::MyGraphState {
                 type_registry: type_registry.0.clone(),
                 ..Default::default()
