@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 pub struct Selector {
     #[serde(default)]
     random: bool,
-    #[serde(default)]
+    #[serde(skip)]
     pub seed: u64,
 }
 

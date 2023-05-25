@@ -2,36 +2,36 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Delay will delay the execution of its child.
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
-pub struct Delay {
+pub struct Timeout {
     #[serde(default)]
     pub duration: f64,
     #[serde(skip)]
     pub start: f64,
 }
 
-impl BehaviorInfo for Delay {
+/// Timeout will fail if its child does not return within the given time limit.
+impl BehaviorInfo for Timeout {
     const TYPE: BehaviorType = BehaviorType::Decorator;
-    const NAME: &'static str = "Delay";
-    const DESC: &'static str = "Delays the execution of its child";
+    const NAME: &'static str = "Timeout";
+    const DESC: &'static str = "Fails if its child does not return within the given time limit";
 }
 
 pub fn run(
     time: Res<Time>,
     mut commands: Commands,
-    mut delays: Query<
+    mut timeouts: Query<
         (
             Entity,
-            &mut Delay,
+            &mut Timeout,
             &mut BehaviorChildren,
             &mut BehaviorRunning,
         ),
-        (With<Delay>, BehaviorRunQuery),
+        (With<Timeout>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, mut delay, children, mut running) in &mut delays {
+    for (entity, mut timeout, children, mut running) in &mut timeouts {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
@@ -41,11 +41,14 @@ pub fn run(
         let elapsed = time.elapsed_seconds_f64();
         if !running.on_enter_handled {
             running.on_enter_handled = true;
-            delay.start = elapsed;
+            timeout.start = elapsed;
         }
+
         let current_time = elapsed;
-        if current_time - delay.start < delay.duration {
-            continue; // We're still in delay, so don't do anything yet.
+        if current_time - timeout.start >= timeout.duration {
+            // Time limit reached, we fail
+            commands.entity(entity).insert(BehaviorFailure);
+            continue;
         }
 
         let child_entity = children[0]; // Safe because we checked for empty

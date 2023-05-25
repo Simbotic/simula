@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct Wait {
     #[serde(default)]
     pub duration: f64,
-    #[serde(default)]
+    #[serde(skip)]
     pub start: f64,
 }
 

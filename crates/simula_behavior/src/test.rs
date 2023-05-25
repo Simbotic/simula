@@ -50,6 +50,7 @@ pub enum TestBehavior {
     Delay(Delay),
     Identity(Identity),
     Gate(Gate),
+    Timeout(Timeout),
 }
 
 impl Default for TestBehavior {
@@ -73,6 +74,7 @@ impl BehaviorFactory for TestBehavior {
             TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Identity(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Gate(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 }

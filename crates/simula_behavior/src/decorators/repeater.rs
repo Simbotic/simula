@@ -15,7 +15,7 @@ pub enum Repeat {
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Repeater {
     pub repeat: Repeat,
-    #[serde(default)]
+    #[serde(skip)]
     pub count: u64,
 }
 

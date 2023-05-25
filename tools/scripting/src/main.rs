@@ -53,6 +53,7 @@ fn main() {
         .add_system(debug_info)
         .add_system(behavior_loader::<DebugBehavior>)
         .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
+        .register_type::<Subtree<DebugBehavior>>()
         .add_system(behavior_graph_ui::<DebugBehavior>)
         .run();
 }
@@ -71,8 +72,8 @@ pub enum DebugBehavior {
     Wait(Wait),
     Delay(Delay),
     Gate(Gate),
-    // Substrees are typed, let's allow loading this same type as subtree
-    Subtree(Subtree<DebugBehavior>),
+    Timeout(Timeout),
+    Subtree(Subtree<DebugBehavior>), // Substrees are typed, this loads same tree type
 }
 
 impl Default for DebugBehavior {
@@ -95,6 +96,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Gate(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
@@ -112,6 +114,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::NAME,
             DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::NAME,
             DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::NAME,
+            DebugBehavior::Timeout(_) => <Timeout as BehaviorInfo>::NAME,
             DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::NAME,
         }
     }
@@ -129,6 +132,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(data) => data,
             DebugBehavior::Delay(data) => data,
             DebugBehavior::Gate(data) => data,
+            DebugBehavior::Timeout(data) => data,
             DebugBehavior::Subtree(data) => data,
         }
     }
@@ -146,6 +150,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::TYPE,
             DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::TYPE,
             DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::TYPE,
+            DebugBehavior::Timeout(_) => <Timeout as BehaviorInfo>::TYPE,
             DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::TYPE,
         }
     }
@@ -163,6 +168,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(_) => color_from_hex("#2C578B").unwrap(),
             DebugBehavior::Delay(_) => color_from_hex("#665600").unwrap(),
             DebugBehavior::Gate(_) => color_from_hex("#665600").unwrap(),
+            DebugBehavior::Timeout(_) => color_from_hex("#665600").unwrap(),
             DebugBehavior::Subtree(_) => color_from_hex("#665600").unwrap(),
         }
     }
@@ -180,6 +186,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(_) => vec![<Wait as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Delay(_) => vec![<Delay as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Gate(_) => vec![<Gate as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Subtree(_) => {
                 vec![<Subtree<DebugBehavior> as BehaviorInfo>::TYPE.as_ref()]
             }
@@ -199,6 +206,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Wait(Wait::default()),
             DebugBehavior::Delay(Delay::default()),
             DebugBehavior::Gate(Gate::default()),
+            DebugBehavior::Timeout(Timeout::default()),
             DebugBehavior::Subtree(Subtree::<DebugBehavior>::default()),
         ]
     }
