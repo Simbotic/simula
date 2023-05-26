@@ -76,8 +76,6 @@ pub fn behavior_graph_ui<T: BehaviorFactory>(world: &mut World) {
     let mut context = system_state.get_mut(world).ctx_mut().clone();
 
     egui::Window::new("Behavior Inspector").show(&mut context, |ui| {
-        // ui.visuals_mut().window_shadow.extrusion = 0.0;
-        // ui.visuals_mut().window_fill = egui::Color32::from_rgba_unmultiplied(20, 20, 20, 200);
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {

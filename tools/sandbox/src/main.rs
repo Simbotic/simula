@@ -4,10 +4,10 @@ use bevy::{
     // log::LogPlugin,
     prelude::*,
     render::view::{NoFrustumCulling, RenderLayers},
-    window::{PresentMode, PrimaryWindow},
+    window::PresentMode,
 };
 use bevy_inspector_egui::{
-    bevy_egui::{EguiContext, EguiContexts, EguiPlugin},
+    bevy_egui::{EguiContexts, EguiPlugin},
     egui,
     quick::WorldInspectorPlugin,
 };
@@ -103,17 +103,31 @@ fn main() {
     app.run();
 }
 
-fn setup_ui(world: &mut World) {
-    let mut egui_context = world
-        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .single(world)
-        .clone();
+fn setup_ui(mut contexts: EguiContexts) {
+    const TITLE_FONT_NAME: &str = "MY_FONT_NAME";
+    let mut fonts = egui::FontDefinitions::default();
+    fonts.font_data.insert(
+        TITLE_FONT_NAME.into(),
+        egui::FontData::from_static(include_bytes!("../assets/fonts/DejaVuSans.ttf")),
+    );
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, TITLE_FONT_NAME.into());
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .insert(0, TITLE_FONT_NAME.into());
+    contexts.ctx_mut().set_fonts(fonts);
 
     let mut visuals = egui::Visuals::dark();
+    visuals.window_rounding = 2.0.into();
     visuals.window_shadow.extrusion = 0.0;
     visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
     visuals.window_stroke = egui::Stroke::NONE;
-    egui_context.get_mut().set_visuals(visuals);
+    contexts.ctx_mut().set_visuals(visuals);
 }
 
 fn setup(

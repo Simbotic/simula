@@ -13,7 +13,7 @@ pub struct Wait {
 
 impl BehaviorInfo for Wait {
     const TYPE: BehaviorType = BehaviorType::Action;
-    const NAME: &'static str = "Wait";
+    const NAME: &'static str = "⌛ Wait";
     const DESC: &'static str = "Wait for a specified amount of time";
 }
 

@@ -9,7 +9,7 @@ pub struct Any;
 
 impl BehaviorInfo for Any {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Any";
+    const NAME: &'static str = "⇉ Any";
     const DESC: &'static str = "Any behavior node";
 }
 

@@ -26,7 +26,7 @@ impl Default for Selector {
 
 impl BehaviorInfo for Selector {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Selector";
+    const NAME: &'static str = "? Selector";
     const DESC: &'static str = "Selector behavior node";
 }
 

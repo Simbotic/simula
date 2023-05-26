@@ -19,7 +19,7 @@ pub struct Debug {
 
 impl BehaviorInfo for Debug {
     const TYPE: BehaviorType = BehaviorType::Action;
-    const NAME: &'static str = "Debug";
+    const NAME: &'static str = "👁 Debug";
     const DESC: &'static str = "Display a debug message and complete with success or failure";
 }
 

@@ -26,7 +26,7 @@ impl Default for Sequencer {
 
 impl BehaviorInfo for Sequencer {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "Sequencer";
+    const NAME: &'static str = "➡ Sequencer";
     const DESC: &'static str = "Sequencer behavior node";
 }
 
