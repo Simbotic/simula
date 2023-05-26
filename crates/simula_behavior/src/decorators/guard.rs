@@ -9,16 +9,16 @@ pub enum Source {
     Inline(String),
 }
 
-/// Gate evals a script to control the flow of execution. If the script returns
+/// Guard evals a script to control the flow of execution. If the script returns
 /// `true`, the child is executed. If the script returns `false`, the child is
 /// not executed. The Scope of the script should be at the tree entity.
 #[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
-pub struct Gate {
+pub struct Guard {
     /// The script to evaluate
     pub script: Source,
 }
 
-impl Default for Gate {
+impl Default for Guard {
     fn default() -> Self {
         Self {
             script: Source::Inline("true".into()),
@@ -26,10 +26,10 @@ impl Default for Gate {
     }
 }
 
-impl BehaviorInfo for Gate {
+impl BehaviorInfo for Guard {
     const TYPE: BehaviorType = BehaviorType::Decorator;
-    const NAME: &'static str = "Gate";
-    const DESC: &'static str = "Gate evals script to control the flow of execution.";
+    const NAME: &'static str = "Guard";
+    const DESC: &'static str = "Guard evals script to control the flow of execution.";
 }
 
 pub fn run(
@@ -38,7 +38,7 @@ pub fn run(
         (
             Entity,
             &BehaviorChildren,
-            &Gate,
+            &Guard,
             Option<&Handle<Script>>,
             &BehaviorNode,
         ),

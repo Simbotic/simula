@@ -30,7 +30,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_system(wait::run);
     app.add_system(delay::run);
     app.add_system(identity::run);
-    app.add_system(gate::run);
+    app.add_system(guard::run);
     app.init_resource::<BehaviorTrace>();
     app
 }
@@ -49,7 +49,7 @@ pub enum TestBehavior {
     Wait(Wait),
     Delay(Delay),
     Identity(Identity),
-    Gate(Gate),
+    Guard(Guard),
     Timeout(Timeout),
 }
 
@@ -73,7 +73,7 @@ impl BehaviorFactory for TestBehavior {
             TestBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Identity(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Gate(data) => BehaviorInfo::insert_with(commands, data),
+            TestBehavior::Guard(data) => BehaviorInfo::insert_with(commands, data),
             TestBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
         }
     }

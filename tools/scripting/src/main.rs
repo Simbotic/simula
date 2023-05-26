@@ -72,7 +72,7 @@ pub enum DebugBehavior {
     Succeeder(Succeeder),
     Wait(Wait),
     Delay(Delay),
-    Gate(Gate),
+    Guard(Guard),
     Timeout(Timeout),
     Subtree(Subtree<DebugBehavior>), // Substrees are typed, this loads same tree type
 }
@@ -96,7 +96,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Gate(data) => BehaviorInfo::insert_with(commands, data),
+            DebugBehavior::Guard(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
             DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
         }
@@ -114,7 +114,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::NAME,
             DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::NAME,
             DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::NAME,
-            DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::NAME,
+            DebugBehavior::Guard(_) => <Guard as BehaviorInfo>::NAME,
             DebugBehavior::Timeout(_) => <Timeout as BehaviorInfo>::NAME,
             DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::NAME,
         }
@@ -132,7 +132,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(data) => data,
             DebugBehavior::Wait(data) => data,
             DebugBehavior::Delay(data) => data,
-            DebugBehavior::Gate(data) => data,
+            DebugBehavior::Guard(data) => data,
             DebugBehavior::Timeout(data) => data,
             DebugBehavior::Subtree(data) => data,
         }
@@ -150,7 +150,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::TYPE,
             DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::TYPE,
             DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::TYPE,
-            DebugBehavior::Gate(_) => <Gate as BehaviorInfo>::TYPE,
+            DebugBehavior::Guard(_) => <Guard as BehaviorInfo>::TYPE,
             DebugBehavior::Timeout(_) => <Timeout as BehaviorInfo>::TYPE,
             DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::TYPE,
         }
@@ -168,7 +168,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(_) => Color::hex("#440").unwrap(),
             DebugBehavior::Wait(_) => Color::hex("#235").unwrap(),
             DebugBehavior::Delay(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Gate(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Guard(_) => Color::hex("#440").unwrap(),
             DebugBehavior::Timeout(_) => Color::hex("#440").unwrap(),
             DebugBehavior::Subtree(_) => Color::hex("#440").unwrap(),
         }
@@ -186,7 +186,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(_) => vec![<Succeeder as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Wait(_) => vec![<Wait as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Delay(_) => vec![<Delay as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Gate(_) => vec![<Gate as BehaviorInfo>::TYPE.as_ref()],
+            DebugBehavior::Guard(_) => vec![<Guard as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
             DebugBehavior::Subtree(_) => {
                 vec![<Subtree<DebugBehavior> as BehaviorInfo>::TYPE.as_ref()]
@@ -206,7 +206,7 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Succeeder(Succeeder::default()),
             DebugBehavior::Wait(Wait::default()),
             DebugBehavior::Delay(Delay::default()),
-            DebugBehavior::Gate(Gate::default()),
+            DebugBehavior::Guard(Guard::default()),
             DebugBehavior::Timeout(Timeout::default()),
             DebugBehavior::Subtree(Subtree::<DebugBehavior>::default()),
         ]

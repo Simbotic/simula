@@ -1,9 +1,9 @@
 Behavior(
-    "Loop Gate",
+    "Loop Guard",
     Repeater((repeat:Forever)),
     [
         ("Delay", Delay((duration: 5.0)), [
-            ("Can do?", Gate((script: Asset("scripts/true.rhai"))), [
+            ("Can do?", Guard((script: Asset("scripts/true.rhai"))), [
                 ("Do a thing", Debug((message: "I'm doing a thing!")))
             ])
         ]),

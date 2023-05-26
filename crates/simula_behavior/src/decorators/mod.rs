@@ -1,5 +1,5 @@
 pub mod delay;
-pub mod gate;
+pub mod guard;
 pub mod identity;
 pub mod inverter;
 pub mod repeater;
@@ -8,7 +8,7 @@ pub mod succeeder;
 pub mod timeout;
 
 pub use delay::*;
-pub use gate::*;
+pub use guard::*;
 pub use identity::*;
 pub use inverter::*;
 pub use repeater::*;

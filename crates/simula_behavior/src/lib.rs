@@ -128,7 +128,7 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Wait>()
             .register_type::<Delay>()
             .register_type::<Identity>()
-            .register_type::<Gate>()
+            .register_type::<Guard>()
             .register_type::<Timeout>()
             .add_asset::<BehaviorAsset>()
             .init_asset_loader::<BehaviorAssetLoader>()
@@ -148,7 +148,7 @@ impl Plugin for BehaviorPlugin {
             .add_system(wait::run)
             .add_system(delay::run)
             .add_system(identity::run)
-            .add_system(gate::run)
+            .add_system(guard::run)
             .add_system(timeout::run);
     }
 }
