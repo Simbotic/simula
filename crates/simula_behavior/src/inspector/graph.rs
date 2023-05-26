@@ -1,5 +1,8 @@
 use crate::prelude::*;
-use bevy::{prelude::*, reflect::TypeRegistryArc};
+use bevy::{
+    prelude::{default, Color, Component, Deref, DerefMut},
+    reflect::TypeRegistryArc,
+};
 use bevy_inspector_egui::{
     egui::{self},
     reflect_inspector,
@@ -86,7 +89,7 @@ pub struct MyGraphState {
 impl DataTypeTrait<MyGraphState> for MyDataType {
     fn data_type_color(&self, _user_state: &mut MyGraphState) -> egui::Color32 {
         match self {
-            MyDataType::Flow => egui::Color32::from_rgb(100, 100, 20),
+            MyDataType::Flow => egui::Color32::from_rgb(100, 100, 100),
         }
     }
 
@@ -151,7 +154,7 @@ where
                 BehaviorType::Action => {
                     graph.add_input_param(
                         node_id,
-                        "".into(),
+                        "A".into(),
                         MyDataType::Flow,
                         MyValueType::Flow,
                         InputParamKind::ConnectionOnly,
@@ -161,7 +164,7 @@ where
                 BehaviorType::Decorator => {
                     graph.add_input_param(
                         node_id,
-                        "".into(),
+                        "A".into(),
                         MyDataType::Flow,
                         MyValueType::Flow,
                         InputParamKind::ConnectionOnly,
@@ -172,16 +175,16 @@ where
                 BehaviorType::Composite => {
                     graph.add_input_param(
                         node_id,
-                        "".into(),
+                        "A".into(),
                         MyDataType::Flow,
                         MyValueType::Flow,
                         InputParamKind::ConnectionOnly,
                         true,
                     );
 
-                    graph.add_output_param(node_id, "".into(), MyDataType::Flow);
-                    graph.add_output_param(node_id, "".into(), MyDataType::Flow);
-                    graph.add_output_param(node_id, "".into(), MyDataType::Flow);
+                    graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                    graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                    graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
                 }
             },
         }
@@ -219,22 +222,29 @@ where
     type Response = MyResponse<T>;
     type UserState = MyGraphState;
     type NodeData = MyNodeData<T>;
+
     fn value_widget(
         &mut self,
         _param_name: &str,
         _node_id: NodeId,
-        _ui: &mut egui::Ui,
+        ui: &mut egui::Ui,
         _user_state: &mut MyGraphState,
         _node_data: &MyNodeData<T>,
     ) -> Vec<MyResponse<T>> {
-        // This trait is used to tell the library which UI to display for the
-        // inline parameter widgets.
-        match self {
-            MyValueType::Flow => {}
-            MyValueType::Marker { .. } => {}
-        }
-        // This allows you to return your responses from the inline widgets.
-        Vec::new()
+        ui.label("");
+        default()
+    }
+
+    fn value_widget_connected(
+        &mut self,
+        _param_name: &str,
+        _node_id: NodeId,
+        ui: &mut egui::Ui,
+        _user_state: &mut Self::UserState,
+        _node_data: &Self::NodeData,
+    ) -> Vec<Self::Response> {
+        ui.label("");
+        default()
     }
 }
 
@@ -283,28 +293,60 @@ where
     {
         let mut responses = vec![];
 
-        if let Some(node) = graph.nodes.get(node_id) {
-            let mut name = node.user_data.name.clone();
-            if ui.text_edit_singleline(&mut name).changed() {
-                responses.push(NodeResponse::User(MyResponse::NameEdited(node_id, name)));
+        match &self.data {
+            MyNodeTemplate::Root => {}
+            MyNodeTemplate::Behavior(_behavior) => {
+                // if let Some(node) = graph.nodes.get(node_id) {
+                //     let mut name = node.user_data.name.clone();
+                //     ui.style_mut().visuals.extreme_bg_color = egui::Color32::TRANSPARENT;
+                //     if egui::TextEdit::singleline(&mut name)
+                //         .text_color(egui::Color32::WHITE)
+                //         .show(ui)
+                //         .response
+                //         .changed()
+                //     {
+                //         responses.push(NodeResponse::User(MyResponse::NameEdited(node_id, name)));
+                //     }
+                // }
+
+                let r = 3.0;
+                let size = egui::Vec2::splat(2.0 * r + 5.0);
+                let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
+                ui.painter()
+                    .circle_filled(rect.center(), r, egui::Color32::RED);
             }
         }
-
-        let r = 3.0;
-        let size = egui::Vec2::splat(2.0 * r + 5.0);
-        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
-        ui.painter()
-            .circle_filled(rect.center(), r, egui::Color32::RED);
 
         responses
     }
 
-    // This method will be called when drawing each node. This allows adding
-    // extra ui elements inside the nodes. In this case, we create an "active"
-    // button which introduces the concept of having an active node in the
-    // graph. This is done entirely from user code with no modifications to the
-    // node graph library.
-    fn bottom_ui(
+    fn separator(
+        &self,
+        _ui: &mut egui::Ui,
+        _node_id: NodeId,
+        _param_id: AnyParameterId,
+        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        _user_state: &mut Self::UserState,
+    ) {
+        // ui.separator();
+    }
+
+    fn output_ui(
+        &self,
+        ui: &mut egui::Ui,
+        _node_id: NodeId,
+        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        _user_state: &mut Self::UserState,
+        _param_name: &str,
+    ) -> Vec<NodeResponse<Self::Response, Self>>
+    where
+        Self::Response: UserResponseTrait,
+    {
+        ui.label("");
+        default()
+    }
+
+    fn body_ui(
         &self,
         ui: &mut egui::Ui,
         node_id: NodeId,
@@ -320,6 +362,23 @@ where
         if let Some(node) = graph.nodes.get(node_id) {
             match &node.user_data.data {
                 MyNodeTemplate::Behavior(behavior) => {
+                    // Edit node name
+                    if let Some(node) = graph.nodes.get(node_id) {
+                        let mut name = node.user_data.name.clone();
+                        ui.style_mut().visuals.extreme_bg_color =
+                            egui::Color32::from_rgba_premultiplied(0, 0, 0, 50);
+                        if egui::TextEdit::singleline(&mut name)
+                            .text_color(egui::Color32::WHITE)
+                            .show(ui)
+                            .response
+                            .changed()
+                        {
+                            responses
+                                .push(NodeResponse::User(MyResponse::NameEdited(node_id, name)));
+                        }
+                    }
+
+                    // Reflect edit behavior properties
                     let mut behavior = behavior.clone();
                     let type_registry = user_state.type_registry.read();
                     if reflect_inspector::ui_for_value(behavior.reflect(), ui, &type_registry) {
@@ -331,6 +390,50 @@ where
                 MyNodeTemplate::Root => {}
             }
         }
+
+        responses
+    }
+
+    // This method will be called when drawing each node. This allows adding
+    // extra ui elements inside the nodes. In this case, we create an "active"
+    // button which introduces the concept of having an active node in the
+    // graph. This is done entirely from user code with no modifications to the
+    // node graph library.
+    fn bottom_ui(
+        &self,
+        _ui: &mut egui::Ui,
+        _node_id: NodeId,
+        _graph: &Graph<MyNodeData<T>, MyDataType, MyValueType<T>>,
+        _user_state: &mut Self::UserState,
+    ) -> Vec<NodeResponse<MyResponse<T>, MyNodeData<T>>>
+    where
+        T: BehaviorFactory,
+        MyResponse<T>: UserResponseTrait,
+    {
+        let responses = vec![];
+
+        // let mut name = "test";
+        // egui::TextEdit::multiline(&mut name)
+        // .code_editor().desired_rows(10).frame(true)
+        //     // .min_size(egui::Vec2::new(100.0, 20.0))
+        //     .text_color(egui::Color32::WHITE)
+        //     // .frame(false)
+        //     .show(ui);
+
+        // if let Some(node) = graph.nodes.get(node_id) {
+        //     match &node.user_data.data {
+        //         MyNodeTemplate::Behavior(behavior) => {
+        //             let mut behavior = behavior.clone();
+        //             let type_registry = user_state.type_registry.read();
+        //             if reflect_inspector::ui_for_value(behavior.reflect(), ui, &type_registry) {
+        //                 responses.push(NodeResponse::User(MyResponse::NodeEdited(
+        //                     node_id, behavior,
+        //                 )));
+        //             }
+        //         }
+        //         MyNodeTemplate::Root => {}
+        //     }
+        // }
 
         responses
     }

@@ -157,19 +157,19 @@ impl BehaviorFactory for DebugBehavior {
 
     fn color(&self) -> Color {
         match self {
-            DebugBehavior::Debug(_) => Color::hex("#236").unwrap(),
-            DebugBehavior::Selector(_) => Color::hex("#633").unwrap(),
-            DebugBehavior::Sequencer(_) => Color::hex("#363").unwrap(),
-            DebugBehavior::All(_) => Color::hex("#363").unwrap(),
-            DebugBehavior::Any(_) => Color::hex("#833").unwrap(),
-            DebugBehavior::Repeater(_) => Color::hex("#660").unwrap(),
-            DebugBehavior::Inverter(_) => Color::hex("#660").unwrap(),
-            DebugBehavior::Succeeder(_) => Color::hex("#660").unwrap(),
-            DebugBehavior::Wait(_) => Color::hex("#236").unwrap(),
-            DebugBehavior::Delay(_) => Color::hex("#660").unwrap(),
-            DebugBehavior::Gate(_) => Color::hex("#660").unwrap(),
-            DebugBehavior::Timeout(_) => Color::hex("#660").unwrap(),
-            DebugBehavior::Subtree(_) => Color::hex("#660").unwrap(),
+            DebugBehavior::Debug(_) => Color::hex("#235").unwrap(),
+            DebugBehavior::Selector(_) => Color::hex("#522").unwrap(),
+            DebugBehavior::Sequencer(_) => Color::hex("#252").unwrap(),
+            DebugBehavior::All(_) => Color::hex("#252").unwrap(),
+            DebugBehavior::Any(_) => Color::hex("#522").unwrap(),
+            DebugBehavior::Repeater(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Inverter(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Succeeder(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Wait(_) => Color::hex("#235").unwrap(),
+            DebugBehavior::Delay(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Gate(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Timeout(_) => Color::hex("#440").unwrap(),
+            DebugBehavior::Subtree(_) => Color::hex("#440").unwrap(),
         }
     }
 
