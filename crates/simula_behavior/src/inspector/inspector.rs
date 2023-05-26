@@ -1,8 +1,8 @@
 use crate::{
     inspector::graph::{
-        AllMyNodeTemplates, MyEditorState, MyGraphState, MyNodeTemplate, MyResponse,
+        AllMyNodeTemplates, MyDataType, MyEditorState, MyGraphState, MyNodeTemplate, MyResponse,
     },
-    BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree,
+    BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree, BehaviorType,
 };
 use bevy::{ecs::system::SystemState, prelude::*};
 use bevy_inspector_egui::{bevy_egui::EguiContexts, egui};
@@ -75,17 +75,9 @@ pub fn behavior_graph_ui<T: BehaviorFactory>(world: &mut World) {
     let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
     let mut context = system_state.get_mut(world).ctx_mut().clone();
 
-    let mut visuals = egui::Visuals::dark();
-    // visuals.button_frame = false;
-    visuals.window_shadow.extrusion = 0.0;
-    visuals.window_fill = egui::Color32::from_rgba_unmultiplied(50, 50, 50, 200);
-    // visuals.window_rounding.at_most(0.0);
-
-    // egui::Color32::from_rgba_premultiplied(50, 0, 50, 50)
-
-    context.set_visuals(visuals);
-
     egui::Window::new("Behavior Inspector").show(&mut context, |ui| {
+        // ui.visuals_mut().window_shadow.extrusion = 0.0;
+        // ui.visuals_mut().window_fill = egui::Color32::from_rgba_unmultiplied(20, 20, 20, 200);
         egui::ComboBox::from_id_source("Behavior Inspector Selector")
             .selected_text(item_label(&behavior_inspector.selected))
             .show_ui(ui, |ui| {
@@ -155,17 +147,49 @@ pub fn behavior_graph_ui<T: BehaviorFactory>(world: &mut World) {
                         for response in graph_response.node_responses {
                             println!("response: {:?}", response);
                             match response {
-                                NodeResponse::ConnectEventEnded { output, input } => {
+                                NodeResponse::ConnectEventEnded { output: output_id, input: input_id } => {
+                                    // Check if output is already connected, and if so, remove the previous connection
                                     let mut removes = vec![];
                                     for (other_input, other_output) in editor_state.graph.connections.iter() {
-                                        if *other_output == output {
-                                            if other_input != input {
+                                        if *other_output == output_id {
+                                            if other_input != input_id {
                                                 removes.push(other_input);
                                             }
                                         }
                                     }
                                     for other_input in removes {
                                         editor_state.graph.connections.remove(other_input);
+                                    }
+
+                                    // If composite type, dynamically adjust outputs of node
+                                    let node_id = editor_state.graph.outputs[output_id].node;
+                                    let node = editor_state.graph.nodes.get(node_id).unwrap();
+                                    if let MyNodeTemplate::Behavior(behavior) = &node.user_data.data {
+                                        if behavior.typ() == BehaviorType::Composite {
+                                            // Get all unused outputs
+                                            let mut unused_outputs = vec![];
+                                            node.outputs.iter().for_each(|(_, output_id)| {
+                                                let connected = editor_state.graph.connections.iter().filter(|(_, other_output)| {
+                                                    println!("Output: {:#?} == {:#?}", output_id, *other_output);
+                                                    *other_output == output_id
+                                                }).count() > 0;
+                                                if !connected {
+                                                    unused_outputs.push(*output_id);
+                                                }
+                                            });
+
+                                            // If there are no unused outputs, add a new output
+                                            if unused_outputs.len() == 0 {
+                                                editor_state.graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                                            }
+
+                                            // Remove all but one unused output
+                                            while unused_outputs.len() > 1 {
+                                                if let Some(output_id) = unused_outputs.pop() {
+                                                    editor_state.graph.remove_output_param(output_id);
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {

@@ -3,9 +3,9 @@ use bevy::{
     ecs::system::EntityCommands,
     prelude::*,
     reflect::TypeUuid,
-    window::PresentMode,
+    window::{PresentMode, PrimaryWindow},
 };
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::{bevy_egui::EguiContext, egui, quick::WorldInspectorPlugin};
 use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
@@ -20,13 +20,13 @@ use simula_viz::{
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
-        .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
+        .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.13)))
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "[Simbotic] Simula - Scripting".to_string(),
-                        resolution: (940., 528.).into(),
+                        resolution: (1920., 1080.).into(),
                         present_mode: PresentMode::AutoVsync,
                         fit_canvas_to_parent: true,
                         prevent_default_event_handling: false,
@@ -49,6 +49,7 @@ fn main() {
         .add_plugin(ScriptPlugin)
         .add_plugin(BehaviorPlugin)
         .add_plugin(BehaviorInspectorPlugin)
+        .add_startup_system(setup_ui)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(behavior_loader::<DebugBehavior>)
@@ -210,6 +211,19 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Subtree(Subtree::<DebugBehavior>::default()),
         ]
     }
+}
+
+fn setup_ui(world: &mut World) {
+    let mut egui_context = world
+        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+        .single(world)
+        .clone();
+
+    let mut visuals = egui::Visuals::dark();
+    visuals.window_shadow.extrusion = 0.0;
+    visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
+    visuals.window_stroke = egui::Stroke::NONE;
+    egui_context.get_mut().set_visuals(visuals);
 }
 
 fn setup(

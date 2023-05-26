@@ -183,8 +183,8 @@ where
                     );
 
                     graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
-                    graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
-                    graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                    // graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                    // graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
                 }
             },
         }
@@ -284,14 +284,14 @@ where
     fn top_bar_ui(
         &self,
         ui: &mut egui::Ui,
-        node_id: NodeId,
-        graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        _node_id: NodeId,
+        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
         _user_state: &mut Self::UserState,
     ) -> Vec<NodeResponse<Self::Response, Self>>
     where
         Self::Response: UserResponseTrait,
     {
-        let mut responses = vec![];
+        let responses = vec![];
 
         match &self.data {
             MyNodeTemplate::Root => {}
@@ -387,7 +387,9 @@ where
                         )));
                     }
                 }
-                MyNodeTemplate::Root => {}
+                MyNodeTemplate::Root => {
+                    let _ = ui.button("⏵");
+                }
             }
         }
 

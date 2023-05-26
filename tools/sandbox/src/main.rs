@@ -4,10 +4,13 @@ use bevy::{
     // log::LogPlugin,
     prelude::*,
     render::view::{NoFrustumCulling, RenderLayers},
-    window::PresentMode,
+    window::{PresentMode, PrimaryWindow},
 };
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::{
+    bevy_egui::{EguiContext, EguiContexts, EguiPlugin},
+    egui,
+    quick::WorldInspectorPlugin,
+};
 use enum_iterator::all;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
@@ -82,6 +85,7 @@ fn main() {
         .add_plugin(LookAtPlugin)
         .add_plugin(FollowUIPlugin)
         .add_plugin(SignalPlugin)
+        .add_startup_system(setup_ui)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -97,6 +101,19 @@ fn main() {
     // bevy_mod_debugdump::print_render_graph(&mut app);
 
     app.run();
+}
+
+fn setup_ui(world: &mut World) {
+    let mut egui_context = world
+        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+        .single(world)
+        .clone();
+
+    let mut visuals = egui::Visuals::dark();
+    visuals.window_shadow.extrusion = 0.0;
+    visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
+    visuals.window_stroke = egui::Stroke::NONE;
+    egui_context.get_mut().set_visuals(visuals);
 }
 
 fn setup(

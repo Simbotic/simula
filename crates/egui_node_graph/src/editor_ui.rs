@@ -567,8 +567,6 @@ where
             ui.add_space(margin.y);
             title_height = ui.min_size().y;
 
-            // ui.set_min_height(20.0);
-
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     // First pass: Draw the inner fields. Compute port heights
@@ -913,7 +911,7 @@ where
         // Measurements
         let margin = 8.0;
         let size = 8.0;
-        let stroke_width = 1.0;
+        let stroke_width = 2.0;
         let offs = margin + size / 2.0;
 
         let position = pos2(node_rect.right() - offs, node_rect.top() + offs);
