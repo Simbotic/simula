@@ -17,6 +17,7 @@ egui_node_graph = { path = "../../crates/egui_node_graph", features = [
 
 simula_core = { path = "../../crates/simula_core" }
 simula_script = { path = "../../crates/simula_script" }
+simula_inspector = { path = "../../crates/simula_inspector" }
 
 rand = "0.8.5"
 serde = { version = "1.0", features = ["derive"] }

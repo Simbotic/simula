@@ -1,0 +1,11 @@
+[package]
+name = "simula_inspector"
+version = "0.1.0"
+edition = "2021"
+authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
+
+[dependencies]
+bevy = { version = "0.10" }
+bevy-inspector-egui = "0.18"
+
+[dev-dependencies]

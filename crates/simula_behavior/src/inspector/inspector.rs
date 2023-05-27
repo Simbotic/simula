@@ -4,9 +4,50 @@ use crate::{
     },
     BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree, BehaviorType,
 };
-use bevy::{ecs::system::SystemState, prelude::*};
-use bevy_inspector_egui::{bevy_egui::EguiContexts, egui};
+use bevy::{ecs::system::SystemState, prelude::*, asset::HandleId, reflect::TypeRegistry};
+use bevy_inspector_egui::{bevy_egui::EguiContexts, egui, bevy_inspector::hierarchy::{hierarchy_ui, SelectedEntities}};
 use egui_node_graph::NodeResponse;
+use core::any::TypeId;
+
+#[derive(Eq, PartialEq)]
+enum InspectorSelection {
+    Entities,
+    Resource(TypeId, String),
+    Asset(TypeId, String, HandleId),
+}
+
+#[derive(Resource)]
+struct UiState {
+    // tree: Tree<EguiWindow>,
+    // viewport_rect: egui::Rect,
+    selected_entities: SelectedEntities,
+    selection: InspectorSelection,
+    // gizmo_mode: GizmoMode,
+}
+
+// fn select_resource(
+//     ui: &mut egui::Ui,
+//     type_registry: &TypeRegistry,
+//     selection: &mut InspectorSelection,
+// ) {
+//     let mut resources: Vec<_> = type_registry
+//         .iter()
+//         .filter(|registration| registration.data::<ReflectResource>().is_some())
+//         .map(|registration| (registration.short_name().to_owned(), registration.type_id()))
+//         .collect();
+//     resources.sort_by(|(name_a, _), (name_b, _)| name_a.cmp(name_b));
+
+//     for (resource_name, type_id) in resources {
+//         let selected = match *selection {
+//             InspectorSelection::Resource(selected, _) => selected == type_id,
+//             _ => false,
+//         };
+
+//         if ui.selectable_label(selected, &resource_name).clicked() {
+//             *selection = InspectorSelection::Resource(type_id, resource_name);
+//         }
+//     }
+// }
 
 #[derive(Default, Clone, Resource)]
 pub struct BehaviorInspectorAttributes;
@@ -75,49 +116,49 @@ pub fn behavior_graph_ui<T: BehaviorFactory>(world: &mut World) {
     let mut system_state: SystemState<EguiContexts> = SystemState::new(world);
     let mut context = system_state.get_mut(world).ctx_mut().clone();
 
-    egui::TopBottomPanel::top("top").show(&mut context, |ui| {
-        egui::menu::bar(ui, |ui| {
-            egui::menu::menu_button(ui, "File", |ui| {
-                if ui.add(egui::Button::new("New")).clicked() {
-                    println!("New");
-                };
-                if ui.add(egui::Button::new("Save")).clicked() {
-                    println!("Save");
-                };
-                if ui.button("Save As...").clicked() {
-                    println!("Save As...");
-                };
-            });
+    // egui::TopBottomPanel::top("top").show(&mut context, |ui| {
+    //     egui::menu::bar(ui, |ui| {
+    //         egui::menu::menu_button(ui, "File", |ui| {
+    //             if ui.add(egui::Button::new("New")).clicked() {
+    //                 println!("New");
+    //             };
+    //             if ui.add(egui::Button::new("Save")).clicked() {
+    //                 println!("Save");
+    //             };
+    //             if ui.button("Save As...").clicked() {
+    //                 println!("Save As...");
+    //             };
+    //         });
 
-            egui::ComboBox::from_id_source("Behavior Inspector Selector")
-            .selected_text(item_label(&behavior_inspector.selected))
-            .show_ui(ui, |ui| {
-                let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
-                    behavior_trees
-                        .iter(world)
-                        .map(|(entity, name, _, _, _)| BehaviorInspectorItem {
-                            entity: Some(entity),
-                            name: name.unwrap_or(&Name::new("")).to_string(),
-                        })
-                        .collect::<Vec<_>>()
-                };
-                selectable_behaviors.insert(0, BehaviorInspectorItem::default());
-                for selectable_behavior in selectable_behaviors {
-                    if ui
-                        .selectable_label(
-                            behavior_inspector.selected == selectable_behavior,
-                            item_label(&selectable_behavior),
-                        )
-                        .clicked()
-                    {
-                        let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
-                        behavior_inspector.selected = selectable_behavior;
-                    }
-                }
-            });
+    //         egui::ComboBox::from_id_source("Behavior Inspector Selector")
+    //         .selected_text(item_label(&behavior_inspector.selected))
+    //         .show_ui(ui, |ui| {
+    //             let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
+    //                 behavior_trees
+    //                     .iter(world)
+    //                     .map(|(entity, name, _, _, _)| BehaviorInspectorItem {
+    //                         entity: Some(entity),
+    //                         name: name.unwrap_or(&Name::new("")).to_string(),
+    //                     })
+    //                     .collect::<Vec<_>>()
+    //             };
+    //             selectable_behaviors.insert(0, BehaviorInspectorItem::default());
+    //             for selectable_behavior in selectable_behaviors {
+    //                 if ui
+    //                     .selectable_label(
+    //                         behavior_inspector.selected == selectable_behavior,
+    //                         item_label(&selectable_behavior),
+    //                     )
+    //                     .clicked()
+    //                 {
+    //                     let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+    //                     behavior_inspector.selected = selectable_behavior;
+    //                 }
+    //             }
+    //         });
             
-        });
-    });
+    //     });
+    // });
 
     if let BehaviorInspectorItem {
         entity: Some(entity),

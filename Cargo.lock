@@ -4809,6 +4809,7 @@ dependencies = [
  "simula_cad",
  "simula_camera",
  "simula_core",
+ "simula_inspector",
  "simula_video",
  "simula_viz",
 ]
@@ -4836,6 +4837,7 @@ dependencies = [
  "simula_behavior",
  "simula_camera",
  "simula_core",
+ "simula_inspector",
  "simula_script",
  "simula_viz",
 ]
@@ -5049,6 +5051,7 @@ dependencies = [
  "ron",
  "serde",
  "simula_core",
+ "simula_inspector",
  "simula_script",
  "strum",
 ]
@@ -5083,6 +5086,14 @@ dependencies = [
  "petgraph",
  "rand",
  "serde",
+]
+
+[[package]]
+name = "simula_inspector"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-inspector-egui",
 ]
 
 [[package]]

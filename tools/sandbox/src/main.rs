@@ -6,11 +6,6 @@ use bevy::{
     render::view::{NoFrustumCulling, RenderLayers},
     window::PresentMode,
 };
-use bevy_inspector_egui::{
-    bevy_egui::{EguiContexts, EguiPlugin},
-    egui,
-    quick::WorldInspectorPlugin,
-};
 use enum_iterator::all;
 use monkey::MonkeyPlugin;
 use rand::distributions::{Distribution, Uniform};
@@ -22,6 +17,7 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator, SignalPlugin},
 };
+use simula_inspector::{bevy_egui::EguiContexts, egui, InspectorPlugin};
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
@@ -69,9 +65,7 @@ fn main() {
 
             ..default()
         }))
-        // .add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<LogPlugin>())
-        .add_plugin(EguiPlugin)
-        .add_plugin(WorldInspectorPlugin::default())
+        .add_plugin(InspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(FlyCameraPlugin)
@@ -85,7 +79,6 @@ fn main() {
         .add_plugin(LookAtPlugin)
         .add_plugin(FollowUIPlugin)
         .add_plugin(SignalPlugin)
-        .add_startup_system(setup_ui)
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(line_test)
@@ -101,33 +94,6 @@ fn main() {
     // bevy_mod_debugdump::print_render_graph(&mut app);
 
     app.run();
-}
-
-fn setup_ui(mut contexts: EguiContexts) {
-    const TITLE_FONT_NAME: &str = "MY_FONT_NAME";
-    let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert(
-        TITLE_FONT_NAME.into(),
-        egui::FontData::from_static(include_bytes!("../assets/fonts/DejaVuSans.ttf")),
-    );
-    fonts
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
-        .insert(0, TITLE_FONT_NAME.into());
-    fonts
-        .families
-        .entry(egui::FontFamily::Monospace)
-        .or_default()
-        .insert(0, TITLE_FONT_NAME.into());
-    contexts.ctx_mut().set_fonts(fonts);
-
-    let mut visuals = egui::Visuals::dark();
-    visuals.window_rounding = 2.0.into();
-    visuals.window_shadow.extrusion = 0.0;
-    visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
-    visuals.window_stroke = egui::Stroke::NONE;
-    contexts.ctx_mut().set_visuals(visuals);
 }
 
 fn setup(

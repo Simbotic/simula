@@ -5,11 +5,11 @@ use bevy::{
     reflect::TypeUuid,
     window::PresentMode,
 };
-use bevy_inspector_egui::{bevy_egui::EguiContexts, egui, quick::WorldInspectorPlugin};
 use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
+use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
 use simula_script::{script, Scope, ScriptPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
@@ -39,7 +39,8 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .add_plugin(WorldInspectorPlugin::default())
+        .add_plugin(InspectorPlugin)
+        .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(OrbitCameraPlugin)
@@ -48,14 +49,12 @@ fn main() {
         .add_plugin(GridPlugin)
         .add_plugin(ScriptPlugin)
         .add_plugin(BehaviorPlugin)
-        .add_plugin(BehaviorInspectorPlugin)
-        .add_startup_system(setup_ui)
+        .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
         .add_startup_system(setup)
         .add_system(debug_info)
         .add_system(behavior_loader::<DebugBehavior>)
         .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
         .register_type::<Subtree<DebugBehavior>>()
-        .add_system(behavior_graph_ui::<DebugBehavior>)
         .run();
 }
 
@@ -211,33 +210,6 @@ impl BehaviorFactory for DebugBehavior {
             DebugBehavior::Subtree(Subtree::<DebugBehavior>::default()),
         ]
     }
-}
-
-fn setup_ui(mut contexts: EguiContexts) {
-    const TITLE_FONT_NAME: &str = "MY_FONT_NAME";
-    let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert(
-        TITLE_FONT_NAME.into(),
-        egui::FontData::from_static(include_bytes!("../assets/fonts/DejaVuSans.ttf")),
-    );
-    fonts
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
-        .insert(0, TITLE_FONT_NAME.into());
-    fonts
-        .families
-        .entry(egui::FontFamily::Monospace)
-        .or_default()
-        .insert(0, TITLE_FONT_NAME.into());
-    contexts.ctx_mut().set_fonts(fonts);
-
-    let mut visuals = egui::Visuals::dark();
-    visuals.window_rounding = 2.0.into();
-    visuals.window_shadow.extrusion = 0.0;
-    visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
-    visuals.window_stroke = egui::Stroke::NONE;
-    contexts.ctx_mut().set_visuals(visuals);
 }
 
 fn setup(
