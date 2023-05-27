@@ -14,7 +14,7 @@ impl Plugin for WorldInspectorPlugin {
 enum InspectorType {
     #[default]
     None,
-    Hierarchy,
+    Entities,
     Resources,
     Assets,
 }
@@ -27,23 +27,23 @@ struct WorldInspector {
 fn item_label(item: &InspectorType) -> String {
     match item {
         InspectorType::None => "None".to_string(),
-        InspectorType::Hierarchy => "Hierarchy".to_string(),
-        InspectorType::Resources => "Resources".to_string(),
-        InspectorType::Assets => "Assets".to_string(),
+        InspectorType::Entities => "♜ Entities".to_string(),
+        InspectorType::Resources => "📦 Resources".to_string(),
+        InspectorType::Assets => "🎨 Assets".to_string(),
     }
 }
 
 fn menu_ui(ui: &mut egui::Ui, world: &mut World) {
     let mut hierarchy_inspector = world.resource_mut::<WorldInspector>();
 
-    egui::menu::menu_button(ui, "World", |ui| {});
+    egui::menu::menu_button(ui, "🌎 World", |ui| {});
 
     egui::ComboBox::from_id_source("World Inspector Selector")
         .selected_text(item_label(&hierarchy_inspector.selected))
         .show_ui(ui, |ui| {
             let selectable_behaviors = vec![
                 InspectorType::None,
-                InspectorType::Hierarchy,
+                InspectorType::Entities,
                 InspectorType::Resources,
                 InspectorType::Assets,
             ];
@@ -80,7 +80,7 @@ fn window_ui(context: &mut egui::Context, world: &mut World) {
             .default_pos(egui::Pos2::new(desired_x, desired_y))
             .default_size(egui::Vec2::new(desired_width, desired_height))
             .show(context, |ui| match show {
-                InspectorType::Hierarchy => {
+                InspectorType::Entities => {
                     bevy_inspector::ui_for_world_entities(world, ui);
                 }
                 InspectorType::Resources => {

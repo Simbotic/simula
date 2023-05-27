@@ -57,7 +57,7 @@ impl Default for BehaviorInspectorItem {
     fn default() -> Self {
         Self {
             entity: None,
-            name: "Select Behavior".to_string(),
+            name: "None".to_string(),
         }
     }
 }
@@ -82,7 +82,7 @@ fn menu_ui<T: BehaviorFactory>(ui: &mut egui::Ui, world: &mut World) {
 
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
-    egui::menu::menu_button(ui, "Behaviors", |ui| {
+    egui::menu::menu_button(ui, "🏃 Behaviors", |ui| {
         if ui.add(egui::Button::new("New")).clicked() {
             println!("New");
         };
@@ -94,6 +94,7 @@ fn menu_ui<T: BehaviorFactory>(ui: &mut egui::Ui, world: &mut World) {
         };
     });
 
+    ui.style_mut().wrap = Some(false);
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
         .selected_text(item_label(&behavior_inspector.selected))
         .show_ui(ui, |ui| {
@@ -111,7 +112,7 @@ fn menu_ui<T: BehaviorFactory>(ui: &mut egui::Ui, world: &mut World) {
                 if ui
                     .selectable_label(
                         behavior_inspector.selected == selectable_behavior,
-                        item_label(&selectable_behavior),
+                        egui::RichText::new(item_label(&selectable_behavior)),
                     )
                     .clicked()
                 {
