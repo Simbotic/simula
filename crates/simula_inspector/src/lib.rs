@@ -79,6 +79,9 @@ fn inspector_ui(world: &mut World) {
 
     egui::TopBottomPanel::top("top").show(context.get_mut(), |ui| {
         egui::menu::bar(ui, |ui| {
+            if ui.add(egui::Button::new("🌀").frame(false)).clicked() {
+                println!("Button clicked!");
+            }
             for inspector in inspectors.iter() {
                 ui.separator();
                 (inspector.menu_ui)(ui, world);

@@ -58,7 +58,7 @@ pub fn behavior_loader<T>(
     loaded_assets: Res<Assets<BehaviorAsset>>,
     queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
 ) where
-    T: BehaviorFactory,
+    T: BehaviorFactory + for<'de> Deserialize<'de>,
 {
     for (entity, queued_asset) in queued_assets.iter() {
         if let Some(loaded_asset) = loaded_assets.get(&queued_asset.node) {

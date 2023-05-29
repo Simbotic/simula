@@ -7,14 +7,17 @@ use bevy_inspector_egui::{
     egui::{self},
     reflect_inspector,
 };
-use egui_node_graph::*;
+use egui_node_graph::{
+    AnyParameterId, DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId,
+    NodeResponse, NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait,
+};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
 /// The NodeData holds a custom data struct inside each node. It's useful to
 /// store additional information that doesn't live in parameters. For this
 /// example, the node data stores the template (i.e. the "type") of the node.
-#[derive(Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct MyNodeData<T: BehaviorFactory> {
     pub name: String,
     pub data: MyNodeTemplate<T>,
@@ -55,7 +58,7 @@ impl<T> Default for MyValueType<T> {
 /// NodeTemplate is a mechanism to define node templates. It's what the graph
 /// will display in the "new node" popup. The user code needs to tell the
 /// library how to convert a NodeTemplate into a Node.
-#[derive(Clone, Copy, Serialize, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum MyNodeTemplate<T: BehaviorFactory> {
     Root,
     Behavior(T),
@@ -441,7 +444,19 @@ where
     }
 }
 
-#[derive(Default, Component, Deref, DerefMut)]
+#[derive(Default, Component, Deref, DerefMut, Serialize, Deserialize)]
 pub struct MyEditorState<T: BehaviorFactory>(
     pub GraphEditorState<MyNodeData<T>, MyDataType, MyValueType<T>, MyNodeTemplate<T>, MyGraphState>,
 );
+
+// #[derive(Default, Component, Deref, DerefMut, Serialize, Deserialize)]
+// pub struct MyEditorState2<T: BehaviorFactory>(
+//     MyValueType2<T>, // std::marker::PhantomData<T>
+// );
+
+// pub trait ExampleTrait: Serialize + for<'de> Deserialize<'de> {}
+
+// #[derive(Deserialize, Serialize)]
+// pub enum ExampleImpl<T: ExampleTrait> {
+//     A(T),
+// }

@@ -3,7 +3,6 @@ use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use composites::*;
 use decorators::*;
-use serde::{Deserialize, Serialize};
 use strum::AsRefStr;
 
 pub mod actions;
@@ -12,6 +11,7 @@ pub mod color_hex_utils;
 pub mod composites;
 pub mod decorators;
 pub mod inspector;
+pub mod protocol;
 pub mod test;
 
 pub mod prelude {
@@ -22,6 +22,7 @@ pub mod prelude {
     pub use crate::composites::*;
     pub use crate::decorators::*;
     pub use crate::inspector::BehaviorInspectorPlugin;
+    pub use crate::protocol::{self};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorNode,
@@ -67,16 +68,7 @@ where
 
 /// How to spawn a behavior node
 pub trait BehaviorFactory:
-    Clone
-    + Default
-    + TypeUuid
-    + Send
-    + Sync
-    + 'static
-    + Default
-    + std::fmt::Debug
-    + Serialize
-    + for<'de> Deserialize<'de>
+    Clone + Default + TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug
 {
     fn insert(&self, commands: &mut EntityCommands);
 

@@ -2,247 +2,311 @@ use crate::{
     inspector::graph::{
         AllMyNodeTemplates, MyDataType, MyEditorState, MyGraphState, MyNodeTemplate, MyResponse,
     },
-    BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree, BehaviorType,
+    protocol::{
+        BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
+        BehaviorProtocolServer, BehaviorServer,
+    },
+    BehaviorFactory, BehaviorType,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
+use crossbeam_channel::unbounded;
 use egui_node_graph::NodeResponse;
-use simula_inspector::{
-    bevy_egui::{EguiContext, EguiContexts},
-    bevy_inspector_egui, egui, Inspector, Inspectors,
-};
+use serde::{Deserialize, Serialize};
+use simula_inspector::{egui, Inspector, Inspectors};
 
 pub mod graph;
 
 #[derive(Default)]
-pub struct BehaviorInspectorPlugin<T>(std::marker::PhantomData<T>);
+pub struct BehaviorInspectorPlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T>);
 
 impl<T> Plugin for BehaviorInspectorPlugin<T>
 where
-    T: BehaviorFactory,
+    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
 {
     fn build(&self, app: &mut App) {
-        app
-            // .insert_resource(BehaviorInspectorAttributes)
+        // Setup bi-directional communication channels
+        let (protocol_client_sender, protocol_client_receiver) = unbounded();
+        let (protocol_server_sender, protocol_server_receiver) = unbounded();
+
+        let client = BehaviorClient::<T> {
+            sender: protocol_client_sender,
+            receiver: protocol_server_receiver,
+        };
+
+        let server = BehaviorServer::<T> {
+            sender: protocol_server_sender,
+            receiver: protocol_client_receiver,
+        };
+
+        app.insert_resource(client)
+            .insert_resource(server)
             .insert_resource(BehaviorInspector::default())
-            .add_startup_system(setup::<T>);
-        // .add_system(behavior_inspector_ui);
+            .add_startup_system(setup::<T>)
+            .add_system(update::<T>);
     }
+}
+
+#[derive(Reflect, FromReflect, Clone)]
+enum BehaviorInspectorState {
+    New,
+    Unloaded,
+    Loading,
+    Loaded(Entity),
+}
+
+#[derive(Reflect, FromReflect, Clone)]
+struct BehaviorInspectorItem {
+    pub id: BehaviorFileId,
+    pub name: BehaviorFileName,
+    pub state: BehaviorInspectorState,
 }
 
 #[derive(Default, Clone, Resource, Reflect)]
-pub struct BehaviorInspector {
-    pub selected: BehaviorInspectorItem,
+struct BehaviorInspector {
+    pub selected: Option<BehaviorFileId>,
+    pub behaviors: HashMap<BehaviorFileId, BehaviorInspectorItem>,
 }
 
-impl BehaviorInspector {
-    pub fn select(&mut self, entity: Entity, name: String) {
-        self.selected = BehaviorInspectorItem {
-            entity: Some(entity),
-            name,
-        };
-    }
-
-    pub fn unselect(&mut self) {
-        self.selected = BehaviorInspectorItem::default();
-    }
-}
-
-#[derive(Clone, PartialEq, Reflect)]
-pub struct BehaviorInspectorItem {
-    pub entity: Option<Entity>,
-    pub name: String,
-}
-
-impl Default for BehaviorInspectorItem {
-    fn default() -> Self {
-        Self {
-            entity: None,
-            name: "None".to_string(),
+fn get_label_from_id(
+    file_id: &Option<BehaviorFileId>,
+    behavior_inspector: &BehaviorInspector,
+) -> String {
+    match file_id {
+        None => "None".to_string(),
+        Some(behavior_file_id) => {
+            let behavior_inspector_item = &behavior_inspector.behaviors[behavior_file_id];
+            let name = behavior_inspector_item.name.clone();
+            (*name).clone()
         }
     }
 }
 
-fn item_label(item: &BehaviorInspectorItem) -> String {
-    let entity = if let Some(entity) = item.entity {
-        format!("[{}]: ", entity.index())
-    } else {
-        "".to_string()
-    };
-    format!("{}{}", entity, item.name)
-}
-
-fn menu_ui<T: BehaviorFactory>(ui: &mut egui::Ui, world: &mut World) {
-    let mut behavior_trees = world.query::<(
-        Entity,
-        Option<&Name>,
-        &BehaviorTree,
-        &mut MyGraphState,
-        &mut MyEditorState<T>,
-    )>();
-
-    let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
-
+fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
+    ui: &mut egui::Ui,
+    world: &mut World,
+) {
     egui::menu::menu_button(ui, "🏃 Behaviors", |ui| {
         if ui.add(egui::Button::new("New")).clicked() {
-            println!("New");
-        };
-        if ui.add(egui::Button::new("Save")).clicked() {
-            println!("Save");
-        };
-        if ui.button("Save As...").clicked() {
-            println!("Save As...");
+            let file_id = BehaviorFileId::new();
+            let file_name = BehaviorFileName(format!("bt_{}", *file_id).into());
+            let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+            behavior_inspector.behaviors.insert(
+                file_id.clone(),
+                BehaviorInspectorItem {
+                    id: file_id.clone(),
+                    name: file_name,
+                    state: BehaviorInspectorState::New,
+                },
+            );
+            behavior_inspector.selected = Some(file_id.clone());
         };
     });
 
-    ui.style_mut().wrap = Some(false);
+    let behavior_inspector = world.resource_mut::<BehaviorInspector>();
+    let mut new_selected = behavior_inspector.selected.clone();
+
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
-        .selected_text(item_label(&behavior_inspector.selected))
+        .selected_text(get_label_from_id(
+            &behavior_inspector.selected,
+            &behavior_inspector,
+        ))
         .show_ui(ui, |ui| {
-            let mut selectable_behaviors: Vec<BehaviorInspectorItem> = {
-                behavior_trees
-                    .iter(world)
-                    .map(|(entity, name, _, _, _)| BehaviorInspectorItem {
-                        entity: Some(entity),
-                        name: name.unwrap_or(&Name::new("")).to_string(),
-                    })
-                    .collect::<Vec<_>>()
+            let mut selectable_behaviors: Vec<Option<BehaviorFileId>> = {
+                let mut keys: Vec<BehaviorFileId> =
+                    behavior_inspector.behaviors.keys().cloned().collect();
+                keys.sort_by(|a, b| {
+                    let name_a = &behavior_inspector.behaviors[a].name;
+                    let name_b = &behavior_inspector.behaviors[b].name;
+                    name_a.cmp(&name_b)
+                });
+                keys.iter().map(|key| Some(key.clone())).collect()
             };
-            selectable_behaviors.insert(0, BehaviorInspectorItem::default());
+            selectable_behaviors.insert(0, None);
             for selectable_behavior in selectable_behaviors {
                 if ui
                     .selectable_label(
                         behavior_inspector.selected == selectable_behavior,
-                        egui::RichText::new(item_label(&selectable_behavior)),
+                        get_label_from_id(&selectable_behavior, &behavior_inspector),
                     )
                     .clicked()
                 {
-                    let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
-                    behavior_inspector.selected = selectable_behavior;
+                    println!("Selected: {:?}", selectable_behavior);
+                    new_selected = selectable_behavior.clone();
                 }
             }
         });
+
+    let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+    behavior_inspector.selected = new_selected;
 }
 
 fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
     let behavior_inspector = world.resource_mut::<BehaviorInspector>().clone();
 
-    if let BehaviorInspectorItem {
-        entity: Some(entity),
-        name,
-    } = &behavior_inspector.selected
-    {
-        let mut behavior_trees = world.query::<(
-            Entity,
-            Option<&Name>,
-            &BehaviorTree,
-            &mut MyGraphState,
-            &mut MyEditorState<T>,
-        )>();
+    let Some(selected_behavior) = behavior_inspector.selected else { return;};
 
-        // let (tree_entity, tree_root) = {
-        //     let Ok((tree_entity, _, behavior_tree, _, _)) = behavior_trees.get_mut(world, *entity) else {
-        //     return;};
-        //     let Some(tree_root) = behavior_tree.root else {return;};
-        //     (tree_entity, tree_root)
-        // };
+    if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get(&selected_behavior) {
+        if let BehaviorInspectorState::Loaded(entity) = behavior_inspector_item.state {
+            let mut behavior_graphs = world.query::<(
+                Entity,
+                Option<&Name>,
+                &mut MyGraphState,
+                &mut MyEditorState<T>,
+            )>();
 
-        // match find_cursor(world, tree_entity) {
-        //     Some(_cursor) => {
-        //         ui.label("Running");
-        //     }
-        //     None => {
-        //         if ui.button("Run").clicked() {
-        //             world.entity_mut(tree_root).insert(BehaviorCursor::Delegate);
-        //         }
-        //     }
-        // }
+            egui::Window::new(format!("Behavior: {}", *selected_behavior))
+                .title_bar(true)
+                .resizable(true)
+                .collapsible(true)
+                .scroll2([true, true])
+                .show(context, |ui| {
+                    let Ok((_, _, mut graph_state, mut editor_state)) = behavior_graphs.get_mut(world, entity) else {
+                        return;};
 
-        egui::Window::new(format!("Behavior: {}", name))
-            .title_bar(true)
-            .resizable(true)
-            .collapsible(true)
-            .scroll2([true, true])
-            .show(context, |ui| {
+                        let graph_response = editor_state.draw_graph_editor(
+                                            ui,
+                                            AllMyNodeTemplates::<T>::default(),
+                                            &mut graph_state,
+                                            Vec::default(),
+                                        );
 
-                
-                let Ok((_, _, _, mut graph_state, mut editor_state)) = behavior_trees.get_mut(world, *entity) else {
-                    return;};
-
-                    let graph_response = editor_state.draw_graph_editor(
-                                        ui,
-                                        AllMyNodeTemplates::<T>::default(),
-                                        &mut graph_state,
-                                        Vec::default(),
-                                    );
-
-                    for response in graph_response.node_responses {
-                        println!("response: {:?}", response);
-                        match response {
-                            NodeResponse::ConnectEventEnded { output: output_id, input: input_id } => {
-                                // Check if output is already connected, and if so, remove the previous connection
-                                let mut removes = vec![];
-                                for (other_input, other_output) in editor_state.graph.connections.iter() {
-                                    if *other_output == output_id {
-                                        if other_input != input_id {
-                                            removes.push(other_input);
+                        for response in graph_response.node_responses {
+                            println!("response: {:?}", response);
+                            match response {
+                                NodeResponse::ConnectEventEnded { output: output_id, input: input_id } => {
+                                    // Check if output is already connected, and if so, remove the previous connection
+                                    let mut removes = vec![];
+                                    for (other_input, other_output) in editor_state.graph.connections.iter() {
+                                        if *other_output == output_id {
+                                            if other_input != input_id {
+                                                removes.push(other_input);
+                                            }
                                         }
                                     }
-                                }
-                                for other_input in removes {
-                                    editor_state.graph.connections.remove(other_input);
-                                }
+                                    for other_input in removes {
+                                        editor_state.graph.connections.remove(other_input);
+                                    }
 
-                                // If composite type, dynamically adjust outputs of node
-                                let node_id = editor_state.graph.outputs[output_id].node;
-                                let node = editor_state.graph.nodes.get(node_id).unwrap();
-                                if let MyNodeTemplate::Behavior(behavior) = &node.user_data.data {
-                                    if behavior.typ() == BehaviorType::Composite {
-                                        // Get all unused outputs
-                                        let mut unused_outputs = vec![];
-                                        node.outputs.iter().for_each(|(_, output_id)| {
-                                            let connected = editor_state.graph.connections.iter().filter(|(_, other_output)| {
-                                                println!("Output: {:#?} == {:#?}", output_id, *other_output);
-                                                *other_output == output_id
-                                            }).count() > 0;
-                                            if !connected {
-                                                unused_outputs.push(*output_id);
+                                    // If composite type, dynamically adjust outputs of node
+                                    let node_id = editor_state.graph.outputs[output_id].node;
+                                    let node = editor_state.graph.nodes.get(node_id).unwrap();
+                                    if let MyNodeTemplate::Behavior(behavior) = &node.user_data.data {
+                                        if behavior.typ() == BehaviorType::Composite {
+                                            // Get all unused outputs
+                                            let mut unused_outputs = vec![];
+                                            node.outputs.iter().for_each(|(_, output_id)| {
+                                                let connected = editor_state.graph.connections.iter().filter(|(_, other_output)| {
+                                                    println!("Output: {:#?} == {:#?}", output_id, *other_output);
+                                                    *other_output == output_id
+                                                }).count() > 0;
+                                                if !connected {
+                                                    unused_outputs.push(*output_id);
+                                                }
+                                            });
+
+                                            // If there are no unused outputs, add a new output
+                                            if unused_outputs.len() == 0 {
+                                                editor_state.graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
                                             }
-                                        });
 
-                                        // If there are no unused outputs, add a new output
-                                        if unused_outputs.len() == 0 {
-                                            editor_state.graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
-                                        }
-
-                                        // Remove all but one unused output
-                                        while unused_outputs.len() > 1 {
-                                            if let Some(output_id) = unused_outputs.pop() {
-                                                editor_state.graph.remove_output_param(output_id);
+                                            // Remove all but one unused output
+                                            while unused_outputs.len() > 1 {
+                                                if let Some(output_id) = unused_outputs.pop() {
+                                                    editor_state.graph.remove_output_param(output_id);
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
-                                if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                    node.user_data.data = MyNodeTemplate::Behavior(data);
+                                NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
+                                    if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                        node.user_data.data = MyNodeTemplate::Behavior(data);
+                                    }
                                 }
-                            }
-                            NodeResponse::User(MyResponse::NameEdited(node_id, name)) => {
-                                if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                    node.user_data.name = name;
+                                NodeResponse::User(MyResponse::NameEdited(node_id, name)) => {
+                                    if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                        node.user_data.name = name;
+                                    }
                                 }
+                                _ => {}
                             }
-                            _ => {}
                         }
-                    }
-            });
+                });
+        }
     }
 }
 
-fn setup<T: BehaviorFactory>(mut inspectors: ResMut<Inspectors>) {
+fn setup<T>(mut inspectors: ResMut<Inspectors>)
+where
+    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+{
     inspectors.inspectors.push(Inspector {
         menu_ui: menu_ui::<T>,
         window_ui: window_ui::<T>,
     });
+}
+
+fn update<T>(
+    mut commands: Commands,
+    type_registry: Res<AppTypeRegistry>,
+    mut behavior_inspector: ResMut<BehaviorInspector>,
+    behavior_client: Res<BehaviorClient<T>>,
+) where
+    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+{
+    if let Some(selected_behavior) = behavior_inspector.selected.clone() {
+        if let Some(behavior_inspector_item) =
+            behavior_inspector.behaviors.get_mut(&selected_behavior)
+        {
+            // If selected behavior is unloaded, load it
+            if let BehaviorInspectorState::Unloaded = behavior_inspector_item.state {
+                info!("Loading behavior: {}", *selected_behavior);
+                behavior_inspector_item.state = BehaviorInspectorState::Loading;
+                behavior_client
+                    .sender
+                    .send(BehaviorProtocolClient::LoadFile(selected_behavior))
+                    .unwrap();
+            }
+        }
+    }
+    if let Ok(server_msg) = behavior_client.receiver.try_recv() {
+        match server_msg {
+            // Receive list of behaviors
+            BehaviorProtocolServer::BehaviorFileNames(behaviors) => {
+                for (file_id, file_name) in &behaviors {
+                    if !behavior_inspector.behaviors.contains_key(&file_id) {
+                        behavior_inspector.behaviors.insert(
+                            file_id.clone(),
+                            BehaviorInspectorItem {
+                                id: file_id.clone(),
+                                name: file_name.clone(),
+                                state: BehaviorInspectorState::Unloaded,
+                            },
+                        );
+                    }
+                }
+            }
+            // Receive behavior data
+            BehaviorProtocolServer::BehaviorFile((file_id, file_data)) => {
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    if let BehaviorInspectorState::Loading = behavior_inspector_item.state {
+                        let entity = commands
+                            .spawn(Name::new(format!("BT: {}", *file_id)))
+                            .insert(MyGraphState {
+                                type_registry: type_registry.0.clone(),
+                                ..Default::default()
+                            })
+                            .insert(ron::de::from_str::<MyEditorState<T>>(&file_data).unwrap())
+                            .id();
+                        behavior_inspector_item.state = BehaviorInspectorState::Loaded(entity);
+                    }
+                }
+            }
+            _ => {
+                panic!("Unexpected message from server");
+            }
+        }
+    }
 }

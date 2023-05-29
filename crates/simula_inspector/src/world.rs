@@ -36,7 +36,7 @@ fn item_label(item: &InspectorType) -> String {
 fn menu_ui(ui: &mut egui::Ui, world: &mut World) {
     let mut hierarchy_inspector = world.resource_mut::<WorldInspector>();
 
-    egui::menu::menu_button(ui, "🌎 World", |ui| {});
+    egui::menu::menu_button(ui, "🌎 World", |_ui| {});
 
     egui::ComboBox::from_id_source("World Inspector Selector")
         .selected_text(item_label(&hierarchy_inspector.selected))

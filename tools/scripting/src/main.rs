@@ -3,11 +3,18 @@ use bevy::{
     ecs::system::EntityCommands,
     prelude::*,
     reflect::TypeUuid,
+    utils::HashMap,
     window::PresentMode,
 };
 use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
-use simula_behavior::prelude::*;
+use simula_behavior::{
+    prelude::*,
+    protocol::{
+        BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
+        BehaviorProtocolServer, BehaviorServer,
+    },
+};
 use simula_camera::orbitcam::*;
 use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
 use simula_script::{script, Scope, ScriptPlugin};
@@ -50,11 +57,13 @@ fn main() {
         .add_plugin(ScriptPlugin)
         .add_plugin(BehaviorPlugin)
         .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
-        .add_startup_system(setup)
-        .add_system(debug_info)
         .add_system(behavior_loader::<DebugBehavior>)
         .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
         .register_type::<Subtree<DebugBehavior>>()
+        .insert_resource(BehaviorFiles::default())
+        .add_startup_system(setup)
+        .add_system(update)
+        .add_system(debug_info)
         .run();
 }
 
@@ -212,67 +221,110 @@ impl BehaviorFactory for DebugBehavior {
     }
 }
 
+#[derive(Default, Resource)]
+struct BehaviorFiles {
+    pub files: HashMap<BehaviorFileId, BehaviorFileName>,
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut behavior_files: ResMut<BehaviorFiles>,
+    behavior_server: Res<BehaviorServer<DebugBehavior>>,
     mut scopes: ResMut<Assets<Scope>>,
     type_registry: Res<AppTypeRegistry>,
 ) {
-    // load debug behaviors
-    let behaviors = [
-        "debug_delay",
-        "debug_gate_true",
-        "debug_gate_blackboard",
-        "debug_all",
-        "debug_any_repeat",
-        "debug_any_subtree",
-        "debug_any",
-        "debug_sequence",
-        "debug_defaults",
-        "debug_repeater",
-        "debug_repeat_repeater",
-        "debug_subtree_gate",
-    ];
-    for behavior in behaviors.iter() {
-        // get a handle to a behavior asset from asset server
-        let behavior_handle: Handle<BehaviorAsset> =
-            asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
+    let dir_path = "assets/inspector";
 
-        // create a new scope for the behavior tree
-        let mut scope = Scope::new();
-        let mut blackboard = script::Map::new();
-        blackboard.insert("state".into(), 0.into());
-        scope.scope.push("blackboard", blackboard);
-        let scope_handle = scopes.add(scope);
+    // Read the directory and handle any errors
+    let paths = match std::fs::read_dir(dir_path) {
+        Ok(paths) => paths,
+        Err(err) => {
+            eprintln!("Error reading directory: {}", err);
+            return;
+        }
+    };
 
-        // create a new entity for the behavior tree, and insert the scope
-        let tree_entity = commands
-            .spawn((Name::new(format!("BT: {}", behavior)), scope_handle))
-            .insert(simula_behavior::inspector::graph::MyGraphState {
-                type_registry: type_registry.0.clone(),
-                ..Default::default()
-            })
-            .insert(simula_behavior::inspector::graph::MyEditorState::<
-                DebugBehavior,
-            >::default())
-            .id();
-
-        // create a behavior tree component from the asset
-        let behavior_tree = BehaviorTree::from_asset::<DebugBehavior>(
-            tree_entity,
-            None,
-            &mut commands,
-            behavior_handle,
-        );
-
-        // insert the behavior tree component into the tree entity and move root to tree entity
-        if let Some(root) = behavior_tree.root {
-            commands
-                .entity(tree_entity)
-                .insert(behavior_tree)
-                .add_child(root);
+    // Iterate over the directory entries
+    for path in paths {
+        if let Ok(entry) = path {
+            // Check if the entry is a file with the desired extension
+            if entry.file_type().unwrap().is_file() {
+                if let Some(file_name) = entry.file_name().to_str() {
+                    if file_name.ends_with(".bht.ron") {
+                        let file_name = file_name.trim_end_matches(".bht.ron");
+                        behavior_files.files.insert(
+                            BehaviorFileId::new(),
+                            BehaviorFileName(file_name.to_owned()),
+                        );
+                    }
+                }
+            }
         }
     }
+
+    behavior_server
+        .sender
+        .send(BehaviorProtocolServer::BehaviorFileNames(
+            behavior_files.files.clone().into_iter().collect(),
+        ))
+        .unwrap();
+
+    // // load debug behaviors
+    // let behaviors = [
+    //     "debug_delay",
+    //     "debug_gate_true",
+    //     "debug_gate_blackboard",
+    //     "debug_all",
+    //     "debug_any_repeat",
+    //     "debug_any_subtree",
+    //     "debug_any",
+    //     "debug_sequence",
+    //     "debug_defaults",
+    //     "debug_repeater",
+    //     "debug_repeat_repeater",
+    //     "debug_subtree_gate",
+    // ];
+    // for behavior in behaviors.iter() {
+    //     // get a handle to a behavior asset from asset server
+    //     let behavior_handle: Handle<BehaviorAsset> =
+    //         asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
+
+    //     // create a new scope for the behavior tree
+    //     let mut scope = Scope::new();
+    //     let mut blackboard = script::Map::new();
+    //     blackboard.insert("state".into(), 0.into());
+    //     scope.scope.push("blackboard", blackboard);
+    //     let scope_handle = scopes.add(scope);
+
+    //     // create a new entity for the behavior tree, and insert the scope
+    //     let tree_entity = commands
+    //         .spawn((Name::new(format!("BT: {}", behavior)), scope_handle))
+    //         .insert(simula_behavior::inspector::graph::MyGraphState {
+    //             type_registry: type_registry.0.clone(),
+    //             ..Default::default()
+    //         })
+    //         .insert(simula_behavior::inspector::graph::MyEditorState::<
+    //             DebugBehavior,
+    //         >::default())
+    //         .id();
+
+    //     // create a behavior tree component from the asset
+    //     let behavior_tree = BehaviorTree::from_asset::<DebugBehavior>(
+    //         tree_entity,
+    //         None,
+    //         &mut commands,
+    //         behavior_handle,
+    //     );
+
+    //     // insert the behavior tree component into the tree entity and move root to tree entity
+    //     if let Some(root) = behavior_tree.root {
+    //         commands
+    //             .entity(tree_entity)
+    //             .insert(behavior_tree)
+    //             .add_child(root);
+    //     }
+    // }
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -348,6 +400,37 @@ fn setup(
         },
         ..Default::default()
     });
+}
+
+fn update(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut behavior_files: ResMut<BehaviorFiles>,
+    behavior_server: Res<protocol::BehaviorServer<DebugBehavior>>,
+    mut scopes: ResMut<Assets<Scope>>,
+    type_registry: Res<AppTypeRegistry>,
+) {
+    if let Ok(client_msg) = behavior_server.receiver.try_recv() {
+        match client_msg {
+            BehaviorProtocolClient::LoadFile(file_id) => {
+                let file_name = behavior_files.files[&file_id].clone();
+                let dir_path = "assets/inspector";
+                let file_ext = "bht.ron";
+                let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
+                let data = std::fs::read_to_string(file_path).unwrap();
+                behavior_server
+                    .sender
+                    .send(BehaviorProtocolServer::BehaviorFile((
+                        file_id,
+                        BehaviorFileData(data.clone()),
+                    )))
+                    .unwrap();
+            }
+            _ => {
+                panic!("unexpected message")
+            }
+        }
+    }
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

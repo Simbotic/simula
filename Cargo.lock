@@ -4832,6 +4832,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "crossbeam-channel",
  "serde",
  "simula_action",
  "simula_behavior",
@@ -5045,6 +5046,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy-inspector-egui",
+ "crossbeam-channel",
  "egui_node_graph",
  "pretty-type-name",
  "rand",
