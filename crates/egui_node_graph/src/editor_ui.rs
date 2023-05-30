@@ -498,7 +498,7 @@ where
         ui: &mut Ui,
         user_state: &mut UserState,
     ) -> Vec<NodeResponse<UserResponse, NodeData>> {
-        let margin = egui::vec2(15.0, 5.0);
+        let margin = egui::vec2(6.0, 2.0);
         let mut responses = Vec::<NodeResponse<UserResponse, NodeData>>::new();
 
         let background_color;
@@ -813,7 +813,7 @@ where
         // does not support drawing rectangles with asymmetrical round corners.
 
         let (shape, outline) = {
-            let rounding_radius = 4.0;
+            let rounding_radius = 2.0;
             let rounding = Rounding::same(rounding_radius);
 
             let titlebar_height = title_height + margin.y;
@@ -909,12 +909,12 @@ where
 
     fn close_button(ui: &mut Ui, node_rect: Rect) -> Response {
         // Measurements
-        let margin = 8.0;
-        let size = 8.0;
+        let margin = 6.0;
+        let size = 6.0;
         let stroke_width = 2.0;
         let offs = margin + size / 2.0;
 
-        let position = pos2(node_rect.right() - offs, node_rect.top() + offs);
+        let position = pos2(node_rect.right() - offs, node_rect.top() + offs + 2.0);
         let rect = Rect::from_center_size(position, vec2(size, size));
         let resp = ui.allocate_rect(rect, Sense::click());
 

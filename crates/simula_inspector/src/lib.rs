@@ -45,6 +45,7 @@ fn setup_ui(mut contexts: EguiContexts) {
     visuals.window_shadow.extrusion = 0.0;
     visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
     visuals.window_stroke = egui::Stroke::NONE;
+    visuals.override_text_color = Some(egui::Color32::GRAY);
     contexts.ctx_mut().set_visuals(visuals);
 }
 
@@ -77,7 +78,7 @@ fn inspector_ui(world: &mut World) {
         .inspectors
         .clone();
 
-    egui::TopBottomPanel::top("top").show(context.get_mut(), |ui| {
+    egui::TopBottomPanel::top("main-inspector-top").show(context.get_mut(), |ui| {
         egui::menu::bar(ui, |ui| {
             if ui.add(egui::Button::new("🌀").frame(false)).clicked() {
                 println!("Button clicked!");

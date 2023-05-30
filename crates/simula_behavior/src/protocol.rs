@@ -44,6 +44,7 @@ pub struct BehaviorFileData(pub String);
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     Ping,
     LoadFile(BehaviorFileId),
+    SaveFile((BehaviorFileId, BehaviorFileData)),
     Update(MyEditorState<T>),
 }
 

@@ -34,12 +34,12 @@ fn item_label(item: &InspectorType) -> String {
 }
 
 fn menu_ui(ui: &mut egui::Ui, world: &mut World) {
-    let mut hierarchy_inspector = world.resource_mut::<WorldInspector>();
+    let mut world_inspector = world.resource_mut::<WorldInspector>();
 
     egui::menu::menu_button(ui, "🌎 World", |_ui| {});
 
     egui::ComboBox::from_id_source("World Inspector Selector")
-        .selected_text(item_label(&hierarchy_inspector.selected))
+        .selected_text(item_label(&world_inspector.selected))
         .show_ui(ui, |ui| {
             let selectable_behaviors = vec![
                 InspectorType::None,
@@ -50,12 +50,12 @@ fn menu_ui(ui: &mut egui::Ui, world: &mut World) {
             for selectable_behavior in selectable_behaviors {
                 if ui
                     .selectable_label(
-                        hierarchy_inspector.selected == selectable_behavior,
+                        world_inspector.selected == selectable_behavior,
                         item_label(&selectable_behavior),
                     )
                     .clicked()
                 {
-                    hierarchy_inspector.selected = selectable_behavior;
+                    world_inspector.selected = selectable_behavior;
                 }
             }
         });
@@ -72,7 +72,9 @@ fn window_ui(context: &mut egui::Context, world: &mut World) {
         let desired_y = parent_rect.min.y;
 
         let label = item_label(&show);
-        let results = egui::Window::new(format!("{} Inspector", label))
+        let mut open = true;
+        egui::Window::new(format!("{} Inspector", label))
+            .open(&mut open)
             .title_bar(true)
             .resizable(true)
             .collapsible(true)
@@ -91,9 +93,9 @@ fn window_ui(context: &mut egui::Context, world: &mut World) {
                 }
                 _ => {}
             });
-        if results.is_none() {
-            let mut hierarchy_inspector = world.resource_mut::<WorldInspector>();
-            hierarchy_inspector.selected = InspectorType::None;
+        if !open {
+            let mut world_inspector = world.resource_mut::<WorldInspector>();
+            world_inspector.selected = InspectorType::None;
         }
     }
 }
