@@ -2,6 +2,7 @@ use crate::{inspector::graph::MyEditorState, BehaviorFactory};
 use bevy::{prelude::*, utils::Uuid};
 use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 #[derive(Resource)]
 pub struct BehaviorClient<T: BehaviorFactory> {
@@ -18,7 +19,7 @@ pub struct BehaviorServer<T: BehaviorFactory> {
 #[derive(
     Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect, PartialEq, Hash, Eq,
 )]
-pub struct BehaviorFileId(pub String);
+pub struct BehaviorFileId(Cow<'static, str>);
 
 impl BehaviorFileId {
     pub fn new() -> Self {
@@ -28,7 +29,8 @@ impl BehaviorFileId {
                 .to_string()
                 .chars()
                 .take(5)
-                .collect::<String>(),
+                .collect::<String>()
+                .into(),
         )
     }
 }
@@ -44,13 +46,14 @@ pub struct BehaviorFileData(pub String);
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     Ping,
     LoadFile(BehaviorFileId),
-    SaveFile((BehaviorFileId, BehaviorFileData)),
+    SaveFile((BehaviorFileId, BehaviorFileName, BehaviorFileData)),
     Update(MyEditorState<T>),
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {
     Pong,
-    BehaviorFileNames(Vec<(BehaviorFileId, BehaviorFileName)>),
-    BehaviorFile((BehaviorFileId, BehaviorFileData)),
+    FileNames(Vec<(BehaviorFileId, BehaviorFileName)>),
+    File((BehaviorFileId, BehaviorFileData)),
+    FileSaved(BehaviorFileId),
     Update(MyEditorState<T>),
 }

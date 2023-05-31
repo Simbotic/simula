@@ -3,7 +3,7 @@ use crate::{
         AllMyNodeTemplates, MyDataType, MyEditorState, MyGraphState, MyNodeTemplate, MyResponse,
     },
     protocol::{
-        BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
+        BehaviorClient, BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
         BehaviorProtocolServer, BehaviorServer,
     },
     BehaviorFactory, BehaviorType,
@@ -52,6 +52,7 @@ enum BehaviorInspectorState {
     Unloaded,
     Loading,
     Loaded,
+    Unsaved,
     Saving,
 }
 
@@ -104,7 +105,20 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                 },
             );
             behavior_inspector.selected = Some(file_id.clone());
-        };
+        }
+
+        let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+        if let Some(file_id) = behavior_inspector.selected.clone() {
+            if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get_mut(&file_id) {
+                if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
+                } else {
+                    if ui.add(egui::Button::new("Save")).clicked() {
+                        behavior_inspector_item.state = BehaviorInspectorState::Unsaved;
+                        warn!("Saving behavior {:?}", file_id);
+                    }
+                }
+            }
+        }
     });
 
     let behavior_inspector = world.resource_mut::<BehaviorInspector>();
@@ -151,8 +165,16 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
     let selected_behavior = world.resource_mut::<BehaviorInspector>().selected.clone();
     let Some(selected_behavior) = selected_behavior else { return;};
     let behavior_inspector = world.resource_mut::<BehaviorInspector>();
-    let Some((file_name, inspector_item_state, entity)) = behavior_inspector.behaviors.get(&selected_behavior).and_then(|item| Some((item.name.clone(), item.state, item.entity))) else { return;};
-    let BehaviorInspectorState::Loaded = inspector_item_state else { return;};
+    let Some((file_name, inspector_item_state, entity))
+        = behavior_inspector.behaviors
+        .get(&selected_behavior)
+        .and_then(|item| Some((item.name.clone(), item.state, item.entity))) else { return;};
+    match inspector_item_state {
+        BehaviorInspectorState::Loaded => {}
+        BehaviorInspectorState::Unsaved => {}
+        BehaviorInspectorState::Saving => {}
+        _ => return,
+    }
     let Some(entity) = entity else { return;};
 
     let mut behavior_graphs = world.query::<(
@@ -191,6 +213,10 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                     if ui.add(egui::Button::new("▼").frame(false)).clicked() {
                                         inspector_item.collapsed = true;
                                     }
+                                }
+
+                                if let BehaviorInspectorState::Saving = inspector_item.state {
+                                    ui.add(egui::Button::new("💾 Saving...").frame(false));
                                 }
 
                                 ui.add_space(20.0);
@@ -334,6 +360,7 @@ fn update<T>(
     type_registry: Res<AppTypeRegistry>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
     behavior_client: Res<BehaviorClient<T>>,
+    graphs: Query<&MyEditorState<T>>,
 ) where
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
 {
@@ -364,12 +391,51 @@ fn update<T>(
                 behavior_inspector_item.entity = Some(entity);
                 behavior_inspector_item.state = BehaviorInspectorState::Loaded;
             }
+            // if selected behavior is unsaved, save it
+            else if let BehaviorInspectorState::Unsaved = behavior_inspector_item.state {
+                info!("Saving behavior: {}", *selected_behavior);
+                if let Some(entity) = behavior_inspector_item.entity {
+                    behavior_inspector_item.state = BehaviorInspectorState::Saving;
+                    if let Ok(graph_state) = graphs.get(entity) {
+                        if let Ok(file_data) = ron::ser::to_string_pretty(
+                            &graph_state,
+                            ron::ser::PrettyConfig::default(),
+                        ) {
+                            info!("Saving behavior: {}", *behavior_inspector_item.name);
+                            behavior_inspector_item.state = BehaviorInspectorState::Saving;
+                            behavior_client
+                                .sender
+                                .send(BehaviorProtocolClient::SaveFile((
+                                    selected_behavior.clone(),
+                                    behavior_inspector_item.name.clone(),
+                                    BehaviorFileData(file_data),
+                                )))
+                                .unwrap();
+                        } else {
+                            error!(
+                                "Failed to serialize behavior: {}",
+                                *behavior_inspector_item.name
+                            );
+                            behavior_inspector_item.state = BehaviorInspectorState::Loaded;
+                        };
+                    } else {
+                        error!(
+                            "No graph editor state for behavior: {}",
+                            *behavior_inspector_item.name
+                        );
+                        behavior_inspector_item.state = BehaviorInspectorState::New;
+                    }
+                } else {
+                    error!("No entity for behavior: {}", *behavior_inspector_item.name);
+                    behavior_inspector_item.state = BehaviorInspectorState::New;
+                }
+            }
         }
     }
     if let Ok(server_msg) = behavior_client.receiver.try_recv() {
         match server_msg {
             // Receive list of behaviors
-            BehaviorProtocolServer::BehaviorFileNames(behaviors) => {
+            BehaviorProtocolServer::FileNames(behaviors) => {
                 for (file_id, file_name) in &behaviors {
                     if !behavior_inspector.behaviors.contains_key(&file_id) {
                         behavior_inspector.behaviors.insert(
@@ -386,7 +452,7 @@ fn update<T>(
                 }
             }
             // Receive behavior data
-            BehaviorProtocolServer::BehaviorFile((file_id, file_data)) => {
+            BehaviorProtocolServer::File((file_id, file_data)) => {
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
@@ -400,6 +466,16 @@ fn update<T>(
                             .insert(ron::de::from_str::<MyEditorState<T>>(&file_data).unwrap())
                             .id();
                         behavior_inspector_item.entity = Some(entity);
+                        behavior_inspector_item.state = BehaviorInspectorState::Loaded;
+                    }
+                }
+            }
+            // Receive file saved
+            BehaviorProtocolServer::FileSaved(file_id) => {
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
                         behavior_inspector_item.state = BehaviorInspectorState::Loaded;
                     }
                 }

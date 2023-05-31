@@ -265,7 +265,7 @@ fn setup(
 
     behavior_server
         .sender
-        .send(BehaviorProtocolServer::BehaviorFileNames(
+        .send(BehaviorProtocolServer::FileNames(
             behavior_files.files.clone().into_iter().collect(),
         ))
         .unwrap();
@@ -417,13 +417,27 @@ fn update(
                 let dir_path = "assets/inspector";
                 let file_ext = "bht.ron";
                 let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
-                let data = std::fs::read_to_string(file_path).unwrap();
+                let file_data = std::fs::read_to_string(file_path).unwrap();
                 behavior_server
                     .sender
-                    .send(BehaviorProtocolServer::BehaviorFile((
+                    .send(BehaviorProtocolServer::File((
                         file_id,
-                        BehaviorFileData(data.clone()),
+                        BehaviorFileData(file_data.clone()),
                     )))
+                    .unwrap();
+            }
+            BehaviorProtocolClient::SaveFile((file_id, file_name, file_data)) => {
+                behavior_files
+                    .files
+                    .insert(file_id.clone(), file_name.clone());
+                let dir_path = "assets/inspector";
+                let file_ext = "bht.ron";
+                let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
+                std::fs::write(&file_path, file_data.0).unwrap();
+                info!("Saved file: {}", &file_path);
+                behavior_server
+                    .sender
+                    .send(BehaviorProtocolServer::FileSaved(file_id))
                     .unwrap();
             }
             _ => {
