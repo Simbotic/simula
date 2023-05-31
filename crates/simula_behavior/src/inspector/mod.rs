@@ -128,16 +128,18 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             };
             selectable_behaviors.insert(0, None);
             for selectable_behavior in selectable_behaviors {
-                if ui
-                    .selectable_label(
-                        behavior_inspector.selected == selectable_behavior,
-                        get_label_from_id(&selectable_behavior, &behavior_inspector),
-                    )
-                    .clicked()
-                {
-                    println!("Selected: {:?}", selectable_behavior);
-                    new_selected = selectable_behavior.clone();
-                }
+                ui.allocate_ui(egui::vec2(200.0, 10.0), |ui| {
+                    if ui
+                        .selectable_label(
+                            behavior_inspector.selected == selectable_behavior,
+                            get_label_from_id(&selectable_behavior, &behavior_inspector),
+                        )
+                        .clicked()
+                    {
+                        println!("Selected: {:?}", selectable_behavior);
+                        new_selected = selectable_behavior.clone();
+                    }
+                });
             }
         });
 
