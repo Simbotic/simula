@@ -128,7 +128,25 @@ impl BehaviorFactory for DebugBehavior {
         }
     }
 
-    fn reflect(&mut self) -> &mut dyn Reflect {
+    fn reflect(&self) -> &dyn Reflect {
+        match self {
+            DebugBehavior::Debug(data) => data,
+            DebugBehavior::Selector(data) => data,
+            DebugBehavior::Sequencer(data) => data,
+            DebugBehavior::All(data) => data,
+            DebugBehavior::Any(data) => data,
+            DebugBehavior::Repeater(data) => data,
+            DebugBehavior::Inverter(data) => data,
+            DebugBehavior::Succeeder(data) => data,
+            DebugBehavior::Wait(data) => data,
+            DebugBehavior::Delay(data) => data,
+            DebugBehavior::Guard(data) => data,
+            DebugBehavior::Timeout(data) => data,
+            DebugBehavior::Subtree(data) => data,
+        }
+    }
+
+    fn reflect_mut(&mut self) -> &mut dyn Reflect {
         match self {
             DebugBehavior::Debug(data) => data,
             DebugBehavior::Selector(data) => data,

@@ -90,7 +90,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     world: &mut World,
 ) {
     egui::menu::menu_button(ui, "🏃 Behaviors", |ui| {
-        if ui.add(egui::Button::new("New")).clicked() {
+        if ui.add(egui::Button::new("✚ New")).clicked() {
             let file_id = BehaviorFileId::new();
             let file_name = BehaviorFileName(format!("bt_{}", *file_id).into());
             let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
@@ -112,7 +112,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get_mut(&file_id) {
                 if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
                 } else {
-                    if ui.add(egui::Button::new("Save")).clicked() {
+                    if ui.add(egui::Button::new("💾 Save")).clicked() {
                         behavior_inspector_item.state = BehaviorInspectorState::Unsaved;
                         warn!("Saving behavior {:?}", file_id);
                     }
@@ -195,149 +195,152 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
         .scroll2([true, true])
         .frame(egui::Frame::none().fill(egui::Color32::from_rgba_unmultiplied(22, 20, 25, 200)).inner_margin(3.0))
         .show(context, |ui| {
-
             ui.vertical(|ui| {
-                        let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
-                        let inspector_item = behavior_inspector.behaviors.get_mut(&selected_behavior).unwrap();
+                let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+                let inspector_item = behavior_inspector.behaviors.get_mut(&selected_behavior).unwrap();
 
-                        ui.horizontal(|ui| {
+                ui.horizontal(|ui| {
 
-                            egui::menu::bar(ui, |ui| {
+                    egui::menu::bar(ui, |ui| {
 
-                                if inspector_item.collapsed {
-                                    if ui.add(egui::Button::new("▶").frame(false)).clicked() {
-                                        inspector_item.collapsed = false;
-                                    }
-                                }
-                                else {
-                                    if ui.add(egui::Button::new("▼").frame(false)).clicked() {
-                                        inspector_item.collapsed = true;
-                                    }
-                                }
-
-                                if let BehaviorInspectorState::Saving = inspector_item.state {
-                                    ui.add(egui::Button::new("💾 Saving...").frame(false));
-                                }
-
-                                ui.add_space(20.0);
-
-                                if ui.add(egui::Button::new("⏵").frame(true)).clicked() {
-                                    println!("Button clicked!");
-                                }
-                                if ui.add(egui::Button::new("⏸").frame(true)).clicked() {
-                                    println!("Button clicked!");
-                                }
-                                if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
-                                    println!("Button clicked!");
-                                }
-
-                                ui.style_mut().visuals.extreme_bg_color =
-                            egui::Color32::from_rgba_premultiplied(0, 0, 0, 100);
-                                if ui.add(egui::TextEdit::singleline(&mut window_name).desired_width(50.0).clip_text(false)).changed() {
-                                    inspector_item.name = BehaviorFileName(window_name.clone().into());
-                                }
-
-                                ui.add_space(ui.available_width() - 12.0);
-
-                                if close_button(ui, ui.available_rect_before_wrap()).clicked() {
-                                    println!("Button clicked!");
-                                    open = false;
-                                }
-                            });
-                        });
-
-                        if !inspector_item.collapsed {
-
-                            egui::Frame::none().fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140)).stroke(egui::Stroke::NONE).inner_margin(egui::Margin{
-                                left: 10.0,
-                                right: 10.0,
-                                top: 10.0,
-                                bottom: 10.0,
-                            }).outer_margin(egui::Margin{
-                                left: -3.0,
-                                right: -3.0,
-                                top: 0.0,
-                                bottom: -3.0,
-                            }).show(ui, |ui| {
-                            // ui.group(|ui| {
-
-                                let Ok((_, _, mut graph_state, mut editor_state)) = behavior_graphs.get_mut(world, entity) else {
-                                    return;};
-
-                                    let graph_response = editor_state.draw_graph_editor(
-                                                        ui,
-                                                        AllMyNodeTemplates::<T>::default(),
-                                                        &mut graph_state,
-                                                        Vec::default(),
-                                                    );
-
-                                    for response in graph_response.node_responses {
-                                        println!("response: {:?}", response);
-                                        match response {
-                                            NodeResponse::ConnectEventEnded { output: output_id, input: input_id } => {
-                                                // Check if output is already connected, and if so, remove the previous connection
-                                                let mut removes = vec![];
-                                                for (other_input, other_output) in editor_state.graph.connections.iter() {
-                                                    if *other_output == output_id {
-                                                        if other_input != input_id {
-                                                            removes.push(other_input);
-                                                        }
-                                                    }
-                                                }
-                                                for other_input in removes {
-                                                    editor_state.graph.connections.remove(other_input);
-                                                }
-
-                                                // If composite type, dynamically adjust outputs of node
-                                                let node_id = editor_state.graph.outputs[output_id].node;
-                                                let node = editor_state.graph.nodes.get(node_id).unwrap();
-                                                if let MyNodeTemplate::Behavior(behavior) = &node.user_data.data {
-                                                    if behavior.typ() == BehaviorType::Composite {
-                                                        // Get all unused outputs
-                                                        let mut unused_outputs = vec![];
-                                                        node.outputs.iter().for_each(|(_, output_id)| {
-                                                            let connected = editor_state.graph.connections.iter().filter(|(_, other_output)| {
-                                                                println!("Output: {:#?} == {:#?}", output_id, *other_output);
-                                                                *other_output == output_id
-                                                            }).count() > 0;
-                                                            if !connected {
-                                                                unused_outputs.push(*output_id);
-                                                            }
-                                                        });
-
-                                                        // If there are no unused outputs, add a new output
-                                                        if unused_outputs.len() == 0 {
-                                                            editor_state.graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
-                                                        }
-
-                                                        // Remove all but one unused output
-                                                        while unused_outputs.len() > 1 {
-                                                            if let Some(output_id) = unused_outputs.pop() {
-                                                                editor_state.graph.remove_output_param(output_id);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
-                                                if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                                    node.user_data.data = MyNodeTemplate::Behavior(data);
-                                                }
-                                            }
-                                            NodeResponse::User(MyResponse::NameEdited(node_id, name)) => {
-                                                if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                                    node.user_data.name = name;
-                                                }
-                                            }
-                                            _ => {}
-                                        }
-                                    }
-                            });
+                        if inspector_item.collapsed {
+                            if ui.add(egui::Button::new("▶").frame(false)).clicked() {
+                                inspector_item.collapsed = false;
+                            }
+                        }
+                        else {
+                            if ui.add(egui::Button::new("▼").frame(false)).clicked() {
+                                inspector_item.collapsed = true;
+                            }
                         }
 
-                        });
+                        if let BehaviorInspectorState::Saving = inspector_item.state {
+                            ui.add(egui::Button::new("💾 Saving...").frame(false));
+                        }
 
+                        ui.add_space(20.0);
+
+                        if ui.add(egui::Button::new("⏵").frame(true)).clicked() {
+                            println!("Button clicked!");
+                        }
+                        if ui.add(egui::Button::new("⏸").frame(true)).clicked() {
+                            println!("Button clicked!");
+                        }
+                        if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
+                            println!("Button clicked!");
+                        }
+
+                        ui.style_mut().visuals.extreme_bg_color =
+                    egui::Color32::from_rgba_premultiplied(0, 0, 0, 100);
+                        if ui.add(egui::TextEdit::singleline(&mut window_name).desired_width(50.0).clip_text(false)).changed() {
+                            inspector_item.name = BehaviorFileName(window_name.clone().into());
+                        }
+
+                        // Space for the little cross icon
+                        ui.add_space(8.0);
+                        ui.add_space(ui.available_width() - 12.0);
+                        if close_button(ui, ui.available_rect_before_wrap()).clicked() {
+                            println!("Button clicked!");
+                            open = false;
+                        }
                     });
+                });
+
+                if !inspector_item.collapsed {
+
+                    egui::Frame::none().fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140)).stroke(egui::Stroke::NONE).inner_margin(egui::Margin{
+                        left: 10.0,
+                        right: 10.0,
+                        top: 10.0,
+                        bottom: 10.0,
+                    }).outer_margin(egui::Margin{
+                        left: -3.0,
+                        right: -3.0,
+                        top: 0.0,
+                        bottom: -3.0,
+                    }).show(ui, |ui| {
+
+                        let Ok((_, _, mut graph_state, mut editor_state)) = behavior_graphs.get_mut(world, entity) else {
+                            return;};
+
+                            let graph_response = editor_state.draw_graph_editor(
+                                                ui,
+                                                AllMyNodeTemplates::<T>::default(),
+                                                &mut graph_state,
+                                                Vec::default(),
+                                            );
+
+                            for response in graph_response.node_responses {
+                                println!("response: {:?}", response);
+                                match response {
+                                    NodeResponse::SelectNode(node_id ) => {
+                                        graph_state.active_node = Some(node_id);
+                                    }
+                                    NodeResponse::DeselectNode => {
+                                        graph_state.active_node = None;
+                                    }
+                                    NodeResponse::ConnectEventEnded { output: output_id, input: input_id } => {
+                                        // Check if output is already connected, and if so, remove the previous connection
+                                        let mut removes = vec![];
+                                        for (other_input, other_output) in editor_state.graph.connections.iter() {
+                                            if *other_output == output_id {
+                                                if other_input != input_id {
+                                                    removes.push(other_input);
+                                                }
+                                            }
+                                        }
+                                        for other_input in removes {
+                                            editor_state.graph.connections.remove(other_input);
+                                        }
+
+                                        // If composite type, dynamically adjust outputs of node
+                                        let node_id = editor_state.graph.outputs[output_id].node;
+                                        let node = editor_state.graph.nodes.get(node_id).unwrap();
+                                        if let MyNodeTemplate::Behavior(behavior) = &node.user_data.data {
+                                            if behavior.typ() == BehaviorType::Composite {
+                                                // Get all unused outputs
+                                                let mut unused_outputs = vec![];
+                                                node.outputs.iter().for_each(|(_, output_id)| {
+                                                    let connected = editor_state.graph.connections.iter().filter(|(_, other_output)| {
+                                                        println!("Output: {:#?} == {:#?}", output_id, *other_output);
+                                                        *other_output == output_id
+                                                    }).count() > 0;
+                                                    if !connected {
+                                                        unused_outputs.push(*output_id);
+                                                    }
+                                                });
+
+                                                // If there are no unused outputs, add a new output
+                                                if unused_outputs.len() == 0 {
+                                                    editor_state.graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                                                }
+
+                                                // Remove all but one unused output
+                                                while unused_outputs.len() > 1 {
+                                                    if let Some(output_id) = unused_outputs.pop() {
+                                                        editor_state.graph.remove_output_param(output_id);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
+                                        if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                            node.user_data.data = MyNodeTemplate::Behavior(data);
+                                        }
+                                    }
+                                    NodeResponse::User(MyResponse::NameEdited(node_id, name)) => {
+                                        if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                            node.user_data.name = name;
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                    });
+                }
+            });
+        });
 
     if !open {
         let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();

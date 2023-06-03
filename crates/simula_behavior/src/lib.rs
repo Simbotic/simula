@@ -84,7 +84,11 @@ pub trait BehaviorFactory:
         panic!("BehaviorFactory::color() not implemented")
     }
 
-    fn reflect(&mut self) -> &mut dyn Reflect {
+    fn reflect(&self) -> &dyn Reflect {
+        panic!("BehaviorFactory::data() not implemented")
+    }
+
+    fn reflect_mut(&mut self) -> &mut dyn Reflect {
         panic!("BehaviorFactory::data() not implemented")
     }
 

@@ -4,7 +4,7 @@ use bevy::{
     reflect::TypeRegistryArc,
 };
 use bevy_inspector_egui::{
-    egui::{self},
+    egui::{self, Widget},
     reflect_inspector,
 };
 use egui_node_graph::{
@@ -70,10 +70,9 @@ pub enum MyNodeTemplate<T: BehaviorFactory> {
 /// mechanism allows creating additional side effects from user code.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MyResponse<T: BehaviorFactory> {
-    SetActiveNode(NodeId),
-    ClearActiveNode,
     NodeEdited(NodeId, T),
     NameEdited(NodeId, String),
+    NodeEditDone(NodeId),
 }
 
 /// The graph 'global' state. This state struct is passed around to the node and
@@ -84,9 +83,8 @@ pub struct MyGraphState {
     pub active_node: Option<NodeId>,
     #[serde(skip)]
     pub type_registry: TypeRegistryArc,
+    pub editing_name: Option<NodeId>,
 }
-
-// =========== Then, you need to implement some traits ============
 
 // A trait for the data types, to tell the library how to display them
 impl DataTypeTrait<MyGraphState> for MyDataType {
@@ -287,36 +285,67 @@ where
     fn top_bar_ui(
         &self,
         ui: &mut egui::Ui,
-        _node_id: NodeId,
-        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
-        _user_state: &mut Self::UserState,
+        node_id: NodeId,
+        graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        user_state: &mut Self::UserState,
     ) -> Vec<NodeResponse<Self::Response, Self>>
     where
         Self::Response: UserResponseTrait,
     {
-        let responses = vec![];
+        let mut responses = vec![];
+
+        let r = 3.0;
+        let size = egui::Vec2::splat(2.0 * r + 5.0);
+        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
+        ui.painter()
+            .circle_filled(rect.center(), r, egui::Color32::RED);
 
         match &self.data {
             MyNodeTemplate::Root => {}
             MyNodeTemplate::Behavior(_behavior) => {
-                // if let Some(node) = graph.nodes.get(node_id) {
-                //     let mut name = node.user_data.name.clone();
-                //     ui.style_mut().visuals.extreme_bg_color = egui::Color32::TRANSPARENT;
-                //     if egui::TextEdit::singleline(&mut name)
-                //         .text_color(egui::Color32::WHITE)
-                //         .show(ui)
-                //         .response
-                //         .changed()
-                //     {
-                //         responses.push(NodeResponse::User(MyResponse::NameEdited(node_id, name)));
-                //     }
-                // }
+                if let Some(node) = graph.nodes.get(node_id) {
+                    match user_state.active_node {
+                        Some(active_node_id) if active_node_id == node_id => {
+                            let mut name = node.user_data.name.clone();
+                            ui.style_mut().visuals.extreme_bg_color =
+                                egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
+                            if egui::TextEdit::singleline(&mut name)
+                                .hint_text("node_name")
+                                .text_color(egui::Color32::WHITE)
+                                .show(ui)
+                                .response
+                                .changed()
+                            {
+                                responses.push(NodeResponse::User(MyResponse::NameEdited(
+                                    node_id, name,
+                                )));
+                            }
+                        }
+                        _ => {
+                            ui.label(&node.user_data.name);
+                        }
+                    }
 
-                let r = 3.0;
-                let size = egui::Vec2::splat(2.0 * r + 5.0);
-                let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
-                ui.painter()
-                    .circle_filled(rect.center(), r, egui::Color32::RED);
+                    // if let Some(active_node_id) = user_state.active_node {
+                    //     if active_node_id == node_id {
+                    //         let mut name = node.user_data.name.clone();
+                    //         ui.style_mut().visuals.extreme_bg_color =
+                    //             egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
+                    //         if egui::TextEdit::singleline(&mut name)
+                    //             .text_color(egui::Color32::WHITE)
+                    //             .show(ui)
+                    //             .response
+                    //             .changed()
+                    //         {
+                    //             responses.push(NodeResponse::User(MyResponse::NameEdited(
+                    //                 node_id, name,
+                    //             )));
+                    //         }
+                    //     }
+                    // } else {
+                    //     ui.label(&node.user_data.name);
+                    // }
+                }
             }
         }
 
@@ -365,29 +394,34 @@ where
         if let Some(node) = graph.nodes.get(node_id) {
             match &node.user_data.data {
                 MyNodeTemplate::Behavior(behavior) => {
-                    // Edit node name
-                    if let Some(node) = graph.nodes.get(node_id) {
-                        let mut name = node.user_data.name.clone();
-                        ui.style_mut().visuals.extreme_bg_color =
-                            egui::Color32::from_rgba_premultiplied(0, 0, 0, 50);
-                        if egui::TextEdit::singleline(&mut name)
-                            .text_color(egui::Color32::WHITE)
-                            .show(ui)
-                            .response
-                            .changed()
-                        {
-                            responses
-                                .push(NodeResponse::User(MyResponse::NameEdited(node_id, name)));
-                        }
-                    }
+                    // Small behavior label
+                    let label =
+                        egui::RichText::new(behavior.label()).color(egui::Color32::DARK_GRAY);
+                    // .small();
+                    egui::Label::new(label).ui(ui);
 
-                    // Reflect edit behavior properties
-                    let mut behavior = behavior.clone();
+                    // Reflect behavior properties
                     let type_registry = user_state.type_registry.read();
-                    if reflect_inspector::ui_for_value(behavior.reflect(), ui, &type_registry) {
-                        responses.push(NodeResponse::User(MyResponse::NodeEdited(
-                            node_id, behavior,
-                        )));
+                    match user_state.active_node {
+                        Some(active_node_id) if active_node_id == node_id => {
+                            let mut behavior = behavior.clone();
+                            if reflect_inspector::ui_for_value(
+                                behavior.reflect_mut(),
+                                ui,
+                                &type_registry,
+                            ) {
+                                responses.push(NodeResponse::User(MyResponse::NodeEdited(
+                                    node_id, behavior,
+                                )));
+                            }
+                        }
+                        _ => {
+                            reflect_inspector::ui_for_value_readonly(
+                                behavior.reflect(),
+                                ui,
+                                &type_registry,
+                            );
+                        }
                     }
                 }
                 MyNodeTemplate::Root => {
@@ -399,11 +433,6 @@ where
         responses
     }
 
-    // This method will be called when drawing each node. This allows adding
-    // extra ui elements inside the nodes. In this case, we create an "active"
-    // button which introduces the concept of having an active node in the
-    // graph. This is done entirely from user code with no modifications to the
-    // node graph library.
     fn bottom_ui(
         &self,
         _ui: &mut egui::Ui,
@@ -448,15 +477,3 @@ where
 pub struct MyEditorState<T: BehaviorFactory>(
     pub GraphEditorState<MyNodeData<T>, MyDataType, MyValueType<T>, MyNodeTemplate<T>, MyGraphState>,
 );
-
-// #[derive(Default, Component, Deref, DerefMut, Serialize, Deserialize)]
-// pub struct MyEditorState2<T: BehaviorFactory>(
-//     MyValueType2<T>, // std::marker::PhantomData<T>
-// );
-
-// pub trait ExampleTrait: Serialize + for<'de> Deserialize<'de> {}
-
-// #[derive(Deserialize, Serialize)]
-// pub enum ExampleImpl<T: ExampleTrait> {
-//     A(T),
-// }

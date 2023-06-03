@@ -17,7 +17,7 @@ use simula_core::{
     force_graph::{NodeData, NodeIndex, SimulationParameters},
     signal::{SignalController, SignalFunction, SignalGenerator, SignalPlugin},
 };
-use simula_inspector::{bevy_egui::EguiContexts, egui, InspectorPlugin};
+use simula_inspector::{bevy_egui::EguiContexts, egui, InspectorPlugin, WorldInspectorPlugin};
 #[cfg(feature = "gif")]
 use simula_video::GifAsset;
 #[cfg(feature = "webp")]
@@ -56,7 +56,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "[Simbotic] Simula - Sandbox".to_string(),
-                resolution: (940., 528.).into(),
+                resolution: (1920., 1080.).into(),
                 present_mode: PresentMode::AutoVsync,
                 fit_canvas_to_parent: true,
                 prevent_default_event_handling: false,
@@ -66,6 +66,7 @@ fn main() {
             ..default()
         }))
         .add_plugin(InspectorPlugin)
+        .add_plugin(WorldInspectorPlugin)
         .add_plugin(ActionPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(FlyCameraPlugin)
@@ -233,7 +234,7 @@ fn setup(
 
     let camera_entity = commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 2.0, -10.0)
+            transform: Transform::from_xyz(0.0, 2.0, -15.0)
                 .looking_at(Vec3::new(0.0, 1.0, 0.0), Vec3::Y),
             ..default()
         })

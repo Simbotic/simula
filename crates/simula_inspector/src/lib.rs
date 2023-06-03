@@ -26,7 +26,9 @@ fn setup_ui(mut contexts: EguiContexts) {
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
         TITLE_FONT_NAME.into(),
-        egui::FontData::from_static(include_bytes!("../../../assets/fonts/DejaVuSans.ttf")),
+        egui::FontData::from_static(include_bytes!(
+            "../../../assets/fonts/JetBrainsMono-ExtraLight.ttf"
+        )),
     );
     fonts
         .families
@@ -46,7 +48,6 @@ fn setup_ui(mut contexts: EguiContexts) {
     visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
     visuals.window_stroke = egui::Stroke::NONE;
     visuals.override_text_color = Some(egui::Color32::GRAY);
-    visuals.widgets.hovered.bg_fill = egui::Color32::from_rgba_unmultiplied(255, 0, 0, 255);
     contexts.ctx_mut().set_visuals(visuals);
 }
 

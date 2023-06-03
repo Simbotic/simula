@@ -68,18 +68,16 @@ fn window_ui(context: &mut egui::Context, world: &mut World) {
 
     if show != InspectorType::None {
         let parent_rect = context.available_rect();
-        let desired_width = 200.0;
+        let desired_width = 300.0;
         let desired_height = parent_rect.height() * 0.9;
         let desired_x = parent_rect.max.x - desired_width;
         let desired_y = parent_rect.min.y;
 
         let label = item_label(&show);
         let mut open = true;
-        egui::Window::new(format!("{} Inspector", label))
+        egui::Window::new(format!("{}", label))
             .open(&mut open)
-            .title_bar(true)
             .resizable(true)
-            .collapsible(true)
             .scroll2([true, true])
             .default_pos(egui::Pos2::new(desired_x, desired_y))
             .default_size(egui::Vec2::new(desired_width, desired_height))

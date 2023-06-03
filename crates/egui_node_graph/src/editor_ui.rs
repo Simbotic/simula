@@ -24,6 +24,7 @@ pub enum NodeResponse<UserResponse: UserResponseTrait, NodeData: NodeDataTrait> 
     },
     CreatedNode(NodeId),
     SelectNode(NodeId),
+    DeselectNode,
     /// As a user of this library, prefer listening for `DeleteNodeFull` which
     /// will also contain the user data for the deleted node.
     DeleteNodeUi(NodeId),
@@ -315,6 +316,7 @@ where
                 NodeResponse::SelectNode(node_id) => {
                     self.selected_nodes = Vec::from([*node_id]);
                 }
+                NodeResponse::DeselectNode => {}
                 NodeResponse::DeleteNodeUi(node_id) => {
                     let (node, disc_events) = self.graph.remove_node(*node_id);
                     // Pass the disconnection responses first so user code can perform cleanup
@@ -419,11 +421,12 @@ where
             self.pan_zoom.pan += ui.ctx().input(|i| i.pointer.delta());
         }
 
-        // Deselect and deactivate finder if the editor backround is clicked,
+        // Deselect and deactivate finder if the editor background is clicked,
         // *or* if the the mouse clicks off the ui
         if click_on_background || (mouse.any_click() && !cursor_in_editor) {
             self.selected_nodes = Vec::new();
             self.node_finder = None;
+            delayed_responses.push(NodeResponse::DeselectNode);
         }
 
         if drag_started_on_background && mouse.primary_down() {
@@ -557,11 +560,11 @@ where
                         .top_bar_ui(ui, self.node_id, self.graph, user_state)
                         .into_iter(),
                 );
-                ui.add(Label::new(
-                    RichText::new(&self.graph[self.node_id].label)
-                        .text_style(TextStyle::Button)
-                        .color(text_color),
-                ));
+                // ui.add(Label::new(
+                //     RichText::new(&self.graph[self.node_id].label)
+                //         .text_style(TextStyle::Button)
+                //         .color(text_color),
+                // ));
                 ui.add_space(8.0); // The size of the little cross icon
             });
             ui.add_space(margin.y);
@@ -900,6 +903,7 @@ where
         // HACK: Only set the select response when no other response is active.
         // This prevents some issues.
         if responses.is_empty() && window_response.clicked_by(PointerButton::Primary) {
+            responses.push(NodeResponse::DeselectNode);
             responses.push(NodeResponse::SelectNode(self.node_id));
             responses.push(NodeResponse::RaiseNode(self.node_id));
         }
