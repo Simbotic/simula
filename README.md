@@ -114,3 +114,15 @@ And finally run this command in the projects terminal
 ```
 DYLD_LIBRARY_PATH=/Library/Frameworks/GStreamer.framework/Versions/1.0/lib cargo run --release -p sandbox --features gif,gst
 ```
+
+## SurrealDB
+
+Connect to a surreal db, or launch a local surreal repo:
+```
+cargo run --release -- start -u root -p root
+```
+
+SQL Repl
+```
+./target/release/surreal sql -e ws://127.0.0.1:8000 -u root -p root --ns default --db default --pretty
+```
