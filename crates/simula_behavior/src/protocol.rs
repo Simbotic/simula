@@ -1,4 +1,4 @@
-use crate::{inspector::graph::MyEditorState, BehaviorFactory};
+use crate::{inspector::graph::BehaviorEditorState, BehaviorFactory};
 use bevy::{prelude::*, utils::Uuid};
 use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Serialize};
@@ -47,7 +47,7 @@ pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     Ping,
     LoadFile(BehaviorFileId),
     SaveFile((BehaviorFileId, BehaviorFileName, BehaviorFileData)),
-    Update(MyEditorState<T>),
+    Update(BehaviorEditorState<T>),
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {
@@ -55,5 +55,5 @@ pub enum BehaviorProtocolServer<T: BehaviorFactory> {
     FileNames(Vec<(BehaviorFileId, BehaviorFileName)>),
     File((BehaviorFileId, BehaviorFileData)),
     FileSaved(BehaviorFileId),
-    Update(MyEditorState<T>),
+    Update(BehaviorEditorState<T>),
 }

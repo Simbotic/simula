@@ -1,6 +1,7 @@
 use crate::{
     inspector::graph::{
-        AllMyNodeTemplates, MyDataType, MyEditorState, MyGraphState, MyNodeTemplate, MyResponse,
+        BehaviorDataType, BehaviorEditorState, BehaviorGraphState, BehaviorNodeTemplate,
+        BehaviorNodeTemplates, BehaviorResponse,
     },
     protocol::{
         BehaviorClient, BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
@@ -180,8 +181,8 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
     let mut behavior_graphs = world.query::<(
         Entity,
         Option<&Name>,
-        &mut MyGraphState,
-        &mut MyEditorState<T>,
+        &mut BehaviorGraphState,
+        &mut BehaviorEditorState<T>,
     )>();
 
     let mut open = true;
@@ -265,7 +266,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
 
                             let graph_response = editor_state.draw_graph_editor(
                                                 ui,
-                                                AllMyNodeTemplates::<T>::default(),
+                                                BehaviorNodeTemplates::<T>::default(),
                                                 &mut graph_state,
                                                 Vec::default(),
                                             );
@@ -296,7 +297,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                         // If composite type, dynamically adjust outputs of node
                                         let node_id = editor_state.graph.outputs[output_id].node;
                                         let node = editor_state.graph.nodes.get(node_id).unwrap();
-                                        if let MyNodeTemplate::Behavior(behavior) = &node.user_data.data {
+                                        if let BehaviorNodeTemplate::Behavior(behavior) = &node.user_data.data {
                                             if behavior.typ() == BehaviorType::Composite {
                                                 // Get all unused outputs
                                                 let mut unused_outputs = vec![];
@@ -312,7 +313,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
 
                                                 // If there are no unused outputs, add a new output
                                                 if unused_outputs.len() == 0 {
-                                                    editor_state.graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                                                    editor_state.graph.add_output_param(node_id, "B".into(), BehaviorDataType::Flow);
                                                 }
 
                                                 // Remove all but one unused output
@@ -324,12 +325,12 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                             }
                                         }
                                     }
-                                    NodeResponse::User(MyResponse::NodeEdited(node_id, data)) => {
+                                    NodeResponse::User(BehaviorResponse::NodeEdited(node_id, data)) => {
                                         if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                            node.user_data.data = MyNodeTemplate::Behavior(data);
+                                            node.user_data.data = BehaviorNodeTemplate::Behavior(data);
                                         }
                                     }
-                                    NodeResponse::User(MyResponse::NameEdited(node_id, name)) => {
+                                    NodeResponse::User(BehaviorResponse::NameEdited(node_id, name)) => {
                                         if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
                                             node.user_data.name = name;
                                         }
@@ -363,7 +364,7 @@ fn update<T>(
     type_registry: Res<AppTypeRegistry>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
     behavior_client: Res<BehaviorClient<T>>,
-    graphs: Query<&MyEditorState<T>>,
+    graphs: Query<&BehaviorEditorState<T>>,
 ) where
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
 {
@@ -385,11 +386,11 @@ fn update<T>(
                 info!("Creating behavior: {}", *selected_behavior);
                 let entity = commands
                     .spawn(Name::new(format!("BT: {}", *selected_behavior)))
-                    .insert(MyGraphState {
+                    .insert(BehaviorGraphState {
                         type_registry: type_registry.0.clone(),
                         ..Default::default()
                     })
-                    .insert(MyEditorState::<T>::default())
+                    .insert(BehaviorEditorState::<T>::default())
                     .id();
                 behavior_inspector_item.entity = Some(entity);
                 behavior_inspector_item.state = BehaviorInspectorState::Loaded;
@@ -462,11 +463,13 @@ fn update<T>(
                     if let BehaviorInspectorState::Loading = behavior_inspector_item.state {
                         let entity = commands
                             .spawn(Name::new(format!("BT: {}", *file_id)))
-                            .insert(MyGraphState {
+                            .insert(BehaviorGraphState {
                                 type_registry: type_registry.0.clone(),
                                 ..Default::default()
                             })
-                            .insert(ron::de::from_str::<MyEditorState<T>>(&file_data).unwrap())
+                            .insert(
+                                ron::de::from_str::<BehaviorEditorState<T>>(&file_data).unwrap(),
+                            )
                             .id();
                         behavior_inspector_item.entity = Some(entity);
                         behavior_inspector_item.state = BehaviorInspectorState::Loaded;

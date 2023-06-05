@@ -18,16 +18,16 @@ use std::borrow::Cow;
 /// store additional information that doesn't live in parameters. For this
 /// example, the node data stores the template (i.e. the "type") of the node.
 #[derive(Deserialize, Serialize, Debug)]
-pub struct MyNodeData<T: BehaviorFactory> {
+pub struct BehaviorNodeData<T: BehaviorFactory> {
     pub name: String,
-    pub data: MyNodeTemplate<T>,
+    pub data: BehaviorNodeTemplate<T>,
 }
 
 /// `DataType`s are what defines the possible range of connections when
 /// attaching two ports together. The graph UI will make sure to not allow
 /// attaching incompatible datatypes.
 #[derive(PartialEq, Eq, Deserialize, Serialize)]
-pub enum MyDataType {
+pub enum BehaviorDataType {
     Flow,
 }
 
@@ -39,7 +39,7 @@ pub enum MyDataType {
 /// up to the user code in this example to make sure no parameter is created
 /// with a DataType of Scalar and a ValueType of Vec2.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-pub enum MyValueType<T> {
+pub enum BehaviorValueType<T> {
     // Data(T),
     Flow,
     Marker {
@@ -47,7 +47,7 @@ pub enum MyValueType<T> {
     },
 }
 
-impl<T> Default for MyValueType<T> {
+impl<T> Default for BehaviorValueType<T> {
     fn default() -> Self {
         // NOTE: This is just a dummy `Default` implementation. The library
         // requires it to circumvent some internal borrow checker issues.
@@ -59,7 +59,7 @@ impl<T> Default for MyValueType<T> {
 /// will display in the "new node" popup. The user code needs to tell the
 /// library how to convert a NodeTemplate into a Node.
 #[derive(Clone, Copy, Serialize, Deserialize, Debug)]
-pub enum MyNodeTemplate<T: BehaviorFactory> {
+pub enum BehaviorNodeTemplate<T: BehaviorFactory> {
     Root,
     Behavior(T),
 }
@@ -69,7 +69,7 @@ pub enum MyNodeTemplate<T: BehaviorFactory> {
 /// nodes, handling connections...) are already handled by the library, but this
 /// mechanism allows creating additional side effects from user code.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum MyResponse<T: BehaviorFactory> {
+pub enum BehaviorResponse<T: BehaviorFactory> {
     NodeEdited(NodeId, T),
     NameEdited(NodeId, String),
     NodeEditDone(NodeId),
@@ -79,7 +79,7 @@ pub enum MyResponse<T: BehaviorFactory> {
 /// parameter drawing callbacks. The contents of this struct are entirely up to
 /// the user. For this example, we use it to keep track of the 'active' node.
 #[derive(Default, Component, Serialize, Deserialize)]
-pub struct MyGraphState {
+pub struct BehaviorGraphState {
     pub active_node: Option<NodeId>,
     #[serde(skip)]
     pub type_registry: TypeRegistryArc,
@@ -87,44 +87,44 @@ pub struct MyGraphState {
 }
 
 // A trait for the data types, to tell the library how to display them
-impl DataTypeTrait<MyGraphState> for MyDataType {
-    fn data_type_color(&self, _user_state: &mut MyGraphState) -> egui::Color32 {
+impl DataTypeTrait<BehaviorGraphState> for BehaviorDataType {
+    fn data_type_color(&self, _user_state: &mut BehaviorGraphState) -> egui::Color32 {
         match self {
-            MyDataType::Flow => egui::Color32::from_rgb(100, 100, 100),
+            BehaviorDataType::Flow => egui::Color32::from_rgb(100, 100, 100),
         }
     }
 
     fn name(&self) -> Cow<'_, str> {
         match self {
-            MyDataType::Flow => Cow::Borrowed("flow"),
+            BehaviorDataType::Flow => Cow::Borrowed("flow"),
         }
     }
 }
 
 // A trait for the node kinds, which tells the library how to build new nodes
 // from the templates in the node finder
-impl<T> NodeTemplateTrait for MyNodeTemplate<T>
+impl<T> NodeTemplateTrait for BehaviorNodeTemplate<T>
 where
     T: BehaviorFactory,
 {
-    type NodeData = MyNodeData<T>;
-    type DataType = MyDataType;
-    type ValueType = MyValueType<T>;
-    type UserState = MyGraphState;
+    type NodeData = BehaviorNodeData<T>;
+    type DataType = BehaviorDataType;
+    type ValueType = BehaviorValueType<T>;
+    type UserState = BehaviorGraphState;
     type CategoryType = &'static str;
 
     fn node_finder_label(&self, _user_state: &mut Self::UserState) -> Cow<'_, str> {
         match self {
-            MyNodeTemplate::Root => Cow::Borrowed("Root"),
-            MyNodeTemplate::Behavior(behavior) => Cow::Borrowed(behavior.label()),
+            BehaviorNodeTemplate::Root => Cow::Borrowed("Root"),
+            BehaviorNodeTemplate::Behavior(behavior) => Cow::Borrowed(behavior.label()),
         }
     }
 
     // this is what allows the library to show collapsible lists in the node finder.
     fn node_finder_categories(&self, _user_state: &mut Self::UserState) -> Vec<&'static str> {
         match self {
-            MyNodeTemplate::Root => vec!["Root"],
-            MyNodeTemplate::Behavior(behavior) => behavior.categories(),
+            BehaviorNodeTemplate::Root => vec!["Root"],
+            BehaviorNodeTemplate::Behavior(behavior) => behavior.categories(),
         }
     }
 
@@ -135,7 +135,7 @@ where
     }
 
     fn user_data(&self, _user_state: &mut Self::UserState) -> Self::NodeData {
-        MyNodeData {
+        BehaviorNodeData {
             name: "".into(),
             data: self.clone(),
         }
@@ -148,16 +148,16 @@ where
         node_id: NodeId,
     ) {
         match self {
-            MyNodeTemplate::Root => {
-                graph.add_output_param(node_id, "".into(), MyDataType::Flow);
+            BehaviorNodeTemplate::Root => {
+                graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
             }
-            MyNodeTemplate::Behavior(behavior) => match behavior.typ() {
+            BehaviorNodeTemplate::Behavior(behavior) => match behavior.typ() {
                 BehaviorType::Action => {
                     graph.add_input_param(
                         node_id,
                         "A".into(),
-                        MyDataType::Flow,
-                        MyValueType::Flow,
+                        BehaviorDataType::Flow,
+                        BehaviorValueType::Flow,
                         InputParamKind::ConnectionOnly,
                         true,
                     );
@@ -166,26 +166,24 @@ where
                     graph.add_input_param(
                         node_id,
                         "A".into(),
-                        MyDataType::Flow,
-                        MyValueType::Flow,
+                        BehaviorDataType::Flow,
+                        BehaviorValueType::Flow,
                         InputParamKind::ConnectionOnly,
                         true,
                     );
-                    graph.add_output_param(node_id, "".into(), MyDataType::Flow);
+                    graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
                 }
                 BehaviorType::Composite => {
                     graph.add_input_param(
                         node_id,
                         "A".into(),
-                        MyDataType::Flow,
-                        MyValueType::Flow,
+                        BehaviorDataType::Flow,
+                        BehaviorValueType::Flow,
                         InputParamKind::ConnectionOnly,
                         true,
                     );
 
-                    graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
-                    // graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
-                    // graph.add_output_param(node_id, "B".into(), MyDataType::Flow);
+                    graph.add_output_param(node_id, "B".into(), BehaviorDataType::Flow);
                 }
             },
         }
@@ -193,45 +191,45 @@ where
 }
 
 #[derive(Default)]
-pub struct AllMyNodeTemplates<T> {
+pub struct BehaviorNodeTemplates<T> {
     _marker: std::marker::PhantomData<T>,
 }
 
-impl<T> NodeTemplateIter for AllMyNodeTemplates<T>
+impl<T> NodeTemplateIter for BehaviorNodeTemplates<T>
 where
     T: BehaviorFactory,
 {
-    type Item = MyNodeTemplate<T>;
+    type Item = BehaviorNodeTemplate<T>;
 
     fn all_kinds(&self) -> Vec<Self::Item> {
         // This function must return a list of node kinds, which the node finder
         // will use to display it to the user. Crates like strum can reduce the
         // boilerplate in enumerating all variants of an enum.
-        let mut kinds: Vec<MyNodeTemplate<T>> = T::list()
+        let mut kinds: Vec<BehaviorNodeTemplate<T>> = T::list()
             .into_iter()
-            .map(|t| MyNodeTemplate::Behavior(t))
+            .map(|t| BehaviorNodeTemplate::Behavior(t))
             .collect();
-        kinds.extend(vec![MyNodeTemplate::Root]);
+        kinds.extend(vec![BehaviorNodeTemplate::Root]);
         kinds
     }
 }
 
-impl<T> WidgetValueTrait for MyValueType<T>
+impl<T> WidgetValueTrait for BehaviorValueType<T>
 where
     T: BehaviorFactory,
 {
-    type Response = MyResponse<T>;
-    type UserState = MyGraphState;
-    type NodeData = MyNodeData<T>;
+    type Response = BehaviorResponse<T>;
+    type UserState = BehaviorGraphState;
+    type NodeData = BehaviorNodeData<T>;
 
     fn value_widget(
         &mut self,
         _param_name: &str,
         _node_id: NodeId,
         ui: &mut egui::Ui,
-        _user_state: &mut MyGraphState,
-        _node_data: &MyNodeData<T>,
-    ) -> Vec<MyResponse<T>> {
+        _user_state: &mut BehaviorGraphState,
+        _node_data: &BehaviorNodeData<T>,
+    ) -> Vec<BehaviorResponse<T>> {
         ui.label("");
         default()
     }
@@ -258,16 +256,16 @@ fn to_bytes(color: &Color) -> egui::Color32 {
     )
 }
 
-impl<T> UserResponseTrait for MyResponse<T> where T: BehaviorFactory {}
+impl<T> UserResponseTrait for BehaviorResponse<T> where T: BehaviorFactory {}
 
-impl<T> NodeDataTrait for MyNodeData<T>
+impl<T> NodeDataTrait for BehaviorNodeData<T>
 where
     T: BehaviorFactory,
 {
-    type Response = MyResponse<T>;
-    type UserState = MyGraphState;
-    type DataType = MyDataType;
-    type ValueType = MyValueType<T>;
+    type Response = BehaviorResponse<T>;
+    type UserState = BehaviorGraphState;
+    type DataType = BehaviorDataType;
+    type ValueType = BehaviorValueType<T>;
 
     fn titlebar_color(
         &self,
@@ -277,8 +275,8 @@ where
         _user_state: &mut Self::UserState,
     ) -> Option<egui::Color32> {
         match &self.data {
-            MyNodeTemplate::Root => None,
-            MyNodeTemplate::Behavior(behavior) => Some(to_bytes(&behavior.color())),
+            BehaviorNodeTemplate::Root => None,
+            BehaviorNodeTemplate::Behavior(behavior) => Some(to_bytes(&behavior.color())),
         }
     }
 
@@ -301,8 +299,8 @@ where
             .circle_filled(rect.center(), r, egui::Color32::RED);
 
         match &self.data {
-            MyNodeTemplate::Root => {}
-            MyNodeTemplate::Behavior(_behavior) => {
+            BehaviorNodeTemplate::Root => {}
+            BehaviorNodeTemplate::Behavior(_behavior) => {
                 if let Some(node) = graph.nodes.get(node_id) {
                     match user_state.active_node {
                         Some(active_node_id) if active_node_id == node_id => {
@@ -316,7 +314,7 @@ where
                                 .response
                                 .changed()
                             {
-                                responses.push(NodeResponse::User(MyResponse::NameEdited(
+                                responses.push(NodeResponse::User(BehaviorResponse::NameEdited(
                                     node_id, name,
                                 )));
                             }
@@ -325,26 +323,6 @@ where
                             ui.label(&node.user_data.name);
                         }
                     }
-
-                    // if let Some(active_node_id) = user_state.active_node {
-                    //     if active_node_id == node_id {
-                    //         let mut name = node.user_data.name.clone();
-                    //         ui.style_mut().visuals.extreme_bg_color =
-                    //             egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
-                    //         if egui::TextEdit::singleline(&mut name)
-                    //             .text_color(egui::Color32::WHITE)
-                    //             .show(ui)
-                    //             .response
-                    //             .changed()
-                    //         {
-                    //             responses.push(NodeResponse::User(MyResponse::NameEdited(
-                    //                 node_id, name,
-                    //             )));
-                    //         }
-                    //     }
-                    // } else {
-                    //     ui.label(&node.user_data.name);
-                    // }
                 }
             }
         }
@@ -382,18 +360,18 @@ where
         &self,
         ui: &mut egui::Ui,
         node_id: NodeId,
-        graph: &Graph<MyNodeData<T>, MyDataType, MyValueType<T>>,
+        graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
         user_state: &mut Self::UserState,
-    ) -> Vec<NodeResponse<MyResponse<T>, MyNodeData<T>>>
+    ) -> Vec<NodeResponse<BehaviorResponse<T>, BehaviorNodeData<T>>>
     where
         T: BehaviorFactory,
-        MyResponse<T>: UserResponseTrait,
+        BehaviorResponse<T>: UserResponseTrait,
     {
         let mut responses = vec![];
 
         if let Some(node) = graph.nodes.get(node_id) {
             match &node.user_data.data {
-                MyNodeTemplate::Behavior(behavior) => {
+                BehaviorNodeTemplate::Behavior(behavior) => {
                     // Small behavior label
                     let label =
                         egui::RichText::new(behavior.label()).color(egui::Color32::DARK_GRAY);
@@ -410,7 +388,7 @@ where
                                 ui,
                                 &type_registry,
                             ) {
-                                responses.push(NodeResponse::User(MyResponse::NodeEdited(
+                                responses.push(NodeResponse::User(BehaviorResponse::NodeEdited(
                                     node_id, behavior,
                                 )));
                             }
@@ -424,7 +402,7 @@ where
                         }
                     }
                 }
-                MyNodeTemplate::Root => {
+                BehaviorNodeTemplate::Root => {
                     let _ = ui.button("⏵");
                 }
             }
@@ -437,12 +415,12 @@ where
         &self,
         _ui: &mut egui::Ui,
         _node_id: NodeId,
-        _graph: &Graph<MyNodeData<T>, MyDataType, MyValueType<T>>,
+        _graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
         _user_state: &mut Self::UserState,
-    ) -> Vec<NodeResponse<MyResponse<T>, MyNodeData<T>>>
+    ) -> Vec<NodeResponse<BehaviorResponse<T>, BehaviorNodeData<T>>>
     where
         T: BehaviorFactory,
-        MyResponse<T>: UserResponseTrait,
+        BehaviorResponse<T>: UserResponseTrait,
     {
         let responses = vec![];
 
@@ -474,6 +452,12 @@ where
 }
 
 #[derive(Default, Component, Deref, DerefMut, Serialize, Deserialize)]
-pub struct MyEditorState<T: BehaviorFactory>(
-    pub GraphEditorState<MyNodeData<T>, MyDataType, MyValueType<T>, MyNodeTemplate<T>, MyGraphState>,
+pub struct BehaviorEditorState<T: BehaviorFactory>(
+    pub  GraphEditorState<
+        BehaviorNodeData<T>,
+        BehaviorDataType,
+        BehaviorValueType<T>,
+        BehaviorNodeTemplate<T>,
+        BehaviorGraphState,
+    >,
 );
