@@ -22,6 +22,7 @@
                     user_data: (
                         name: "",
                         data: Root,
+                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -41,12 +42,13 @@
                     ],
                     outputs: [],
                     user_data: (
-                        name: "",
+                        name: "debug_a",
                         data: Behavior(Debug((
-                            message: "",
-                            fail: false,
-                            duration: 11.0,
+                            message: "a",
+                            fail: true,
+                            duration: 0.0,
                         ))),
+                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -73,12 +75,80 @@
                             idx: 3,
                             version: 1,
                         )),
+                        ("B", (
+                            idx: 4,
+                            version: 1,
+                        )),
                     ],
                     user_data: (
-                        name: "",
+                        name: "selector_a",
                         data: Behavior(Selector((
                             random: true,
                         ))),
+                        entity: None,
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    label: "➡ Sequencer",
+                    inputs: [
+                        ("A", (
+                            idx: 3,
+                            version: 3,
+                        )),
+                    ],
+                    outputs: [
+                        ("B", (
+                            idx: 5,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 6,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 7,
+                            version: 1,
+                        )),
+                    ],
+                    user_data: (
+                        name: "",
+                        data: Behavior(Sequencer((
+                            random: false,
+                        ))),
+                        entity: None,
+                    ),
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 5,
+                        version: 1,
+                    ),
+                    label: "👁 Debug",
+                    inputs: [
+                        ("A", (
+                            idx: 4,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        name: "debug_b",
+                        data: Behavior(Debug((
+                            message: "b",
+                            fail: false,
+                            duration: 0.0,
+                        ))),
+                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -117,6 +187,40 @@
                     kind: ConnectionOnly,
                     node: (
                         idx: 3,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 3,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 4,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 5,
                         version: 1,
                     ),
                     shown_inline: true,
@@ -171,6 +275,62 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 4,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 3,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 5,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 6,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 7,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
         ],
         connections: [
             (
@@ -179,14 +339,25 @@
             ),
             (
                 value: Some((
-                    idx: 2,
+                    idx: 5,
                     version: 1,
                 )),
                 version: 1,
             ),
             (
+                value: None,
+                version: 0,
+            ),
+            (
                 value: Some((
                     idx: 1,
+                    version: 1,
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    idx: 6,
                     version: 1,
                 )),
                 version: 1,
@@ -199,11 +370,19 @@
             version: 1,
         ),
         (
+            idx: 3,
+            version: 1,
+        ),
+        (
+            idx: 4,
+            version: 3,
+        ),
+        (
             idx: 2,
             version: 1,
         ),
         (
-            idx: 3,
+            idx: 5,
             version: 1,
         ),
     ],
@@ -224,8 +403,8 @@
         ),
         (
             value: Some((
-                x: 524.6758,
-                y: 67.359375,
+                x: 480.5664,
+                y: 32.304688,
             )),
             version: 1,
         ),
@@ -233,6 +412,20 @@
             value: Some((
                 x: 180.91797,
                 y: 111.82422,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 127.65234,
+                y: 225.15625,
+            )),
+            version: 3,
+        ),
+        (
+            value: Some((
+                x: 489.02734,
+                y: 194.55078,
             )),
             version: 1,
         ),

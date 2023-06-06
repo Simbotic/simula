@@ -35,14 +35,13 @@ pub struct SurrealClient {
 struct SurrealClientReceiver(Receiver<SurrealClient>);
 
 fn client_connector(mut commands: Commands) {
-    
     let (sender, receiver) = bounded(1);
     commands.insert_resource(SurrealClientReceiver(receiver));
-    
+
     let thread_pool = AsyncComputeTaskPool::get();
     let _ = thread_pool.spawn(async move {
         let address = "127.0.0.1:8000";
-        
+
         info!("Connecting to SurrealDB: {}", address);
         let connect = Surreal::new::<Ws>(address).await;
         if let Ok(client) = connect {
@@ -77,8 +76,7 @@ fn client_connector(mut commands: Commands) {
                 .await;
 
             sender.send(client_resource).unwrap();
-        }
-        else if let Err(e) = connect {
+        } else if let Err(e) = connect {
             error!("Failed to connect to SurrealDB: {:?}", e);
         }
     });

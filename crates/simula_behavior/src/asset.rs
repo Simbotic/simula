@@ -8,7 +8,7 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Behavior<T: Default>(pub String, pub T, #[serde(default)] pub Vec<Behavior<T>>);
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]

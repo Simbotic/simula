@@ -9,8 +9,7 @@ pub struct ScriptPlugin;
 
 impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_asset::<Script>()
+        app.add_asset::<Script>()
             .add_asset::<Scope>()
             .init_asset_loader::<ScriptLoader>()
             .add_system(script_changed);

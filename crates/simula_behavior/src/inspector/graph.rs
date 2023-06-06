@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use bevy::{
-    prelude::{default, Color, Component, Deref, DerefMut},
+    prelude::{default, Color, Component, Deref, DerefMut, Entity},
     reflect::TypeRegistryArc,
 };
 use bevy_inspector_egui::{
@@ -403,7 +403,9 @@ where
                     }
                 }
                 BehaviorNodeTemplate::Root => {
-                    let _ = ui.button("⏵");
+                    // if ui.button("⏵").clicked() {
+                    //     responses.push(NodeResponse::User(BehaviorResponse::Play(node_id)));
+                    // }
                 }
             }
         }

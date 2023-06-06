@@ -1,1 +1,156 @@
-((graph:(nodes:[(value:None,version:0),(value:Some((id:(idx:1,version:1),label:"Root",inputs:[],outputs:[("",(idx:1,version:1))],user_data:(name:"",data:Root))),version:1),(value:Some((id:(idx:2,version:1),label:"👁 Debug",inputs:[("A",(idx:1,version:1))],outputs:[],user_data:(name:"Test message",data:Behavior(Debug((message:"",fail:false,duration:0.0)))))),version:1)],inputs:[(value:None,version:0),(value:Some((id:(idx:1,version:1),typ:Flow,value:Flow,kind:ConnectionOnly,node:(idx:2,version:1),shown_inline:true)),version:1)],outputs:[(value:None,version:0),(value:Some((id:(idx:1,version:1),node:(idx:1,version:1),typ:Flow)),version:1)],connections:[(value:None,version:0),(value:Some((idx:1,version:1)),version:1)]),node_order:[(idx:1,version:1),(idx:2,version:1)],connection_in_progress:None,selected_nodes:[],ongoing_box_selection:None,node_positions:[(value:None,version:0),(value:Some((x:22.703125,y:58.226563)),version:1),(value:Some((x:278.6914,y:61.945313)),version:1)],node_finder:None,pan_zoom:(pan:(x:0.0,y:0.0),zoom:0.0),_user_state:()))
+((
+    graph: (
+        nodes: [
+            (
+                value: None,
+                version: 0,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 1,
+                        version: 1,
+                    ),
+                    label: "Root",
+                    inputs: [],
+                    outputs: [
+                        ("", (
+                            idx: 1,
+                            version: 1,
+                        )),
+                    ],
+                    user_data: (
+                        name: "",
+                        data: Root,
+                        entity: None,
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 2,
+                        version: 1,
+                    ),
+                    label: "👁 Debug",
+                    inputs: [
+                        ("A", (
+                            idx: 1,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        name: "Test message",
+                        data: Behavior(Debug((
+                            message: "pepe",
+                            fail: false,
+                            duration: 0.0,
+                        ))),
+                        entity: None,
+                    ),
+                )),
+                version: 1,
+            ),
+        ],
+        inputs: [
+            (
+                value: None,
+                version: 0,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 1,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 2,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+        ],
+        outputs: [
+            (
+                value: None,
+                version: 0,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 1,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 1,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+        ],
+        connections: [
+            (
+                value: None,
+                version: 0,
+            ),
+            (
+                value: Some((
+                    idx: 1,
+                    version: 1,
+                )),
+                version: 1,
+            ),
+        ],
+    ),
+    node_order: [
+        (
+            idx: 1,
+            version: 1,
+        ),
+        (
+            idx: 2,
+            version: 1,
+        ),
+    ],
+    connection_in_progress: None,
+    selected_nodes: [],
+    ongoing_box_selection: None,
+    node_positions: [
+        (
+            value: None,
+            version: 0,
+        ),
+        (
+            value: Some((
+                x: 22.703125,
+                y: 58.226563,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 392.13672,
+                y: 62.066406,
+            )),
+            version: 1,
+        ),
+    ],
+    node_finder: None,
+    pan_zoom: (
+        pan: (
+            x: 0.0,
+            y: 0.0,
+        ),
+        zoom: 0.0,
+    ),
+    _user_state: (),
+))

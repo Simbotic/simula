@@ -287,7 +287,7 @@ impl BehaviorTree {
 
     /// Spawn a behavior tree from a behavior node.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub(crate) fn insert_tree<T>(
+    pub fn insert_tree<T>(
         tree: Entity,
         entity: Entity,
         parent: Option<Entity>,

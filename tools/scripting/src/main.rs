@@ -60,7 +60,7 @@ fn main() {
         .add_system(behavior_loader::<DebugBehavior>)
         .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
         .register_type::<Subtree<DebugBehavior>>()
-        .insert_resource(BehaviorFiles::default())
+        .insert_resource(BehaviorTrackers::default())
         .add_startup_system(setup)
         .add_system(update)
         .add_system(debug_info)
@@ -239,15 +239,18 @@ impl BehaviorFactory for DebugBehavior {
     }
 }
 
-#[derive(Default, Resource)]
-struct BehaviorFiles {
-    pub files: HashMap<BehaviorFileId, BehaviorFileName>,
+struct BehaviorTracker {
+    file_name: BehaviorFileName,
+    entity: Option<Entity>,
 }
+
+#[derive(Default, Resource, Deref, DerefMut)]
+struct BehaviorTrackers(HashMap<BehaviorFileId, BehaviorTracker>);
 
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut behavior_files: ResMut<BehaviorFiles>,
+    mut behavior_trackers: ResMut<BehaviorTrackers>,
     behavior_server: Res<BehaviorServer<DebugBehavior>>,
     mut scopes: ResMut<Assets<Scope>>,
     type_registry: Res<AppTypeRegistry>,
@@ -271,9 +274,12 @@ fn setup(
                 if let Some(file_name) = entry.file_name().to_str() {
                     if file_name.ends_with(".bht.ron") {
                         let file_name = file_name.trim_end_matches(".bht.ron");
-                        behavior_files.files.insert(
+                        behavior_trackers.insert(
                             BehaviorFileId::new(),
-                            BehaviorFileName(file_name.to_owned()),
+                            BehaviorTracker {
+                                file_name: BehaviorFileName(file_name.to_owned()),
+                                entity: None,
+                            },
                         );
                     }
                 }
@@ -284,7 +290,10 @@ fn setup(
     behavior_server
         .sender
         .send(BehaviorProtocolServer::FileNames(
-            behavior_files.files.clone().into_iter().collect(),
+            behavior_trackers
+                .iter()
+                .map(|(tracker_id, tracker)| (tracker_id.clone(), tracker.file_name.clone()))
+                .collect(),
         ))
         .unwrap();
 
@@ -422,8 +431,9 @@ fn setup(
 
 fn update(
     mut commands: Commands,
+    mut behavior_trees: Query<&mut BehaviorTree>,
     asset_server: Res<AssetServer>,
-    mut behavior_files: ResMut<BehaviorFiles>,
+    mut behavior_trackers: ResMut<BehaviorTrackers>,
     behavior_server: Res<protocol::BehaviorServer<DebugBehavior>>,
     mut scopes: ResMut<Assets<Scope>>,
     type_registry: Res<AppTypeRegistry>,
@@ -431,23 +441,27 @@ fn update(
     if let Ok(client_msg) = behavior_server.receiver.try_recv() {
         match client_msg {
             BehaviorProtocolClient::LoadFile(file_id) => {
-                let file_name = behavior_files.files[&file_id].clone();
+                let file_name = behavior_trackers[&file_id].file_name.clone();
                 let dir_path = "assets/inspector";
                 let file_ext = "bht.ron";
                 let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
                 let file_data = std::fs::read_to_string(file_path).unwrap();
                 behavior_server
                     .sender
-                    .send(BehaviorProtocolServer::File((
+                    .send(BehaviorProtocolServer::File(
                         file_id,
                         BehaviorFileData(file_data.clone()),
-                    )))
+                    ))
                     .unwrap();
             }
-            BehaviorProtocolClient::SaveFile((file_id, file_name, file_data)) => {
-                behavior_files
-                    .files
-                    .insert(file_id.clone(), file_name.clone());
+            BehaviorProtocolClient::SaveFile(file_id, file_name, file_data) => {
+                behavior_trackers.insert(
+                    file_id.clone(),
+                    BehaviorTracker {
+                        file_name: file_name.clone(),
+                        entity: None,
+                    },
+                );
                 let dir_path = "assets/inspector";
                 let file_ext = "bht.ron";
                 let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
@@ -456,6 +470,60 @@ fn update(
                 behavior_server
                     .sender
                     .send(BehaviorProtocolServer::FileSaved(file_id))
+                    .unwrap();
+            }
+            BehaviorProtocolClient::Run(file_id, behavior) => {
+                let behavior_tracker = behavior_trackers.get_mut(&file_id).unwrap();
+
+                let behavior_tree_entity = {
+                    if let Some(behavior_tree_entity) = behavior_tracker.entity {
+                        if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
+                            if let Some(root) = behavior_tree.root {
+                                commands.entity(root).despawn_recursive();
+                            }
+                        }
+                        behavior_tree_entity
+                    } else {
+                        let behavior_tree_entity =
+                            commands.spawn(Name::new(file_id.to_string())).id();
+                        behavior_tracker.entity = Some(behavior_tree_entity);
+                        behavior_tree_entity
+                    }
+                };
+
+                let mut behavior_tree = BehaviorTree::default();
+                let root = commands.spawn(BehaviorCursor::Delegate).id();
+                BehaviorTree::insert_tree::<DebugBehavior>(
+                    behavior_tree_entity,
+                    root,
+                    None,
+                    &mut commands,
+                    &behavior,
+                );
+                behavior_tree.root = Some(root);
+                commands
+                    .entity(behavior_tree_entity)
+                    .insert(behavior_tree)
+                    .add_child(root);
+                behavior_server
+                    .sender
+                    .send(BehaviorProtocolServer::Started(file_id))
+                    .unwrap();
+            }
+            BehaviorProtocolClient::Stop(file_id) => {
+                let behavior_tracker = behavior_trackers.get_mut(&file_id).unwrap();
+                if let Some(behavior_tree_entity) = behavior_tracker.entity {
+                    if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
+                        if let Some(root) = behavior_tree.root {
+                            commands.entity(root).despawn_recursive();
+                        }
+                    }
+                    commands.entity(behavior_tree_entity).despawn_recursive();
+                }
+                behavior_tracker.entity = None;
+                behavior_server
+                    .sender
+                    .send(BehaviorProtocolServer::Stopped(file_id))
                     .unwrap();
             }
             _ => {

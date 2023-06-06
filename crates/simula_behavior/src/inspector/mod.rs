@@ -1,17 +1,17 @@
 use crate::{
     inspector::graph::{
-        BehaviorDataType, BehaviorEditorState, BehaviorGraphState, BehaviorNodeTemplate,
-        BehaviorNodeTemplates, BehaviorResponse,
+        BehaviorDataType, BehaviorEditorState, BehaviorGraphState, BehaviorNodeData,
+        BehaviorNodeTemplate, BehaviorNodeTemplates, BehaviorResponse, BehaviorValueType,
     },
     protocol::{
         BehaviorClient, BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
         BehaviorProtocolServer, BehaviorServer,
     },
-    BehaviorFactory, BehaviorType,
+    Behavior, BehaviorFactory, BehaviorType,
 };
 use bevy::{prelude::*, utils::HashMap};
 use crossbeam_channel::unbounded;
-use egui_node_graph::NodeResponse;
+use egui_node_graph::{Graph, NodeId, NodeResponse};
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 
@@ -50,11 +50,16 @@ where
 #[derive(Reflect, FromReflect, Clone, Copy)]
 enum BehaviorInspectorState {
     New,
-    Unloaded,
+    Editing,
+    Load,
     Loading,
-    Loaded,
-    Unsaved,
+    Save,
     Saving,
+    Run,
+    Starting,
+    Running,
+    Stop,
+    Stopping,
 }
 
 #[derive(Reflect, FromReflect, Clone)]
@@ -114,7 +119,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                 if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
                 } else {
                     if ui.add(egui::Button::new("💾 Save")).clicked() {
-                        behavior_inspector_item.state = BehaviorInspectorState::Unsaved;
+                        behavior_inspector_item.state = BehaviorInspectorState::Save;
                         warn!("Saving behavior {:?}", file_id);
                     }
                 }
@@ -171,9 +176,14 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
         .get(&selected_behavior)
         .and_then(|item| Some((item.name.clone(), item.state, item.entity))) else { return;};
     match inspector_item_state {
-        BehaviorInspectorState::Loaded => {}
-        BehaviorInspectorState::Unsaved => {}
+        BehaviorInspectorState::Editing => {}
+        BehaviorInspectorState::Save => {}
         BehaviorInspectorState::Saving => {}
+        BehaviorInspectorState::Run => {}
+        BehaviorInspectorState::Starting => {}
+        BehaviorInspectorState::Running => {}
+        BehaviorInspectorState::Stop => {}
+        BehaviorInspectorState::Stopping => {}
         _ => return,
     }
     let Some(entity) = entity else { return;};
@@ -221,14 +231,16 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
 
                         ui.add_space(20.0);
 
-                        if ui.add(egui::Button::new("⏵").frame(true)).clicked() {
-                            println!("Button clicked!");
+                        if let BehaviorInspectorState::Editing = inspector_item_state {
+                            if ui.add(egui::Button::new("⏵").frame(true)).clicked() {
+                                inspector_item.state = BehaviorInspectorState::Run;
+                            }
                         }
-                        if ui.add(egui::Button::new("⏸").frame(true)).clicked() {
-                            println!("Button clicked!");
-                        }
-                        if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
-                            println!("Button clicked!");
+
+                        if let BehaviorInspectorState::Running = inspector_item_state {
+                            if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
+                                inspector_item.state = BehaviorInspectorState::Stop;
+                            }
                         }
 
                         ui.style_mut().visuals.extreme_bg_color =
@@ -372,8 +384,8 @@ fn update<T>(
         if let Some(behavior_inspector_item) =
             behavior_inspector.behaviors.get_mut(&selected_behavior)
         {
-            // If selected behavior is unloaded, load it
-            if let BehaviorInspectorState::Unloaded = behavior_inspector_item.state {
+            // If selected behavior is load, load it
+            if let BehaviorInspectorState::Load = behavior_inspector_item.state {
                 info!("Loading behavior: {}", *selected_behavior);
                 behavior_inspector_item.state = BehaviorInspectorState::Loading;
                 behavior_client
@@ -393,34 +405,34 @@ fn update<T>(
                     .insert(BehaviorEditorState::<T>::default())
                     .id();
                 behavior_inspector_item.entity = Some(entity);
-                behavior_inspector_item.state = BehaviorInspectorState::Loaded;
+                behavior_inspector_item.state = BehaviorInspectorState::Editing;
             }
-            // if selected behavior is unsaved, save it
-            else if let BehaviorInspectorState::Unsaved = behavior_inspector_item.state {
+            // if selected behavior is save, save it
+            else if let BehaviorInspectorState::Save = behavior_inspector_item.state {
                 info!("Saving behavior: {}", *selected_behavior);
                 if let Some(entity) = behavior_inspector_item.entity {
                     behavior_inspector_item.state = BehaviorInspectorState::Saving;
-                    if let Ok(graph_state) = graphs.get(entity) {
+                    if let Ok(editor_state) = graphs.get(entity) {
                         if let Ok(file_data) = ron::ser::to_string_pretty(
-                            &graph_state,
+                            &editor_state,
                             ron::ser::PrettyConfig::default(),
                         ) {
                             info!("Saving behavior: {}", *behavior_inspector_item.name);
                             behavior_inspector_item.state = BehaviorInspectorState::Saving;
                             behavior_client
                                 .sender
-                                .send(BehaviorProtocolClient::SaveFile((
+                                .send(BehaviorProtocolClient::SaveFile(
                                     selected_behavior.clone(),
                                     behavior_inspector_item.name.clone(),
                                     BehaviorFileData(file_data),
-                                )))
+                                ))
                                 .unwrap();
                         } else {
                             error!(
                                 "Failed to serialize behavior: {}",
                                 *behavior_inspector_item.name
                             );
-                            behavior_inspector_item.state = BehaviorInspectorState::Loaded;
+                            behavior_inspector_item.state = BehaviorInspectorState::Editing;
                         };
                     } else {
                         error!(
@@ -433,6 +445,63 @@ fn update<T>(
                     error!("No entity for behavior: {}", *behavior_inspector_item.name);
                     behavior_inspector_item.state = BehaviorInspectorState::New;
                 }
+            }
+            // if selected behavior should run, run it
+            else if let BehaviorInspectorState::Run = behavior_inspector_item.state {
+                info!("Run behavior: {}", *selected_behavior);
+                if let Some(entity) = behavior_inspector_item.entity {
+                    if let Ok(editor_state) = graphs.get(entity) {
+                        for node in editor_state.graph.nodes.values() {
+                            if let BehaviorNodeTemplate::Root = &node.user_data.data {
+                                let root_child_id: Option<NodeId> = node
+                                    .outputs
+                                    .iter()
+                                    .filter_map(|(_, output_id)| {
+                                        editor_state
+                                            .graph
+                                            .connections
+                                            .iter()
+                                            .find(|(input_id, rhs_output_id)| {
+                                                output_id == *rhs_output_id
+                                                    && editor_state.graph.inputs[*input_id].typ
+                                                        == BehaviorDataType::Flow
+                                            })
+                                            .and_then(|(input_id, _)| {
+                                                Some(editor_state.graph.inputs[input_id].node)
+                                            })
+                                    })
+                                    .next();
+
+                                if let Some(root_child_id) = root_child_id {
+                                    let behavior =
+                                        graph_to_behavior(&editor_state.graph, root_child_id);
+                                    println!("behavior: {:#?}", behavior);
+                                    behavior_inspector_item.state =
+                                        BehaviorInspectorState::Starting;
+                                    behavior_client
+                                        .sender
+                                        .send(BehaviorProtocolClient::Run(
+                                            selected_behavior.clone(),
+                                            behavior,
+                                        ))
+                                        .unwrap();
+                                } else {
+                                    println!("No root child");
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            // if selected behavior should stop, stop it
+            else if let BehaviorInspectorState::Stop = behavior_inspector_item.state {
+                info!("Stop behavior: {}", *selected_behavior);
+                behavior_inspector_item.state = BehaviorInspectorState::Stopping;
+                behavior_client
+                    .sender
+                    .send(BehaviorProtocolClient::Stop(selected_behavior))
+                    .unwrap();
             }
         }
     }
@@ -448,7 +517,7 @@ fn update<T>(
                                 id: file_id.clone(),
                                 entity: None,
                                 name: file_name.clone(),
-                                state: BehaviorInspectorState::Unloaded,
+                                state: BehaviorInspectorState::Load,
                                 collapsed: false,
                             },
                         );
@@ -456,7 +525,7 @@ fn update<T>(
                 }
             }
             // Receive behavior data
-            BehaviorProtocolServer::File((file_id, file_data)) => {
+            BehaviorProtocolServer::File(file_id, file_data) => {
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
@@ -472,7 +541,7 @@ fn update<T>(
                             )
                             .id();
                         behavior_inspector_item.entity = Some(entity);
-                        behavior_inspector_item.state = BehaviorInspectorState::Loaded;
+                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
                 }
             }
@@ -482,8 +551,34 @@ fn update<T>(
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
                     if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
-                        behavior_inspector_item.state = BehaviorInspectorState::Loaded;
+                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
+                } else {
+                    error!("Unexpected file saved: {:?}", file_id);
+                }
+            }
+            // Behavior started
+            BehaviorProtocolServer::Started(file_id) => {
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    if let BehaviorInspectorState::Starting = behavior_inspector_item.state {
+                        behavior_inspector_item.state = BehaviorInspectorState::Running;
+                    }
+                } else {
+                    error!("Unexpected behavior started: {:?}", file_id);
+                }
+            }
+            // Behavior stopped
+            BehaviorProtocolServer::Stopped(file_id) => {
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    if let BehaviorInspectorState::Stopping = behavior_inspector_item.state {
+                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                    }
+                } else {
+                    error!("Unexpected behavior stopped: {:?}", file_id);
                 }
             }
             _ => {
@@ -522,4 +617,31 @@ fn close_button(ui: &mut egui::Ui, node_rect: egui::Rect) -> egui::Response {
         .line_segment([rect.right_top(), rect.left_bottom()], stroke);
 
     resp
+}
+
+// Recursively build behavior from graph
+fn graph_to_behavior<T>(
+    graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
+    node_id: NodeId,
+) -> Behavior<T>
+where
+    T: BehaviorFactory,
+{
+    let node: &egui_node_graph::Node<BehaviorNodeData<T>> = &graph.nodes[node_id];
+    let BehaviorNodeTemplate::Behavior(behavior) = &node.user_data.data else { panic!("Expected behavior node") };
+    let mut behavior = Behavior(node.user_data.name.clone(), behavior.clone(), vec![]);
+    for (_, output_id) in node.outputs.iter() {
+        let child_id = graph
+            .connections
+            .iter()
+            .find(|(input_id, rhs_output_id)| {
+                output_id == *rhs_output_id && graph.inputs[*input_id].typ == BehaviorDataType::Flow
+            })
+            .and_then(|(input_id, _)| Some(graph.inputs[input_id].node));
+        if let Some(child_id) = child_id {
+            let child = graph_to_behavior(graph, child_id);
+            behavior.2.push(child);
+        }
+    }
+    behavior
 }
