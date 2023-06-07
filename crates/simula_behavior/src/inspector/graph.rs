@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use bevy::{
-    prelude::{default, Color, Component, Deref, DerefMut, Entity},
+    prelude::{default, Color, Component, Deref, DerefMut},
     reflect::TypeRegistryArc,
 };
 use bevy_inspector_egui::{

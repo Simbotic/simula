@@ -1,4 +1,4 @@
-use crate::{inspector::graph::BehaviorEditorState, Behavior, BehaviorFactory};
+use crate::{Behavior, BehaviorFactory};
 use bevy::{prelude::*, utils::Uuid};
 use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Serialize};
@@ -58,5 +58,22 @@ pub enum BehaviorProtocolServer<T: BehaviorFactory> {
     FileSaved(BehaviorFileId),
     Started(BehaviorFileId),
     Stopped(BehaviorFileId),
-    _Phantom(std::marker::PhantomData<T>),
+    Telemetry(BehaviorFileId, BehaviorTelemetry<T>),
+}
+
+#[derive(Debug, Default)]
+pub struct BehaviorTelemetry<T: BehaviorFactory>(
+    pub BehaviorState,
+    pub Option<T>,
+    pub Vec<BehaviorTelemetry<T>>,
+);
+
+#[derive(Debug, Default)]
+pub enum BehaviorState {
+    #[default]
+    None,
+    Running,
+    Cursor,
+    Success,
+    Failure,
 }

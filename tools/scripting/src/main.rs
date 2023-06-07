@@ -1,28 +1,26 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
-    ecs::system::EntityCommands,
     prelude::*,
-    reflect::TypeUuid,
-    utils::HashMap,
+    // utils::HashMap,
     window::PresentMode,
 };
-use serde::{Deserialize, Serialize};
 use simula_action::ActionPlugin;
 use simula_behavior::{
     prelude::*,
-    protocol::{
-        BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
-        BehaviorProtocolServer, BehaviorServer,
-    },
 };
 use simula_camera::orbitcam::*;
 use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
-use simula_script::{script, Scope, ScriptPlugin};
+use simula_script::{Scope, ScriptPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::LinesPlugin,
 };
+use debug_behavior::DebugBehavior;
+use behavior_server::BehaviorServerPlugin;
+
+mod debug_behavior;
+mod behavior_server;
 
 fn main() {
     App::new()
@@ -60,243 +58,18 @@ fn main() {
         .add_system(behavior_loader::<DebugBehavior>)
         .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
         .register_type::<Subtree<DebugBehavior>>()
-        .insert_resource(BehaviorTrackers::default())
-        .add_startup_system(setup)
-        .add_system(update)
+        .add_plugin(BehaviorServerPlugin::<DebugBehavior>::default())
+        .add_startup_system(setup::<DebugBehavior>)
         .add_system(debug_info)
         .run();
 }
 
-#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
-#[uuid = "7CFA1742-7725-416C-B167-95DA01750E1C"]
-pub enum DebugBehavior {
-    Debug(Debug),
-    Selector(Selector),
-    Sequencer(Sequencer),
-    All(All),
-    Any(Any),
-    Repeater(Repeater),
-    Inverter(Inverter),
-    Succeeder(Succeeder),
-    Wait(Wait),
-    Delay(Delay),
-    Guard(Guard),
-    Timeout(Timeout),
-    Subtree(Subtree<DebugBehavior>), // Substrees are typed, this loads same tree type
-}
-
-impl Default for DebugBehavior {
-    fn default() -> Self {
-        Self::Debug(Debug::default())
-    }
-}
-
-impl BehaviorFactory for DebugBehavior {
-    fn insert(&self, commands: &mut EntityCommands) {
-        match self {
-            DebugBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::All(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Any(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Guard(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
-            DebugBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
-        }
-    }
-
-    fn label(&self) -> &str {
-        match self {
-            DebugBehavior::Debug(_) => <Debug as BehaviorInfo>::NAME,
-            DebugBehavior::Selector(_) => <Selector as BehaviorInfo>::NAME,
-            DebugBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::NAME,
-            DebugBehavior::All(_) => <All as BehaviorInfo>::NAME,
-            DebugBehavior::Any(_) => <Any as BehaviorInfo>::NAME,
-            DebugBehavior::Repeater(_) => <Repeater as BehaviorInfo>::NAME,
-            DebugBehavior::Inverter(_) => <Inverter as BehaviorInfo>::NAME,
-            DebugBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::NAME,
-            DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::NAME,
-            DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::NAME,
-            DebugBehavior::Guard(_) => <Guard as BehaviorInfo>::NAME,
-            DebugBehavior::Timeout(_) => <Timeout as BehaviorInfo>::NAME,
-            DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::NAME,
-        }
-    }
-
-    fn reflect(&self) -> &dyn Reflect {
-        match self {
-            DebugBehavior::Debug(data) => data,
-            DebugBehavior::Selector(data) => data,
-            DebugBehavior::Sequencer(data) => data,
-            DebugBehavior::All(data) => data,
-            DebugBehavior::Any(data) => data,
-            DebugBehavior::Repeater(data) => data,
-            DebugBehavior::Inverter(data) => data,
-            DebugBehavior::Succeeder(data) => data,
-            DebugBehavior::Wait(data) => data,
-            DebugBehavior::Delay(data) => data,
-            DebugBehavior::Guard(data) => data,
-            DebugBehavior::Timeout(data) => data,
-            DebugBehavior::Subtree(data) => data,
-        }
-    }
-
-    fn reflect_mut(&mut self) -> &mut dyn Reflect {
-        match self {
-            DebugBehavior::Debug(data) => data,
-            DebugBehavior::Selector(data) => data,
-            DebugBehavior::Sequencer(data) => data,
-            DebugBehavior::All(data) => data,
-            DebugBehavior::Any(data) => data,
-            DebugBehavior::Repeater(data) => data,
-            DebugBehavior::Inverter(data) => data,
-            DebugBehavior::Succeeder(data) => data,
-            DebugBehavior::Wait(data) => data,
-            DebugBehavior::Delay(data) => data,
-            DebugBehavior::Guard(data) => data,
-            DebugBehavior::Timeout(data) => data,
-            DebugBehavior::Subtree(data) => data,
-        }
-    }
-
-    fn typ(&self) -> BehaviorType {
-        match self {
-            DebugBehavior::Debug(_) => <Debug as BehaviorInfo>::TYPE,
-            DebugBehavior::Selector(_) => <Selector as BehaviorInfo>::TYPE,
-            DebugBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::TYPE,
-            DebugBehavior::All(_) => <All as BehaviorInfo>::TYPE,
-            DebugBehavior::Any(_) => <Any as BehaviorInfo>::TYPE,
-            DebugBehavior::Repeater(_) => <Repeater as BehaviorInfo>::TYPE,
-            DebugBehavior::Inverter(_) => <Inverter as BehaviorInfo>::TYPE,
-            DebugBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::TYPE,
-            DebugBehavior::Wait(_) => <Wait as BehaviorInfo>::TYPE,
-            DebugBehavior::Delay(_) => <Delay as BehaviorInfo>::TYPE,
-            DebugBehavior::Guard(_) => <Guard as BehaviorInfo>::TYPE,
-            DebugBehavior::Timeout(_) => <Timeout as BehaviorInfo>::TYPE,
-            DebugBehavior::Subtree(_) => <Subtree<DebugBehavior> as BehaviorInfo>::TYPE,
-        }
-    }
-
-    fn color(&self) -> Color {
-        match self {
-            DebugBehavior::Debug(_) => Color::hex("#235").unwrap(),
-            DebugBehavior::Selector(_) => Color::hex("#522").unwrap(),
-            DebugBehavior::Sequencer(_) => Color::hex("#252").unwrap(),
-            DebugBehavior::All(_) => Color::hex("#252").unwrap(),
-            DebugBehavior::Any(_) => Color::hex("#522").unwrap(),
-            DebugBehavior::Repeater(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Inverter(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Succeeder(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Wait(_) => Color::hex("#235").unwrap(),
-            DebugBehavior::Delay(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Guard(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Timeout(_) => Color::hex("#440").unwrap(),
-            DebugBehavior::Subtree(_) => Color::hex("#440").unwrap(),
-        }
-    }
-
-    fn categories(&self) -> Vec<&'static str> {
-        match self {
-            DebugBehavior::Debug(_) => vec![<Debug as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Selector(_) => vec![<Selector as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Sequencer(_) => vec![<Sequencer as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::All(_) => vec![<All as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Any(_) => vec![<Any as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Repeater(_) => vec![<Repeater as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Inverter(_) => vec![<Inverter as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Succeeder(_) => vec![<Succeeder as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Wait(_) => vec![<Wait as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Delay(_) => vec![<Delay as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Guard(_) => vec![<Guard as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
-            DebugBehavior::Subtree(_) => {
-                vec![<Subtree<DebugBehavior> as BehaviorInfo>::TYPE.as_ref()]
-            }
-        }
-    }
-
-    fn list() -> Vec<Self> {
-        vec![
-            DebugBehavior::Debug(Debug::default()),
-            DebugBehavior::Selector(Selector::default()),
-            DebugBehavior::Sequencer(Sequencer::default()),
-            DebugBehavior::All(All::default()),
-            DebugBehavior::Any(Any::default()),
-            DebugBehavior::Repeater(Repeater::default()),
-            DebugBehavior::Inverter(Inverter::default()),
-            DebugBehavior::Succeeder(Succeeder::default()),
-            DebugBehavior::Wait(Wait::default()),
-            DebugBehavior::Delay(Delay::default()),
-            DebugBehavior::Guard(Guard::default()),
-            DebugBehavior::Timeout(Timeout::default()),
-            DebugBehavior::Subtree(Subtree::<DebugBehavior>::default()),
-        ]
-    }
-}
-
-struct BehaviorTracker {
-    file_name: BehaviorFileName,
-    entity: Option<Entity>,
-}
-
-#[derive(Default, Resource, Deref, DerefMut)]
-struct BehaviorTrackers(HashMap<BehaviorFileId, BehaviorTracker>);
-
-fn setup(
+fn setup<T: BehaviorFactory>(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut behavior_trackers: ResMut<BehaviorTrackers>,
-    behavior_server: Res<BehaviorServer<DebugBehavior>>,
-    mut scopes: ResMut<Assets<Scope>>,
-    type_registry: Res<AppTypeRegistry>,
+    mut _scopes: ResMut<Assets<Scope>>,
+    _type_registry: Res<AppTypeRegistry>,
 ) {
-    let dir_path = "assets/inspector";
-
-    // Read the directory and handle any errors
-    let paths = match std::fs::read_dir(dir_path) {
-        Ok(paths) => paths,
-        Err(err) => {
-            eprintln!("Error reading directory: {}", err);
-            return;
-        }
-    };
-
-    // Iterate over the directory entries
-    for path in paths {
-        if let Ok(entry) = path {
-            // Check if the entry is a file with the desired extension
-            if entry.file_type().unwrap().is_file() {
-                if let Some(file_name) = entry.file_name().to_str() {
-                    if file_name.ends_with(".bht.ron") {
-                        let file_name = file_name.trim_end_matches(".bht.ron");
-                        behavior_trackers.insert(
-                            BehaviorFileId::new(),
-                            BehaviorTracker {
-                                file_name: BehaviorFileName(file_name.to_owned()),
-                                entity: None,
-                            },
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    behavior_server
-        .sender
-        .send(BehaviorProtocolServer::FileNames(
-            behavior_trackers
-                .iter()
-                .map(|(tracker_id, tracker)| (tracker_id.clone(), tracker.file_name.clone()))
-                .collect(),
-        ))
-        .unwrap();
-
     // // load debug behaviors
     // let behaviors = [
     //     "debug_delay",
@@ -427,110 +200,6 @@ fn setup(
         },
         ..Default::default()
     });
-}
-
-fn update(
-    mut commands: Commands,
-    mut behavior_trees: Query<&mut BehaviorTree>,
-    asset_server: Res<AssetServer>,
-    mut behavior_trackers: ResMut<BehaviorTrackers>,
-    behavior_server: Res<protocol::BehaviorServer<DebugBehavior>>,
-    mut scopes: ResMut<Assets<Scope>>,
-    type_registry: Res<AppTypeRegistry>,
-) {
-    if let Ok(client_msg) = behavior_server.receiver.try_recv() {
-        match client_msg {
-            BehaviorProtocolClient::LoadFile(file_id) => {
-                let file_name = behavior_trackers[&file_id].file_name.clone();
-                let dir_path = "assets/inspector";
-                let file_ext = "bht.ron";
-                let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
-                let file_data = std::fs::read_to_string(file_path).unwrap();
-                behavior_server
-                    .sender
-                    .send(BehaviorProtocolServer::File(
-                        file_id,
-                        BehaviorFileData(file_data.clone()),
-                    ))
-                    .unwrap();
-            }
-            BehaviorProtocolClient::SaveFile(file_id, file_name, file_data) => {
-                behavior_trackers.insert(
-                    file_id.clone(),
-                    BehaviorTracker {
-                        file_name: file_name.clone(),
-                        entity: None,
-                    },
-                );
-                let dir_path = "assets/inspector";
-                let file_ext = "bht.ron";
-                let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
-                std::fs::write(&file_path, file_data.0).unwrap();
-                info!("Saved file: {}", &file_path);
-                behavior_server
-                    .sender
-                    .send(BehaviorProtocolServer::FileSaved(file_id))
-                    .unwrap();
-            }
-            BehaviorProtocolClient::Run(file_id, behavior) => {
-                let behavior_tracker = behavior_trackers.get_mut(&file_id).unwrap();
-
-                let behavior_tree_entity = {
-                    if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                        if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
-                            if let Some(root) = behavior_tree.root {
-                                commands.entity(root).despawn_recursive();
-                            }
-                        }
-                        behavior_tree_entity
-                    } else {
-                        let behavior_tree_entity =
-                            commands.spawn(Name::new(file_id.to_string())).id();
-                        behavior_tracker.entity = Some(behavior_tree_entity);
-                        behavior_tree_entity
-                    }
-                };
-
-                let mut behavior_tree = BehaviorTree::default();
-                let root = commands.spawn(BehaviorCursor::Delegate).id();
-                BehaviorTree::insert_tree::<DebugBehavior>(
-                    behavior_tree_entity,
-                    root,
-                    None,
-                    &mut commands,
-                    &behavior,
-                );
-                behavior_tree.root = Some(root);
-                commands
-                    .entity(behavior_tree_entity)
-                    .insert(behavior_tree)
-                    .add_child(root);
-                behavior_server
-                    .sender
-                    .send(BehaviorProtocolServer::Started(file_id))
-                    .unwrap();
-            }
-            BehaviorProtocolClient::Stop(file_id) => {
-                let behavior_tracker = behavior_trackers.get_mut(&file_id).unwrap();
-                if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                    if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
-                        if let Some(root) = behavior_tree.root {
-                            commands.entity(root).despawn_recursive();
-                        }
-                    }
-                    commands.entity(behavior_tree_entity).despawn_recursive();
-                }
-                behavior_tracker.entity = None;
-                behavior_server
-                    .sender
-                    .send(BehaviorProtocolServer::Stopped(file_id))
-                    .unwrap();
-            }
-            _ => {
-                panic!("unexpected message")
-            }
-        }
-    }
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

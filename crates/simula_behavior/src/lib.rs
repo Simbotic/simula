@@ -1,13 +1,16 @@
 use actions::*;
 use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
-use bevy::{ecs::query::WorldQuery, ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
+use bevy::{
+    ecs::{query::WorldQuery, system::EntityCommands},
+    prelude::*,
+    reflect::TypeUuid,
+};
 use composites::*;
 use decorators::*;
 use strum::AsRefStr;
 
 pub mod actions;
 pub mod asset;
-pub mod color_hex_utils;
 pub mod composites;
 pub mod decorators;
 pub mod inspector;
@@ -25,9 +28,9 @@ pub mod prelude {
     pub use crate::protocol::{self};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorNode,
-        BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning, BehaviorSuccess,
-        BehaviorTree, BehaviorType,
+        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
+        BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
+        BehaviorSuccess, BehaviorTree, BehaviorType,
     };
 }
 
@@ -66,6 +69,8 @@ where
     }
 }
 
+pub struct BehaviorMissing;
+
 /// How to spawn a behavior node
 pub trait BehaviorFactory:
     Clone + Default + TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug
@@ -90,6 +95,10 @@ pub trait BehaviorFactory:
 
     fn reflect_mut(&mut self) -> &mut dyn Reflect {
         panic!("BehaviorFactory::data() not implemented")
+    }
+
+    fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing> {
+        panic!("BehaviorFactory::component_mut() not implemented")
     }
 
     fn categories(&self) -> Vec<&'static str> {
