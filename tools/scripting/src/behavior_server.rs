@@ -137,20 +137,23 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
                 }
             }
         }
-        for (_file_id, entity, behavior) in tracks {
+        for (file_id, entity, behavior) in tracks {
             if let Some(behavior_tree) = world.get::<BehaviorTree>(entity) {
                 if let Some(root) = behavior_tree.root {
                     let mut telemetry = BehaviorTelemetry::<T>::default();
                     if build_telemetry(world, root, &mut telemetry, &behavior).is_ok() {
-                        println!("telemetry: {:#?}", telemetry);
+                        let behavior_server = world.get_resource::<BehaviorServer<T>>().unwrap();
+                        behavior_server
+                            .sender
+                            .send(BehaviorProtocolServer::Telemetry(file_id, telemetry))
+                            .unwrap();
                     } else {
                         error!("Failed to build telemetry");
                     }
                 }
             }
         }
-    }
-    else {
+    } else {
         error!("Failed to get behavior trackers");
     }
 }
@@ -159,7 +162,7 @@ fn update<T: BehaviorFactory>(
     mut commands: Commands,
     behavior_trees: Query<&BehaviorTree>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
-    behavior_server: Res<protocol::BehaviorServer<T>>,
+    behavior_server: Res<BehaviorServer<T>>,
 ) {
     if let Ok(client_msg) = behavior_server.receiver.try_recv() {
         match client_msg {

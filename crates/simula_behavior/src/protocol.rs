@@ -68,7 +68,7 @@ pub struct BehaviorTelemetry<T: BehaviorFactory>(
     pub Vec<BehaviorTelemetry<T>>,
 );
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum BehaviorState {
     #[default]
     None,

@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{prelude::*, protocol::BehaviorState};
 use bevy::{
     prelude::{default, Color, Component, Deref, DerefMut},
     reflect::TypeRegistryArc,
@@ -21,6 +21,8 @@ use std::borrow::Cow;
 pub struct BehaviorNodeData<T: BehaviorFactory> {
     pub name: String,
     pub data: BehaviorNodeTemplate<T>,
+    #[serde(skip)]
+    pub state: Option<BehaviorState>,
 }
 
 /// `DataType`s are what defines the possible range of connections when
@@ -138,6 +140,7 @@ where
         BehaviorNodeData {
             name: "".into(),
             data: self.clone(),
+            state: None,
         }
     }
 
@@ -292,16 +295,27 @@ where
     {
         let mut responses = vec![];
 
-        let r = 3.0;
-        let size = egui::Vec2::splat(2.0 * r + 5.0);
-        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
-        ui.painter()
-            .circle_filled(rect.center(), r, egui::Color32::RED);
-
         match &self.data {
-            BehaviorNodeTemplate::Root => {}
+            BehaviorNodeTemplate::Root => {
+                ui.label("Root");
+            }
             BehaviorNodeTemplate::Behavior(_behavior) => {
                 if let Some(node) = graph.nodes.get(node_id) {
+                    // Draw circle state
+                    if let Some(state) = node.user_data.state {
+                        let color = match state {
+                            BehaviorState::Cursor => egui::Color32::GREEN,
+                            BehaviorState::Running => egui::Color32::YELLOW,
+                            BehaviorState::Success => egui::Color32::DARK_GREEN,
+                            BehaviorState::Failure => egui::Color32::RED,
+                            _ => egui::Color32::GRAY,
+                        };
+                        let r = 3.0;
+                        let size = egui::Vec2::splat(2.0 * r + 5.0);
+                        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
+                        ui.painter().circle_filled(rect.center(), r, color);
+                    }
+
                     match user_state.active_node {
                         Some(active_node_id) if active_node_id == node_id => {
                             let mut name = node.user_data.name.clone();

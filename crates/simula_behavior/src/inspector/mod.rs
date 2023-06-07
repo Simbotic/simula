@@ -5,7 +5,7 @@ use crate::{
     },
     protocol::{
         BehaviorClient, BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
-        BehaviorProtocolServer, BehaviorServer,
+        BehaviorProtocolServer, BehaviorServer, BehaviorTelemetry,
     },
     Behavior, BehaviorFactory, BehaviorType,
 };
@@ -376,7 +376,7 @@ fn update<T>(
     type_registry: Res<AppTypeRegistry>,
     mut behavior_inspector: ResMut<BehaviorInspector>,
     behavior_client: Res<BehaviorClient<T>>,
-    graphs: Query<&BehaviorEditorState<T>>,
+    mut graphs: Query<&mut BehaviorEditorState<T>>,
 ) where
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
 {
@@ -453,6 +453,7 @@ fn update<T>(
                     if let Ok(editor_state) = graphs.get(entity) {
                         for node in editor_state.graph.nodes.values() {
                             if let BehaviorNodeTemplate::Root = &node.user_data.data {
+                                // All this just to get first child of root node
                                 let root_child_id: Option<NodeId> = node
                                     .outputs
                                     .iter()
@@ -471,7 +472,6 @@ fn update<T>(
                                             })
                                     })
                                     .next();
-
                                 if let Some(root_child_id) = root_child_id {
                                     let behavior =
                                         graph_to_behavior(&editor_state.graph, root_child_id);
@@ -581,6 +581,61 @@ fn update<T>(
                     error!("Unexpected behavior stopped: {:?}", file_id);
                 }
             }
+            // Behavior telemetry
+            BehaviorProtocolServer::Telemetry(file_id, telemetry) => {
+                // println!("received telemetry: {:#?}", telemetry);
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    if let BehaviorInspectorState::Running = behavior_inspector_item.state {
+                        if let Some(entity) = behavior_inspector_item.entity {
+                            // All this just to get first child of root node
+                            let mut root_child_id: Option<NodeId> = None;
+                            if let Ok(mut editor_state) = graphs.get_mut(entity) {
+                                for node in editor_state.graph.nodes.values() {
+                                    if let BehaviorNodeTemplate::Root = &node.user_data.data {
+                                        root_child_id = node
+                                            .outputs
+                                            .iter()
+                                            .filter_map(|(_, output_id)| {
+                                                editor_state
+                                                    .graph
+                                                    .connections
+                                                    .iter()
+                                                    .find(|(input_id, rhs_output_id)| {
+                                                        output_id == *rhs_output_id
+                                                            && editor_state.graph.inputs[*input_id]
+                                                                .typ
+                                                                == BehaviorDataType::Flow
+                                                    })
+                                                    .and_then(|(input_id, _)| {
+                                                        Some(
+                                                            editor_state.graph.inputs[input_id]
+                                                                .node,
+                                                        )
+                                                    })
+                                            })
+                                            .next();
+                                        break;
+                                    }
+                                }
+                                if let Some(root_child_id) = root_child_id {
+                                    behavior_to_graph(
+                                        &mut editor_state.graph,
+                                        root_child_id,
+                                        &telemetry,
+                                    );
+                                    graph_to_behavior(&mut editor_state.graph, root_child_id);
+                                } else {
+                                    error!("No root child");
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    error!("Unexpected behavior telemetry: {:?}", file_id);
+                }
+            }
             _ => {
                 panic!("Unexpected message from server");
             }
@@ -644,4 +699,43 @@ where
         }
     }
     behavior
+}
+
+// Recursively update graph from behavior
+fn behavior_to_graph<T>(
+    graph: &mut Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
+    node_id: NodeId,
+    telemetry: &BehaviorTelemetry<T>,
+) where
+    T: BehaviorFactory,
+{
+    // Update graph node with behavior telemetry
+    let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
+    if let BehaviorTelemetry(state, Some(behavior), _) = telemetry {
+        node.user_data.data = BehaviorNodeTemplate::Behavior(behavior.clone());
+        node.user_data.state = Some(*state);
+    }
+
+    // Get node children
+    let node_children: Vec<NodeId> = node
+        .outputs
+        .iter()
+        .filter_map(|(_, output_id)| {
+            graph
+                .connections
+                .iter()
+                .find(|(input_id, rhs_output_id)| {
+                    output_id == *rhs_output_id
+                        && graph.inputs[*input_id].typ == BehaviorDataType::Flow
+                })
+                .and_then(|(input_id, _)| Some(graph.inputs[input_id].node))
+        })
+        .collect();
+
+    // Zip and iterate over children
+    let node_children = node_children.iter().cloned();
+    let telemetry_children = telemetry.2.iter();
+    for (node_child, behavior_child) in node_children.zip(telemetry_children) {
+        behavior_to_graph(graph, node_child, behavior_child);
+    }
 }
