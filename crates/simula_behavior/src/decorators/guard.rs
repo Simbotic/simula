@@ -2,11 +2,12 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use simula_script::{Scope, Script};
+use std::borrow::Cow;
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub enum Source {
-    Asset(String),
-    Inline(String),
+    Asset(Cow<'static, str>),
+    Inline(Cow<'static, str>),
 }
 
 /// Guard evals a script to control the flow of execution. If the script returns
@@ -59,7 +60,7 @@ pub fn run(
 
         if script_handle.is_none() {
             let script_handle = match &gate.script {
-                Source::Asset(path) => asset_server.load(path),
+                Source::Asset(path) => asset_server.load(path.as_ref()),
                 Source::Inline(script) => {
                     let script_asset = Script::from_str(script);
                     match script_asset {

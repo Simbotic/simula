@@ -1,13 +1,13 @@
+use behavior_server::BehaviorServerPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
     // utils::HashMap,
     window::PresentMode,
 };
+use debug_behavior::DebugBehavior;
 use simula_action::ActionPlugin;
-use simula_behavior::{
-    prelude::*,
-};
+use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
 use simula_script::{Scope, ScriptPlugin};
@@ -16,11 +16,9 @@ use simula_viz::{
     grid::{Grid, GridBundle, GridPlugin},
     lines::LinesPlugin,
 };
-use debug_behavior::DebugBehavior;
-use behavior_server::BehaviorServerPlugin;
 
-mod debug_behavior;
 mod behavior_server;
+mod debug_behavior;
 
 fn main() {
     App::new()

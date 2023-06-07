@@ -152,6 +152,7 @@ where
     ) {
         match self {
             BehaviorNodeTemplate::Root => {
+                println!("Building root node");
                 graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
             }
             BehaviorNodeTemplate::Behavior(behavior) => match behavior.typ() {
@@ -212,7 +213,7 @@ where
             .into_iter()
             .map(|t| BehaviorNodeTemplate::Behavior(t))
             .collect();
-        kinds.extend(vec![BehaviorNodeTemplate::Root]);
+        // kinds.extend(vec![BehaviorNodeTemplate::Root]);
         kinds
     }
 }
@@ -269,6 +270,18 @@ where
     type UserState = BehaviorGraphState;
     type DataType = BehaviorDataType;
     type ValueType = BehaviorValueType<T>;
+
+    fn can_delete(
+        &self,
+        _node_id: NodeId,
+        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
+        _user_state: &mut Self::UserState,
+    ) -> bool {
+        match &self.data {
+            BehaviorNodeTemplate::Root => false,
+            BehaviorNodeTemplate::Behavior(_) => true,
+        }
+    }
 
     fn titlebar_color(
         &self,
@@ -389,7 +402,6 @@ where
                     // Small behavior label
                     let label =
                         egui::RichText::new(behavior.label()).color(egui::Color32::DARK_GRAY);
-                    // .small();
                     egui::Label::new(label).ui(ui);
 
                     // Reflect behavior properties

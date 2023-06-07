@@ -48,7 +48,7 @@ fn menu_ui(ui: &mut egui::Ui, world: &mut World) {
                 InspectorType::Assets,
             ];
             for selectable_behavior in selectable_behaviors {
-                ui.allocate_ui(egui::vec2(200.0, 10.0), |ui| {
+                ui.allocate_ui(egui::vec2(200.0, 1.0), |ui| {
                     if ui
                         .selectable_label(
                             world_inspector.selected == selectable_behavior,

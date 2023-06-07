@@ -11,7 +11,7 @@ use crate::{
 };
 use bevy::{prelude::*, utils::HashMap};
 use crossbeam_channel::unbounded;
-use egui_node_graph::{Graph, NodeId, NodeResponse};
+use egui_node_graph::{Graph, NodeId, NodeResponse, NodeTemplateTrait};
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 
@@ -148,7 +148,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             };
             selectable_behaviors.insert(0, None);
             for selectable_behavior in selectable_behaviors {
-                ui.allocate_ui(egui::vec2(200.0, 10.0), |ui| {
+                ui.allocate_ui(egui::vec2(200.0, 1.0), |ui| {
                     if ui
                         .selectable_label(
                             behavior_inspector.selected == selectable_behavior,
@@ -243,8 +243,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                             }
                         }
 
-                        ui.style_mut().visuals.extreme_bg_color =
-                    egui::Color32::from_rgba_premultiplied(0, 0, 0, 100);
+                        ui.style_mut().visuals.extreme_bg_color = egui::Color32::from_rgba_premultiplied(0, 0, 0, 100);
                         if ui.add(egui::TextEdit::singleline(&mut window_name).desired_width(50.0).clip_text(false)).changed() {
                             inspector_item.name = BehaviorFileName(window_name.clone().into());
                         }
@@ -396,13 +395,35 @@ fn update<T>(
             // if selected behavior is new, create it
             else if let BehaviorInspectorState::New = behavior_inspector_item.state {
                 info!("Creating behavior: {}", *selected_behavior);
+
+                let mut graph_state = BehaviorGraphState {
+                    type_registry: type_registry.0.clone(),
+                    ..Default::default()
+                };
+                let mut editor_state = BehaviorEditorState::<T>::default();
+
+                let root_node_data = BehaviorNodeData {
+                    name: "Root".into(),
+                    data: BehaviorNodeTemplate::Root,
+                    state: None,
+                };
+
+                let root_node =
+                    editor_state
+                        .graph
+                        .add_node("Root".into(), root_node_data, |graph, node_id| {
+                            BehaviorNodeTemplate::Root.build_node(graph, &mut graph_state, node_id)
+                        });
+
+                editor_state
+                    .node_positions
+                    .insert(root_node, egui::Pos2::new(0.0, 0.0));
+                editor_state.node_order.push(root_node);
+
                 let entity = commands
                     .spawn(Name::new(format!("BT: {}", *selected_behavior)))
-                    .insert(BehaviorGraphState {
-                        type_registry: type_registry.0.clone(),
-                        ..Default::default()
-                    })
-                    .insert(BehaviorEditorState::<T>::default())
+                    .insert(graph_state)
+                    .insert(editor_state)
                     .id();
                 behavior_inspector_item.entity = Some(entity);
                 behavior_inspector_item.state = BehaviorInspectorState::Editing;

@@ -2,12 +2,13 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 #[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, InspectorOptions)]
 #[reflect(InspectorOptions)]
 pub struct Debug {
     #[serde(default)]
-    pub message: String,
+    pub message: Cow<'static, str>,
     #[serde(default)]
     pub fail: bool,
     #[serde(default)]
