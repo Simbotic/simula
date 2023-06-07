@@ -15,6 +15,7 @@ pub mod composites;
 pub mod decorators;
 pub mod inspector;
 pub mod protocol;
+pub mod server;
 pub mod test;
 
 pub mod prelude {
@@ -26,6 +27,7 @@ pub mod prelude {
     pub use crate::decorators::*;
     pub use crate::inspector::BehaviorInspectorPlugin;
     pub use crate::protocol::{self};
+    pub use crate::server::BehaviorServerPlugin;
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,

@@ -1,4 +1,3 @@
-use behavior_server::BehaviorServerPlugin;
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
@@ -17,7 +16,6 @@ use simula_viz::{
     lines::LinesPlugin,
 };
 
-mod behavior_server;
 mod debug_behavior;
 
 fn main() {

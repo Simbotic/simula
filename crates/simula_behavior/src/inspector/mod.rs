@@ -759,3 +759,22 @@ fn behavior_to_graph<T>(
         behavior_to_graph(graph, node_child, behavior_child);
     }
 }
+
+// For use with world.get_entity_component_reflect
+fn _components_of_entity(
+    world: &mut World,
+    entity: Entity,
+) -> Vec<(String, bevy::ecs::component::ComponentId, core::any::TypeId)> {
+    let entity_ref = world.get_entity(entity).unwrap();
+    let archetype = entity_ref.archetype();
+    let mut components: Vec<_> = archetype
+        .components()
+        .filter_map(|component_id| {
+            let info = world.components().get_info(component_id).unwrap();
+            let name = pretty_type_name::pretty_type_name_str(info.name());
+            Some((name, component_id, info.type_id().unwrap()))
+        })
+        .collect();
+    components.sort_by(|(name_a, ..), (name_b, ..)| name_a.cmp(name_b));
+    components
+}

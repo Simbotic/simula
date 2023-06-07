@@ -1,11 +1,11 @@
-use bevy::{prelude::*, utils::HashMap};
-use simula_behavior::{
+use crate::{
     prelude::*,
     protocol::{
         BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
         BehaviorProtocolServer, BehaviorServer, BehaviorState, BehaviorTelemetry,
     },
 };
+use bevy::{prelude::*, utils::HashMap};
 
 #[derive(Default)]
 pub struct BehaviorServerPlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T>);
