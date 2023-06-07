@@ -343,7 +343,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                     }
                                     NodeResponse::User(BehaviorResponse::NameEdited(node_id, name)) => {
                                         if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                            node.user_data.name = name;
+                                            node.label = name;
                                         }
                                     }
                                     _ => {}
@@ -403,7 +403,6 @@ fn update<T>(
                 let mut editor_state = BehaviorEditorState::<T>::default();
 
                 let root_node_data = BehaviorNodeData {
-                    name: "Root".into(),
                     data: BehaviorNodeTemplate::Root,
                     state: None,
                 };
@@ -705,7 +704,7 @@ where
 {
     let node: &egui_node_graph::Node<BehaviorNodeData<T>> = &graph.nodes[node_id];
     let BehaviorNodeTemplate::Behavior(behavior) = &node.user_data.data else { panic!("Expected behavior node") };
-    let mut behavior = Behavior(node.user_data.name.clone(), behavior.clone(), vec![]);
+    let mut behavior = Behavior(node.label.clone(), behavior.clone(), vec![]);
     for (_, output_id) in node.outputs.iter() {
         let child_id = graph
             .connections

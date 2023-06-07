@@ -19,7 +19,6 @@ use std::borrow::Cow;
 /// example, the node data stores the template (i.e. the "type") of the node.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BehaviorNodeData<T: BehaviorFactory> {
-    pub name: String,
     pub data: BehaviorNodeTemplate<T>,
     #[serde(skip)]
     pub state: Option<BehaviorState>,
@@ -138,7 +137,6 @@ where
 
     fn user_data(&self, _user_state: &mut Self::UserState) -> Self::NodeData {
         BehaviorNodeData {
-            name: "".into(),
             data: self.clone(),
             state: None,
         }
@@ -209,10 +207,11 @@ where
         // This function must return a list of node kinds, which the node finder
         // will use to display it to the user. Crates like strum can reduce the
         // boilerplate in enumerating all variants of an enum.
-        let mut kinds: Vec<BehaviorNodeTemplate<T>> = T::list()
+        let kinds: Vec<BehaviorNodeTemplate<T>> = T::list()
             .into_iter()
             .map(|t| BehaviorNodeTemplate::Behavior(t))
             .collect();
+        // Do not add Root node to kinds
         // kinds.extend(vec![BehaviorNodeTemplate::Root]);
         kinds
     }
@@ -331,7 +330,7 @@ where
 
                     match user_state.active_node {
                         Some(active_node_id) if active_node_id == node_id => {
-                            let mut name = node.user_data.name.clone();
+                            let mut name = node.label.clone();
                             ui.style_mut().visuals.extreme_bg_color =
                                 egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
                             if egui::TextEdit::singleline(&mut name)
@@ -347,7 +346,7 @@ where
                             }
                         }
                         _ => {
-                            ui.label(&node.user_data.name);
+                            ui.label(&node.label);
                         }
                     }
                 }

@@ -20,9 +20,7 @@
                         )),
                     ],
                     user_data: (
-                        name: "",
                         data: Root,
-                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -33,7 +31,7 @@
                         idx: 2,
                         version: 1,
                     ),
-                    label: "👁 Debug",
+                    label: "👁 Maybe something else",
                     inputs: [
                         ("A", (
                             idx: 1,
@@ -42,13 +40,11 @@
                     ],
                     outputs: [],
                     user_data: (
-                        name: "debug_a",
                         data: Behavior(Debug((
                             message: "a",
                             fail: true,
                             duration: 0.0,
                         ))),
-                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -81,11 +77,9 @@
                         )),
                     ],
                     user_data: (
-                        name: "selector_a",
                         data: Behavior(Selector((
                             random: true,
                         ))),
-                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -118,11 +112,9 @@
                         )),
                     ],
                     user_data: (
-                        name: "",
                         data: Behavior(Sequencer((
                             random: false,
                         ))),
-                        entity: None,
                     ),
                 )),
                 version: 3,
@@ -142,13 +134,11 @@
                     ],
                     outputs: [],
                     user_data: (
-                        name: "debug_b",
                         data: Behavior(Debug((
                             message: "b",
                             fail: false,
                             duration: 0.0,
                         ))),
-                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -378,11 +368,11 @@
             version: 3,
         ),
         (
-            idx: 2,
+            idx: 5,
             version: 1,
         ),
         (
-            idx: 5,
+            idx: 2,
             version: 1,
         ),
     ],
