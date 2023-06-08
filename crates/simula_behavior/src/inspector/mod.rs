@@ -623,7 +623,8 @@ fn update<T>(
                                         ))
                                         .unwrap();
                                 } else {
-                                    println!("No root child");
+                                    error!("No root child");
+                                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
                                 }
                                 break;
                             }

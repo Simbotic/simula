@@ -103,7 +103,7 @@ where
         UserState = UserState,
         CategoryType = CategoryType,
     >,
-    DataType: DataTypeTrait<UserState>,
+    DataType: DataTypeTrait<NodeData, DataType, ValueType, UserState>,
     CategoryType: CategoryTrait,
 {
     #[must_use]
@@ -217,16 +217,16 @@ where
         }
 
         /* Draw connections */
-        if let Some((_, ref locator)) = self.connection_in_progress {
+        if let Some((node_id, ref locator)) = self.connection_in_progress {
             let port_type = self.graph.any_param_type(*locator).unwrap();
-            let connection_color = port_type.data_type_color(user_state);
+            let connection_color = port_type.data_type_color(node_id, &self.graph, user_state);
             let start_pos = port_locations[locator];
 
             // Find a port to connect to
             fn snap_to_ports<
                 NodeData,
                 UserState,
-                DataType: DataTypeTrait<UserState>,
+                DataType: DataTypeTrait<NodeData, DataType, ValueType, UserState>,
                 ValueType,
                 Key: slotmap::Key + Into<AnyParameterId>,
                 Value,
@@ -290,7 +290,8 @@ where
                 .graph
                 .any_param_type(AnyParameterId::Output(output))
                 .unwrap();
-            let connection_color = port_type.data_type_color(user_state);
+            let node_id = self.graph.inputs[input].node;
+            let connection_color = port_type.data_type_color(node_id, &self.graph, user_state);
             let src_pos = port_locations[&AnyParameterId::Output(output)];
             let dst_pos = port_locations[&AnyParameterId::Input(input)];
             draw_connection(ui.painter(), src_pos, dst_pos, connection_color);
@@ -445,7 +446,7 @@ where
 }
 
 fn draw_connection(painter: &Painter, src_pos: Pos2, dst_pos: Pos2, color: Color32) {
-    let connection_stroke = egui::Stroke { width: 5.0, color };
+    let connection_stroke = egui::Stroke { width: 1.0, color };
 
     let control_scale = ((dst_pos.x - src_pos.x) / 2.0).max(30.0);
     let src_control = src_pos + Vec2::X * control_scale;
@@ -476,7 +477,7 @@ where
     UserResponse: UserResponseTrait,
     ValueType:
         WidgetValueTrait<Response = UserResponse, UserState = UserState, NodeData = NodeData>,
-    DataType: DataTypeTrait<UserState>,
+    DataType: DataTypeTrait<NodeData, DataType, ValueType, UserState>,
 {
     pub const MAX_NODE_SIZE: [f32; 2] = [200.0, 200.0];
 
@@ -694,7 +695,7 @@ where
             ongoing_drag: Option<(NodeId, AnyParameterId)>,
             is_connected_input: bool,
         ) where
-            DataType: DataTypeTrait<UserState>,
+            DataType: DataTypeTrait<NodeData, DataType, ValueType, UserState>,
             UserResponse: UserResponseTrait,
             NodeData: NodeDataTrait,
         {
@@ -717,13 +718,27 @@ where
                 false
             };
 
-            let port_color = if close_enough {
-                Color32::WHITE
+            let mut port_color = Color32::DARK_GRAY;
+
+            if close_enough {
+                port_color = Color32::WHITE;
             } else {
-                port_type.data_type_color(user_state)
-            };
+                if let AnyParameterId::Input(_) = param_id {
+                    port_color = port_type.data_type_color(node_id, &graph, user_state);
+                } else if let AnyParameterId::Output(output) = param_id {
+                    // Find the input that corresponds to this output and use its color
+                    if let Some(node_id) = graph
+                        .connections.iter().find_map(|(input, &other_output)| if other_output == output {
+                            let node_id = graph.inputs[input].node;
+                            Some(node_id)
+                        } else { None}) {
+                            port_color = port_type.data_type_color(node_id, &graph, user_state);
+                        }                    
+                }
+            }
+
             ui.painter()
-                .circle(port_rect.center(), 5.0, port_color, Stroke::NONE);
+                .circle(port_rect.center(), 4.0, port_color, Stroke::NONE);
 
             if resp.drag_started() {
                 if is_connected_input {

@@ -396,19 +396,7 @@
     ),
     node_order: [
         (
-            idx: 5,
-            version: 1,
-        ),
-        (
-            idx: 4,
-            version: 3,
-        ),
-        (
             idx: 6,
-            version: 1,
-        ),
-        (
-            idx: 2,
             version: 1,
         ),
         (
@@ -418,6 +406,18 @@
         (
             idx: 3,
             version: 3,
+        ),
+        (
+            idx: 4,
+            version: 3,
+        ),
+        (
+            idx: 2,
+            version: 1,
+        ),
+        (
+            idx: 5,
+            version: 1,
         ),
     ],
     connection_in_progress: None,
@@ -437,36 +437,36 @@
         ),
         (
             value: Some((
-                x: 579.3711,
-                y: 55.535156,
+                x: 347.61673,
+                y: 1.0742798,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 585.96484,
-                y: 476.0078,
+                x: 352.69818,
+                y: 428.94043,
             )),
             version: 3,
         ),
         (
             value: Some((
-                x: 279.41797,
-                y: 247.77344,
+                x: 125.75842,
+                y: -0.005126953,
             )),
             version: 3,
         ),
         (
             value: Some((
-                x: 583.5703,
-                y: 205.57813,
+                x: 350.30365,
+                y: 158.51074,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 583.90625,
-                y: 363.70703,
+                x: 350.6396,
+                y: 316.63965,
             )),
             version: 1,
         ),

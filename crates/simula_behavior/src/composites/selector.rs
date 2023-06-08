@@ -67,7 +67,9 @@ pub fn run(
                 } else if child_success.is_some() {
                     // Child succeeded, so we succeed
                     commands.entity(entity).insert(BehaviorSuccess);
-                    selector.seed = rand::random();
+                    if selector.random {
+                        selector.seed = rand::random();
+                    }
                     should_fail = false;
                     break;
                 } else {
@@ -83,7 +85,9 @@ pub fn run(
             // If all children failed, complete with failure
             if should_fail {
                 commands.entity(entity).insert(BehaviorFailure);
-                selector.seed = rand::random();
+                if selector.random {
+                    selector.seed = rand::random();
+                }
             }
         }
     }

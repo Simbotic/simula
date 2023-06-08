@@ -99,9 +99,9 @@ impl Default for BehaviorGraphState {
             time: Time::default(),
             blinker: SignalGenerator {
                 func: SignalFunction::Triangle,
-                frequency: 2.0,
-                amplitude: 1.0,
-                offset: 0.0,
+                frequency: 1.0,
+                amplitude: 0.5,
+                offset: 0.5,
                 ..default()
             },
             root_node: None,
@@ -110,10 +110,48 @@ impl Default for BehaviorGraphState {
 }
 
 // A trait for the data types, to tell the library how to display them
-impl DataTypeTrait<BehaviorGraphState> for BehaviorDataType {
-    fn data_type_color(&self, _user_state: &mut BehaviorGraphState) -> egui::Color32 {
+impl<T>
+    DataTypeTrait<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>, BehaviorGraphState>
+    for BehaviorDataType
+where
+    T: BehaviorFactory,
+{
+    // type DataType = BehaviorDataType;
+    // type ValueType = BehaviorValueType<T>;
+    // type UserState = BehaviorGraphState;
+
+    fn data_type_color(
+        &self,
+        node_id: NodeId,
+        graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
+        user_state: &mut BehaviorGraphState,
+    ) -> egui::Color32 {
         match self {
-            BehaviorDataType::Flow => egui::Color32::from_rgb(100, 100, 100),
+            BehaviorDataType::Flow => {
+                if let Some(node) = graph.nodes.get(node_id) {
+                    // Draw circle state
+                    if let Some(state) = node.user_data.state {
+                        let blink = (user_state
+                            .blinker
+                            .sample(user_state.time.elapsed())
+                            .clamp(0.0, 1.0)
+                            * 255.0) as u8;
+                        match state {
+                            BehaviorState::Cursor => {
+                                egui::Color32::from_rgba_unmultiplied(0, 255, 0, blink)
+                            }
+                            BehaviorState::Running => egui::Color32::GREEN,
+                            BehaviorState::Success => egui::Color32::DARK_GREEN,
+                            BehaviorState::Failure => egui::Color32::RED,
+                            _ => egui::Color32::GRAY,
+                        }
+                    } else {
+                        egui::Color32::DARK_GRAY
+                    }
+                } else {
+                    egui::Color32::DARK_GRAY
+                }
+            }
         }
     }
 
@@ -335,28 +373,6 @@ where
             }
             BehaviorNodeTemplate::Behavior(_behavior) => {
                 if let Some(node) = graph.nodes.get(node_id) {
-                    // Draw circle state
-                    if let Some(state) = node.user_data.state {
-                        let blink = (user_state
-                            .blinker
-                            .sample(user_state.time.elapsed())
-                            .clamp(0.0, 1.0)
-                            * 255.0) as u8;
-                        let color = match state {
-                            BehaviorState::Cursor => {
-                                egui::Color32::from_rgba_unmultiplied(0, 255, 0, blink)
-                            }
-                            BehaviorState::Running => egui::Color32::GREEN,
-                            BehaviorState::Success => egui::Color32::DARK_GREEN,
-                            BehaviorState::Failure => egui::Color32::RED,
-                            _ => egui::Color32::GRAY,
-                        };
-                        let r = 4.0;
-                        let size = egui::Vec2::splat(2.0 * r + 5.0);
-                        let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
-                        ui.painter().circle_filled(rect.center(), r, color);
-                    }
-
                     match user_state.active_node {
                         Some(active_node_id) if active_node_id == node_id => {
                             let mut name = node.label.clone();
