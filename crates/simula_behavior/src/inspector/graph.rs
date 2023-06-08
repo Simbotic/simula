@@ -1,6 +1,6 @@
 use crate::{prelude::*, protocol::BehaviorState};
 use bevy::{
-    prelude::{default, Color, Component, Deref, DerefMut},
+    prelude::{default, Color, Component, Deref, DerefMut, Time},
     reflect::TypeRegistryArc,
 };
 use bevy_inspector_egui::{
@@ -12,6 +12,7 @@ use egui_node_graph::{
     NodeResponse, NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait,
 };
 use serde::{Deserialize, Serialize};
+use simula_core::signal::{SignalFunction, SignalGenerator};
 use std::borrow::Cow;
 
 /// The NodeData holds a custom data struct inside each node. It's useful to
@@ -79,12 +80,33 @@ pub enum BehaviorResponse<T: BehaviorFactory> {
 /// The graph 'global' state. This state struct is passed around to the node and
 /// parameter drawing callbacks. The contents of this struct are entirely up to
 /// the user. For this example, we use it to keep track of the 'active' node.
-#[derive(Default, Component, Serialize, Deserialize)]
+#[derive(Component)]
 pub struct BehaviorGraphState {
     pub active_node: Option<NodeId>,
-    #[serde(skip)]
-    pub type_registry: TypeRegistryArc,
     pub editing_name: Option<NodeId>,
+    pub type_registry: TypeRegistryArc,
+    pub time: Time,
+    pub blinker: SignalGenerator,
+    pub root_node: Option<NodeId>,
+}
+
+impl Default for BehaviorGraphState {
+    fn default() -> Self {
+        Self {
+            active_node: None,
+            type_registry: TypeRegistryArc::default(),
+            editing_name: None,
+            time: Time::default(),
+            blinker: SignalGenerator {
+                func: SignalFunction::Triangle,
+                frequency: 2.0,
+                amplitude: 1.0,
+                offset: 0.0,
+                ..default()
+            },
+            root_node: None,
+        }
+    }
 }
 
 // A trait for the data types, to tell the library how to display them
@@ -315,14 +337,21 @@ where
                 if let Some(node) = graph.nodes.get(node_id) {
                     // Draw circle state
                     if let Some(state) = node.user_data.state {
+                        let blink = (user_state
+                            .blinker
+                            .sample(user_state.time.elapsed())
+                            .clamp(0.0, 1.0)
+                            * 255.0) as u8;
                         let color = match state {
-                            BehaviorState::Cursor => egui::Color32::GREEN,
-                            BehaviorState::Running => egui::Color32::YELLOW,
+                            BehaviorState::Cursor => {
+                                egui::Color32::from_rgba_unmultiplied(0, 255, 0, blink)
+                            }
+                            BehaviorState::Running => egui::Color32::GREEN,
                             BehaviorState::Success => egui::Color32::DARK_GREEN,
                             BehaviorState::Failure => egui::Color32::RED,
                             _ => egui::Color32::GRAY,
                         };
-                        let r = 3.0;
+                        let r = 4.0;
                         let size = egui::Vec2::splat(2.0 * r + 5.0);
                         let (rect, _response) = ui.allocate_at_least(size, egui::Sense::hover());
                         ui.painter().circle_filled(rect.center(), r, color);

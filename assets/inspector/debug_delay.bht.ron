@@ -20,9 +20,7 @@
                         )),
                     ],
                     user_data: (
-                        name: "",
                         data: Root,
-                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -42,13 +40,11 @@
                     ],
                     outputs: [],
                     user_data: (
-                        name: "Test message",
                         data: Behavior(Debug((
                             message: "pepe",
                             fail: false,
                             duration: 0.0,
                         ))),
-                        entity: None,
                     ),
                 )),
                 version: 1,
@@ -113,11 +109,11 @@
     ),
     node_order: [
         (
-            idx: 1,
+            idx: 2,
             version: 1,
         ),
         (
-            idx: 2,
+            idx: 1,
             version: 1,
         ),
     ],
@@ -131,8 +127,8 @@
         ),
         (
             value: Some((
-                x: 22.703125,
-                y: 58.226563,
+                x: 0.0,
+                y: 0.0,
             )),
             version: 1,
         ),

@@ -201,37 +201,48 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
     )>();
 
     let mut open = true;
-
     let mut window_name = format!("{}", *file_name);
-
     egui::Window::new(&format!("BT:[{}]", *selected_behavior))
         .min_width(300.0)
         .title_bar(false)
         .resizable(true)
-        .scroll2([true, true])
-        .frame(egui::Frame::none().fill(egui::Color32::from_rgba_unmultiplied(22, 20, 25, 200)).inner_margin(3.0))
+        .frame(
+            egui::Frame::none()
+                .fill(egui::Color32::from_rgba_unmultiplied(22, 20, 25, 200))
+                .inner_margin(3.0),
+        )
         .show(context, |ui| {
+            let mut pan_reset = false;
+            let mut pan = egui::vec2(0.0, 0.0);
+            context.input(|i| {
+                pan = i.scroll_delta;
+            });
+
             ui.vertical(|ui| {
                 let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
-                let inspector_item = behavior_inspector.behaviors.get_mut(&selected_behavior).unwrap();
+                let inspector_item = behavior_inspector
+                    .behaviors
+                    .get_mut(&selected_behavior)
+                    .unwrap();
 
                 ui.horizontal(|ui| {
-
                     egui::menu::bar(ui, |ui| {
-
                         if inspector_item.collapsed {
                             if ui.add(egui::Button::new("▶").frame(false)).clicked() {
                                 inspector_item.collapsed = false;
                             }
-                        }
-                        else {
+                        } else {
                             if ui.add(egui::Button::new("▼").frame(false)).clicked() {
                                 inspector_item.collapsed = true;
                             }
                         }
 
                         if let BehaviorInspectorState::Saving = inspector_item.state {
-                            ui.add(egui::Button::new("💾 Saving...").frame(false));
+                            ui.add(egui::Label::new("💾 Saving..."));
+                        }
+
+                        if ui.add(egui::Button::new("⨀").frame(true)).clicked() {
+                            pan_reset = true;
                         }
 
                         ui.add_space(20.0);
@@ -248,8 +259,16 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                             }
                         }
 
-                        ui.style_mut().visuals.extreme_bg_color = egui::Color32::from_rgba_premultiplied(0, 0, 0, 100);
-                        if ui.add(egui::TextEdit::singleline(&mut window_name).desired_width(50.0).clip_text(false)).changed() {
+                        ui.style_mut().visuals.extreme_bg_color =
+                            egui::Color32::from_rgba_premultiplied(0, 0, 0, 100);
+                        if ui
+                            .add(
+                                egui::TextEdit::singleline(&mut window_name)
+                                    .desired_width(50.0)
+                                    .clip_text(false),
+                            )
+                            .changed()
+                        {
                             inspector_item.name = BehaviorFileName(window_name.clone().into());
                         }
 
@@ -264,42 +283,92 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                 });
 
                 if !inspector_item.collapsed {
+                    egui::Frame::none()
+                        .fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140))
+                        .stroke(egui::Stroke::NONE)
+                        .inner_margin(egui::Margin {
+                            left: 10.0,
+                            right: 10.0,
+                            top: 10.0,
+                            bottom: 10.0,
+                        })
+                        .outer_margin(egui::Margin {
+                            left: -3.0,
+                            right: -3.0,
+                            top: 0.0,
+                            bottom: -3.0,
+                        })
+                        .show(ui, |ui| {
+                            let (mut graph_state, mut editor_state) =
+                                if let Ok((_, _, graph_state, editor_state)) =
+                                    behavior_graphs.get_mut(world, entity)
+                                {
+                                    (graph_state, editor_state)
+                                } else {
+                                    return;
+                                };
 
-                    egui::Frame::none().fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140)).stroke(egui::Stroke::NONE).inner_margin(egui::Margin{
-                        left: 10.0,
-                        right: 10.0,
-                        top: 10.0,
-                        bottom: 10.0,
-                    }).outer_margin(egui::Margin{
-                        left: -3.0,
-                        right: -3.0,
-                        top: 0.0,
-                        bottom: -3.0,
-                    }).show(ui, |ui| {
+                            // keep root node locked
+                            if let Some(root_node) = graph_state.root_node {
+                                let position =
+                                    editor_state.node_positions.get_mut(root_node).unwrap();
+                                *position = egui::pos2(0.0, 0.0);
+                            } else {
+                                for (nodeid, node) in &editor_state.graph.nodes {
+                                    if let BehaviorNodeTemplate::Root = &node.user_data.data {
+                                        graph_state.root_node = Some(nodeid);
+                                        break;
+                                    }
+                                }
+                            }
 
-                        let Ok((_, _, mut graph_state, mut editor_state)) = behavior_graphs.get_mut(world, entity) else {
-                            return;};
+                            // handle pan
+                            let scroll_rect = ui.available_rect_before_wrap();
+                            if ui.rect_contains_pointer(scroll_rect) {
+                                editor_state.pan_zoom.pan += pan;
+                            }
+                            if pan_reset {
+                                editor_state.pan_zoom.pan = egui::vec2(0.0, 0.0);
+                            }
 
                             let graph_response = editor_state.draw_graph_editor(
-                                                ui,
-                                                BehaviorNodeTemplates::<T>::default(),
-                                                &mut graph_state,
-                                                Vec::default(),
-                                            );
+                                ui,
+                                BehaviorNodeTemplates::<T>::default(),
+                                &mut graph_state,
+                                Vec::default(),
+                            );
 
                             for response in graph_response.node_responses {
                                 println!("response: {:?}", response);
                                 match response {
-                                    NodeResponse::SelectNode(node_id ) => {
+                                    NodeResponse::SelectNode(node_id) => {
                                         graph_state.active_node = Some(node_id);
                                     }
                                     NodeResponse::DeselectNode => {
                                         graph_state.active_node = None;
                                     }
-                                    NodeResponse::ConnectEventEnded { output: output_id, input: input_id } => {
+                                    // NodeResponse::MoveNode {
+                                    //     node: node_id,
+                                    //     drag_delta: _,
+                                    // } => {
+                                    //     let node = editor_state.graph.nodes.get(node_id).unwrap();
+                                    //     if let BehaviorNodeTemplate::Root = &node.user_data.data {
+                                    //         let position = editor_state
+                                    //             .node_positions
+                                    //             .get_mut(node_id)
+                                    //             .unwrap();
+                                    //         *position = egui::pos2(0.0, 0.0);
+                                    //     }
+                                    // }
+                                    NodeResponse::ConnectEventEnded {
+                                        output: output_id,
+                                        input: input_id,
+                                    } => {
                                         // Check if output is already connected, and if so, remove the previous connection
                                         let mut removes = vec![];
-                                        for (other_input, other_output) in editor_state.graph.connections.iter() {
+                                        for (other_input, other_output) in
+                                            editor_state.graph.connections.iter()
+                                        {
                                             if *other_output == output_id {
                                                 if other_input != input_id {
                                                     removes.push(other_input);
@@ -313,15 +382,26 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                         // If composite type, dynamically adjust outputs of node
                                         let node_id = editor_state.graph.outputs[output_id].node;
                                         let node = editor_state.graph.nodes.get(node_id).unwrap();
-                                        if let BehaviorNodeTemplate::Behavior(behavior) = &node.user_data.data {
+                                        if let BehaviorNodeTemplate::Behavior(behavior) =
+                                            &node.user_data.data
+                                        {
                                             if behavior.typ() == BehaviorType::Composite {
                                                 // Get all unused outputs
                                                 let mut unused_outputs = vec![];
                                                 node.outputs.iter().for_each(|(_, output_id)| {
-                                                    let connected = editor_state.graph.connections.iter().filter(|(_, other_output)| {
-                                                        println!("Output: {:#?} == {:#?}", output_id, *other_output);
-                                                        *other_output == output_id
-                                                    }).count() > 0;
+                                                    let connected = editor_state
+                                                        .graph
+                                                        .connections
+                                                        .iter()
+                                                        .filter(|(_, other_output)| {
+                                                            println!(
+                                                                "Output: {:#?} == {:#?}",
+                                                                output_id, *other_output
+                                                            );
+                                                            *other_output == output_id
+                                                        })
+                                                        .count()
+                                                        > 0;
                                                     if !connected {
                                                         unused_outputs.push(*output_id);
                                                     }
@@ -329,32 +409,49 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
 
                                                 // If there are no unused outputs, add a new output
                                                 if unused_outputs.len() == 0 {
-                                                    editor_state.graph.add_output_param(node_id, "B".into(), BehaviorDataType::Flow);
+                                                    editor_state.graph.add_output_param(
+                                                        node_id,
+                                                        "B".into(),
+                                                        BehaviorDataType::Flow,
+                                                    );
                                                 }
 
                                                 // Remove all but one unused output
                                                 while unused_outputs.len() > 1 {
                                                     if let Some(output_id) = unused_outputs.pop() {
-                                                        editor_state.graph.remove_output_param(output_id);
+                                                        editor_state
+                                                            .graph
+                                                            .remove_output_param(output_id);
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                    NodeResponse::User(BehaviorResponse::NodeEdited(node_id, data)) => {
-                                        if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
-                                            node.user_data.data = BehaviorNodeTemplate::Behavior(data);
+                                    NodeResponse::User(BehaviorResponse::NodeEdited(
+                                        node_id,
+                                        data,
+                                    )) => {
+                                        if let Some(node) =
+                                            editor_state.graph.nodes.get_mut(node_id)
+                                        {
+                                            node.user_data.data =
+                                                BehaviorNodeTemplate::Behavior(data);
                                         }
                                     }
-                                    NodeResponse::User(BehaviorResponse::NameEdited(node_id, name)) => {
-                                        if let Some(node) = editor_state.graph.nodes.get_mut(node_id) {
+                                    NodeResponse::User(BehaviorResponse::NameEdited(
+                                        node_id,
+                                        name,
+                                    )) => {
+                                        if let Some(node) =
+                                            editor_state.graph.nodes.get_mut(node_id)
+                                        {
                                             node.label = name;
                                         }
                                     }
                                     _ => {}
                                 }
                             }
-                    });
+                        });
                 }
             });
         });
@@ -403,13 +500,20 @@ fn get_root_child<T: BehaviorFactory>(
 
 fn update<T>(
     mut commands: Commands,
+    time: Res<Time>,
     type_registry: Res<AppTypeRegistry>,
     mut behavior_inspector: ResMut<BehaviorInspector<T>>,
     behavior_client: Res<BehaviorClient<T>>,
-    mut graphs: Query<&mut BehaviorEditorState<T>>,
+    mut graph_states: Query<&mut BehaviorGraphState>,
+    mut editor_states: Query<&mut BehaviorEditorState<T>>,
 ) where
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
 {
+    // provide time for all graph states
+    for mut graph_state in graph_states.iter_mut() {
+        graph_state.time = time.clone();
+    }
+
     if let Some(selected_behavior) = behavior_inspector.selected.clone() {
         if let Some(behavior_inspector_item) =
             behavior_inspector.behaviors.get_mut(&selected_behavior)
@@ -463,7 +567,7 @@ fn update<T>(
                 info!("Saving behavior: {}", *selected_behavior);
                 if let Some(entity) = behavior_inspector_item.entity {
                     behavior_inspector_item.state = BehaviorInspectorState::Saving;
-                    if let Ok(editor_state) = graphs.get(entity) {
+                    if let Ok(editor_state) = editor_states.get(entity) {
                         if let Ok(file_data) = ron::ser::to_string_pretty(
                             &editor_state,
                             ron::ser::PrettyConfig::default(),
@@ -501,10 +605,9 @@ fn update<T>(
             else if let BehaviorInspectorState::Run = behavior_inspector_item.state {
                 info!("Run behavior: {}", *selected_behavior);
                 if let Some(entity) = behavior_inspector_item.entity {
-                    if let Ok(editor_state) = graphs.get(entity) {
+                    if let Ok(editor_state) = editor_states.get(entity) {
                         for node in editor_state.graph.nodes.values() {
                             if let BehaviorNodeTemplate::Root = &node.user_data.data {
-                                // All this just to get first child of root node
                                 let root_child_id = get_root_child(&editor_state.graph);
                                 if let Some(root_child_id) = root_child_id {
                                     let behavior =
@@ -612,7 +715,7 @@ fn update<T>(
                 {
                     if let Some(behavior) = behavior_inspector_item.behavior.clone() {
                         if let Some(entity) = behavior_inspector_item.entity {
-                            if let Ok(mut editor_state) = graphs.get_mut(entity) {
+                            if let Ok(mut editor_state) = editor_states.get_mut(entity) {
                                 if let Some(root_child_id) = get_root_child(&editor_state.graph) {
                                     behavior_to_graph(
                                         &mut editor_state.graph,
@@ -638,36 +741,8 @@ fn update<T>(
                 {
                     if let BehaviorInspectorState::Running = behavior_inspector_item.state {
                         if let Some(entity) = behavior_inspector_item.entity {
-                            // All this just to get first child of root node
-                            let mut root_child_id: Option<NodeId> = None;
-                            if let Ok(mut editor_state) = graphs.get_mut(entity) {
-                                for node in editor_state.graph.nodes.values() {
-                                    if let BehaviorNodeTemplate::Root = &node.user_data.data {
-                                        root_child_id = node
-                                            .outputs
-                                            .iter()
-                                            .filter_map(|(_, output_id)| {
-                                                editor_state
-                                                    .graph
-                                                    .connections
-                                                    .iter()
-                                                    .find(|(input_id, rhs_output_id)| {
-                                                        output_id == *rhs_output_id
-                                                            && editor_state.graph.inputs[*input_id]
-                                                                .typ
-                                                                == BehaviorDataType::Flow
-                                                    })
-                                                    .and_then(|(input_id, _)| {
-                                                        Some(
-                                                            editor_state.graph.inputs[input_id]
-                                                                .node,
-                                                        )
-                                                    })
-                                            })
-                                            .next();
-                                        break;
-                                    }
-                                }
+                            if let Ok(mut editor_state) = editor_states.get_mut(entity) {
+                                let root_child_id = get_root_child(&editor_state.graph);
                                 if let Some(root_child_id) = root_child_id {
                                     behavior_telemerty_to_graph(
                                         &mut editor_state.graph,

@@ -396,16 +396,12 @@
     ),
     node_order: [
         (
-            idx: 1,
-            version: 1,
-        ),
-        (
             idx: 5,
             version: 1,
         ),
         (
-            idx: 2,
-            version: 1,
+            idx: 3,
+            version: 3,
         ),
         (
             idx: 4,
@@ -416,8 +412,12 @@
             version: 1,
         ),
         (
-            idx: 3,
-            version: 3,
+            idx: 2,
+            version: 1,
+        ),
+        (
+            idx: 1,
+            version: 1,
         ),
     ],
     connection_in_progress: None,
@@ -430,43 +430,43 @@
         ),
         (
             value: Some((
-                x: 56.691406,
-                y: 113.57031,
+                x: 0.0,
+                y: 0.0,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 480.95703,
-                y: 32.304688,
+                x: 579.3711,
+                y: 55.535156,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 491.42188,
-                y: 464.98047,
+                x: 585.96484,
+                y: 476.0078,
             )),
             version: 3,
         ),
         (
             value: Some((
-                x: 152.05078,
-                y: 113.32031,
+                x: 279.41797,
+                y: 247.77344,
             )),
             version: 3,
         ),
         (
             value: Some((
-                x: 489.02734,
-                y: 194.55078,
+                x: 583.5703,
+                y: 205.57813,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 489.36328,
-                y: 352.6797,
+                x: 583.90625,
+                y: 363.70703,
             )),
             version: 1,
         ),
@@ -474,8 +474,8 @@
     node_finder: None,
     pan_zoom: (
         pan: (
-            x: 0.0,
-            y: 0.0,
+            x: 10.0,
+            y: 14.0,
         ),
         zoom: 0.0,
     ),

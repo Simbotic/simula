@@ -77,21 +77,21 @@ fn window_ui(context: &mut egui::Context, world: &mut World) {
         let mut open = true;
         egui::Window::new(format!("{}", label))
             .open(&mut open)
-            .resizable(true)
-            .scroll2([true, true])
             .default_pos(egui::Pos2::new(desired_x, desired_y))
             .default_size(egui::Vec2::new(desired_width, desired_height))
-            .show(context, |ui| match show {
-                InspectorType::Entities => {
-                    bevy_inspector::ui_for_world_entities(world, ui);
-                }
-                InspectorType::Resources => {
-                    bevy_inspector::ui_for_resources(world, ui);
-                }
-                InspectorType::Assets => {
-                    bevy_inspector::ui_for_all_assets(world, ui);
-                }
-                _ => {}
+            .show(context, |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| match show {
+                    InspectorType::Entities => {
+                        bevy_inspector::ui_for_world_entities(world, ui);
+                    }
+                    InspectorType::Resources => {
+                        bevy_inspector::ui_for_resources(world, ui);
+                    }
+                    InspectorType::Assets => {
+                        bevy_inspector::ui_for_all_assets(world, ui);
+                    }
+                    _ => {}
+                });
             });
         if !open {
             let mut world_inspector = world.resource_mut::<WorldInspector>();
