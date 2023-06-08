@@ -643,7 +643,8 @@ fn update<T>(
             }
         }
     }
-    if let Ok(server_msg) = behavior_client.receiver.try_recv() {
+
+    while let Ok(server_msg) = behavior_client.receiver.try_recv() {
         match server_msg {
             // Receive list of behaviors
             BehaviorProtocolServer::FileNames(behaviors) => {
