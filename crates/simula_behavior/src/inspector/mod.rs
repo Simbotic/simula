@@ -41,7 +41,7 @@ where
 
         app.insert_resource(client)
             .insert_resource(server)
-            .insert_resource(BehaviorInspector::default())
+            .insert_resource(BehaviorInspector::<T>::default())
             .add_startup_system(setup::<T>)
             .add_system(update::<T>);
     }
@@ -63,23 +63,24 @@ enum BehaviorInspectorState {
 }
 
 #[derive(Reflect, FromReflect, Clone)]
-struct BehaviorInspectorItem {
+struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub id: BehaviorFileId,
     pub entity: Option<Entity>,
     pub name: BehaviorFileName,
     pub state: BehaviorInspectorState,
     pub collapsed: bool,
+    pub behavior: Option<Behavior<T>>,
 }
 
 #[derive(Default, Clone, Resource, Reflect)]
-struct BehaviorInspector {
+struct BehaviorInspector<T: BehaviorFactory> {
     pub selected: Option<BehaviorFileId>,
-    pub behaviors: HashMap<BehaviorFileId, BehaviorInspectorItem>,
+    pub behaviors: HashMap<BehaviorFileId, BehaviorInspectorItem<T>>,
 }
 
-fn get_label_from_id(
+fn get_label_from_id<T: BehaviorFactory>(
     file_id: &Option<BehaviorFileId>,
-    behavior_inspector: &BehaviorInspector,
+    behavior_inspector: &BehaviorInspector<T>,
 ) -> String {
     match file_id {
         None => "None".to_string(),
@@ -99,7 +100,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
         if ui.add(egui::Button::new("✚ New")).clicked() {
             let file_id = BehaviorFileId::new();
             let file_name = BehaviorFileName(format!("bt_{}", *file_id).into());
-            let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+            let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
             behavior_inspector.behaviors.insert(
                 file_id.clone(),
                 BehaviorInspectorItem {
@@ -108,12 +109,13 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     name: file_name,
                     state: BehaviorInspectorState::New,
                     collapsed: false,
+                    behavior: None,
                 },
             );
             behavior_inspector.selected = Some(file_id.clone());
         }
 
-        let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+        let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
         if let Some(file_id) = behavior_inspector.selected.clone() {
             if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get_mut(&file_id) {
                 if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
@@ -127,7 +129,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
         }
     });
 
-    let behavior_inspector = world.resource_mut::<BehaviorInspector>();
+    let behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
     let mut new_selected = behavior_inspector.selected.clone();
 
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
@@ -163,14 +165,17 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             }
         });
 
-    let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+    let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
     behavior_inspector.selected = new_selected;
 }
 
 fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
-    let selected_behavior = world.resource_mut::<BehaviorInspector>().selected.clone();
+    let selected_behavior = world
+        .resource_mut::<BehaviorInspector<T>>()
+        .selected
+        .clone();
     let Some(selected_behavior) = selected_behavior else { return;};
-    let behavior_inspector = world.resource_mut::<BehaviorInspector>();
+    let behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
     let Some((file_name, inspector_item_state, entity))
         = behavior_inspector.behaviors
         .get(&selected_behavior)
@@ -207,7 +212,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
         .frame(egui::Frame::none().fill(egui::Color32::from_rgba_unmultiplied(22, 20, 25, 200)).inner_margin(3.0))
         .show(context, |ui| {
             ui.vertical(|ui| {
-                let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+                let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
                 let inspector_item = behavior_inspector.behaviors.get_mut(&selected_behavior).unwrap();
 
                 ui.horizontal(|ui| {
@@ -355,7 +360,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
         });
 
     if !open {
-        let mut behavior_inspector = world.resource_mut::<BehaviorInspector>();
+        let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
         behavior_inspector.selected = None;
     }
 }
@@ -370,10 +375,36 @@ where
     });
 }
 
+fn get_root_child<T: BehaviorFactory>(
+    graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
+) -> Option<NodeId> {
+    for node in graph.nodes.values() {
+        if let BehaviorNodeTemplate::Root = &node.user_data.data {
+            // All this just to get first child of root node
+            let root_child_id: Option<NodeId> = node
+                .outputs
+                .iter()
+                .filter_map(|(_, output_id)| {
+                    graph
+                        .connections
+                        .iter()
+                        .find(|(input_id, rhs_output_id)| {
+                            output_id == *rhs_output_id
+                                && graph.inputs[*input_id].typ == BehaviorDataType::Flow
+                        })
+                        .and_then(|(input_id, _)| Some(graph.inputs[input_id].node))
+                })
+                .next();
+            return root_child_id;
+        }
+    }
+    None
+}
+
 fn update<T>(
     mut commands: Commands,
     type_registry: Res<AppTypeRegistry>,
-    mut behavior_inspector: ResMut<BehaviorInspector>,
+    mut behavior_inspector: ResMut<BehaviorInspector<T>>,
     behavior_client: Res<BehaviorClient<T>>,
     mut graphs: Query<&mut BehaviorEditorState<T>>,
 ) where
@@ -402,11 +433,11 @@ fn update<T>(
                 };
                 let mut editor_state = BehaviorEditorState::<T>::default();
 
+                // create the only root node allowed
                 let root_node_data = BehaviorNodeData {
                     data: BehaviorNodeTemplate::Root,
                     state: None,
                 };
-
                 let root_node =
                     editor_state
                         .graph
@@ -474,28 +505,12 @@ fn update<T>(
                         for node in editor_state.graph.nodes.values() {
                             if let BehaviorNodeTemplate::Root = &node.user_data.data {
                                 // All this just to get first child of root node
-                                let root_child_id: Option<NodeId> = node
-                                    .outputs
-                                    .iter()
-                                    .filter_map(|(_, output_id)| {
-                                        editor_state
-                                            .graph
-                                            .connections
-                                            .iter()
-                                            .find(|(input_id, rhs_output_id)| {
-                                                output_id == *rhs_output_id
-                                                    && editor_state.graph.inputs[*input_id].typ
-                                                        == BehaviorDataType::Flow
-                                            })
-                                            .and_then(|(input_id, _)| {
-                                                Some(editor_state.graph.inputs[input_id].node)
-                                            })
-                                    })
-                                    .next();
+                                let root_child_id = get_root_child(&editor_state.graph);
                                 if let Some(root_child_id) = root_child_id {
                                     let behavior =
                                         graph_to_behavior(&editor_state.graph, root_child_id);
                                     println!("behavior: {:#?}", behavior);
+                                    behavior_inspector_item.behavior = Some(behavior.clone());
                                     behavior_inspector_item.state =
                                         BehaviorInspectorState::Starting;
                                     behavior_client
@@ -539,6 +554,7 @@ fn update<T>(
                                 name: file_name.clone(),
                                 state: BehaviorInspectorState::Load,
                                 collapsed: false,
+                                behavior: None,
                             },
                         );
                     }
@@ -594,6 +610,19 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
+                    if let Some(behavior) = behavior_inspector_item.behavior.clone() {
+                        if let Some(entity) = behavior_inspector_item.entity {
+                            if let Ok(mut editor_state) = graphs.get_mut(entity) {
+                                if let Some(root_child_id) = get_root_child(&editor_state.graph) {
+                                    behavior_to_graph(
+                                        &mut editor_state.graph,
+                                        root_child_id,
+                                        &behavior,
+                                    );
+                                }
+                            }
+                        }
+                    }
                     if let BehaviorInspectorState::Stopping = behavior_inspector_item.state {
                         behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
@@ -640,12 +669,11 @@ fn update<T>(
                                     }
                                 }
                                 if let Some(root_child_id) = root_child_id {
-                                    behavior_to_graph(
+                                    behavior_telemerty_to_graph(
                                         &mut editor_state.graph,
                                         root_child_id,
                                         &telemetry,
                                     );
-                                    graph_to_behavior(&mut editor_state.graph, root_child_id);
                                 } else {
                                     error!("No root child");
                                 }
@@ -725,6 +753,43 @@ where
 fn behavior_to_graph<T>(
     graph: &mut Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
     node_id: NodeId,
+    behavior: &Behavior<T>,
+) where
+    T: BehaviorFactory,
+{
+    // Update graph node with behavior telemetry
+    let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
+    node.user_data.data = BehaviorNodeTemplate::Behavior(behavior.1.clone());
+    node.user_data.state = None;
+
+    // Get node children
+    let node_children: Vec<NodeId> = node
+        .outputs
+        .iter()
+        .filter_map(|(_, output_id)| {
+            graph
+                .connections
+                .iter()
+                .find(|(input_id, rhs_output_id)| {
+                    output_id == *rhs_output_id
+                        && graph.inputs[*input_id].typ == BehaviorDataType::Flow
+                })
+                .and_then(|(input_id, _)| Some(graph.inputs[input_id].node))
+        })
+        .collect();
+
+    // Zip and iterate over children
+    let node_children = node_children.iter().cloned();
+    let behavior_children = behavior.2.iter();
+    for (node_child, behavior_child) in node_children.zip(behavior_children) {
+        behavior_to_graph(graph, node_child, behavior_child);
+    }
+}
+
+// Recursively update graph from behavior telemetry
+fn behavior_telemerty_to_graph<T>(
+    graph: &mut Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
+    node_id: NodeId,
     telemetry: &BehaviorTelemetry<T>,
 ) where
     T: BehaviorFactory,
@@ -756,7 +821,7 @@ fn behavior_to_graph<T>(
     let node_children = node_children.iter().cloned();
     let telemetry_children = telemetry.2.iter();
     for (node_child, behavior_child) in node_children.zip(telemetry_children) {
-        behavior_to_graph(graph, node_child, behavior_child);
+        behavior_telemerty_to_graph(graph, node_child, behavior_child);
     }
 }
 

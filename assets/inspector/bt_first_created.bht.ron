@@ -42,7 +42,7 @@
                     user_data: (
                         data: Behavior(Debug((
                             message: "a",
-                            fail: true,
+                            fail: false,
                             duration: 0.0,
                         ))),
                     ),
@@ -53,36 +53,25 @@
                 value: Some((
                     id: (
                         idx: 3,
-                        version: 1,
+                        version: 3,
                     ),
-                    label: "? Selector",
+                    label: "👁 Debug",
                     inputs: [
                         ("A", (
                             idx: 2,
-                            version: 1,
+                            version: 3,
                         )),
                     ],
-                    outputs: [
-                        ("B", (
-                            idx: 2,
-                            version: 1,
-                        )),
-                        ("B", (
-                            idx: 3,
-                            version: 1,
-                        )),
-                        ("B", (
-                            idx: 4,
-                            version: 1,
-                        )),
-                    ],
+                    outputs: [],
                     user_data: (
-                        data: Behavior(Selector((
-                            random: true,
+                        data: Behavior(Debug((
+                            message: "",
+                            fail: true,
+                            duration: 0.0,
                         ))),
                     ),
                 )),
-                version: 1,
+                version: 3,
             ),
             (
                 value: Some((
@@ -109,6 +98,14 @@
                         ("B", (
                             idx: 7,
                             version: 1,
+                        )),
+                        ("B", (
+                            idx: 8,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 4,
+                            version: 3,
                         )),
                     ],
                     user_data: (
@@ -143,6 +140,28 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 6,
+                        version: 1,
+                    ),
+                    label: "⌛ Wait",
+                    inputs: [
+                        ("A", (
+                            idx: 5,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Wait((
+                            duration: 5.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
         ],
         inputs: [
             (
@@ -170,18 +189,18 @@
                 value: Some((
                     id: (
                         idx: 2,
-                        version: 1,
+                        version: 3,
                     ),
                     typ: Flow,
                     value: Flow,
                     kind: ConnectionOnly,
                     node: (
                         idx: 3,
-                        version: 1,
+                        version: 3,
                     ),
                     shown_inline: true,
                 )),
-                version: 1,
+                version: 3,
             ),
             (
                 value: Some((
@@ -217,6 +236,23 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 5,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 6,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
         ],
         outputs: [
             (
@@ -238,46 +274,26 @@
                 version: 1,
             ),
             (
-                value: Some((
-                    id: (
-                        idx: 2,
-                        version: 1,
-                    ),
-                    node: (
-                        idx: 3,
-                        version: 1,
-                    ),
-                    typ: Flow,
-                )),
-                version: 1,
+                value: None,
+                version: 2,
             ),
             (
-                value: Some((
-                    id: (
-                        idx: 3,
-                        version: 1,
-                    ),
-                    node: (
-                        idx: 3,
-                        version: 1,
-                    ),
-                    typ: Flow,
-                )),
-                version: 1,
+                value: None,
+                version: 2,
             ),
             (
                 value: Some((
                     id: (
                         idx: 4,
-                        version: 1,
+                        version: 3,
                     ),
                     node: (
-                        idx: 3,
-                        version: 1,
+                        idx: 4,
+                        version: 3,
                     ),
                     typ: Flow,
                 )),
-                version: 1,
+                version: 3,
             ),
             (
                 value: Some((
@@ -321,6 +337,20 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 8,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
         ],
         connections: [
             (
@@ -335,8 +365,11 @@
                 version: 1,
             ),
             (
-                value: None,
-                version: 0,
+                value: Some((
+                    idx: 8,
+                    version: 1,
+                )),
+                version: 3,
             ),
             (
                 value: Some((
@@ -352,6 +385,13 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    idx: 7,
+                    version: 1,
+                )),
+                version: 1,
+            ),
         ],
     ),
     node_order: [
@@ -360,7 +400,11 @@
             version: 1,
         ),
         (
-            idx: 3,
+            idx: 5,
+            version: 1,
+        ),
+        (
+            idx: 2,
             version: 1,
         ),
         (
@@ -368,12 +412,12 @@
             version: 3,
         ),
         (
-            idx: 5,
+            idx: 6,
             version: 1,
         ),
         (
-            idx: 2,
-            version: 1,
+            idx: 3,
+            version: 3,
         ),
     ],
     connection_in_progress: None,
@@ -393,22 +437,22 @@
         ),
         (
             value: Some((
-                x: 480.5664,
+                x: 480.95703,
                 y: 32.304688,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 180.91797,
-                y: 111.82422,
+                x: 491.42188,
+                y: 464.98047,
             )),
-            version: 1,
+            version: 3,
         ),
         (
             value: Some((
-                x: 127.65234,
-                y: 225.15625,
+                x: 152.05078,
+                y: 113.32031,
             )),
             version: 3,
         ),
@@ -416,6 +460,13 @@
             value: Some((
                 x: 489.02734,
                 y: 194.55078,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 489.36328,
+                y: 352.6797,
             )),
             version: 1,
         ),
