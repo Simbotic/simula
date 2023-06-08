@@ -53,25 +53,28 @@
                 value: Some((
                     id: (
                         idx: 3,
-                        version: 3,
+                        version: 5,
                     ),
-                    label: "👁 Debug Fail",
+                    label: "⌛ Delay",
                     inputs: [
                         ("A", (
                             idx: 2,
-                            version: 3,
+                            version: 5,
                         )),
                     ],
-                    outputs: [],
+                    outputs: [
+                        ("", (
+                            idx: 4,
+                            version: 5,
+                        )),
+                    ],
                     user_data: (
-                        data: Behavior(Debug((
-                            message: "",
-                            fail: true,
-                            duration: 0.0,
+                        data: Behavior(Delay((
+                            duration: 2.0,
                         ))),
                     ),
                 )),
-                version: 3,
+                version: 5,
             ),
             (
                 value: Some((
@@ -104,8 +107,12 @@
                             version: 1,
                         )),
                         ("B", (
-                            idx: 4,
-                            version: 3,
+                            idx: 2,
+                            version: 5,
+                        )),
+                        ("B", (
+                            idx: 10,
+                            version: 1,
                         )),
                     ],
                     user_data: (
@@ -162,6 +169,257 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    label: "? Selector",
+                    inputs: [
+                        ("A", (
+                            idx: 6,
+                            version: 3,
+                        )),
+                    ],
+                    outputs: [
+                        ("B", (
+                            idx: 3,
+                            version: 5,
+                        )),
+                        ("B", (
+                            idx: 9,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 11,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 14,
+                            version: 1,
+                        )),
+                    ],
+                    user_data: (
+                        data: Behavior(Selector((
+                            random: false,
+                        ))),
+                    ),
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 8,
+                        version: 3,
+                    ),
+                    label: "👁 Debug is cool",
+                    inputs: [
+                        ("A", (
+                            idx: 7,
+                            version: 3,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Debug((
+                            message: "",
+                            fail: true,
+                            duration: 0.0,
+                        ))),
+                    ),
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 9,
+                        version: 1,
+                    ),
+                    label: "⌛ Wait",
+                    inputs: [
+                        ("A", (
+                            idx: 8,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Wait((
+                            duration: 5.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 10,
+                        version: 1,
+                    ),
+                    label: "👁 Debug",
+                    inputs: [
+                        ("A", (
+                            idx: 9,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Debug((
+                            message: "",
+                            fail: true,
+                            duration: 0.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 11,
+                        version: 1,
+                    ),
+                    label: "⌛ Delay",
+                    inputs: [
+                        ("A", (
+                            idx: 10,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [
+                        ("", (
+                            idx: 12,
+                            version: 1,
+                        )),
+                    ],
+                    user_data: (
+                        data: Behavior(Delay((
+                            duration: 5.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    label: "⇉ All",
+                    inputs: [
+                        ("A", (
+                            idx: 11,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [
+                        ("B", (
+                            idx: 13,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 15,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 16,
+                            version: 1,
+                        )),
+                        ("B", (
+                            idx: 17,
+                            version: 1,
+                        )),
+                    ],
+                    user_data: (
+                        data: Behavior(All(())),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 13,
+                        version: 1,
+                    ),
+                    label: "⌛ Wait",
+                    inputs: [
+                        ("A", (
+                            idx: 12,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Wait((
+                            duration: 5.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 14,
+                        version: 1,
+                    ),
+                    label: "⌛ Wait",
+                    inputs: [
+                        ("A", (
+                            idx: 13,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Wait((
+                            duration: 1.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 15,
+                        version: 1,
+                    ),
+                    label: "⌛ Wait",
+                    inputs: [
+                        ("A", (
+                            idx: 14,
+                            version: 1,
+                        )),
+                    ],
+                    outputs: [],
+                    user_data: (
+                        data: Behavior(Wait((
+                            duration: 3.0,
+                        ))),
+                    ),
+                )),
+                version: 1,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
         ],
         inputs: [
             (
@@ -189,18 +447,18 @@
                 value: Some((
                     id: (
                         idx: 2,
-                        version: 3,
+                        version: 5,
                     ),
                     typ: Flow,
                     value: Flow,
                     kind: ConnectionOnly,
                     node: (
                         idx: 3,
-                        version: 3,
+                        version: 5,
                     ),
                     shown_inline: true,
                 )),
-                version: 3,
+                version: 5,
             ),
             (
                 value: Some((
@@ -253,6 +511,171 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 6,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 8,
+                        version: 3,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 8,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 9,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 9,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 10,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 10,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 11,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 11,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 13,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 13,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 14,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 14,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                    value: Flow,
+                    kind: ConnectionOnly,
+                    node: (
+                        idx: 15,
+                        version: 1,
+                    ),
+                    shown_inline: true,
+                )),
+                version: 1,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
         ],
         outputs: [
             (
@@ -274,18 +697,10 @@
                 version: 1,
             ),
             (
-                value: None,
-                version: 2,
-            ),
-            (
-                value: None,
-                version: 2,
-            ),
-            (
                 value: Some((
                     id: (
-                        idx: 4,
-                        version: 3,
+                        idx: 2,
+                        version: 5,
                     ),
                     node: (
                         idx: 4,
@@ -293,7 +708,35 @@
                     ),
                     typ: Flow,
                 )),
-                version: 3,
+                version: 5,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 3,
+                        version: 5,
+                    ),
+                    node: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 5,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 4,
+                        version: 5,
+                    ),
+                    node: (
+                        idx: 3,
+                        version: 5,
+                    ),
+                    typ: Flow,
+                )),
+                version: 5,
             ),
             (
                 value: Some((
@@ -351,6 +794,144 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    id: (
+                        idx: 9,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 10,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 4,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 11,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 11,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 13,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 14,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 7,
+                        version: 3,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 15,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 16,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    id: (
+                        idx: 17,
+                        version: 1,
+                    ),
+                    node: (
+                        idx: 12,
+                        version: 1,
+                    ),
+                    typ: Flow,
+                )),
+                version: 1,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
+            (
+                value: None,
+                version: 2,
+            ),
         ],
         connections: [
             (
@@ -366,10 +947,10 @@
             ),
             (
                 value: Some((
-                    idx: 8,
-                    version: 1,
+                    idx: 3,
+                    version: 5,
                 )),
-                version: 3,
+                version: 5,
             ),
             (
                 value: Some((
@@ -392,31 +973,130 @@
                 )),
                 version: 1,
             ),
+            (
+                value: Some((
+                    idx: 8,
+                    version: 1,
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    idx: 4,
+                    version: 5,
+                )),
+                version: 3,
+            ),
+            (
+                value: Some((
+                    idx: 2,
+                    version: 5,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    idx: 12,
+                    version: 1,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    idx: 9,
+                    version: 1,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    idx: 11,
+                    version: 1,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    idx: 13,
+                    version: 1,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    idx: 15,
+                    version: 1,
+                )),
+                version: 1,
+            ),
+            (
+                value: Some((
+                    idx: 16,
+                    version: 1,
+                )),
+                version: 1,
+            ),
         ],
     ),
     node_order: [
         (
-            idx: 6,
-            version: 1,
-        ),
-        (
             idx: 1,
             version: 1,
-        ),
-        (
-            idx: 3,
-            version: 3,
         ),
         (
             idx: 4,
             version: 3,
         ),
         (
+            idx: 5,
+            version: 1,
+        ),
+        (
+            idx: 7,
+            version: 3,
+        ),
+        (
+            idx: 3,
+            version: 5,
+        ),
+        (
             idx: 2,
             version: 1,
         ),
         (
-            idx: 5,
+            idx: 11,
+            version: 1,
+        ),
+        (
+            idx: 8,
+            version: 3,
+        ),
+        (
+            idx: 10,
+            version: 1,
+        ),
+        (
+            idx: 12,
+            version: 1,
+        ),
+        (
+            idx: 6,
+            version: 1,
+        ),
+        (
+            idx: 13,
+            version: 1,
+        ),
+        (
+            idx: 14,
+            version: 1,
+        ),
+        (
+            idx: 15,
+            version: 1,
+        ),
+        (
+            idx: 9,
             version: 1,
         ),
     ],
@@ -437,17 +1117,17 @@
         ),
         (
             value: Some((
-                x: 347.61673,
-                y: 1.0742798,
+                x: 407.2394,
+                y: 0.074279785,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 352.69818,
-                y: 428.94043,
+                x: 623.75806,
+                y: 442.7605,
             )),
-            version: 3,
+            version: 5,
         ),
         (
             value: Some((
@@ -458,24 +1138,99 @@
         ),
         (
             value: Some((
-                x: 350.30365,
-                y: 158.51074,
+                x: 409.92633,
+                y: 157.51074,
             )),
             version: 1,
         ),
         (
             value: Some((
-                x: 350.6396,
-                y: 316.63965,
+                x: 409.8089,
+                y: 322.66992,
             )),
             version: 1,
+        ),
+        (
+            value: Some((
+                x: 412.41345,
+                y: 442.81262,
+            )),
+            version: 3,
+        ),
+        (
+            value: Some((
+                x: 845.4175,
+                y: 442.49304,
+            )),
+            version: 3,
+        ),
+        (
+            value: Some((
+                x: 422.92065,
+                y: 1137.7332,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 850.1122,
+                y: 606.14014,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 628.7831,
+                y: 607.5149,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 630.2251,
+                y: 773.81274,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 849.64136,
+                y: 772.5996,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 850.6102,
+                y: 889.4072,
+            )),
+            version: 1,
+        ),
+        (
+            value: Some((
+                x: 851.9077,
+                y: 1007.45435,
+            )),
+            version: 1,
+        ),
+        (
+            value: None,
+            version: 0,
+        ),
+        (
+            value: None,
+            version: 0,
+        ),
+        (
+            value: None,
+            version: 0,
         ),
     ],
     node_finder: None,
     pan_zoom: (
         pan: (
-            x: 10.0,
-            y: 14.0,
+            x: 0.0,
+            y: 0.0,
         ),
         zoom: 0.0,
     ),
