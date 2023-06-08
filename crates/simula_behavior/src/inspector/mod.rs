@@ -14,6 +14,7 @@ use crossbeam_channel::unbounded;
 use egui_node_graph::{Graph, NodeId, NodeResponse, NodeTemplateTrait};
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
+use std::borrow::Cow;
 
 pub mod graph;
 
@@ -81,13 +82,12 @@ struct BehaviorInspector<T: BehaviorFactory> {
 fn get_label_from_id<T: BehaviorFactory>(
     file_id: &Option<BehaviorFileId>,
     behavior_inspector: &BehaviorInspector<T>,
-) -> String {
+) -> Cow<'static, str> {
     match file_id {
-        None => "None".to_string(),
+        None => Cow::Borrowed("None"),
         Some(behavior_file_id) => {
             let behavior_inspector_item = &behavior_inspector.behaviors[behavior_file_id];
-            let name = behavior_inspector_item.name.clone();
-            (*name).clone()
+            (*behavior_inspector_item.name).clone()
         }
     }
 }
@@ -578,7 +578,7 @@ fn update<T>(
                                 .send(BehaviorProtocolClient::SaveFile(
                                     selected_behavior.clone(),
                                     behavior_inspector_item.name.clone(),
-                                    BehaviorFileData(file_data),
+                                    BehaviorFileData(file_data.into()),
                                 ))
                                 .unwrap();
                         } else {

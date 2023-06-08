@@ -38,10 +38,10 @@ impl BehaviorFileId {
 #[derive(
     Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect, PartialEq, Hash, Eq,
 )]
-pub struct BehaviorFileName(pub String);
+pub struct BehaviorFileName(pub Cow<'static, str>);
 
 #[derive(Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect)]
-pub struct BehaviorFileData(pub String);
+pub struct BehaviorFileData(pub Cow<'static, str>);
 
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     Ping,

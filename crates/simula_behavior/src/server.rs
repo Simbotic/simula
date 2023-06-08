@@ -52,19 +52,19 @@ fn setup<T: BehaviorFactory>(
         if let Ok(entry) = path {
             // Check if the entry is a file with the desired extension
             if entry.file_type().unwrap().is_file() {
-                if let Some(file_name) = entry.file_name().to_str() {
-                    if file_name.ends_with(".bht.ron") {
-                        let file_name = file_name.trim_end_matches(".bht.ron");
-                        behavior_trackers.insert(
-                            BehaviorFileId::new(),
-                            BehaviorTracker {
-                                file_name: BehaviorFileName(file_name.to_owned()),
-                                entity: None,
-                                telemetry: false,
-                                behavior: None,
-                            },
-                        );
-                    }
+                let osfile_name = entry.file_name();
+                let file_name = osfile_name.to_string_lossy().to_owned();
+                if file_name.ends_with(".bht.ron") {
+                    let file_name = file_name.trim_end_matches(".bht.ron");
+                    behavior_trackers.insert(
+                        BehaviorFileId::new(),
+                        BehaviorTracker {
+                            file_name: BehaviorFileName(file_name.to_string().into()),
+                            entity: None,
+                            telemetry: false,
+                            behavior: None,
+                        },
+                    );
                 }
             }
         }
@@ -177,7 +177,7 @@ fn update<T: BehaviorFactory>(
                             .sender
                             .send(BehaviorProtocolServer::File(
                                 file_id,
-                                BehaviorFileData(file_data.clone()),
+                                BehaviorFileData(file_data.into()),
                             ))
                             .unwrap();
                     } else {
@@ -200,7 +200,7 @@ fn update<T: BehaviorFactory>(
                 let dir_path = "assets/inspector";
                 let file_ext = "bht.ron";
                 let file_path = format!("{}/{}.{}", dir_path, *file_name, file_ext);
-                std::fs::write(&file_path, file_data.0).unwrap();
+                std::fs::write(&file_path, file_data.0.as_ref()).unwrap();
                 info!("Saved file: {}", &file_path);
                 behavior_server
                     .sender
@@ -208,6 +208,18 @@ fn update<T: BehaviorFactory>(
                     .unwrap();
             }
             BehaviorProtocolClient::Run(file_id, behavior) => {
+                if !behavior_trackers.contains_key(&file_id) {
+                    behavior_trackers.insert(
+                        file_id.clone(),
+                        BehaviorTracker {
+                            file_name: BehaviorFileName((*file_id).clone().into()),
+                            entity: None,
+                            telemetry: false,
+                            behavior: None,
+                        },
+                    );
+                };
+
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     behavior_tracker.telemetry = true;
                     behavior_tracker.behavior = Some(behavior.clone());
