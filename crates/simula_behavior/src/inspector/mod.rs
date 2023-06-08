@@ -9,7 +9,7 @@ use crate::{
     },
     Behavior, BehaviorFactory, BehaviorType,
 };
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use crossbeam_channel::unbounded;
 use egui_node_graph::{Graph, NodeId, NodeResponse, NodeTemplateTrait};
 use serde::{Deserialize, Serialize};
@@ -200,10 +200,15 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
         &mut BehaviorEditorState<T>,
     )>();
 
+    let window = world
+        .query_filtered::<&Window, With<PrimaryWindow>>()
+        .single(world);
+    let default_size = egui::vec2(window.width() * 0.7, window.height() * 0.7);
+
     let mut open = true;
     let mut window_name = format!("{}", *file_name);
     egui::Window::new(&format!("BT:[{}]", *selected_behavior))
-        .min_width(300.0)
+        .default_size(default_size)
         .title_bar(false)
         .resizable(true)
         .frame(
@@ -217,6 +222,10 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
             context.input(|i| {
                 pan = i.scroll_delta;
             });
+            let mut pan_length = 0.0;
+            if let Ok((_, _, _graph_state, editor_state)) = behavior_graphs.get(world, entity) {
+                pan_length = editor_state.pan_zoom.pan.length_sq();
+            }
 
             ui.vertical(|ui| {
                 let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
@@ -241,7 +250,10 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                             ui.add(egui::Label::new("💾 Saving..."));
                         }
 
-                        if ui.add(egui::Button::new("⨀").frame(true)).clicked() {
+                        if ui
+                            .add_enabled(pan_length > 1000.0, egui::Button::new("⨀").frame(true))
+                            .clicked()
+                        {
                             pan_reset = true;
                         }
 
@@ -339,7 +351,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                             );
 
                             for response in graph_response.node_responses {
-                                println!("response: {:?}", response);
+                                trace!("response: {:?}", response);
                                 match response {
                                     NodeResponse::SelectNode(node_id) => {
                                         graph_state.active_node = Some(node_id);
@@ -347,19 +359,6 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                     NodeResponse::DeselectNode => {
                                         graph_state.active_node = None;
                                     }
-                                    // NodeResponse::MoveNode {
-                                    //     node: node_id,
-                                    //     drag_delta: _,
-                                    // } => {
-                                    //     let node = editor_state.graph.nodes.get(node_id).unwrap();
-                                    //     if let BehaviorNodeTemplate::Root = &node.user_data.data {
-                                    //         let position = editor_state
-                                    //             .node_positions
-                                    //             .get_mut(node_id)
-                                    //             .unwrap();
-                                    //         *position = egui::pos2(0.0, 0.0);
-                                    //     }
-                                    // }
                                     NodeResponse::ConnectEventEnded {
                                         output: output_id,
                                         input: input_id,
