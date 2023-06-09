@@ -7,6 +7,7 @@ use bevy::{
 };
 use composites::*;
 use decorators::*;
+use serde::{Deserialize, Serialize};
 use strum::AsRefStr;
 
 pub mod actions;
@@ -77,6 +78,16 @@ pub struct BehaviorMissing;
 pub trait BehaviorFactory:
     Clone + Default + TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug
 {
+    type Attributes: Clone
+        + Default
+        + Send
+        + Sync
+        + 'static
+        + Default
+        + std::fmt::Debug
+        + Serialize
+        + for<'de> Deserialize<'de>;
+
     fn insert(&self, commands: &mut EntityCommands);
 
     fn label(&self) -> &str {
@@ -267,7 +278,7 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 #[reflect(Component)]
 pub struct BehaviorTree<T>
 where
-    T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
+    T: BehaviorFactory,
 {
     pub root: Option<Entity>,
     pub asset: Handle<BehaviorAsset<T>>,
@@ -275,7 +286,7 @@ where
 
 impl<T> BehaviorTree<T>
 where
-    T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
+    T: BehaviorFactory,
 {
     /// Spawn behavior tree from asset.
     /// A parent is optional, but if it is provided, it must be a behavior node.
@@ -284,10 +295,7 @@ where
         parent: Option<Entity>,
         commands: &mut Commands,
         asset: Handle<BehaviorAsset<T>>,
-    ) -> Self
-    where
-        T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
-    {
+    ) -> Self {
         let entity = commands
             .spawn_empty()
             .insert(BehaviorAssetLoading::<T> {
@@ -311,10 +319,7 @@ where
         parent: Option<Entity>,
         commands: &mut Commands,
         node: &Behavior<T>,
-    ) -> Entity
-    where
-        T: Default + BehaviorFactory,
-    {
+    ) -> Entity {
         let mut entity_commands = commands.entity(entity);
         node.data().insert(&mut entity_commands);
         entity_commands.insert(Name::new(node.name().to_owned()));

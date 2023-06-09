@@ -2,6 +2,11 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct DebugBehaviorAttributes {
+    pub pos: Option<Vec2>,
+}
+
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "7CFA1742-7725-416C-B167-95DA01750E1C"]
 pub enum DebugBehavior {
@@ -27,6 +32,8 @@ impl Default for DebugBehavior {
 }
 
 impl BehaviorFactory for DebugBehavior {
+    type Attributes = DebugBehaviorAttributes;
+
     fn insert(&self, commands: &mut EntityCommands) {
         match self {
             DebugBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),

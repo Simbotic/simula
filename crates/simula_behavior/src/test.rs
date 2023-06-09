@@ -35,6 +35,9 @@ pub fn test_app(app: &mut App) -> &mut App {
     app
 }
 
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct TestBehaviorAttributes;
+
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
 pub enum TestBehavior {
@@ -60,6 +63,8 @@ impl Default for TestBehavior {
 }
 
 impl BehaviorFactory for TestBehavior {
+    type Attributes = TestBehaviorAttributes;
+
     fn insert(&self, commands: &mut EntityCommands) {
         match self {
             TestBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),

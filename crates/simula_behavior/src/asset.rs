@@ -10,26 +10,21 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
-pub struct BehaviorAttributes {
-    pub pos: Vec2,
-}
-
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
-pub struct Behavior<T: Default>(
+pub struct Behavior<T: BehaviorFactory>(
     Cow<'static, str>,
     T,
     #[serde(default)] Vec<Behavior<T>>,
-    #[serde(default)] BehaviorAttributes,
+    #[serde(default)] T::Attributes,
 );
 
 impl<T> Behavior<T>
 where
-    T: Default,
+    T: Default + BehaviorFactory,
 {
     pub fn new(
         name: impl Into<Cow<'static, str>>,
         data: T,
-        attrs: BehaviorAttributes,
+        attrs: T::Attributes,
         nodes: Vec<Behavior<T>>,
     ) -> Self {
         Self(name.into(), data, nodes, attrs)
@@ -43,7 +38,7 @@ where
         &self.1
     }
 
-    pub fn attrs(&self) -> &BehaviorAttributes {
+    pub fn attrs(&self) -> &T::Attributes {
         &self.3
     }
 
@@ -60,7 +55,7 @@ where
 #[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
 pub struct BehaviorAsset<T>
 where
-    T: TypeUuid + Default,
+    T: BehaviorFactory,
 {
     pub path: String,
     pub behavior: Behavior<T>,
@@ -71,7 +66,7 @@ pub struct BehaviorAssetLoader<T>(std::marker::PhantomData<T>);
 
 impl<T> AssetLoader for BehaviorAssetLoader<T>
 where
-    T: Default + TypeUuid + Send + Sync + 'static + for<'de> Deserialize<'de>,
+    T: Default + TypeUuid + Send + Sync + 'static + for<'de> Deserialize<'de> + BehaviorFactory,
 {
     fn load<'a>(
         &'a self,
@@ -98,7 +93,7 @@ where
 #[derive(Component)]
 pub struct BehaviorAssetLoading<T>
 where
-    T: TypeUuid + Send + Sync + 'static + Default + Debug,
+    T: TypeUuid + Send + Sync + 'static + Default + Debug + BehaviorFactory,
 {
     pub asset: Handle<BehaviorAsset<T>>,
     pub tree: Entity,
