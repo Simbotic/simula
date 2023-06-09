@@ -44,7 +44,7 @@ pub fn run<T: BehaviorFactory>(
     for (entity, children, subtree, node, child_tree) in &mut subtrees {
         if child_tree.is_none() {
             if let Some(tree) = node.tree {
-                let document: Handle<BehaviorAsset> = asset_server.load(subtree.asset.as_ref());
+                let document: Handle<BehaviorAsset<T>> = asset_server.load(subtree.asset.as_ref());
                 let behavior =
                     BehaviorTree::from_asset::<T>(tree, Some(entity), &mut commands, document);
                 if let Some(root) = behavior.root {

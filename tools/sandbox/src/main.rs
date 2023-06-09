@@ -317,8 +317,8 @@ fn setup(
         style: Style {
             position_type: PositionType::Absolute,
             position: UiRect {
-                top: Val::Px(5.0),
-                left: Val::Px(5.0),
+                bottom: Val::Px(5.0),
+                right: Val::Px(5.0),
                 ..default()
             },
             ..default()
@@ -746,7 +746,7 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
             for mut text in query.iter_mut() {
-                text.sections[0].value = format!("{:.2}", average);
+                text.sections[0].value = format!("{:.0}", average);
             }
         }
     };

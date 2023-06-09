@@ -47,6 +47,7 @@ pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     LoadFile(BehaviorFileId),
     SaveFile(BehaviorFileId, BehaviorFileName, BehaviorFileData),
     Run(BehaviorFileId, Behavior<T>),
+    Telemetry(BehaviorFileId, bool),
     Stop(BehaviorFileId),
 }
 

@@ -1,7 +1,6 @@
 use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     prelude::*,
-    // utils::HashMap,
     window::PresentMode,
 };
 use debug_behavior::DebugBehavior;
@@ -9,7 +8,7 @@ use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
-use simula_script::{Scope, ScriptPlugin};
+use simula_script::{script, Scope, ScriptPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -49,7 +48,10 @@ fn main() {
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(ScriptPlugin)
+        // Behavior types setup
         .add_plugin(BehaviorPlugin)
+        .add_asset::<BehaviorAsset<DebugBehavior>>()
+        .init_asset_loader::<BehaviorAssetLoader<DebugBehavior>>()
         .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
         .add_system(behavior_loader::<DebugBehavior>)
         .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
@@ -63,64 +65,52 @@ fn main() {
 fn setup<T: BehaviorFactory>(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut _scopes: ResMut<Assets<Scope>>,
-    _type_registry: Res<AppTypeRegistry>,
+    mut scopes: ResMut<Assets<Scope>>,
 ) {
-    // // load debug behaviors
-    // let behaviors = [
-    //     "debug_delay",
-    //     "debug_gate_true",
-    //     "debug_gate_blackboard",
-    //     "debug_all",
-    //     "debug_any_repeat",
-    //     "debug_any_subtree",
-    //     "debug_any",
-    //     "debug_sequence",
-    //     "debug_defaults",
-    //     "debug_repeater",
-    //     "debug_repeat_repeater",
-    //     "debug_subtree_gate",
-    // ];
-    // for behavior in behaviors.iter() {
-    //     // get a handle to a behavior asset from asset server
-    //     let behavior_handle: Handle<BehaviorAsset> =
-    //         asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
+    // load debug behaviors
+    let behaviors = [
+        "debug_delay",
+        "debug_gate_true",
+        "debug_gate_blackboard",
+        "debug_all",
+        "debug_any_repeat",
+        "debug_any_subtree",
+        "debug_any",
+        "debug_sequence",
+        "debug_defaults",
+        "debug_repeater",
+        "debug_repeat_repeater",
+        "debug_subtree_gate",
+    ];
+    for behavior in behaviors.iter() {
+        // get a handle to a behavior asset from asset server
+        let behavior_handle: Handle<BehaviorAsset<T>> =
+            asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
 
-    //     // create a new scope for the behavior tree
-    //     let mut scope = Scope::new();
-    //     let mut blackboard = script::Map::new();
-    //     blackboard.insert("state".into(), 0.into());
-    //     scope.scope.push("blackboard", blackboard);
-    //     let scope_handle = scopes.add(scope);
+        // create a new scope for the behavior tree
+        let mut scope = Scope::new();
+        let mut blackboard = script::Map::new();
+        blackboard.insert("state".into(), 0.into());
+        scope.scope.push("blackboard", blackboard);
+        let scope_handle = scopes.add(scope);
 
-    //     // create a new entity for the behavior tree, and insert the scope
-    //     let tree_entity = commands
-    //         .spawn((Name::new(format!("BT: {}", behavior)), scope_handle))
-    //         .insert(simula_behavior::inspector::graph::MyGraphState {
-    //             type_registry: type_registry.0.clone(),
-    //             ..Default::default()
-    //         })
-    //         .insert(simula_behavior::inspector::graph::MyEditorState::<
-    //             DebugBehavior,
-    //         >::default())
-    //         .id();
+        // create a new entity for the behavior tree, and insert the scope
+        let tree_entity = commands
+            .spawn((Name::new(format!("BT: {}", behavior)), scope_handle))
+            .id();
 
-    //     // create a behavior tree component from the asset
-    //     let behavior_tree = BehaviorTree::from_asset::<DebugBehavior>(
-    //         tree_entity,
-    //         None,
-    //         &mut commands,
-    //         behavior_handle,
-    //     );
+        // create a behavior tree component from the asset
+        let behavior_tree =
+            BehaviorTree::from_asset::<T>(tree_entity, None, &mut commands, behavior_handle);
 
-    //     // insert the behavior tree component into the tree entity and move root to tree entity
-    //     if let Some(root) = behavior_tree.root {
-    //         commands
-    //             .entity(tree_entity)
-    //             .insert(behavior_tree)
-    //             .add_child(root);
-    //     }
-    // }
+        // insert the behavior tree component into the tree entity and move root to tree entity
+        if let Some(root) = behavior_tree.root {
+            commands
+                .entity(tree_entity)
+                .insert(behavior_tree)
+                .add_child(root);
+        }
+    }
 
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
@@ -188,8 +178,8 @@ fn setup<T: BehaviorFactory>(
         style: Style {
             position_type: PositionType::Absolute,
             position: UiRect {
-                top: Val::Px(5.0),
-                left: Val::Px(5.0),
+                bottom: Val::Px(5.0),
+                right: Val::Px(5.0),
                 ..Default::default()
             },
             ..Default::default()
@@ -202,7 +192,7 @@ fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
             for mut text in query.iter_mut() {
-                text.sections[0].value = format!("{:.2}", average);
+                text.sections[0].value = format!("{:.0}", average);
             }
         }
     };

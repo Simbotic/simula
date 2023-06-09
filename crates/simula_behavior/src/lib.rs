@@ -1,5 +1,5 @@
 use actions::*;
-use asset::{Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
+use asset::{Behavior, BehaviorAsset, BehaviorAssetLoading};
 use bevy::{
     ecs::{query::WorldQuery, system::EntityCommands},
     prelude::*,
@@ -137,8 +137,6 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Identity>()
             .register_type::<Guard>()
             .register_type::<Timeout>()
-            .add_asset::<BehaviorAsset>()
-            .init_asset_loader::<BehaviorAssetLoader>()
             .add_systems(
                 (complete_behavior, start_behavior)
                     .chain()
@@ -279,7 +277,7 @@ impl BehaviorTree {
         tree: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
-        node: Handle<BehaviorAsset>,
+        node: Handle<BehaviorAsset<T>>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,

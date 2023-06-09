@@ -164,7 +164,7 @@ fn update<T: BehaviorFactory>(
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
     behavior_server: Res<BehaviorServer<T>>,
 ) {
-    if let Ok(client_msg) = behavior_server.receiver.try_recv() {
+    while let Ok(client_msg) = behavior_server.receiver.try_recv() {
         match client_msg {
             BehaviorProtocolClient::LoadFile(file_id) => {
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
@@ -221,7 +221,6 @@ fn update<T: BehaviorFactory>(
                 };
 
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    behavior_tracker.telemetry = true;
                     behavior_tracker.behavior = Some(behavior.clone());
 
                     let behavior_tree_entity = {
@@ -234,7 +233,7 @@ fn update<T: BehaviorFactory>(
                             behavior_tree_entity
                         } else {
                             let behavior_tree_entity =
-                                commands.spawn(Name::new(file_id.to_string())).id();
+                                commands.spawn(Name::new(format!("BT: {}", *file_id))).id();
                             behavior_tracker.entity = Some(behavior_tree_entity);
                             behavior_tree_entity
                         }
@@ -279,6 +278,13 @@ fn update<T: BehaviorFactory>(
                         .sender
                         .send(BehaviorProtocolServer::Stopped(file_id))
                         .unwrap();
+                } else {
+                    error!("Invalid file_id: {:?}", file_id);
+                }
+            }
+            BehaviorProtocolClient::Telemetry(file_id, enable) => {
+                if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
+                    behavior_tracker.telemetry = enable;
                 } else {
                     error!("Invalid file_id: {:?}", file_id);
                 }

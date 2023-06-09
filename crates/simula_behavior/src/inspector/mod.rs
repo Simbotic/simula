@@ -624,6 +624,13 @@ fn update<T>(
                                             behavior,
                                         ))
                                         .unwrap();
+                                    behavior_client
+                                        .sender
+                                        .send(BehaviorProtocolClient::Telemetry(
+                                            selected_behavior.clone(),
+                                            true,
+                                        ))
+                                        .unwrap();
                                 } else {
                                     error!("No root child");
                                     behavior_inspector_item.state = BehaviorInspectorState::Editing;
@@ -672,7 +679,7 @@ fn update<T>(
                 {
                     if let BehaviorInspectorState::Loading = behavior_inspector_item.state {
                         let entity = commands
-                            .spawn(Name::new(format!("BT: {}", *file_id)))
+                            .spawn(Name::new(format!("BTI: {}", *file_id)))
                             .insert(BehaviorGraphState {
                                 type_registry: type_registry.0.clone(),
                                 ..Default::default()
