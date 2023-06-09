@@ -6,10 +6,55 @@ use bevy::{
     utils::BoxedFuture,
 };
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::fmt::Debug;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
-pub struct Behavior<T: Default>(pub String, pub T, #[serde(default)] pub Vec<Behavior<T>>);
+pub struct BehaviorAttributes {
+    pub pos: Vec2,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct Behavior<T: Default>(
+    Cow<'static, str>,
+    T,
+    #[serde(default)] Vec<Behavior<T>>,
+    #[serde(default)] BehaviorAttributes,
+);
+
+impl<T> Behavior<T>
+where
+    T: Default,
+{
+    pub fn new(
+        name: impl Into<Cow<'static, str>>,
+        data: T,
+        attrs: BehaviorAttributes,
+        nodes: Vec<Behavior<T>>,
+    ) -> Self {
+        Self(name.into(), data, nodes, attrs)
+    }
+
+    pub fn name(&self) -> &str {
+        &self.0
+    }
+
+    pub fn data(&self) -> &T {
+        &self.1
+    }
+
+    pub fn attrs(&self) -> &BehaviorAttributes {
+        &self.3
+    }
+
+    pub fn nodes(&self) -> &Vec<Behavior<T>> {
+        &self.2
+    }
+
+    pub fn nodes_mut(&mut self) -> &mut Vec<Behavior<T>> {
+        &mut self.2
+    }
+}
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]

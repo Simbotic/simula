@@ -104,13 +104,13 @@ fn build_telemetry<T: BehaviorFactory>(
     };
 
     // Copy data from entity to telemetry
-    let mut data = behavior.1.clone();
+    let mut data = behavior.data().clone();
     data.copy_from(entity, world)?;
 
     let mut telemetry_children = vec![];
 
     let instance_children = world.get::<BehaviorChildren>(entity).cloned();
-    let source_children = behavior.2.iter();
+    let source_children = behavior.nodes().iter();
     if let Some(instance_children) = instance_children {
         let instance_children = instance_children.iter();
         for (instance_child, source_child) in instance_children.zip(source_children) {

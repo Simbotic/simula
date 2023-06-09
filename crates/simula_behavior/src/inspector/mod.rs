@@ -813,7 +813,12 @@ where
 {
     let node: &egui_node_graph::Node<BehaviorNodeData<T>> = &graph.nodes[node_id];
     let BehaviorNodeTemplate::Behavior(behavior) = &node.user_data.data else { panic!("Expected behavior node") };
-    let mut behavior = Behavior(node.label.clone(), behavior.clone(), vec![]);
+    let mut behavior = Behavior::new(
+        node.label.to_owned(),
+        behavior.clone(),
+        Default::default(),
+        Default::default(),
+    );
     for (_, output_id) in node.outputs.iter() {
         let child_id = graph
             .connections
@@ -824,7 +829,7 @@ where
             .and_then(|(input_id, _)| Some(graph.inputs[input_id].node));
         if let Some(child_id) = child_id {
             let child = graph_to_behavior(graph, child_id);
-            behavior.2.push(child);
+            behavior.nodes_mut().push(child);
         }
     }
     behavior
@@ -840,7 +845,7 @@ fn behavior_to_graph<T>(
 {
     // Update graph node with behavior telemetry
     let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
-    node.user_data.data = BehaviorNodeTemplate::Behavior(behavior.1.clone());
+    node.user_data.data = BehaviorNodeTemplate::Behavior(behavior.data().clone());
     node.user_data.state = None;
 
     // Get node children
@@ -861,7 +866,7 @@ fn behavior_to_graph<T>(
 
     // Zip and iterate over children
     let node_children = node_children.iter().cloned();
-    let behavior_children = behavior.2.iter();
+    let behavior_children = behavior.nodes().iter();
     for (node_child, behavior_child) in node_children.zip(behavior_children) {
         behavior_to_graph(graph, node_child, behavior_child);
     }

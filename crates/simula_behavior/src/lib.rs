@@ -92,15 +92,15 @@ pub trait BehaviorFactory:
     }
 
     fn reflect(&self) -> &dyn Reflect {
-        panic!("BehaviorFactory::data() not implemented")
+        panic!("BehaviorFactory::reflect() not implemented")
     }
 
     fn reflect_mut(&mut self) -> &mut dyn Reflect {
-        panic!("BehaviorFactory::data() not implemented")
+        panic!("BehaviorFactory::reflect_mut() not implemented")
     }
 
     fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing> {
-        panic!("BehaviorFactory::component_mut() not implemented")
+        panic!("BehaviorFactory::copy_from() not implemented")
     }
 
     fn categories(&self) -> Vec<&'static str> {
@@ -315,14 +315,14 @@ where
     where
         T: Default + BehaviorFactory,
     {
-        let Behavior(name, node_type, nodes) = node;
         let mut entity_commands = commands.entity(entity);
-        node_type.insert(&mut entity_commands);
-        entity_commands.insert(Name::new(name.clone()));
+        node.data().insert(&mut entity_commands);
+        entity_commands.insert(Name::new(node.name().to_owned()));
         entity_commands.insert(BehaviorParent(parent));
         entity_commands.insert(BehaviorNode { tree: Some(tree) });
 
-        let children = nodes
+        let children = node
+            .nodes()
             .iter()
             .map(|node| {
                 Self::insert_tree(
