@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn succeeder_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Just succeed",
         Succeeder(()), 
         [

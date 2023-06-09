@@ -1,4 +1,4 @@
-Behavior(
+(
     "Chill until login", Sequencer(()), [
         ("Explore", Any(()), [
             ("RepeatForever", Repeater((repeat: Forever)), [

@@ -1,4 +1,4 @@
-Behavior(
+(
     "Loop Guard",
     Repeater((repeat:Forever)),
     [

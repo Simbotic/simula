@@ -1,4 +1,4 @@
-Behavior(
+(
     "Simple sequence",
     Sequencer(()),
     [

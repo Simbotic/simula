@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn repeater_simple() {
     let behavior = r#"
-    Behavior(
+    (
         "Do a few times",
         Repeater((repeat:Times(2))),
         [
@@ -28,7 +28,7 @@ fn repeater_simple() {
 #[test]
 fn repeater_nested() {
     let behavior = r#"
-    Behavior(
+    (
         "Do a few times",
         Repeater((repeat:Times(2))),
         [
@@ -69,7 +69,7 @@ fn repeater_nested() {
 #[test]
 fn repeater_sequence_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Do a few times",
         Repeater((repeat:Times(2))),
             [(
@@ -107,7 +107,7 @@ fn repeater_sequence_success() {
 #[test]
 fn repeater_sequence_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Do a few times",
         Repeater((repeat:Times(2))),
             [(

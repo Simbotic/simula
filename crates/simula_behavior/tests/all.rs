@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn all_simple() {
     let behavior = r#"
-    Behavior(
+    (
         "Run until all good",
         All(()),
         [
@@ -31,7 +31,7 @@ fn all_simple() {
 #[test]
 fn all_simple_fails() {
     let behavior = r#"
-    Behavior(
+    (
         "Run until all good",
         All(()),
         [

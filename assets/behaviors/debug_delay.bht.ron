@@ -1,4 +1,4 @@
-Behavior(
+(
     "Loop forever",
     Repeater((repeat:Forever)),
     [

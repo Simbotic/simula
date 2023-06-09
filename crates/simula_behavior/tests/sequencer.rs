@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn sequence_single_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Sequencer of a few actions",
         Sequencer(()),
         [
@@ -31,7 +31,7 @@ fn sequence_single_success() {
 #[test]
 fn sequence_single_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Sequencer of a few actions",
         Sequencer(()), 
         [
@@ -57,7 +57,7 @@ fn sequence_single_failure() {
 #[test]
 fn sequence_nested_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Sequencer of sequence",
         Sequencer(()),
         [
@@ -109,7 +109,7 @@ fn sequence_nested_success() {
 #[test]
 fn sequence_nested_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Sequencer of sequence",
         Sequencer(()),
         [
@@ -159,7 +159,7 @@ fn sequence_nested_failure() {
 #[test]
 fn sequence_nested_selector_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Sequencer of sequence",
         Sequencer(()),
         [

@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn inverter_sequence_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Invert results of sequence",
         Inverter(()),
         [
@@ -34,7 +34,7 @@ fn inverter_sequence_success() {
 #[test]
 fn inverter_sequence_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Invert results of sequence",
         Inverter(()),
         [

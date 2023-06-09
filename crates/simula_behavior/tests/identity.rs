@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn identity_sequence_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Identity results of sequence",
         Identity(()),
         [
@@ -36,7 +36,7 @@ fn identity_sequence_success() {
 #[test]
 fn identity_sequence_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Identity results of sequence",
         Identity(()),
         [

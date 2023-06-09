@@ -3,7 +3,7 @@ use simula_behavior::{test::*, BehaviorTrace};
 #[test]
 fn selector_single_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Select first successful action",
         Selector(()),
         [
@@ -29,7 +29,7 @@ fn selector_single_success() {
 #[test]
 fn selector_single_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Select first successful action",
         Selector(()),
         [
@@ -57,7 +57,7 @@ fn selector_single_failure() {
 #[test]
 fn selector_nested_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Select first successful selector",
         Selector(()),
         [
@@ -98,7 +98,7 @@ fn selector_nested_success() {
 #[test]
 fn selector_nested_fail_first_then_success() {
     let behavior = r#"
-    Behavior(
+    (
         "Select first successful selector",
         Selector(()),
         [
@@ -143,7 +143,7 @@ fn selector_nested_fail_first_then_success() {
 #[test]
 fn selector_nested_failure() {
     let behavior = r#"
-    Behavior(
+    (
         "Select first successful selector",
         Selector(()),
         [
