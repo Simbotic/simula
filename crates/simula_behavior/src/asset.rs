@@ -55,7 +55,7 @@ pub struct BehaviorAssetLoading<T>
 where
     T: TypeUuid + Send + Sync + 'static + Default + Debug,
 {
-    pub node: Handle<BehaviorAsset<T>>,
+    pub asset: Handle<BehaviorAsset<T>>,
     pub tree: Entity,
     pub parent: Option<Entity>,
     pub phantom: std::marker::PhantomData<T>,
@@ -69,8 +69,8 @@ pub fn behavior_loader<T>(
     T: BehaviorFactory + for<'de> Deserialize<'de>,
 {
     for (entity, queued_asset) in queued_assets.iter() {
-        if let Some(loaded_asset) = loaded_assets.get(&queued_asset.node) {
-            BehaviorTree::insert_tree::<T>(
+        if let Some(loaded_asset) = loaded_assets.get(&queued_asset.asset) {
+            BehaviorTree::insert_tree(
                 queued_asset.tree,
                 entity,
                 queued_asset.parent,

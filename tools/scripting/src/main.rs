@@ -50,6 +50,7 @@ fn main() {
         .add_plugin(ScriptPlugin)
         // Behavior types setup
         .add_plugin(BehaviorPlugin)
+        .register_type::<BehaviorTree<DebugBehavior>>()
         .add_asset::<BehaviorAsset<DebugBehavior>>()
         .init_asset_loader::<BehaviorAssetLoader<DebugBehavior>>()
         .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
@@ -101,7 +102,7 @@ fn setup<T: BehaviorFactory>(
 
         // create a behavior tree component from the asset
         let behavior_tree =
-            BehaviorTree::from_asset::<T>(tree_entity, None, &mut commands, behavior_handle);
+            BehaviorTree::from_asset(tree_entity, None, &mut commands, behavior_handle);
 
         // insert the behavior tree component into the tree entity and move root to tree entity
         if let Some(root) = behavior_tree.root {

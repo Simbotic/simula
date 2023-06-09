@@ -34,7 +34,7 @@ pub fn run<T: BehaviorFactory>(
             &BehaviorChildren,
             &Subtree<T>,
             &BehaviorNode,
-            Option<&BehaviorTree>,
+            Option<&BehaviorTree<T>>,
         ),
         BehaviorRunQuery,
     >,
@@ -44,9 +44,10 @@ pub fn run<T: BehaviorFactory>(
     for (entity, children, subtree, node, child_tree) in &mut subtrees {
         if child_tree.is_none() {
             if let Some(tree) = node.tree {
-                let document: Handle<BehaviorAsset<T>> = asset_server.load(subtree.asset.as_ref());
+                let behavior_asset: Handle<BehaviorAsset<T>> =
+                    asset_server.load(subtree.asset.as_ref());
                 let behavior =
-                    BehaviorTree::from_asset::<T>(tree, Some(entity), &mut commands, document);
+                    BehaviorTree::from_asset(tree, Some(entity), &mut commands, behavior_asset);
                 if let Some(root) = behavior.root {
                     add_children(&mut commands, entity, &[root]);
                 }
@@ -105,7 +106,7 @@ pub fn run<T: BehaviorFactory>(
                     commands
                         .entity(entity)
                         .insert(BehaviorChildren::default())
-                        .remove::<BehaviorTree>();
+                        .remove::<BehaviorTree<T>>();
                     commands.entity(child_entity).despawn_recursive();
                 }
             }

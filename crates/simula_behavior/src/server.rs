@@ -138,7 +138,7 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
             }
         }
         for (file_id, entity, behavior) in tracks {
-            if let Some(behavior_tree) = world.get::<BehaviorTree>(entity) {
+            if let Some(behavior_tree) = world.get::<BehaviorTree<T>>(entity) {
                 if let Some(root) = behavior_tree.root {
                     let mut telemetry = BehaviorTelemetry::<T>::default();
                     if build_telemetry(world, root, &mut telemetry, &behavior).is_ok() {
@@ -160,7 +160,7 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
 
 fn update<T: BehaviorFactory>(
     mut commands: Commands,
-    behavior_trees: Query<&BehaviorTree>,
+    behavior_trees: Query<&BehaviorTree<T>>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
     behavior_server: Res<BehaviorServer<T>>,
 ) {
@@ -239,9 +239,9 @@ fn update<T: BehaviorFactory>(
                         }
                     };
 
-                    let mut behavior_tree = BehaviorTree::default();
+                    let mut behavior_tree = BehaviorTree::<T>::default();
                     let root = commands.spawn(BehaviorCursor::Delegate).id();
-                    BehaviorTree::insert_tree::<T>(
+                    BehaviorTree::insert_tree(
                         behavior_tree_entity,
                         root,
                         None,

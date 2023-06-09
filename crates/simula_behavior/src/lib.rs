@@ -114,8 +114,7 @@ pub trait BehaviorFactory:
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<BehaviorTree>()
-            .register_type::<BehaviorDesc>()
+        app.register_type::<BehaviorDesc>()
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
@@ -266,18 +265,25 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 /// A component added to identify the root of a behavior tree
 #[derive(Default, Reflect, Clone, Component)]
 #[reflect(Component)]
-pub struct BehaviorTree {
+pub struct BehaviorTree<T>
+where
+    T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
+{
     pub root: Option<Entity>,
+    pub asset: Handle<BehaviorAsset<T>>,
 }
 
-impl BehaviorTree {
+impl<T> BehaviorTree<T>
+where
+    T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
+{
     /// Spawn behavior tree from asset.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub fn from_asset<T>(
+    pub fn from_asset(
         tree: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
-        node: Handle<BehaviorAsset<T>>,
+        asset: Handle<BehaviorAsset<T>>,
     ) -> Self
     where
         T: TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug,
@@ -285,18 +291,21 @@ impl BehaviorTree {
         let entity = commands
             .spawn_empty()
             .insert(BehaviorAssetLoading::<T> {
-                node,
+                asset: asset.clone(),
                 tree,
                 parent,
                 phantom: std::marker::PhantomData,
             })
             .id();
-        Self { root: Some(entity) }
+        Self {
+            root: Some(entity),
+            asset,
+        }
     }
 
     /// Spawn a behavior tree from a behavior node.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub fn insert_tree<T>(
+    pub fn insert_tree(
         tree: Entity,
         entity: Entity,
         parent: Option<Entity>,
