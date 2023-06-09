@@ -179,7 +179,7 @@ where
     // this is what allows the library to show collapsible lists in the node finder.
     fn node_finder_categories(&self, _user_state: &mut Self::UserState) -> Vec<&'static str> {
         match self {
-            BehaviorNodeTemplate::Root => vec!["Root"],
+            BehaviorNodeTemplate::Root => vec![],
             BehaviorNodeTemplate::Behavior(behavior) => behavior.categories(),
         }
     }

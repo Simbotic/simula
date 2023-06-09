@@ -44,7 +44,6 @@ pub struct BehaviorFileName(pub Cow<'static, str>);
 pub struct BehaviorFileData(pub Cow<'static, str>);
 
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
-    Ping,
     LoadFile(BehaviorFileId),
     SaveFile(BehaviorFileId, BehaviorFileName, BehaviorFileData),
     Run(BehaviorFileId, Behavior<T>),
@@ -52,7 +51,6 @@ pub enum BehaviorProtocolClient<T: BehaviorFactory> {
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {
-    Pong,
     FileNames(Vec<(BehaviorFileId, BehaviorFileName)>),
     File(BehaviorFileId, BehaviorFileData),
     FileSaved(BehaviorFileId),

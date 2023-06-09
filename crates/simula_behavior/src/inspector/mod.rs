@@ -761,9 +761,6 @@ fn update<T>(
                     error!("Unexpected behavior telemetry: {:?}", file_id);
                 }
             }
-            _ => {
-                panic!("Unexpected message from server");
-            }
         }
     }
 }

@@ -283,9 +283,6 @@ fn update<T: BehaviorFactory>(
                     error!("Invalid file_id: {:?}", file_id);
                 }
             }
-            _ => {
-                panic!("unexpected message")
-            }
         }
     }
 }
