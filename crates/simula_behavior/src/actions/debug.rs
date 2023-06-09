@@ -15,6 +15,7 @@ pub struct Debug {
     #[inspector(min = 0.0, max = f64::MAX)]
     pub duration: f64,
     #[serde(skip)]
+    #[reflect(ignore)]
     pub start: f64,
 }
 

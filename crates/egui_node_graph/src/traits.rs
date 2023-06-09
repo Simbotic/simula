@@ -53,12 +53,13 @@ pub trait WidgetValueTrait: Default {
 /// [`Graph`]. This trait tells the library how to visually expose data types
 /// to the user.
 pub trait DataTypeTrait<NodeData, DataType, ValueType, UserState>: PartialEq + Eq + Sized {
-
     /// The associated port color of this datatype
-    fn data_type_color(&self, 
+    fn data_type_color(
+        &self,
         node_id: NodeId,
         graph: &Graph<NodeData, DataType, ValueType>,
-        user_state: &mut UserState) -> egui::Color32;
+        user_state: &mut UserState,
+    ) -> egui::Color32;
 
     /// The name of this datatype. Return type is specified as Cow<str> because
     /// some implementations will need to allocate a new string to provide an

@@ -48,7 +48,7 @@ where
     }
 }
 
-#[derive(Reflect, FromReflect, Clone, Copy)]
+#[derive(Clone, Copy)]
 enum BehaviorInspectorState {
     New,
     Editing,
@@ -63,9 +63,8 @@ enum BehaviorInspectorState {
     Stopping,
 }
 
-#[derive(Reflect, FromReflect, Clone)]
+#[derive(Clone)]
 struct BehaviorInspectorItem<T: BehaviorFactory> {
-    pub id: BehaviorFileId,
     pub entity: Option<Entity>,
     pub name: BehaviorFileName,
     pub state: BehaviorInspectorState,
@@ -73,7 +72,7 @@ struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub behavior: Option<Behavior<T>>,
 }
 
-#[derive(Default, Clone, Resource, Reflect)]
+#[derive(Default, Clone, Resource)]
 struct BehaviorInspector<T: BehaviorFactory> {
     pub selected: Option<BehaviorFileId>,
     pub behaviors: HashMap<BehaviorFileId, BehaviorInspectorItem<T>>,
@@ -104,7 +103,6 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             behavior_inspector.behaviors.insert(
                 file_id.clone(),
                 BehaviorInspectorItem {
-                    id: file_id.clone(),
                     entity: None,
                     name: file_name,
                     state: BehaviorInspectorState::New,
@@ -246,8 +244,12 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                             }
                         }
 
-                        if let BehaviorInspectorState::Saving = inspector_item.state {
-                            ui.add(egui::Label::new("💾 Saving..."));
+                        if let BehaviorInspectorState::Saving = inspector_item_state {
+                            ui.add_enabled(false, egui::Label::new("💾"));
+                        } else if let BehaviorInspectorState::Editing = inspector_item_state {
+                            if ui.add(egui::Button::new("💾")).clicked() {
+                                inspector_item.state = BehaviorInspectorState::Save;
+                            }
                         }
 
                         if ui
@@ -653,7 +655,6 @@ fn update<T>(
                         behavior_inspector.behaviors.insert(
                             file_id.clone(),
                             BehaviorInspectorItem {
-                                id: file_id.clone(),
                                 entity: None,
                                 name: file_name.clone(),
                                 state: BehaviorInspectorState::Load,

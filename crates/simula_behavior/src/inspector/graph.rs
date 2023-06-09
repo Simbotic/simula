@@ -8,8 +8,8 @@ use bevy_inspector_egui::{
     reflect_inspector,
 };
 use egui_node_graph::{
-    AnyParameterId, DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId,
-    NodeResponse, NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait,
+    DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId, NodeResponse,
+    NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait,
 };
 use serde::{Deserialize, Serialize};
 use simula_core::signal::{SignalFunction, SignalGenerator};
@@ -42,7 +42,6 @@ pub enum BehaviorDataType {
 /// with a DataType of Scalar and a ValueType of Vec2.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum BehaviorValueType<T> {
-    // Data(T),
     Flow,
     Marker {
         _marker: std::marker::PhantomData<T>,
@@ -116,10 +115,6 @@ impl<T>
 where
     T: BehaviorFactory,
 {
-    // type DataType = BehaviorDataType;
-    // type ValueType = BehaviorValueType<T>;
-    // type UserState = BehaviorGraphState;
-
     fn data_type_color(
         &self,
         node_id: NodeId,
@@ -401,17 +396,6 @@ where
         responses
     }
 
-    fn separator(
-        &self,
-        _ui: &mut egui::Ui,
-        _node_id: NodeId,
-        _param_id: AnyParameterId,
-        _graph: &Graph<Self, Self::DataType, Self::ValueType>,
-        _user_state: &mut Self::UserState,
-    ) {
-        // ui.separator();
-    }
-
     fn output_ui(
         &self,
         ui: &mut egui::Ui,
@@ -443,7 +427,7 @@ where
         if let Some(node) = graph.nodes.get(node_id) {
             match &node.user_data.data {
                 BehaviorNodeTemplate::Behavior(behavior) => {
-                    // Small behavior label
+                    // Behavior label
                     let label =
                         egui::RichText::new(behavior.label()).color(egui::Color32::DARK_GRAY);
                     egui::Label::new(label).ui(ui);
@@ -472,11 +456,7 @@ where
                         }
                     }
                 }
-                BehaviorNodeTemplate::Root => {
-                    // if ui.button("⏵").clicked() {
-                    //     responses.push(NodeResponse::User(BehaviorResponse::Play(node_id)));
-                    // }
-                }
+                BehaviorNodeTemplate::Root => {}
             }
         }
 
@@ -495,30 +475,6 @@ where
         BehaviorResponse<T>: UserResponseTrait,
     {
         let responses = vec![];
-
-        // let mut name = "test";
-        // egui::TextEdit::multiline(&mut name)
-        // .code_editor().desired_rows(10).frame(true)
-        //     // .min_size(egui::Vec2::new(100.0, 20.0))
-        //     .text_color(egui::Color32::WHITE)
-        //     // .frame(false)
-        //     .show(ui);
-
-        // if let Some(node) = graph.nodes.get(node_id) {
-        //     match &node.user_data.data {
-        //         MyNodeTemplate::Behavior(behavior) => {
-        //             let mut behavior = behavior.clone();
-        //             let type_registry = user_state.type_registry.read();
-        //             if reflect_inspector::ui_for_value(behavior.reflect(), ui, &type_registry) {
-        //                 responses.push(NodeResponse::User(MyResponse::NodeEdited(
-        //                     node_id, behavior,
-        //                 )));
-        //             }
-        //         }
-        //         MyNodeTemplate::Root => {}
-        //     }
-        // }
-
         responses
     }
 }

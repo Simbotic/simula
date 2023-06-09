@@ -727,13 +727,18 @@ where
                     port_color = port_type.data_type_color(node_id, &graph, user_state);
                 } else if let AnyParameterId::Output(output) = param_id {
                     // Find the input that corresponds to this output and use its color
-                    if let Some(node_id) = graph
-                        .connections.iter().find_map(|(input, &other_output)| if other_output == output {
-                            let node_id = graph.inputs[input].node;
-                            Some(node_id)
-                        } else { None}) {
-                            port_color = port_type.data_type_color(node_id, &graph, user_state);
-                        }                    
+                    if let Some(node_id) =
+                        graph.connections.iter().find_map(|(input, &other_output)| {
+                            if other_output == output {
+                                let node_id = graph.inputs[input].node;
+                                Some(node_id)
+                            } else {
+                                None
+                            }
+                        })
+                    {
+                        port_color = port_type.data_type_color(node_id, &graph, user_state);
+                    }
                 }
             }
 

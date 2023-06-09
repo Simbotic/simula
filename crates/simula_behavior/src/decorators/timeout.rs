@@ -1,12 +1,16 @@
 use crate::prelude::*;
 use bevy::prelude::*;
+use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, InspectorOptions)]
+#[reflect(InspectorOptions)]
 pub struct Timeout {
     #[serde(default)]
+    #[inspector(min = 0.0, max = f64::MAX)]
     pub duration: f64,
     #[serde(skip)]
+    #[reflect(ignore)]
     pub start: f64,
 }
 

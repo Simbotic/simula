@@ -12,6 +12,7 @@ pub struct Sequencer {
     #[serde(default)]
     random: bool,
     #[serde(skip)]
+    #[reflect(ignore)]
     pub seed: u64,
 }
 
