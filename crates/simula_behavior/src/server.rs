@@ -232,8 +232,9 @@ fn update<T: BehaviorFactory>(
                             }
                             behavior_tree_entity
                         } else {
-                            let behavior_tree_entity =
-                                commands.spawn(Name::new(format!("BT: {}", *file_id))).id();
+                            let behavior_tree_entity = commands
+                                .spawn(Name::new(format!("BT: {}", *behavior_tracker.file_name)))
+                                .id();
                             behavior_tracker.entity = Some(behavior_tree_entity);
                             behavior_tree_entity
                         }

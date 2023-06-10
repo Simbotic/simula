@@ -1,0 +1,22 @@
+("? Selector", Selector((
+    random: false,
+)), [
+    ("⌛ Delay", Delay((
+        duration: 0.0,
+    )), [
+        ("👁 Debug", Debug((
+            message: "pepe",
+            fail: false,
+            duration: 0.0,
+        )), [], (
+            pos: (855.0011, 80.28418),
+        )),
+    ], (
+        pos: (655.3651, 281.52148),
+    )),
+    ("Inverter", Inverter(()), [], (
+        pos: (747.4497, 430.65234),
+    )),
+], (
+    pos: (297.09436, 280.65198),
+))

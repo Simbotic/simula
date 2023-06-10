@@ -1,0 +1,81 @@
+("➡ Sequencer", Sequencer((
+    random: false,
+)), [
+    ("👁 Maybe something else", Debug((
+        message: "a",
+        fail: false,
+        duration: 0.0,
+    )), [], (
+        pos: (407.2394, 0.074279785),
+    )),
+    ("👁 Debug", Debug((
+        message: "b",
+        fail: false,
+        duration: 0.0,
+    )), [], (
+        pos: (409.92633, 157.51074),
+    )),
+    ("⌛ Wait", Wait((
+        duration: 5.0,
+    )), [], (
+        pos: (409.8089, 322.66992),
+    )),
+    ("? Selector", Selector((
+        random: false,
+    )), [
+        ("⌛ Delay", Delay((
+            duration: 2.0,
+        )), [
+            ("👁 Debug is cool", Debug((
+                message: "",
+                fail: true,
+                duration: 0.0,
+            )), [], (
+                pos: (845.4175, 442.49304),
+            )),
+        ], (
+            pos: (623.75806, 442.7605),
+        )),
+        ("⌛ Delay", Delay((
+            duration: 5.0,
+        )), [
+            ("👁 Debug", Debug((
+                message: "",
+                fail: true,
+                duration: 0.0,
+            )), [], (
+                pos: (850.1122, 606.14014),
+            )),
+        ], (
+            pos: (628.7831, 607.5149),
+        )),
+        ("⇉ All", All(()), [
+            ("⌛ Wait", Wait((
+                duration: 5.0,
+            )), [], (
+                pos: (849.64136, 772.5996),
+            )),
+            ("⌛ Wait", Wait((
+                duration: 1.0,
+            )), [], (
+                pos: (850.6102, 889.4072),
+            )),
+            ("⌛ Wait", Wait((
+                duration: 3.0,
+            )), [], (
+                pos: (851.9077, 1007.45435),
+            )),
+        ], (
+            pos: (630.2251, 773.81274),
+        )),
+    ], (
+        pos: (412.41345, 442.81262),
+    )),
+    ("⌛ Wait", Wait((
+        duration: 5.0,
+    )), [], (
+        pos: (422.92065, 1137.7332),
+    )),
+], (
+    pos: (125.75842, -0.005126953),
+))

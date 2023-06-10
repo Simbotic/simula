@@ -42,6 +42,10 @@ where
         &self.3
     }
 
+    pub fn attrs_mut(&mut self) -> &mut T::Attributes {
+        &mut self.3
+    }
+
     pub fn nodes(&self) -> &Vec<Behavior<T>> {
         &self.2
     }

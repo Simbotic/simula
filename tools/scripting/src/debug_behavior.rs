@@ -4,7 +4,7 @@ use simula_behavior::prelude::*;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct DebugBehaviorAttributes {
-    pub pos: Option<Vec2>,
+    pub pos: Vec2,
 }
 
 #[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
@@ -28,6 +28,16 @@ pub enum DebugBehavior {
 impl Default for DebugBehavior {
     fn default() -> Self {
         Self::Debug(Debug::default())
+    }
+}
+
+impl BehaviorInspectable<DebugBehavior> for DebugBehaviorAttributes {
+    fn set_pos(&mut self, pos: Vec2) {
+        self.pos = pos;
+    }
+
+    fn get_pos(&self) -> Vec2 {
+        self.pos
     }
 }
 

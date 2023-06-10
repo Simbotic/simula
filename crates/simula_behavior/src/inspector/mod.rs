@@ -1,6 +1,6 @@
 use crate::{
     inspector::graph::{
-        BehaviorDataType, BehaviorEditorState, BehaviorGraphState, BehaviorNodeData,
+        BehaviorData, BehaviorDataType, BehaviorEditorState, BehaviorGraphState, BehaviorNodeData,
         BehaviorNodeTemplate, BehaviorNodeTemplates, BehaviorResponse, BehaviorValueType,
     },
     protocol::{
@@ -11,7 +11,7 @@ use crate::{
 };
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use crossbeam_channel::unbounded;
-use egui_node_graph::{Graph, NodeId, NodeResponse, NodeTemplateTrait};
+use egui_node_graph::{Graph, InputId, NodeId, NodeResponse, NodeTemplateTrait, OutputId};
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 use std::borrow::Cow;
@@ -24,6 +24,7 @@ pub struct BehaviorInspectorPlugin<T: BehaviorFactory>(pub std::marker::PhantomD
 impl<T> Plugin for BehaviorInspectorPlugin<T>
 where
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
     fn build(&self, app: &mut App) {
         // Setup bi-directional communication channels
@@ -46,6 +47,11 @@ where
             .add_startup_system(setup::<T>)
             .add_system(update::<T>);
     }
+}
+
+pub trait BehaviorInspectable<T: BehaviorFactory> {
+    fn get_pos(&self) -> Vec2;
+    fn set_pos(&mut self, pos: Vec2);
 }
 
 #[derive(Clone, Copy)]
@@ -329,7 +335,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                 *position = egui::pos2(0.0, 0.0);
                             } else {
                                 for (nodeid, node) in &editor_state.graph.nodes {
-                                    if let BehaviorNodeTemplate::Root = &node.user_data.data {
+                                    if let BehaviorData::Root = &node.user_data.data {
                                         graph_state.root_node = Some(nodeid);
                                         break;
                                     }
@@ -383,7 +389,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                         // If composite type, dynamically adjust outputs of node
                                         let node_id = editor_state.graph.outputs[output_id].node;
                                         let node = editor_state.graph.nodes.get(node_id).unwrap();
-                                        if let BehaviorNodeTemplate::Behavior(behavior) =
+                                        if let BehaviorData::Behavior(behavior) =
                                             &node.user_data.data
                                         {
                                             if behavior.typ() == BehaviorType::Composite {
@@ -435,8 +441,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                         if let Some(node) =
                                             editor_state.graph.nodes.get_mut(node_id)
                                         {
-                                            node.user_data.data =
-                                                BehaviorNodeTemplate::Behavior(data);
+                                            node.user_data.data = BehaviorData::Behavior(data);
                                         }
                                     }
                                     NodeResponse::User(BehaviorResponse::NameEdited(
@@ -477,7 +482,7 @@ fn get_root_child<T: BehaviorFactory>(
     graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
 ) -> Option<NodeId> {
     for node in graph.nodes.values() {
-        if let BehaviorNodeTemplate::Root = &node.user_data.data {
+        if let BehaviorData::Root = &node.user_data.data {
             // All this just to get first child of root node
             let root_child_id: Option<NodeId> = node
                 .outputs
@@ -509,6 +514,7 @@ fn update<T>(
     mut editor_states: Query<&mut BehaviorEditorState<T>>,
 ) where
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
     // provide time for all graph states
     for mut graph_state in graph_states.iter_mut() {
@@ -521,7 +527,7 @@ fn update<T>(
         {
             // If selected behavior is load, load it
             if let BehaviorInspectorState::Load = behavior_inspector_item.state {
-                info!("Loading behavior: {}", *selected_behavior);
+                info!("Loading behavior: {}", *behavior_inspector_item.name);
                 behavior_inspector_item.state = BehaviorInspectorState::Loading;
                 behavior_client
                     .sender
@@ -530,7 +536,7 @@ fn update<T>(
             }
             // if selected behavior is new, create it
             else if let BehaviorInspectorState::New = behavior_inspector_item.state {
-                info!("Creating behavior: {}", *selected_behavior);
+                info!("Creating behavior: {}", *behavior_inspector_item.name);
 
                 let mut graph_state = BehaviorGraphState {
                     type_registry: type_registry.0.clone(),
@@ -540,7 +546,7 @@ fn update<T>(
 
                 // create the only root node allowed
                 let root_node_data = BehaviorNodeData {
-                    data: BehaviorNodeTemplate::Root,
+                    data: BehaviorData::Root,
                     state: None,
                 };
                 let root_node =
@@ -556,7 +562,7 @@ fn update<T>(
                 editor_state.node_order.push(root_node);
 
                 let entity = commands
-                    .spawn(Name::new(format!("BT: {}", *selected_behavior)))
+                    .spawn(Name::new(format!("BT: {}", *behavior_inspector_item.name)))
                     .insert(graph_state)
                     .insert(editor_state)
                     .id();
@@ -565,37 +571,49 @@ fn update<T>(
             }
             // if selected behavior is save, save it
             else if let BehaviorInspectorState::Save = behavior_inspector_item.state {
-                info!("Saving behavior: {}", *selected_behavior);
+                info!("Saving behavior: {}", *behavior_inspector_item.name);
                 if let Some(entity) = behavior_inspector_item.entity {
                     behavior_inspector_item.state = BehaviorInspectorState::Saving;
                     if let Ok(editor_state) = editor_states.get(entity) {
-                        if let Ok(file_data) = ron::ser::to_string_pretty(
-                            &editor_state,
-                            ron::ser::PrettyConfig::default(),
-                        ) {
-                            info!("Saving behavior: {}", *behavior_inspector_item.name);
-                            behavior_inspector_item.state = BehaviorInspectorState::Saving;
-                            behavior_client
-                                .sender
-                                .send(BehaviorProtocolClient::SaveFile(
-                                    selected_behavior.clone(),
-                                    behavior_inspector_item.name.clone(),
-                                    BehaviorFileData(file_data.into()),
-                                ))
-                                .unwrap();
+                        let root_child_id = get_root_child(&editor_state.graph);
+                        if let Some(root_child_id) = root_child_id {
+                            let behavior = graph_to_behavior(&editor_state, root_child_id);
+                            println!("behavior: {:#?}", behavior);
+                            behavior_inspector_item.behavior = Some(behavior.clone());
+                            if let Ok(file_data) = ron::ser::to_string_pretty(
+                                &behavior,
+                                ron::ser::PrettyConfig::default(),
+                            ) {
+                                info!("Saving behavior: {}", *behavior_inspector_item.name);
+                                behavior_inspector_item.state = BehaviorInspectorState::Saving;
+                                behavior_client
+                                    .sender
+                                    .send(BehaviorProtocolClient::SaveFile(
+                                        selected_behavior.clone(),
+                                        behavior_inspector_item.name.clone(),
+                                        BehaviorFileData(file_data.into()),
+                                    ))
+                                    .unwrap();
+                            } else {
+                                error!(
+                                    "Failed to serialize behavior: {}",
+                                    *behavior_inspector_item.name
+                                );
+                                behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                            };
                         } else {
                             error!(
-                                "Failed to serialize behavior: {}",
+                                "No root child for behavior: {}",
                                 *behavior_inspector_item.name
                             );
                             behavior_inspector_item.state = BehaviorInspectorState::Editing;
-                        };
+                        }
                     } else {
                         error!(
-                            "No graph editor state for behavior: {}",
+                            "No editor state for behavior: {}",
                             *behavior_inspector_item.name
                         );
-                        behavior_inspector_item.state = BehaviorInspectorState::New;
+                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
                 } else {
                     error!("No entity for behavior: {}", *behavior_inspector_item.name);
@@ -604,46 +622,51 @@ fn update<T>(
             }
             // if selected behavior should run, run it
             else if let BehaviorInspectorState::Run = behavior_inspector_item.state {
-                info!("Run behavior: {}", *selected_behavior);
+                info!("Run behavior: {}", *behavior_inspector_item.name);
                 if let Some(entity) = behavior_inspector_item.entity {
                     if let Ok(editor_state) = editor_states.get(entity) {
-                        for node in editor_state.graph.nodes.values() {
-                            if let BehaviorNodeTemplate::Root = &node.user_data.data {
-                                let root_child_id = get_root_child(&editor_state.graph);
-                                if let Some(root_child_id) = root_child_id {
-                                    let behavior =
-                                        graph_to_behavior(&editor_state.graph, root_child_id);
-                                    println!("behavior: {:#?}", behavior);
-                                    behavior_inspector_item.behavior = Some(behavior.clone());
-                                    behavior_inspector_item.state =
-                                        BehaviorInspectorState::Starting;
-                                    behavior_client
-                                        .sender
-                                        .send(BehaviorProtocolClient::Run(
-                                            selected_behavior.clone(),
-                                            behavior,
-                                        ))
-                                        .unwrap();
-                                    behavior_client
-                                        .sender
-                                        .send(BehaviorProtocolClient::Telemetry(
-                                            selected_behavior.clone(),
-                                            true,
-                                        ))
-                                        .unwrap();
-                                } else {
-                                    error!("No root child");
-                                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
-                                }
-                                break;
-                            }
+                        let root_child_id = get_root_child(&editor_state.graph);
+                        if let Some(root_child_id) = root_child_id {
+                            let behavior = graph_to_behavior(&editor_state, root_child_id);
+                            println!("behavior: {:#?}", behavior);
+                            behavior_inspector_item.behavior = Some(behavior.clone());
+                            behavior_inspector_item.state = BehaviorInspectorState::Starting;
+                            behavior_client
+                                .sender
+                                .send(BehaviorProtocolClient::Run(
+                                    selected_behavior.clone(),
+                                    behavior,
+                                ))
+                                .unwrap();
+                            behavior_client
+                                .sender
+                                .send(BehaviorProtocolClient::Telemetry(
+                                    selected_behavior.clone(),
+                                    true,
+                                ))
+                                .unwrap();
+                        } else {
+                            error!(
+                                "No root child for behavior: {}",
+                                *behavior_inspector_item.name
+                            );
+                            behavior_inspector_item.state = BehaviorInspectorState::Editing;
                         }
+                    } else {
+                        error!(
+                            "No editor state for behavior: {}",
+                            *behavior_inspector_item.name
+                        );
+                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
+                } else {
+                    error!("No entity for behavior: {}", *behavior_inspector_item.name);
+                    behavior_inspector_item.state = BehaviorInspectorState::New;
                 }
             }
             // if selected behavior should stop, stop it
             else if let BehaviorInspectorState::Stop = behavior_inspector_item.state {
-                info!("Stop behavior: {}", *selected_behavior);
+                info!("Stop behavior: {}", *behavior_inspector_item.name);
                 behavior_inspector_item.state = BehaviorInspectorState::Stopping;
                 behavior_client
                     .sender
@@ -678,18 +701,79 @@ fn update<T>(
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
                     if let BehaviorInspectorState::Loading = behavior_inspector_item.state {
-                        let entity = commands
-                            .spawn(Name::new(format!("BTI: {}", *file_id)))
-                            .insert(BehaviorGraphState {
-                                type_registry: type_registry.0.clone(),
-                                ..Default::default()
-                            })
-                            .insert(
-                                ron::de::from_str::<BehaviorEditorState<T>>(&file_data).unwrap(),
-                            )
-                            .id();
-                        behavior_inspector_item.entity = Some(entity);
-                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                        info!("Loading behavior: {}", *behavior_inspector_item.name);
+
+                        let mut graph_state = BehaviorGraphState {
+                            type_registry: type_registry.0.clone(),
+                            ..Default::default()
+                        };
+                        let mut editor_state = BehaviorEditorState::<T>::default();
+
+                        // create the only root node allowed
+                        let root_node_data = BehaviorNodeData {
+                            data: BehaviorData::Root,
+                            state: None,
+                        };
+                        let root_node = editor_state.graph.add_node(
+                            "Root".into(),
+                            root_node_data,
+                            |graph, node_id| {
+                                BehaviorNodeTemplate::Root.build_node(
+                                    graph,
+                                    &mut graph_state,
+                                    node_id,
+                                )
+                            },
+                        );
+
+                        editor_state
+                            .node_positions
+                            .insert(root_node, egui::Pos2::new(0.0, 0.0));
+                        editor_state.node_order.push(root_node);
+
+                        let behavior = ron::de::from_str::<Behavior<T>>(&file_data);
+                        if let Ok(behavior) = behavior {
+                            behavior_into_graph(
+                                &mut editor_state,
+                                &mut graph_state,
+                                root_node,
+                                &behavior,
+                            );
+
+                            let entity = commands
+                                .spawn(Name::new(format!("BT: {}", *behavior_inspector_item.name)))
+                                .insert(graph_state)
+                                .insert(editor_state)
+                                .id();
+                            behavior_inspector_item.entity = Some(entity);
+                            behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                        } else if let Err(e) = behavior {
+                            error!(
+                                "Failed to deserialize behavior: {} {}",
+                                *behavior_inspector_item.name, e
+                            );
+                            behavior_inspector_item.state = BehaviorInspectorState::New;
+                        }
+
+                        // let behavior = ron::de::from_str::<BehaviorEditorState<T>>(&file_data);
+                        // if let Ok(behavior) = behavior {
+                        //     let entity = commands
+                        //         .spawn(Name::new(format!("BTI: {}", *behavior_inspector_item.name)))
+                        //         .insert(BehaviorGraphState {
+                        //             type_registry: type_registry.0.clone(),
+                        //             ..Default::default()
+                        //         })
+                        //         .insert(behavior)
+                        //         .id();
+                        //     behavior_inspector_item.entity = Some(entity);
+                        //     behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                        // } else if let Err(e) = behavior {
+                        //     error!(
+                        //         "Failed to deserialize behavior: {} {}",
+                        //         *behavior_inspector_item.name, e
+                        //     );
+                        //     behavior_inspector_item.state = BehaviorInspectorState::New;
+                        // }
                     }
                 }
             }
@@ -726,11 +810,7 @@ fn update<T>(
                         if let Some(entity) = behavior_inspector_item.entity {
                             if let Ok(mut editor_state) = editor_states.get_mut(entity) {
                                 if let Some(root_child_id) = get_root_child(&editor_state.graph) {
-                                    behavior_to_graph(
-                                        &mut editor_state.graph,
-                                        root_child_id,
-                                        &behavior,
-                                    );
+                                    behavior_to_graph(&mut editor_state, root_child_id, &behavior);
                                 }
                             }
                         }
@@ -759,7 +839,10 @@ fn update<T>(
                                         &telemetry,
                                     );
                                 } else {
-                                    error!("No root child");
+                                    error!(
+                                        "No root child for behavior: {:?}",
+                                        *behavior_inspector_item.name
+                                    );
                                 }
                             }
                         }
@@ -804,31 +887,36 @@ fn close_button(ui: &mut egui::Ui, node_rect: egui::Rect) -> egui::Response {
 }
 
 // Recursively build behavior from graph
-fn graph_to_behavior<T>(
-    graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
-    node_id: NodeId,
-) -> Behavior<T>
+fn graph_to_behavior<T>(editor: &BehaviorEditorState<T>, node_id: NodeId) -> Behavior<T>
 where
     T: BehaviorFactory,
+    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
-    let node: &egui_node_graph::Node<BehaviorNodeData<T>> = &graph.nodes[node_id];
-    let BehaviorNodeTemplate::Behavior(behavior) = &node.user_data.data else { panic!("Expected behavior node") };
+    let node: &egui_node_graph::Node<BehaviorNodeData<T>> = &editor.graph.nodes[node_id];
+    let BehaviorData::Behavior(behavior) = &node.user_data.data else { panic!("Expected behavior node") };
+    let mut attribs = <T as BehaviorFactory>::Attributes::default();
+    editor
+        .node_positions
+        .get(node_id)
+        .map(|pos| attribs.set_pos(Vec2::new(pos.x, pos.y)));
     let mut behavior = Behavior::new(
         node.label.to_owned(),
         behavior.clone(),
-        Default::default(),
+        attribs,
         Default::default(),
     );
     for (_, output_id) in node.outputs.iter() {
-        let child_id = graph
+        let child_id = editor
+            .graph
             .connections
             .iter()
             .find(|(input_id, rhs_output_id)| {
-                output_id == *rhs_output_id && graph.inputs[*input_id].typ == BehaviorDataType::Flow
+                output_id == *rhs_output_id
+                    && editor.graph.inputs[*input_id].typ == BehaviorDataType::Flow
             })
-            .and_then(|(input_id, _)| Some(graph.inputs[input_id].node));
+            .and_then(|(input_id, _)| Some(editor.graph.inputs[input_id].node));
         if let Some(child_id) = child_id {
-            let child = graph_to_behavior(graph, child_id);
+            let child = graph_to_behavior(editor, child_id);
             behavior.nodes_mut().push(child);
         }
     }
@@ -837,15 +925,18 @@ where
 
 // Recursively update graph from behavior
 fn behavior_to_graph<T>(
-    graph: &mut Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
+    editor: &mut BehaviorEditorState<T>,
     node_id: NodeId,
     behavior: &Behavior<T>,
 ) where
     T: BehaviorFactory,
+    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
-    // Update graph node with behavior telemetry
+    let graph = &mut editor.graph;
+
+    // Update graph node with behavior data
     let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
-    node.user_data.data = BehaviorNodeTemplate::Behavior(behavior.data().clone());
+    node.user_data.data = BehaviorData::Behavior(behavior.data().clone());
     node.user_data.state = None;
 
     // Get node children
@@ -868,7 +959,81 @@ fn behavior_to_graph<T>(
     let node_children = node_children.iter().cloned();
     let behavior_children = behavior.nodes().iter();
     for (node_child, behavior_child) in node_children.zip(behavior_children) {
-        behavior_to_graph(graph, node_child, behavior_child);
+        behavior_to_graph(editor, node_child, behavior_child);
+    }
+}
+
+// Recursively create graph from behavior
+fn behavior_into_graph<T>(
+    editor: &mut BehaviorEditorState<T>,
+    graph_state: &mut BehaviorGraphState,
+    parent_node_id: NodeId,
+    behavior: &Behavior<T>,
+) where
+    T: BehaviorFactory,
+    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
+{
+    // Create graph node with behavior data
+    let behavior_data = BehaviorData::Behavior(behavior.data().clone());
+    let behavior_template = BehaviorNodeTemplate::Behavior(behavior.data().clone());
+    let node_data = BehaviorNodeData {
+        data: behavior_data.clone(),
+        state: None,
+    };
+    let node_id = editor
+        .graph
+        .add_node(behavior.name().into(), node_data, |graph, node_id| {
+            behavior_template.build_node(graph, graph_state, node_id)
+        });
+    let node_pos = behavior.attrs().get_pos();
+    editor
+        .node_positions
+        .insert(node_id, egui::pos2(node_pos.x, node_pos.y));
+    editor.node_order.push(node_id);
+
+    // If parent node is a composite, add an extra output
+    if let BehaviorData::Behavior(behavior) =
+        editor.graph.nodes[parent_node_id].user_data.data.clone()
+    {
+        if let BehaviorType::Composite = behavior.typ() {
+            editor
+                .graph
+                .add_output_param(parent_node_id, "".into(), BehaviorDataType::Flow);
+        }
+    }
+
+    // Find available output from parent node
+    let parent_node = &editor.graph.nodes[parent_node_id];
+    let output_id: Option<OutputId> = parent_node.output_ids().find(|output_id| {
+        editor
+            .graph
+            .connections
+            .iter()
+            .find(|(_, rhs_output_id)| output_id == *rhs_output_id)
+            .is_none()
+    });
+
+    // Find input from node
+    let node = &editor.graph.nodes[node_id];
+    let input_id: Option<InputId> = node.input_ids().find(|input_id| {
+        editor
+            .graph
+            .connections
+            .iter()
+            .find(|(lhs_input_id, _)| input_id == lhs_input_id)
+            .is_none()
+    });
+
+    // Connect parent and child node
+    if let (Some(output_id), Some(input_id)) = (output_id, input_id) {
+        editor.graph.add_connection(output_id, input_id);
+    } else {
+        error!("Failed to connect {:?} to {:?}", parent_node_id, node_id);
+    }
+
+    // Recursively apply to children
+    for child in behavior.nodes() {
+        behavior_into_graph(editor, graph_state, node_id, child);
     }
 }
 
@@ -883,7 +1048,7 @@ fn behavior_telemerty_to_graph<T>(
     // Update graph node with behavior telemetry
     let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
     if let BehaviorTelemetry(state, Some(behavior), _) = telemetry {
-        node.user_data.data = BehaviorNodeTemplate::Behavior(behavior.clone());
+        node.user_data.data = BehaviorData::Behavior(behavior.clone());
         node.user_data.state = Some(*state);
     }
 

@@ -20,9 +20,15 @@ use std::borrow::Cow;
 /// example, the node data stores the template (i.e. the "type") of the node.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BehaviorNodeData<T: BehaviorFactory> {
-    pub data: BehaviorNodeTemplate<T>,
+    pub data: BehaviorData<T>,
     #[serde(skip)]
     pub state: Option<BehaviorState>,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum BehaviorData<T: BehaviorFactory> {
+    Root,
+    Behavior(T),
 }
 
 /// `DataType`s are what defines the possible range of connections when
@@ -59,7 +65,7 @@ impl<T> Default for BehaviorValueType<T> {
 /// NodeTemplate is a mechanism to define node templates. It's what the graph
 /// will display in the "new node" popup. The user code needs to tell the
 /// library how to convert a NodeTemplate into a Node.
-#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum BehaviorNodeTemplate<T: BehaviorFactory> {
     Root,
     Behavior(T),
@@ -192,7 +198,12 @@ where
 
     fn user_data(&self, _user_state: &mut Self::UserState) -> Self::NodeData {
         BehaviorNodeData {
-            data: self.clone(),
+            data: match self {
+                BehaviorNodeTemplate::Behavior(behavior) => {
+                    BehaviorData::Behavior(behavior.clone())
+                }
+                _ => BehaviorData::Root,
+            },
             state: None,
         }
     }
@@ -203,16 +214,16 @@ where
         _user_state: &mut Self::UserState,
         node_id: NodeId,
     ) {
+        println!("Building node {:?} {:?}", node_id, &self);
         match self {
             BehaviorNodeTemplate::Root => {
-                println!("Building root node");
                 graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
             }
             BehaviorNodeTemplate::Behavior(behavior) => match behavior.typ() {
                 BehaviorType::Action => {
                     graph.add_input_param(
                         node_id,
-                        "A".into(),
+                        "".into(),
                         BehaviorDataType::Flow,
                         BehaviorValueType::Flow,
                         InputParamKind::ConnectionOnly,
@@ -222,7 +233,7 @@ where
                 BehaviorType::Decorator => {
                     graph.add_input_param(
                         node_id,
-                        "A".into(),
+                        "".into(),
                         BehaviorDataType::Flow,
                         BehaviorValueType::Flow,
                         InputParamKind::ConnectionOnly,
@@ -233,14 +244,13 @@ where
                 BehaviorType::Composite => {
                     graph.add_input_param(
                         node_id,
-                        "A".into(),
+                        "".into(),
                         BehaviorDataType::Flow,
                         BehaviorValueType::Flow,
                         InputParamKind::ConnectionOnly,
                         true,
                     );
-
-                    graph.add_output_param(node_id, "B".into(), BehaviorDataType::Flow);
+                    graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
                 }
             },
         }
@@ -332,8 +342,8 @@ where
         _user_state: &mut Self::UserState,
     ) -> bool {
         match &self.data {
-            BehaviorNodeTemplate::Root => false,
-            BehaviorNodeTemplate::Behavior(_) => true,
+            BehaviorData::Root => false,
+            BehaviorData::Behavior(_) => true,
         }
     }
 
@@ -345,8 +355,8 @@ where
         _user_state: &mut Self::UserState,
     ) -> Option<egui::Color32> {
         match &self.data {
-            BehaviorNodeTemplate::Root => None,
-            BehaviorNodeTemplate::Behavior(behavior) => Some(to_bytes(&behavior.color())),
+            BehaviorData::Root => None,
+            BehaviorData::Behavior(behavior) => Some(to_bytes(&behavior.color())),
         }
     }
 
@@ -363,10 +373,10 @@ where
         let mut responses = vec![];
 
         match &self.data {
-            BehaviorNodeTemplate::Root => {
+            BehaviorData::Root => {
                 ui.label("Root");
             }
-            BehaviorNodeTemplate::Behavior(_behavior) => {
+            BehaviorData::Behavior(_behavior) => {
                 if let Some(node) = graph.nodes.get(node_id) {
                     match user_state.active_node {
                         Some(active_node_id) if active_node_id == node_id => {
@@ -426,7 +436,7 @@ where
 
         if let Some(node) = graph.nodes.get(node_id) {
             match &node.user_data.data {
-                BehaviorNodeTemplate::Behavior(behavior) => {
+                BehaviorData::Behavior(behavior) => {
                     // Behavior label
                     let label =
                         egui::RichText::new(behavior.label()).color(egui::Color32::DARK_GRAY);
@@ -456,7 +466,7 @@ where
                         }
                     }
                 }
-                BehaviorNodeTemplate::Root => {}
+                BehaviorData::Root => {}
             }
         }
 
@@ -479,7 +489,7 @@ where
     }
 }
 
-#[derive(Default, Component, Deref, DerefMut, Serialize, Deserialize)]
+#[derive(Default, Component, Deref, DerefMut)]
 pub struct BehaviorEditorState<T: BehaviorFactory>(
     pub  GraphEditorState<
         BehaviorNodeData<T>,

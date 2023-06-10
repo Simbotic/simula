@@ -26,7 +26,7 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::BehaviorInspectorPlugin;
+    pub use crate::inspector::{BehaviorInspectable, BehaviorInspectorPlugin};
     pub use crate::protocol::{self};
     pub use crate::server::BehaviorServerPlugin;
     pub use crate::{
