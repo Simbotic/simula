@@ -11,21 +11,19 @@ use egui_node_graph::{
     DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId, NodeResponse,
     NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait,
 };
-use serde::{Deserialize, Serialize};
 use simula_core::signal::{SignalFunction, SignalGenerator};
 use std::borrow::Cow;
 
 /// The NodeData holds a custom data struct inside each node. It's useful to
 /// store additional information that doesn't live in parameters. For this
 /// example, the node data stores the template (i.e. the "type") of the node.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Debug)]
 pub struct BehaviorNodeData<T: BehaviorFactory> {
     pub data: BehaviorData<T>,
-    #[serde(skip)]
     pub state: Option<BehaviorState>,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub enum BehaviorData<T: BehaviorFactory> {
     Root,
     Behavior(T),
@@ -34,7 +32,7 @@ pub enum BehaviorData<T: BehaviorFactory> {
 /// `DataType`s are what defines the possible range of connections when
 /// attaching two ports together. The graph UI will make sure to not allow
 /// attaching incompatible datatypes.
-#[derive(PartialEq, Eq, Deserialize, Serialize)]
+#[derive(PartialEq, Eq)]
 pub enum BehaviorDataType {
     Flow,
 }
@@ -46,7 +44,7 @@ pub enum BehaviorDataType {
 /// this library makes no attempt to check this consistency. For instance, it is
 /// up to the user code in this example to make sure no parameter is created
 /// with a DataType of Scalar and a ValueType of Vec2.
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug)]
 pub enum BehaviorValueType<T> {
     Flow,
     Marker {
