@@ -28,7 +28,7 @@ pub mod prelude {
     pub use crate::decorators::*;
     pub use crate::inspector::{BehaviorInspectable, BehaviorInspectorPlugin};
     pub use crate::protocol::{self};
-    pub use crate::server::BehaviorServerPlugin;
+    pub use crate::server::{BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
@@ -305,7 +305,8 @@ where
 {
     /// Spawn behavior tree from asset.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub fn from_asset(
+    /// Interface too complex, private for now.
+    fn from_asset(
         tree: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
@@ -326,9 +327,43 @@ where
         }
     }
 
+    /// Build a behavior tree component for entity from a behavior asset.
+    pub fn build_tree_from_asset(
+        entity: Entity,
+        commands: &mut Commands,
+        asset: Handle<BehaviorAsset<T>>,
+    ) {
+        // create a behavior tree component from the asset
+        let behavior_tree = BehaviorTree::from_asset(entity, None, commands, asset);
+        // insert the behavior tree component into the tree entity and move root to tree entity
+        if let Some(root) = behavior_tree.root {
+            commands
+                .entity(entity)
+                .insert(behavior_tree)
+                .add_child(root);
+        }
+    }
+
+    /// Build a behavior tree component for entity from a behavior node.
+    pub fn build_tree(entity: Entity, commands: &mut Commands, node: &Behavior<T>) {
+        // create a new behavior tree component
+        let mut behavior_tree = BehaviorTree::<T>::default();
+        // create a new root node and set the cursor so it starts running
+        let root = commands.spawn(BehaviorCursor::Delegate).id();
+        // insert the behavior tree into behavior tree entity
+        BehaviorTree::insert_tree(entity, root, None, commands, node);
+        // let the behavior tree know what the root node is
+        behavior_tree.root = Some(root);
+        commands
+            .entity(entity)
+            .insert(behavior_tree)
+            .add_child(root);
+    }
+
     /// Spawn a behavior tree from a behavior node.
     /// A parent is optional, but if it is provided, it must be a behavior node.
-    pub fn insert_tree(
+    /// Interface too complex, private for now.
+    fn insert_tree(
         tree: Entity,
         entity: Entity,
         parent: Option<Entity>,

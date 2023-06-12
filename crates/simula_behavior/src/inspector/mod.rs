@@ -4,7 +4,7 @@ use crate::{
         BehaviorNodeTemplate, BehaviorNodeTemplates, BehaviorResponse, BehaviorValueType,
     },
     protocol::{
-        BehaviorClient, BehaviorFileData, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
+        BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
         BehaviorProtocolServer, BehaviorServer, BehaviorTelemetry,
     },
     Behavior, BehaviorFactory, BehaviorType,
@@ -137,6 +137,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     let mut new_selected = behavior_inspector.selected.clone();
 
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
+        .width(250.0)
         .selected_text(get_label_from_id(
             &behavior_inspector.selected,
             &behavior_inspector,
@@ -154,18 +155,14 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             };
             selectable_behaviors.insert(0, None);
             for selectable_behavior in selectable_behaviors {
-                ui.allocate_ui(egui::vec2(200.0, 1.0), |ui| {
-                    if ui
-                        .selectable_label(
-                            behavior_inspector.selected == selectable_behavior,
-                            get_label_from_id(&selectable_behavior, &behavior_inspector),
-                        )
-                        .clicked()
-                    {
-                        println!("Selected: {:?}", selectable_behavior);
-                        new_selected = selectable_behavior.clone();
-                    }
-                });
+                let selectable_label = egui::SelectableLabel::new(
+                    behavior_inspector.selected == selectable_behavior,
+                    get_label_from_id(&selectable_behavior, &behavior_inspector),
+                );
+                if ui.add(selectable_label).clicked() {
+                    println!("Selected: {:?}", selectable_behavior);
+                    new_selected = selectable_behavior.clone();
+                }
             }
         });
 
@@ -579,27 +576,16 @@ fn update<T>(
                         if let Ok(behavior) = behavior {
                             println!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
-                            if let Ok(file_data) = ron::ser::to_string_pretty(
-                                &behavior,
-                                ron::ser::PrettyConfig::default(),
-                            ) {
-                                info!("Saving behavior: {}", *behavior_inspector_item.name);
-                                behavior_inspector_item.state = BehaviorInspectorState::Saving;
-                                behavior_client
-                                    .sender
-                                    .send(BehaviorProtocolClient::SaveFile(
-                                        selected_behavior.clone(),
-                                        behavior_inspector_item.name.clone(),
-                                        BehaviorFileData(file_data.into()),
-                                    ))
-                                    .unwrap();
-                            } else {
-                                error!(
-                                    "Failed to serialize behavior: {}",
-                                    *behavior_inspector_item.name
-                                );
-                                behavior_inspector_item.state = BehaviorInspectorState::Editing;
-                            };
+                            info!("Saving behavior: {}", *behavior_inspector_item.name);
+                            behavior_inspector_item.state = BehaviorInspectorState::Saving;
+                            behavior_client
+                                .sender
+                                .send(BehaviorProtocolClient::SaveFile(
+                                    selected_behavior.clone(),
+                                    behavior_inspector_item.name.clone(),
+                                    behavior,
+                                ))
+                                .unwrap();
                         } else if let Err(e) = behavior {
                             error!("{} for behavior: {}", e, *behavior_inspector_item.name);
                             behavior_inspector_item.state = BehaviorInspectorState::Editing;
@@ -670,25 +656,23 @@ fn update<T>(
 
     while let Ok(server_msg) = behavior_client.receiver.try_recv() {
         match server_msg {
-            // Receive list of behaviors
-            BehaviorProtocolServer::FileNames(behaviors) => {
-                for (file_id, file_name) in &behaviors {
-                    if !behavior_inspector.behaviors.contains_key(&file_id) {
-                        behavior_inspector.behaviors.insert(
-                            file_id.clone(),
-                            BehaviorInspectorItem {
-                                entity: None,
-                                name: file_name.clone(),
-                                state: BehaviorInspectorState::Load,
-                                collapsed: false,
-                                behavior: None,
-                            },
-                        );
-                    }
+            // Receive behavior file name
+            BehaviorProtocolServer::FileName(file_id, file_name) => {
+                if !behavior_inspector.behaviors.contains_key(&file_id) {
+                    behavior_inspector.behaviors.insert(
+                        file_id.clone(),
+                        BehaviorInspectorItem {
+                            entity: None,
+                            name: file_name.clone(),
+                            state: BehaviorInspectorState::Load,
+                            collapsed: false,
+                            behavior: None,
+                        },
+                    );
                 }
             }
             // Receive behavior data
-            BehaviorProtocolServer::File(file_id, file_data) => {
+            BehaviorProtocolServer::File(file_id, behavior) => {
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
@@ -723,29 +707,20 @@ fn update<T>(
                             .insert(root_node, egui::Pos2::new(0.0, 0.0));
                         editor_state.node_order.push(root_node);
 
-                        let behavior = ron::de::from_str::<Behavior<T>>(&file_data);
-                        if let Ok(behavior) = behavior {
-                            behavior_into_graph(
-                                &mut editor_state,
-                                &mut graph_state,
-                                root_node,
-                                &behavior,
-                            );
+                        behavior_into_graph(
+                            &mut editor_state,
+                            &mut graph_state,
+                            root_node,
+                            &behavior,
+                        );
 
-                            let entity = commands
-                                .spawn(Name::new(format!("BHI: {}", *behavior_inspector_item.name)))
-                                .insert(graph_state)
-                                .insert(editor_state)
-                                .id();
-                            behavior_inspector_item.entity = Some(entity);
-                            behavior_inspector_item.state = BehaviorInspectorState::Editing;
-                        } else if let Err(e) = behavior {
-                            error!(
-                                "Failed to deserialize behavior: {} {}",
-                                *behavior_inspector_item.name, e
-                            );
-                            behavior_inspector_item.state = BehaviorInspectorState::New;
-                        }
+                        let entity = commands
+                            .spawn(Name::new(format!("BHI: {}", *behavior_inspector_item.name)))
+                            .insert(graph_state)
+                            .insert(editor_state)
+                            .id();
+                        behavior_inspector_item.entity = Some(entity);
+                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
                 }
             }
@@ -798,7 +773,7 @@ fn update<T>(
             }
             // Behavior telemetry
             BehaviorProtocolServer::Telemetry(file_id, telemetry) => {
-                // println!("received telemetry: {:#?}", telemetry);
+                trace!("received telemetry: {:#?}", telemetry);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {

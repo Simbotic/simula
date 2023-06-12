@@ -62,11 +62,13 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut scopes: ResMut<Assets<Scope>>,
+    behavior_server: Res<protocol::BehaviorServer<DebugBehavior>>,
+    mut behavior_trackers: ResMut<BehaviorTrackers<DebugBehavior>>,
 ) {
     // load debug behaviors
     let behaviors = [
-        "bhts/debug/delay",
-        "bhts/debug/gate_true",
+        "*bhts/debug/delay",
+        "*bhts/debug/gate_true",
         "bhts/debug/gate_blackboard",
         "bhts/debug/all",
         "bhts/debug/any_repeat",
@@ -78,33 +80,45 @@ fn setup(
         "bhts/debug/repeat_repeater",
         "bhts/debug/subtree_gate",
     ];
-    for behavior in behaviors.iter() {
-        // get a handle to a behavior asset from asset server
-        let behavior_handle: Handle<BehaviorAsset<DebugBehavior>> =
-            asset_server.load(format!("{}.bht.ron", behavior).as_str());
+    for behavior in behaviors.into_iter() {
+        // load the behavior if it starts with *
+        if let Some(behavior) = behavior.strip_prefix("*") {
+            // get a handle to a behavior asset from asset server
+            let behavior_handle: Handle<BehaviorAsset<DebugBehavior>> =
+                asset_server.load(format!("{}.bht.ron", behavior).as_str());
 
-        // create a new scope for the behavior tree
-        let mut scope = Scope::new();
-        let mut blackboard = script::Map::new();
-        blackboard.insert("state".into(), 0.into());
-        scope.scope.push("blackboard", blackboard);
-        let scope_handle = scopes.add(scope);
+            // create a new scope for the behavior tree
+            let mut scope = Scope::new();
+            let mut blackboard = script::Map::new();
+            blackboard.insert("state".into(), 0.into());
+            scope.scope.push("blackboard", blackboard);
+            let scope_handle = scopes.add(scope);
 
-        // create a new entity for the behavior tree, and insert the scope
-        let tree_entity = commands
-            .spawn((Name::new(format!("BHT: {}", behavior)), scope_handle))
-            .id();
-
-        // create a behavior tree component from the asset
-        let behavior_tree =
-            BehaviorTree::from_asset(tree_entity, None, &mut commands, behavior_handle);
-
-        // insert the behavior tree component into the tree entity and move root to tree entity
-        if let Some(root) = behavior_tree.root {
-            commands
-                .entity(tree_entity)
-                .insert(behavior_tree)
-                .add_child(root);
+            // create a new entity for the behavior tree, and insert the scope
+            let tree_entity = commands
+                .spawn((Name::new(format!("BHT: {}", behavior)), scope_handle))
+                .id();
+            BehaviorTree::build_tree_from_asset(tree_entity, &mut commands, behavior_handle);
+        }
+        // do not load just yet, track file and send file name to client
+        else {
+            let file_id = protocol::BehaviorFileId::new();
+            let file_name = protocol::BehaviorFileName(behavior.into());
+            behavior_trackers.insert(
+                file_id.clone(),
+                BehaviorTracker {
+                    file_name: file_name.clone(),
+                    entity: None,
+                    telemetry: false,
+                    asset: None,
+                },
+            );
+            behavior_server
+                .sender
+                .send(protocol::BehaviorProtocolServer::FileName(
+                    file_id, file_name,
+                ))
+                .unwrap();
         }
     }
 
