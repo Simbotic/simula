@@ -733,7 +733,7 @@ fn update<T>(
                             );
 
                             let entity = commands
-                                .spawn(Name::new(format!("BT: {}", *behavior_inspector_item.name)))
+                                .spawn(Name::new(format!("BTI: {}", *behavior_inspector_item.name)))
                                 .insert(graph_state)
                                 .insert(editor_state)
                                 .id();
@@ -781,8 +781,10 @@ fn update<T>(
                     if let Some(behavior) = behavior_inspector_item.behavior.clone() {
                         if let Some(entity) = behavior_inspector_item.entity {
                             if let Ok(mut editor_state) = editor_states.get_mut(entity) {
-                                if let Some(root_child_id) = get_root_child(&editor_state.graph) {
-                                    behavior_to_graph(&mut editor_state, root_child_id, &behavior);
+                                if let Err(e) =
+                                    behavior_to_graph(&mut editor_state, None, &behavior)
+                                {
+                                    error!("Failed to restore behavior: {}", e);
                                 }
                             }
                         }
@@ -911,12 +913,22 @@ where
 // Recursively update graph from behavior
 fn behavior_to_graph<T>(
     editor: &mut BehaviorEditorState<T>,
-    node_id: NodeId,
+    node_id: Option<NodeId>,
     behavior: &Behavior<T>,
-) where
+) -> Result<(), String>
+where
     T: BehaviorFactory,
     <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
+    let Some(node_id) = node_id else {
+        let root_child_id = get_root_child(&editor.graph);
+        if let Some(root_child_id) = root_child_id {
+            return behavior_to_graph(editor, Some(root_child_id), behavior);
+        } else {
+            return Err("No root child".to_owned());
+        }
+    };
+
     let graph = &mut editor.graph;
 
     // Update graph node with behavior data
@@ -944,8 +956,9 @@ fn behavior_to_graph<T>(
     let node_children = node_children.iter().cloned();
     let behavior_children = behavior.nodes().iter();
     for (node_child, behavior_child) in node_children.zip(behavior_children) {
-        behavior_to_graph(editor, node_child, behavior_child);
+        behavior_to_graph(editor, Some(node_child), behavior_child)?;
     }
+    Ok(())
 }
 
 // Recursively create graph from behavior
