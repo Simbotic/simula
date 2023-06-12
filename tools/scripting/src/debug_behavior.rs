@@ -2,6 +2,16 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
+pub struct DebugBehaviorPlugin;
+
+impl Plugin for DebugBehaviorPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(BehaviorTreePlugin::<DebugBehavior>::default())
+            .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
+            .register_type::<Subtree<DebugBehavior>>();
+    }
+}
+
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct DebugBehaviorAttributes {
     pub pos: Vec2,

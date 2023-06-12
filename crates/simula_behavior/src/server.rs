@@ -17,6 +17,7 @@ where
     fn build(&self, app: &mut App) {
         app.insert_resource(BehaviorTrackers::<T>::default())
             .add_startup_system(setup::<T>)
+            .add_system(track_loaded_behaviors::<T>)
             .add_system(update::<T>)
             .add_system(update_telemetry::<T>);
     }
@@ -31,6 +32,46 @@ pub struct BehaviorTracker<T: BehaviorFactory> {
 
 #[derive(Default, Resource, Deref, DerefMut)]
 pub struct BehaviorTrackers<T: BehaviorFactory>(HashMap<BehaviorFileId, BehaviorTracker<T>>);
+
+fn track_loaded_behaviors<T: BehaviorFactory>(
+    mut asset_events: EventReader<AssetEvent<BehaviorAsset<T>>>, 
+    asset_server: Res<AssetServer>,
+    mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
+    behavior_server: Res<BehaviorServer<T>>,
+) {
+    for event in asset_events.iter() {
+        match event {
+            AssetEvent::Created { handle } => {
+                let path = asset_server.get_handle_path(handle).unwrap();
+                println!("Created: {:?}", path);
+                // let file_name = path.file_name().unwrap().to_str().unwrap();
+                // let file_name = file_name.trim_end_matches(".bht.ron");
+                // let file_name = BehaviorFileName(file_name.to_string().into());
+                // let file_id = BehaviorFileId::new();
+                // behavior_trackers.insert(
+                //     file_id,
+                //     BehaviorTracker {
+                //         file_name,
+                //         entity: None,
+                //         telemetry: false,
+                //         behavior: None,
+                //     },
+                // );
+                // behavior_server
+                //     .sender
+                //     .send(BehaviorProtocolServer::FileNames(
+                //         behavior_trackers
+                //             .iter()
+                //             .map(|(tracker_id, tracker)| (tracker_id.clone(), tracker.file_name.clone()))
+                //             .collect(),
+                //     ))
+                //     .unwrap();
+            },
+            _ => error!("TODO: Unhandled asset event: {:?}", event),
+        }
+    }
+}
+
 
 fn setup<T: BehaviorFactory>(
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
@@ -233,7 +274,7 @@ fn update<T: BehaviorFactory>(
                             behavior_tree_entity
                         } else {
                             let behavior_tree_entity = commands
-                                .spawn(Name::new(format!("BT: {}", *behavior_tracker.file_name)))
+                                .spawn(Name::new(format!("BHT: {}", *behavior_tracker.file_name)))
                                 .id();
                             behavior_tracker.entity = Some(behavior_tree_entity);
                             behavior_tree_entity

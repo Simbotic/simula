@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
     window::PresentMode,
 };
-use debug_behavior::DebugBehavior;
+use debug_behavior::{DebugBehavior, DebugBehaviorPlugin};
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
@@ -48,45 +48,40 @@ fn main() {
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(ScriptPlugin)
-        // Behavior types setup
-        .add_plugin(BehaviorPlugin)
-        .register_type::<BehaviorTree<DebugBehavior>>()
-        .add_asset::<BehaviorAsset<DebugBehavior>>()
-        .init_asset_loader::<BehaviorAssetLoader<DebugBehavior>>()
-        .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
-        .add_system(behavior_loader::<DebugBehavior>)
-        .add_system(subtree::run::<DebugBehavior>) // Subtrees are typed, need to register them separately
-        .register_type::<Subtree<DebugBehavior>>()
-        .add_plugin(BehaviorServerPlugin::<DebugBehavior>::default())
-        .add_startup_system(setup::<DebugBehavior>)
+        .add_startup_system(setup)
         .add_system(debug_info)
+        // Behavior setup
+        .add_plugin(BehaviorPlugin)
+        .add_plugin(DebugBehaviorPlugin)
+        .add_plugin(BehaviorServerPlugin::<DebugBehavior>::default())
+        .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
         .run();
 }
 
-fn setup<T: BehaviorFactory>(
+fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut scopes: ResMut<Assets<Scope>>,
 ) {
     // load debug behaviors
     let behaviors = [
-        "debug_delay",
-        "debug_gate_true",
-        "debug_gate_blackboard",
-        "debug_all",
-        "debug_any_repeat",
-        "debug_any_subtree",
-        "debug_any",
-        "debug_sequence",
-        "debug_defaults",
-        "debug_repeater",
-        "debug_repeat_repeater",
-        "debug_subtree_gate",
+        "bhts/debug/delay",
+        "bhts/debug/gate_true",
+        "bhts/debug/gate_blackboard",
+        "bhts/debug/all",
+        "bhts/debug/any_repeat",
+        "bhts/debug/any_subtree",
+        "bhts/debug/any",
+        "bhts/debug/sequence",
+        "bhts/debug/defaults",
+        "bhts/debug/repeater",
+        "bhts/debug/repeat_repeater",
+        "bhts/debug/subtree_gate",
     ];
     for behavior in behaviors.iter() {
         // get a handle to a behavior asset from asset server
-        let behavior_handle: Handle<BehaviorAsset<T>> =
-            asset_server.load(format!("behaviors/{}.bht.ron", behavior).as_str());
+        let behavior_handle: Handle<BehaviorAsset<DebugBehavior>> =
+            asset_server.load(format!("{}.bht.ron", behavior).as_str());
 
         // create a new scope for the behavior tree
         let mut scope = Scope::new();
@@ -97,7 +92,7 @@ fn setup<T: BehaviorFactory>(
 
         // create a new entity for the behavior tree, and insert the scope
         let tree_entity = commands
-            .spawn((Name::new(format!("BT: {}", behavior)), scope_handle))
+            .spawn((Name::new(format!("BHT: {}", behavior)), scope_handle))
             .id();
 
         // create a behavior tree component from the asset

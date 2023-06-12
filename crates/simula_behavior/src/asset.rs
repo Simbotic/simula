@@ -61,7 +61,6 @@ pub struct BehaviorAsset<T>
 where
     T: BehaviorFactory,
 {
-    pub path: String,
     pub behavior: Behavior<T>,
 }
 
@@ -80,10 +79,7 @@ where
         Box::pin(async move {
             let document = std::str::from_utf8(bytes)?.to_string();
             let behavior = ron::de::from_str(&document)?;
-            let asset = BehaviorAsset::<T> {
-                path: load_context.path().display().to_string(),
-                behavior,
-            };
+            let asset = BehaviorAsset::<T> { behavior };
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })

@@ -22,10 +22,10 @@ impl Plugin for InspectorPlugin {
 }
 
 fn setup_ui(mut contexts: EguiContexts) {
-    const TITLE_FONT_NAME: &str = "MY_FONT_NAME";
+    const INSPECTOR_MONO_FONT: &str = "INSPECTOR_MONO_FONT";
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
-        TITLE_FONT_NAME.into(),
+        INSPECTOR_MONO_FONT.into(),
         egui::FontData::from_static(include_bytes!(
             "../../../assets/fonts/JetBrainsMono-ExtraLight.ttf"
         )),
@@ -34,12 +34,12 @@ fn setup_ui(mut contexts: EguiContexts) {
         .families
         .entry(egui::FontFamily::Proportional)
         .or_default()
-        .insert(0, TITLE_FONT_NAME.into());
+        .insert(0, INSPECTOR_MONO_FONT.into());
     fonts
         .families
         .entry(egui::FontFamily::Monospace)
         .or_default()
-        .insert(0, TITLE_FONT_NAME.into());
+        .insert(0, INSPECTOR_MONO_FONT.into());
     contexts.ctx_mut().set_fonts(fonts);
 
     let mut visuals = egui::Visuals::dark();

@@ -1,5 +1,5 @@
 use actions::*;
-use asset::{Behavior, BehaviorAsset, BehaviorAssetLoading};
+use asset::{behavior_loader, Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
 use bevy::{
     ecs::{query::WorldQuery, system::EntityCommands},
     prelude::*,
@@ -33,11 +33,71 @@ pub mod prelude {
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
         BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
-        BehaviorSuccess, BehaviorTree, BehaviorType,
+        BehaviorSuccess, BehaviorTree, BehaviorTreePlugin, BehaviorType,
     };
 }
 
 pub struct BehaviorPlugin;
+
+impl Plugin for BehaviorPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<BehaviorDesc>()
+            .register_type::<BehaviorNode>()
+            .register_type::<BehaviorSuccess>()
+            .register_type::<BehaviorRunning>()
+            .register_type::<BehaviorFailure>()
+            .register_type::<BehaviorCursor>()
+            .register_type::<BehaviorParent>()
+            .register_type::<BehaviorChildren>()
+            .register_type::<BehaviorType>()
+            .register_type::<Debug>()
+            .register_type::<Selector>()
+            .register_type::<Sequencer>()
+            .register_type::<All>()
+            .register_type::<Any>()
+            .register_type::<Repeater>()
+            .register_type::<Inverter>()
+            .register_type::<Succeeder>()
+            .register_type::<Wait>()
+            .register_type::<Delay>()
+            .register_type::<Identity>()
+            .register_type::<Guard>()
+            .register_type::<Timeout>()
+            .add_systems(
+                (complete_behavior, start_behavior)
+                    .chain()
+                    .in_base_set(CoreSet::PostUpdate),
+            )
+            .add_system(debug::run)
+            .add_system(selector::run)
+            .add_system(sequencer::run)
+            .add_system(all::run)
+            .add_system(any::run)
+            .add_system(repeater::run)
+            .add_system(inverter::run)
+            .add_system(succeeder::run)
+            .add_system(wait::run)
+            .add_system(delay::run)
+            .add_system(identity::run)
+            .add_system(guard::run)
+            .add_system(timeout::run);
+    }
+}
+
+#[derive(Default)]
+pub struct BehaviorTreePlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T>);
+
+impl<T> Plugin for BehaviorTreePlugin<T>
+where
+    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+{
+    fn build(&self, app: &mut App) {
+        app.register_type::<BehaviorTree<T>>()
+            .add_asset::<BehaviorAsset<T>>()
+            .init_asset_loader::<BehaviorAssetLoader<T>>()
+            .add_system(behavior_loader::<T>);
+    }
+}
 
 #[derive(Bundle)]
 pub struct BehaviorBundle<T>
@@ -120,51 +180,6 @@ pub trait BehaviorFactory:
 
     fn list() -> Vec<Self> {
         panic!("BehaviorFactory::list() not implemented")
-    }
-}
-
-impl Plugin for BehaviorPlugin {
-    fn build(&self, app: &mut App) {
-        app.register_type::<BehaviorDesc>()
-            .register_type::<BehaviorNode>()
-            .register_type::<BehaviorSuccess>()
-            .register_type::<BehaviorRunning>()
-            .register_type::<BehaviorFailure>()
-            .register_type::<BehaviorCursor>()
-            .register_type::<BehaviorParent>()
-            .register_type::<BehaviorChildren>()
-            .register_type::<BehaviorType>()
-            .register_type::<Debug>()
-            .register_type::<Selector>()
-            .register_type::<Sequencer>()
-            .register_type::<All>()
-            .register_type::<Any>()
-            .register_type::<Repeater>()
-            .register_type::<Inverter>()
-            .register_type::<Succeeder>()
-            .register_type::<Wait>()
-            .register_type::<Delay>()
-            .register_type::<Identity>()
-            .register_type::<Guard>()
-            .register_type::<Timeout>()
-            .add_systems(
-                (complete_behavior, start_behavior)
-                    .chain()
-                    .in_base_set(CoreSet::PostUpdate),
-            )
-            .add_system(debug::run)
-            .add_system(selector::run)
-            .add_system(sequencer::run)
-            .add_system(all::run)
-            .add_system(any::run)
-            .add_system(repeater::run)
-            .add_system(inverter::run)
-            .add_system(succeeder::run)
-            .add_system(wait::run)
-            .add_system(delay::run)
-            .add_system(identity::run)
-            .add_system(guard::run)
-            .add_system(timeout::run);
     }
 }
 

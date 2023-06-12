@@ -211,7 +211,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
 
     let mut open = true;
     let mut window_name = format!("{}", *file_name);
-    egui::Window::new(&format!("BT:[{}]", *selected_behavior))
+    egui::Window::new(&format!("BHI:[{}]", *selected_behavior))
         .default_size(default_size)
         .title_bar(false)
         .resizable(true)
@@ -562,7 +562,7 @@ fn update<T>(
                 editor_state.node_order.push(root_node);
 
                 let entity = commands
-                    .spawn(Name::new(format!("BT: {}", *behavior_inspector_item.name)))
+                    .spawn(Name::new(format!("BHI: {}", *behavior_inspector_item.name)))
                     .insert(graph_state)
                     .insert(editor_state)
                     .id();
@@ -733,7 +733,7 @@ fn update<T>(
                             );
 
                             let entity = commands
-                                .spawn(Name::new(format!("BTI: {}", *behavior_inspector_item.name)))
+                                .spawn(Name::new(format!("BHI: {}", *behavior_inspector_item.name)))
                                 .insert(graph_state)
                                 .insert(editor_state)
                                 .id();
