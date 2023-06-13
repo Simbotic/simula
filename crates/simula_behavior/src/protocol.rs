@@ -40,13 +40,10 @@ impl BehaviorFileId {
 )]
 pub struct BehaviorFileName(pub Cow<'static, str>);
 
-// #[derive(Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect)]
-// pub struct BehaviorFileData(pub Cow<'static, str>);
-
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     LoadFile(BehaviorFileId),
     SaveFile(BehaviorFileId, BehaviorFileName, Behavior<T>),
-    Run(BehaviorFileId, Behavior<T>),
+    Run(BehaviorFileId, BehaviorFileName, Behavior<T>),
     Telemetry(BehaviorFileId, bool),
     Stop(BehaviorFileId),
 }

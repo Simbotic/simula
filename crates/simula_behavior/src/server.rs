@@ -99,10 +99,12 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
                             .unwrap();
                     }
                 } else {
-                    error!("Asset has no soource path: {:?}", event);
+                    // Asset has no soource path, maybe was created manually
                 }
             }
-            _ => error!("TODO: Unhandled asset event: {:?}", event),
+            _ => {
+                // Other events are not handled
+            }
         }
     }
 }
@@ -284,73 +286,40 @@ fn update<T: BehaviorFactory>(
                 }
             }
             BehaviorProtocolClient::SaveFile(file_id, file_name, file_data) => {
-                // a tracker is required to run a behavior
-                if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    let file_data =
-                        ron::ser::to_string_pretty(&file_data, ron::ser::PrettyConfig::default());
-                    match file_data {
-                        Ok(file_data) => {
+                let file_data =
+                    ron::ser::to_string_pretty(&file_data, ron::ser::PrettyConfig::default());
+                match file_data {
+                    Ok(file_data) => {
+                        // if we have a tracker, update the file_name
+                        if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                             behavior_tracker.file_name = file_name.clone();
-                            let dir_path = "assets";
-                            let file_ext = "bht.ron";
-                            let file_path = format!("{}/{}.{}", dir_path, **file_name, file_ext);
-                            std::fs::write(&file_path, file_data).unwrap();
-                            info!("Saved file: {}", &file_path);
-                            behavior_server
-                                .sender
-                                .send(BehaviorProtocolServer::FileSaved(file_id.clone()))
-                                .unwrap();
                         }
-                        Err(err) => {
-                            error!("Failed to serialize file_data: {:?}", err);
-                        }
+                        let dir_path = "assets";
+                        let file_ext = "bht.ron";
+                        let file_path = format!("{}/{}.{}", dir_path, **file_name, file_ext);
+                        std::fs::write(&file_path, file_data).unwrap();
+                        info!("Saved file: {}", &file_path);
+                        behavior_server
+                            .sender
+                            .send(BehaviorProtocolServer::FileSaved(file_id.clone()))
+                            .unwrap();
                     }
-                } else {
-                    error!("Invalid file_id: {:?}", file_id);
+                    Err(err) => {
+                        error!("Failed to serialize file_data: {:?}", err);
+                    }
                 }
             }
-            BehaviorProtocolClient::Run(file_id, behavior) => {
-                // a tracker is required to run a behavior
+            BehaviorProtocolClient::Run(file_id, file_name, behavior) => {
+                let mut the_behavior_tracker = None;
+
+                // if we have a tracker for this behavior
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     // if the behavior is already loaded, update it
                     if let Some(behavior_asset) = &behavior_tracker.asset {
                         if let Some(asset) = behavior_assets.get_mut(&behavior_asset) {
                             // update behavior in asset resource
                             asset.behavior = behavior.clone();
-
-                            // delete any existing behavior tree entity, and create a new one
-                            let behavior_tree_entity = {
-                                if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                                    if let Ok(behavior_tree) =
-                                        behavior_trees.get(behavior_tree_entity)
-                                    {
-                                        if let Some(root) = behavior_tree.root {
-                                            commands.entity(root).despawn_recursive();
-                                        }
-                                    }
-                                    behavior_tree_entity
-                                } else {
-                                    let behavior_tree_entity = commands
-                                        .spawn(Name::new(format!(
-                                            "BHT: {}",
-                                            *behavior_tracker.file_name
-                                        )))
-                                        .id();
-                                    behavior_tracker.entity = Some(behavior_tree_entity);
-                                    behavior_tree_entity
-                                }
-                            };
-
-                            BehaviorTree::<T>::build_tree(
-                                behavior_tree_entity,
-                                &mut commands,
-                                &behavior,
-                            );
-
-                            behavior_server
-                                .sender
-                                .send(BehaviorProtocolServer::Started(file_id.clone()))
-                                .unwrap();
+                            the_behavior_tracker = Some(behavior_tracker);
                         } else {
                             error!(
                                 "Failed to get behavior asset resource for file_id: {:?}",
@@ -360,8 +329,49 @@ fn update<T: BehaviorFactory>(
                     } else {
                         error!("Behavior is not loaded for file_id: {:?}", file_id);
                     }
+                }
+                // we dont have a tracker for this behavior, lets create one
+                else {
+                    let behavior_asset = BehaviorAsset::<T> {
+                        behavior: behavior.clone(),
+                    };
+                    let behavior_tracker = BehaviorTracker::<T> {
+                        file_name: file_name.clone(),
+                        asset: Some(behavior_assets.add(behavior_asset)),
+                        entity: None,
+                        telemetry: false,
+                    };
+                    behavior_trackers.insert(file_id.clone(), behavior_tracker);
+                    the_behavior_tracker = behavior_trackers.get_mut(&file_id);
+                }
+
+                if let Some(behavior_tracker) = the_behavior_tracker {
+                    // delete any existing behavior tree entity, and create a new one
+                    let behavior_tree_entity = {
+                        if let Some(behavior_tree_entity) = behavior_tracker.entity {
+                            if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
+                                if let Some(root) = behavior_tree.root {
+                                    commands.entity(root).despawn_recursive();
+                                }
+                            }
+                            behavior_tree_entity
+                        } else {
+                            let behavior_tree_entity = commands
+                                .spawn(Name::new(format!("BHT: {}", *behavior_tracker.file_name)))
+                                .id();
+                            behavior_tracker.entity = Some(behavior_tree_entity);
+                            behavior_tree_entity
+                        }
+                    };
+
+                    BehaviorTree::<T>::build_tree(behavior_tree_entity, &mut commands, &behavior);
+
+                    behavior_server
+                        .sender
+                        .send(BehaviorProtocolServer::Started(file_id.clone()))
+                        .unwrap();
                 } else {
-                    error!("Invalid file_id: {:?}", file_id);
+                    error!("Failed to build behavior tree for file_id: {:?}", file_id);
                 }
             }
             BehaviorProtocolClient::Stop(file_id) => {

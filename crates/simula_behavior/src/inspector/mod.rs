@@ -15,6 +15,7 @@ use egui_node_graph::{Graph, InputId, NodeId, NodeResponse, NodeTemplateTrait, O
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 use std::borrow::Cow;
+use std::time::Duration;
 
 pub mod graph;
 
@@ -57,16 +58,17 @@ pub trait BehaviorInspectable<T: BehaviorFactory> {
 #[derive(Clone, Copy)]
 enum BehaviorInspectorState {
     New,
+    Listing,
     Editing,
     Load,
-    Loading,
+    Loading(Duration),
     Save,
-    Saving,
+    Saving(Duration),
     Run,
-    Starting,
+    Starting(Duration),
     Running,
     Stop,
-    Stopping,
+    Stopping(Duration),
 }
 
 #[derive(Clone)]
@@ -104,7 +106,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     egui::menu::menu_button(ui, "🏃 Behaviors", |ui| {
         if ui.add(egui::Button::new("✚ New")).clicked() {
             let file_id = BehaviorFileId::new();
-            let file_name = BehaviorFileName(format!("bt_{}", *file_id).into());
+            let file_name = BehaviorFileName(format!("bhts/u/bt_{}", *file_id).into());
             let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
             behavior_inspector.behaviors.insert(
                 file_id.clone(),
@@ -122,7 +124,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
         let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
         if let Some(file_id) = behavior_inspector.selected.clone() {
             if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get_mut(&file_id) {
-                if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
+                if let BehaviorInspectorState::Saving(_) = behavior_inspector_item.state {
                 } else {
                     if ui.add(egui::Button::new("💾 Save")).clicked() {
                         behavior_inspector_item.state = BehaviorInspectorState::Save;
@@ -166,8 +168,18 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             }
         });
 
+    // update selected behavior
     let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
-    behavior_inspector.selected = new_selected;
+    behavior_inspector.selected = new_selected.clone();
+
+    // if seleted belavior is only listed, load it
+    if let Some(new_selected) = new_selected {
+        if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get_mut(&new_selected) {
+            if let BehaviorInspectorState::Listing = behavior_inspector_item.state {
+                behavior_inspector_item.state = BehaviorInspectorState::Load;
+            }
+        }
+    }
 }
 
 fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
@@ -184,12 +196,12 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
     match inspector_item_state {
         BehaviorInspectorState::Editing => {}
         BehaviorInspectorState::Save => {}
-        BehaviorInspectorState::Saving => {}
+        BehaviorInspectorState::Saving(_) => {}
         BehaviorInspectorState::Run => {}
-        BehaviorInspectorState::Starting => {}
+        BehaviorInspectorState::Starting(_) => {}
         BehaviorInspectorState::Running => {}
         BehaviorInspectorState::Stop => {}
-        BehaviorInspectorState::Stopping => {}
+        BehaviorInspectorState::Stopping(_) => {}
         _ => return,
     }
     let Some(entity) = entity else { return;};
@@ -247,7 +259,7 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                             }
                         }
 
-                        if let BehaviorInspectorState::Saving = inspector_item_state {
+                        if let BehaviorInspectorState::Saving(_) = inspector_item_state {
                             ui.add_enabled(false, egui::Label::new("💾"));
                         } else if let BehaviorInspectorState::Editing = inspector_item_state {
                             if ui.add(egui::Button::new("💾")).clicked() {
@@ -513,26 +525,41 @@ fn update<T>(
     T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
     <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
+    // Get now
+    let now = time.elapsed();
+
     // provide time for all graph states
     for mut graph_state in graph_states.iter_mut() {
         graph_state.time = time.clone();
     }
 
-    if let Some(selected_behavior) = behavior_inspector.selected.clone() {
-        if let Some(behavior_inspector_item) =
-            behavior_inspector.behaviors.get_mut(&selected_behavior)
-        {
-            // If selected behavior is load, load it
-            if let BehaviorInspectorState::Load = behavior_inspector_item.state {
+    for (file_id, behavior_inspector_item) in behavior_inspector.behaviors.iter_mut() {
+        match &behavior_inspector_item.state {
+            // behavior is only listed, no need to do anything
+            BehaviorInspectorState::Listing => {}
+            // behavior is editing, no need to do anything
+            BehaviorInspectorState::Editing => {}
+            // If behavior item is Load, load it
+            BehaviorInspectorState::Load => {
                 info!("Loading behavior: {}", *behavior_inspector_item.name);
-                behavior_inspector_item.state = BehaviorInspectorState::Loading;
+                behavior_inspector_item.state = BehaviorInspectorState::Loading(now);
                 behavior_client
                     .sender
-                    .send(BehaviorProtocolClient::LoadFile(selected_behavior))
+                    .send(BehaviorProtocolClient::LoadFile(file_id.clone()))
                     .unwrap();
             }
-            // if selected behavior is new, create it
-            else if let BehaviorInspectorState::New = behavior_inspector_item.state {
+            // If behavior item is Loading, check to see if it timed out
+            BehaviorInspectorState::Loading(started) => {
+                if now - *started > Duration::from_secs(5) {
+                    warn!(
+                        "Loading behavior timed out: {}",
+                        *behavior_inspector_item.name
+                    );
+                    behavior_inspector_item.state = BehaviorInspectorState::Listing;
+                }
+            }
+            // if behavior item is New, create it
+            BehaviorInspectorState::New => {
                 info!("Creating behavior: {}", *behavior_inspector_item.name);
 
                 let mut graph_state = BehaviorGraphState {
@@ -566,90 +593,125 @@ fn update<T>(
                 behavior_inspector_item.entity = Some(entity);
                 behavior_inspector_item.state = BehaviorInspectorState::Editing;
             }
-            // if selected behavior is save, save it
-            else if let BehaviorInspectorState::Save = behavior_inspector_item.state {
+            // if behavior item is Save, save it
+            BehaviorInspectorState::Save => {
                 info!("Saving behavior: {}", *behavior_inspector_item.name);
+                // set Editing in case anything goes wrong
+                behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                // if we have an entity, we can save
                 if let Some(entity) = behavior_inspector_item.entity {
-                    behavior_inspector_item.state = BehaviorInspectorState::Saving;
                     if let Ok(editor_state) = editor_states.get(entity) {
                         let behavior = graph_to_behavior(&editor_state, None);
                         if let Ok(behavior) = behavior {
                             println!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
                             info!("Saving behavior: {}", *behavior_inspector_item.name);
-                            behavior_inspector_item.state = BehaviorInspectorState::Saving;
+                            behavior_inspector_item.state = BehaviorInspectorState::Saving(now);
                             behavior_client
                                 .sender
                                 .send(BehaviorProtocolClient::SaveFile(
-                                    selected_behavior.clone(),
+                                    file_id.clone(),
                                     behavior_inspector_item.name.clone(),
                                     behavior,
                                 ))
                                 .unwrap();
                         } else if let Err(e) = behavior {
                             error!("{} for behavior: {}", e, *behavior_inspector_item.name);
-                            behavior_inspector_item.state = BehaviorInspectorState::Editing;
                         }
                     } else {
                         error!(
                             "No editor state for behavior: {}",
                             *behavior_inspector_item.name
                         );
-                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
-                } else {
+                }
+                // if we don't have an entity, lets try to New this behavior
+                else {
                     error!("No entity for behavior: {}", *behavior_inspector_item.name);
                     behavior_inspector_item.state = BehaviorInspectorState::New;
                 }
             }
-            // if selected behavior should run, run it
-            else if let BehaviorInspectorState::Run = behavior_inspector_item.state {
+            // if behavior item is Saving, check to see if it timed out
+            BehaviorInspectorState::Saving(started) => {
+                if now - *started > Duration::from_secs(5) {
+                    warn!(
+                        "Saving behavior timed out: {}",
+                        *behavior_inspector_item.name
+                    );
+                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                }
+            }
+            // if behavior item should Run, run it
+            BehaviorInspectorState::Run => {
                 info!("Run behavior: {}", *behavior_inspector_item.name);
+                // set Editing in case anything goes wrong
+                behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                // if we have an entity, we can run
                 if let Some(entity) = behavior_inspector_item.entity {
                     if let Ok(editor_state) = editor_states.get(entity) {
                         let behavior = graph_to_behavior(&editor_state, None);
                         if let Ok(behavior) = behavior {
                             println!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
-                            behavior_inspector_item.state = BehaviorInspectorState::Starting;
+                            behavior_inspector_item.state = BehaviorInspectorState::Starting(now);
                             behavior_client
                                 .sender
                                 .send(BehaviorProtocolClient::Run(
-                                    selected_behavior.clone(),
+                                    file_id.clone(),
+                                    behavior_inspector_item.name.clone(),
                                     behavior,
                                 ))
                                 .unwrap();
                             behavior_client
                                 .sender
-                                .send(BehaviorProtocolClient::Telemetry(
-                                    selected_behavior.clone(),
-                                    true,
-                                ))
+                                .send(BehaviorProtocolClient::Telemetry(file_id.clone(), true))
                                 .unwrap();
                         } else if let Err(e) = behavior {
                             error!("{} for behavior: {}", e, *behavior_inspector_item.name);
-                            behavior_inspector_item.state = BehaviorInspectorState::Editing;
                         }
                     } else {
                         error!(
                             "No editor state for behavior: {}",
                             *behavior_inspector_item.name
                         );
-                        behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
-                } else {
+                }
+                // if we don't have an entity, lets try to New this behavior
+                else {
                     error!("No entity for behavior: {}", *behavior_inspector_item.name);
                     behavior_inspector_item.state = BehaviorInspectorState::New;
                 }
             }
-            // if selected behavior should stop, stop it
-            else if let BehaviorInspectorState::Stop = behavior_inspector_item.state {
+            // if behavior item is Running, no need to do anything
+            BehaviorInspectorState::Running => {}
+            // if behavior item is Starting, check to see if it timed out
+            BehaviorInspectorState::Starting(started) => {
+                if now - *started > Duration::from_secs(5) {
+                    warn!(
+                        "Starting behavior timed out: {}",
+                        *behavior_inspector_item.name
+                    );
+                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                }
+            }
+            // if behavior item should Stop, stop it
+            BehaviorInspectorState::Stop => {
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
-                behavior_inspector_item.state = BehaviorInspectorState::Stopping;
+                behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
                 behavior_client
                     .sender
-                    .send(BehaviorProtocolClient::Stop(selected_behavior))
+                    .send(BehaviorProtocolClient::Stop(file_id.clone()))
                     .unwrap();
+            }
+            // if behavior item is Stopping, check to see if it timed out
+            BehaviorInspectorState::Stopping(started) => {
+                if now - *started > Duration::from_secs(5) {
+                    warn!(
+                        "Stopping behavior timed out: {}",
+                        *behavior_inspector_item.name
+                    );
+                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                }
             }
         }
     }
@@ -664,7 +726,7 @@ fn update<T>(
                         BehaviorInspectorItem {
                             entity: None,
                             name: file_name.clone(),
-                            state: BehaviorInspectorState::Load,
+                            state: BehaviorInspectorState::Listing,
                             collapsed: false,
                             behavior: None,
                         },
@@ -676,7 +738,7 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Loading = behavior_inspector_item.state {
+                    if let BehaviorInspectorState::Loading(_) = behavior_inspector_item.state {
                         info!("Loading behavior: {}", *behavior_inspector_item.name);
 
                         let mut graph_state = BehaviorGraphState {
@@ -729,7 +791,7 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Saving = behavior_inspector_item.state {
+                    if let BehaviorInspectorState::Saving(_) = behavior_inspector_item.state {
                         behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
                 } else {
@@ -741,7 +803,7 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Starting = behavior_inspector_item.state {
+                    if let BehaviorInspectorState::Starting(_) = behavior_inspector_item.state {
                         behavior_inspector_item.state = BehaviorInspectorState::Running;
                     }
                 } else {
@@ -764,7 +826,7 @@ fn update<T>(
                             }
                         }
                     }
-                    if let BehaviorInspectorState::Stopping = behavior_inspector_item.state {
+                    if let BehaviorInspectorState::Stopping(_) = behavior_inspector_item.state {
                         behavior_inspector_item.state = BehaviorInspectorState::Editing;
                     }
                 } else {
