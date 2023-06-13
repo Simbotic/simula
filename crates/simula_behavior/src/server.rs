@@ -2,7 +2,7 @@ use crate::{
     prelude::*,
     protocol::{
         BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, BehaviorProtocolServer,
-        BehaviorServer, BehaviorState, BehaviorTelemetry, StartOption,
+        BehaviorServer, BehaviorState, BehaviorTelemetry, StartOption, StopOption,
     },
 };
 use bevy::{prelude::*, utils::HashMap};
@@ -475,15 +475,26 @@ fn update<T>(
                     error!("Failed to build behavior tree for file_id: {:?}", file_id);
                 }
             }
-            BehaviorProtocolClient::Stop(file_id) => {
+            BehaviorProtocolClient::Stop(file_id, stop_option) => {
                 info!("Received Stop: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    if let EntityTracker::Spawned(entity) = behavior_tracker.entity {
-                        // Remove previous tree root
-                        if let Ok((entity, _, _, _)) = behavior_trees.get_mut(entity) {
-                            commands.entity(entity).despawn_recursive();
+                    let entity = match behavior_tracker.entity {
+                        EntityTracker::Attached(entity) => Some(entity),
+                        EntityTracker::Spawned(entity) => Some(entity),
+                        EntityTracker::None => None,
+                    };
+
+                    if let Some(entity) = entity {
+                        match stop_option {
+                            StopOption::Despawn => {
+                                if let Ok((entity, _, _, _)) = behavior_trees.get_mut(entity) {
+                                    commands.entity(entity).despawn_recursive();
+                                }
+                            }
+                            StopOption::Dettach => {}
                         }
                     }
+
                     behavior_tracker.entity = EntityTracker::None;
                     behavior_server
                         .sender

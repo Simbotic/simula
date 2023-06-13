@@ -6,7 +6,7 @@ use crate::{
         },
         BehaviorInspectable, BehaviorInspector,
     },
-    protocol::{BehaviorFileId, BehaviorTelemetry, RemoteEntity, StartOption},
+    protocol::{BehaviorFileId, BehaviorTelemetry, RemoteEntity, StartOption, StopOption},
     Behavior, BehaviorFactory, BehaviorType,
 };
 use bevy::prelude::*;
@@ -335,5 +335,19 @@ pub(super) fn get_label_from_start_option(start_option: &StartOption) -> Cow<'st
     match start_option {
         StartOption::Spawn => Cow::Borrowed("Spawn"),
         StartOption::Attach(RemoteEntity { bits, name }) => format!("[{}] {}", bits, name).into(),
+    }
+}
+
+pub(super) fn get_label_from_stop_option(
+    start_option: &StartOption,
+    stop_option: &StopOption,
+) -> Cow<'static, str> {
+    let current_label = match start_option {
+        StartOption::Spawn => Cow::Borrowed(""),
+        StartOption::Attach(RemoteEntity { bits, name }) => format!(": [{}] {}", bits, name).into(),
+    };
+    match stop_option {
+        StopOption::Despawn => format!("Despawn{}", current_label).into(),
+        StopOption::Dettach => format!("Dettach{}", current_label).into(),
     }
 }

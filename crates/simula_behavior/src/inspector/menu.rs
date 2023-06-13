@@ -2,6 +2,7 @@ use crate::{
     inspector::{utils, BehaviorInspector, BehaviorInspectorItem, BehaviorInspectorState},
     protocol::{
         BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, StartOption,
+        StopOption,
     },
     BehaviorFactory,
 };
@@ -28,6 +29,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     behavior: None,
                     instances: vec![],
                     start_option: StartOption::Spawn,
+                    stop_option: StopOption::Despawn,
                     modified: true,
                 },
             );

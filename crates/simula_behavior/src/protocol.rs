@@ -41,6 +41,12 @@ pub enum StartOption {
     Attach(RemoteEntity),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum StopOption {
+    Despawn,
+    Dettach,
+}
+
 #[derive(
     Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect, PartialEq, Hash, Eq,
 )]
@@ -75,7 +81,7 @@ pub enum BehaviorProtocolClient<T: BehaviorFactory> {
         StartOption,
         Option<Behavior<T>>,
     ),
-    Stop(BehaviorFileId),
+    Stop(BehaviorFileId, StopOption),
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {

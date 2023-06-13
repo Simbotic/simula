@@ -6,7 +6,7 @@ use crate::{
         },
         utils, BehaviorInspector, BehaviorInspectorState,
     },
-    protocol::{BehaviorFileName, StartOption},
+    protocol::{BehaviorFileName, StartOption, StopOption},
     BehaviorFactory, BehaviorType,
 };
 use bevy::{prelude::*, window::PrimaryWindow};
@@ -119,6 +119,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                 behavior_inspector_item.state = BehaviorInspectorState::Start;
                             }
                             egui::ComboBox::from_id_source("Behavior Inspector Item StartOption")
+                                .width(250.0)
                                 .selected_text(utils::get_label_from_start_option(
                                     &behavior_inspector_item.start_option,
                                 ))
@@ -135,6 +136,16 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                             )
                                             .clicked()
                                         {
+                                            match selectable {
+                                                StartOption::Spawn => {
+                                                    behavior_inspector_item.stop_option =
+                                                        StopOption::Despawn
+                                                }
+                                                StartOption::Attach(_) => {
+                                                    behavior_inspector_item.stop_option =
+                                                        StopOption::Dettach
+                                                }
+                                            }
                                             behavior_inspector_item.start_option =
                                                 selectable.clone();
                                         }
@@ -146,6 +157,31 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
                                 behavior_inspector_item.state = BehaviorInspectorState::Stop;
                             }
+                            egui::ComboBox::from_id_source("Behavior Inspector Item StopOption")
+                                .width(250.0)
+                                .selected_text(utils::get_label_from_stop_option(
+                                    &behavior_inspector_item.start_option,
+                                    &behavior_inspector_item.stop_option,
+                                ))
+                                .show_ui(ui, |ui| {
+                                    let selectables =
+                                        vec![StopOption::Despawn, StopOption::Dettach];
+                                    for selectable in &selectables {
+                                        if ui
+                                            .selectable_label(
+                                                selectable == &behavior_inspector_item.stop_option,
+                                                utils::get_label_from_stop_option(
+                                                    &behavior_inspector_item.start_option,
+                                                    selectable,
+                                                ),
+                                            )
+                                            .clicked()
+                                        {
+                                            behavior_inspector_item.stop_option =
+                                                selectable.clone();
+                                        }
+                                    }
+                                });
                         }
 
                         ui.style_mut().visuals.extreme_bg_color =
@@ -153,7 +189,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                         if ui
                             .add(
                                 egui::TextEdit::singleline(&mut window_name)
-                                    .desired_width(50.0)
+                                    .desired_width(250.0)
                                     .clip_text(false),
                             )
                             .changed()

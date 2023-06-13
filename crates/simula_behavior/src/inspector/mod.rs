@@ -5,7 +5,7 @@ use crate::{
     },
     protocol::{
         BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
-        BehaviorProtocolServer, BehaviorServer, RemoteEntity, StartOption,
+        BehaviorProtocolServer, BehaviorServer, RemoteEntity, StartOption, StopOption,
     },
     Behavior, BehaviorFactory,
 };
@@ -82,6 +82,7 @@ pub(self) struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub behavior: Option<Behavior<T>>,
     pub instances: Vec<RemoteEntity>,
     pub start_option: StartOption,
+    pub stop_option: StopOption,
     pub modified: bool,
 }
 
@@ -292,23 +293,23 @@ fn update<T>(
             // if behavior item should Stop, stop it
             BehaviorInspectorState::Stop => {
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
-                // ask server to stop behavior only if it was spawned by inspector
+                let mut stopping = false;
                 if let StartOption::Spawn = behavior_inspector_item.start_option {
+                    stopping = true;
+                } else if let StartOption::Attach(_) = behavior_inspector_item.start_option {
+                    stopping = true;
+                }
+                if stopping {
                     behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
                     behavior_client
                         .sender
-                        .send(BehaviorProtocolClient::Stop(file_id.clone()))
+                        .send(BehaviorProtocolClient::Stop(
+                            file_id.clone(),
+                            behavior_inspector_item.stop_option.clone(),
+                        ))
                         .unwrap();
                 }
-                // or just disconnect from telemetry
-                else if let StartOption::Attach(_) = behavior_inspector_item.start_option {
-                    behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
-                    behavior_client
-                        .sender
-                        .send(BehaviorProtocolClient::Stop(file_id.clone()))
-                        .unwrap();
-                }
-                // else, just detach
+                // if something seems wrong, just go to Editing
                 else {
                     behavior_inspector_item.state = BehaviorInspectorState::Editing;
                 }
@@ -342,6 +343,7 @@ fn update<T>(
                             behavior: None,
                             instances: vec![],
                             start_option: StartOption::Spawn,
+                            stop_option: StopOption::Despawn,
                             modified: false,
                         },
                     );
@@ -367,6 +369,7 @@ fn update<T>(
                         info!("Loading behavior: {}", *behavior_inspector_item.name);
 
                         behavior_inspector_item.behavior = Some(behavior.clone());
+                        behavior_inspector_item.modified = false;
 
                         let mut graph_state = BehaviorGraphState {
                             type_registry: type_registry.0.clone(),
