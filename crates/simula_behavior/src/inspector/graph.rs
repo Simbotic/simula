@@ -1,5 +1,6 @@
 use crate::{prelude::*, protocol::BehaviorState};
 use bevy::{
+    log::debug,
     prelude::{default, Color, Component, Deref, DerefMut, Time},
     reflect::TypeRegistryArc,
 };
@@ -212,7 +213,7 @@ where
         _user_state: &mut Self::UserState,
         node_id: NodeId,
     ) {
-        println!("Building node {:?} {:?}", node_id, &self);
+        debug!("Building node {:?} {:?}", node_id, &self);
         match self {
             BehaviorNodeTemplate::Root => {
                 graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);

@@ -16,6 +16,25 @@ pub struct BehaviorServer<T: BehaviorFactory> {
     pub receiver: Receiver<BehaviorProtocolClient<T>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect, FromReflect, PartialEq, Hash, Eq)]
+pub struct RemoteEntity {
+    bits: u64,
+    name: Cow<'static, str>,
+}
+
+impl RemoteEntity {
+    pub fn new(entity: Entity, name: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            bits: entity.to_bits(),
+            name: name.into(),
+        }
+    }
+
+    pub fn to_entity(&self) -> Entity {
+        Entity::from_bits(self.bits)
+    }
+}
+
 #[derive(
     Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect, PartialEq, Hash, Eq,
 )]
@@ -41,16 +60,18 @@ impl BehaviorFileId {
 pub struct BehaviorFileName(pub Cow<'static, str>);
 
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
+    Instances(BehaviorFileId),
     LoadFile(BehaviorFileId),
     SaveFile(BehaviorFileId, BehaviorFileName, Behavior<T>),
-    Run(BehaviorFileId, BehaviorFileName, Behavior<T>),
-    Telemetry(BehaviorFileId, bool),
+    Start(BehaviorFileId, BehaviorFileName, Behavior<T>),
     Stop(BehaviorFileId),
+    Telemetry(BehaviorFileId, bool),
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {
     FileName(BehaviorFileId, BehaviorFileName),
-    File(BehaviorFileId, Behavior<T>),
+    Instances(BehaviorFileId, Vec<RemoteEntity>),
+    FileLoaded(BehaviorFileId, Behavior<T>),
     FileSaved(BehaviorFileId),
     Started(BehaviorFileId),
     Stopped(BehaviorFileId),

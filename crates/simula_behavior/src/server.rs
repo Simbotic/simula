@@ -46,7 +46,7 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
         match event {
             AssetEvent::Created { handle } => {
                 if let Some(path) = asset_server.get_handle_path(handle) {
-                    println!("Created: {:?}", path);
+                    info!("Created: {:?}", path);
 
                     // check if there is a tracker for this asset
                     let behavior_tracker = behavior_trackers.iter_mut().find(|(_, tracker)| {
@@ -63,7 +63,7 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
                             // Server send asset to clients
                             behavior_server
                                 .sender
-                                .send(BehaviorProtocolServer::File(
+                                .send(BehaviorProtocolServer::FileLoaded(
                                     file_id.clone(),
                                     asset.behavior.clone(),
                                 ))
@@ -251,7 +251,7 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
 
 fn update<T: BehaviorFactory>(
     mut commands: Commands,
-    behavior_trees: Query<&BehaviorTree<T>>,
+    behavior_trees: Query<(Entity, &Name, &BehaviorTree<T>)>,
     mut behavior_assets: ResMut<Assets<BehaviorAsset<T>>>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
     behavior_server: Res<BehaviorServer<T>>,
@@ -261,14 +261,44 @@ fn update<T: BehaviorFactory>(
 {
     while let Ok(client_msg) = &behavior_server.receiver.try_recv() {
         match client_msg {
+            BehaviorProtocolClient::Instances(file_id) => {
+                info!("Received Instances: {:?}", file_id);
+                if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
+                    if let Some(behavior_asset) = &behavior_tracker.asset {
+                        let remote_entities: Vec<protocol::RemoteEntity> = behavior_trees
+                            .iter()
+                            .filter_map(|(entity, name, behavior_tree)| {
+                                if &behavior_tree.asset == behavior_asset {
+                                    Some(protocol::RemoteEntity::new(
+                                        entity,
+                                        name.as_str().to_owned(),
+                                    ))
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        behavior_server
+                            .sender
+                            .send(BehaviorProtocolServer::Instances(
+                                file_id.clone(),
+                                remote_entities,
+                            ))
+                            .unwrap();
+                    }
+                } else {
+                    error!("Invalid file_id: {:?}", file_id);
+                }
+            }
             BehaviorProtocolClient::LoadFile(file_id) => {
+                info!("Received LoadFile: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     // check if behavior is already loaded
                     if let Some(behavior_asset) = &behavior_tracker.asset {
                         if let Some(behavior_asset) = behavior_assets.get(&behavior_asset) {
                             behavior_server
                                 .sender
-                                .send(BehaviorProtocolServer::File(
+                                .send(BehaviorProtocolServer::FileLoaded(
                                     file_id.clone(),
                                     behavior_asset.behavior.clone(),
                                 ))
@@ -286,6 +316,7 @@ fn update<T: BehaviorFactory>(
                 }
             }
             BehaviorProtocolClient::SaveFile(file_id, file_name, file_data) => {
+                info!("Received SaveFile: {:?} {}", file_id, **file_name);
                 let file_data =
                     ron::ser::to_string_pretty(&file_data, ron::ser::PrettyConfig::default());
                 match file_data {
@@ -309,7 +340,8 @@ fn update<T: BehaviorFactory>(
                     }
                 }
             }
-            BehaviorProtocolClient::Run(file_id, file_name, behavior) => {
+            BehaviorProtocolClient::Start(file_id, file_name, behavior) => {
+                info!("Received Start: {:?} {}", file_id, **file_name);
                 let mut the_behavior_tracker = None;
 
                 // if we have a tracker for this behavior
@@ -349,7 +381,9 @@ fn update<T: BehaviorFactory>(
                     // delete any existing behavior tree entity, and create a new one
                     let behavior_tree_entity = {
                         if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                            if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
+                            if let Ok((_, _, behavior_tree)) =
+                                behavior_trees.get(behavior_tree_entity)
+                            {
                                 if let Some(root) = behavior_tree.root {
                                     commands.entity(root).despawn_recursive();
                                 }
@@ -375,11 +409,13 @@ fn update<T: BehaviorFactory>(
                 }
             }
             BehaviorProtocolClient::Stop(file_id) => {
+                info!("Received Stop: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     behavior_tracker.telemetry = false;
 
                     if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                        if let Ok(behavior_tree) = behavior_trees.get(behavior_tree_entity) {
+                        if let Ok((_, _, behavior_tree)) = behavior_trees.get(behavior_tree_entity)
+                        {
                             if let Some(root) = behavior_tree.root {
                                 commands.entity(root).despawn_recursive();
                             }
@@ -396,6 +432,7 @@ fn update<T: BehaviorFactory>(
                 }
             }
             BehaviorProtocolClient::Telemetry(file_id, enable) => {
+                info!("Received Telemetry: {:?} enable: {}", file_id, enable);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     behavior_tracker.telemetry = *enable;
                 } else {

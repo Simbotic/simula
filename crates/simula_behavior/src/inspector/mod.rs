@@ -5,7 +5,7 @@ use crate::{
     },
     protocol::{
         BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
-        BehaviorProtocolServer, BehaviorServer,
+        BehaviorProtocolServer, BehaviorServer, RemoteEntity,
     },
     Behavior, BehaviorFactory, BehaviorType,
 };
@@ -56,7 +56,13 @@ pub trait BehaviorInspectable<T: BehaviorFactory> {
     fn set_pos(&mut self, pos: Vec2);
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
+enum StartOption {
+    Spawn,
+    Attach(RemoteEntity),
+}
+
+#[derive(Clone)]
 enum BehaviorInspectorState {
     New,
     Listing,
@@ -65,10 +71,10 @@ enum BehaviorInspectorState {
     Loading(Duration),
     Save,
     Saving(Duration),
-    Run,
-    Starting(Duration),
-    Running,
-    Stop,
+    Start(StartOption),
+    Starting(StartOption, Duration),
+    Running(StartOption),
+    Stop(StartOption),
     Stopping(Duration),
 }
 
@@ -79,6 +85,7 @@ struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub state: BehaviorInspectorState,
     pub collapsed: bool,
     pub behavior: Option<Behavior<T>>,
+    pub instances: Vec<RemoteEntity>,
 }
 
 #[derive(Default, Clone, Resource)]
@@ -117,6 +124,7 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     state: BehaviorInspectorState::New,
                     collapsed: false,
                     behavior: None,
+                    instances: vec![],
                 },
             );
             behavior_inspector.selected = Some(file_id.clone());
@@ -137,7 +145,8 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     });
 
     let behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
-    let mut new_selected = behavior_inspector.selected.clone();
+    let mut selected_behavior = behavior_inspector.selected.clone();
+    let mut refresh_instances = false;
 
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
         .width(250.0)
@@ -163,21 +172,36 @@ fn menu_ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     get_label_from_id(&selectable_behavior, &behavior_inspector),
                 );
                 if ui.add(selectable_label).clicked() {
-                    println!("Selected: {:?}", selectable_behavior);
-                    new_selected = selectable_behavior.clone();
+                    info!("Selected: {:?}", selectable_behavior);
+                    selected_behavior = selectable_behavior.clone();
+                    refresh_instances = true;
                 }
             }
         });
 
     // update selected behavior
     let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
-    behavior_inspector.selected = new_selected.clone();
+    behavior_inspector.selected = selected_behavior.clone();
 
     // if seleted belavior is only listed, load it
-    if let Some(new_selected) = new_selected {
-        if let Some(behavior_inspector_item) = behavior_inspector.behaviors.get_mut(&new_selected) {
+    if let Some(selected_behavior) = &selected_behavior {
+        if let Some(behavior_inspector_item) =
+            behavior_inspector.behaviors.get_mut(&selected_behavior)
+        {
             if let BehaviorInspectorState::Listing = behavior_inspector_item.state {
                 behavior_inspector_item.state = BehaviorInspectorState::Load;
+            }
+        }
+    }
+
+    if let Some(selected_behavior) = &selected_behavior {
+        if refresh_instances {
+            let behavior_client = world.get_resource::<BehaviorClient<T>>();
+            if let Some(behavior_client) = behavior_client {
+                behavior_client
+                    .sender
+                    .send(BehaviorProtocolClient::Instances(selected_behavior.clone()))
+                    .unwrap();
             }
         }
     }
@@ -193,15 +217,15 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
     let Some((file_name, inspector_item_state, entity))
         = behavior_inspector.behaviors
         .get(&selected_behavior)
-        .and_then(|item| Some((item.name.clone(), item.state, item.entity))) else { return;};
+        .and_then(|item| Some((item.name.clone(), item.state.clone(), item.entity))) else { return;};
     match inspector_item_state {
         BehaviorInspectorState::Editing => {}
         BehaviorInspectorState::Save => {}
         BehaviorInspectorState::Saving(_) => {}
-        BehaviorInspectorState::Run => {}
-        BehaviorInspectorState::Starting(_) => {}
-        BehaviorInspectorState::Running => {}
-        BehaviorInspectorState::Stop => {}
+        BehaviorInspectorState::Start(_) => {}
+        BehaviorInspectorState::Starting(_, _) => {}
+        BehaviorInspectorState::Running(_) => {}
+        BehaviorInspectorState::Stop(_) => {}
         BehaviorInspectorState::Stopping(_) => {}
         _ => return,
     }
@@ -279,13 +303,14 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
 
                         if let BehaviorInspectorState::Editing = inspector_item_state {
                             if ui.add(egui::Button::new("⏵").frame(true)).clicked() {
-                                inspector_item.state = BehaviorInspectorState::Run;
+                                inspector_item.state =
+                                    BehaviorInspectorState::Start(StartOption::Spawn);
                             }
                         }
 
-                        if let BehaviorInspectorState::Running = inspector_item_state {
+                        if let BehaviorInspectorState::Running(options) = inspector_item_state {
                             if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
-                                inspector_item.state = BehaviorInspectorState::Stop;
+                                inspector_item.state = BehaviorInspectorState::Stop(options);
                             }
                         }
 
@@ -306,7 +331,6 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                         ui.add_space(8.0);
                         ui.add_space(ui.available_width() - 12.0);
                         if utils::close_button(ui, ui.available_rect_before_wrap()).clicked() {
-                            println!("Button clicked!");
                             open = false;
                         }
                     });
@@ -411,10 +435,6 @@ fn window_ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World)
                                                         .connections
                                                         .iter()
                                                         .filter(|(_, other_output)| {
-                                                            println!(
-                                                                "Output: {:#?} == {:#?}",
-                                                                output_id, *other_output
-                                                            );
                                                             *other_output == output_id
                                                         })
                                                         .count()
@@ -509,7 +529,7 @@ fn update<T>(
     }
 
     for (file_id, behavior_inspector_item) in behavior_inspector.behaviors.iter_mut() {
-        match &behavior_inspector_item.state {
+        match behavior_inspector_item.state.clone() {
             // behavior is only listed, no need to do anything
             BehaviorInspectorState::Listing => {}
             // behavior is editing, no need to do anything
@@ -525,7 +545,7 @@ fn update<T>(
             }
             // If behavior item is Loading, check to see if it timed out
             BehaviorInspectorState::Loading(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if now - started > Duration::from_secs(5) {
                     warn!(
                         "Loading behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -578,9 +598,8 @@ fn update<T>(
                     if let Ok(editor_state) = editor_states.get(entity) {
                         let behavior = utils::graph_to_behavior(&editor_state, None);
                         if let Ok(behavior) = behavior {
-                            println!("behavior: {:#?}", behavior);
+                            debug!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
-                            info!("Saving behavior: {}", *behavior_inspector_item.name);
                             behavior_inspector_item.state = BehaviorInspectorState::Saving(now);
                             behavior_client
                                 .sender
@@ -608,7 +627,7 @@ fn update<T>(
             }
             // if behavior item is Saving, check to see if it timed out
             BehaviorInspectorState::Saving(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if now - started > Duration::from_secs(5) {
                     warn!(
                         "Saving behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -616,8 +635,8 @@ fn update<T>(
                     behavior_inspector_item.state = BehaviorInspectorState::Editing;
                 }
             }
-            // if behavior item should Run, run it
-            BehaviorInspectorState::Run => {
+            // if behavior item should Start, start it
+            BehaviorInspectorState::Start(options) => {
                 info!("Run behavior: {}", *behavior_inspector_item.name);
                 // set Editing in case anything goes wrong
                 behavior_inspector_item.state = BehaviorInspectorState::Editing;
@@ -626,12 +645,13 @@ fn update<T>(
                     if let Ok(editor_state) = editor_states.get(entity) {
                         let behavior = utils::graph_to_behavior(&editor_state, None);
                         if let Ok(behavior) = behavior {
-                            println!("behavior: {:#?}", behavior);
+                            debug!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
-                            behavior_inspector_item.state = BehaviorInspectorState::Starting(now);
+                            behavior_inspector_item.state =
+                                BehaviorInspectorState::Starting(options.clone(), now);
                             behavior_client
                                 .sender
-                                .send(BehaviorProtocolClient::Run(
+                                .send(BehaviorProtocolClient::Start(
                                     file_id.clone(),
                                     behavior_inspector_item.name.clone(),
                                     behavior,
@@ -658,10 +678,10 @@ fn update<T>(
                 }
             }
             // if behavior item is Running, no need to do anything
-            BehaviorInspectorState::Running => {}
+            BehaviorInspectorState::Running(_) => {}
             // if behavior item is Starting, check to see if it timed out
-            BehaviorInspectorState::Starting(started) => {
-                if now - *started > Duration::from_secs(5) {
+            BehaviorInspectorState::Starting(_options, started) => {
+                if now - started > Duration::from_secs(5) {
                     warn!(
                         "Starting behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -670,17 +690,24 @@ fn update<T>(
                 }
             }
             // if behavior item should Stop, stop it
-            BehaviorInspectorState::Stop => {
+            BehaviorInspectorState::Stop(options) => {
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
-                behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
-                behavior_client
-                    .sender
-                    .send(BehaviorProtocolClient::Stop(file_id.clone()))
-                    .unwrap();
+                // ask server to stop behavior only if it was spawned by inspector
+                if let StartOption::Spawn = options {
+                    behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
+                    behavior_client
+                        .sender
+                        .send(BehaviorProtocolClient::Stop(file_id.clone()))
+                        .unwrap();
+                }
+                // else, just detach
+                else {
+                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
+                }
             }
             // if behavior item is Stopping, check to see if it timed out
             BehaviorInspectorState::Stopping(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if now - started > Duration::from_secs(5) {
                     warn!(
                         "Stopping behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -695,6 +722,7 @@ fn update<T>(
         match server_msg {
             // Receive behavior file name
             BehaviorProtocolServer::FileName(file_id, file_name) => {
+                info!("Received FileName: {:?} {}", file_id, *file_name);
                 if !behavior_inspector.behaviors.contains_key(&file_id) {
                     behavior_inspector.behaviors.insert(
                         file_id.clone(),
@@ -704,12 +732,24 @@ fn update<T>(
                             state: BehaviorInspectorState::Listing,
                             collapsed: false,
                             behavior: None,
+                            instances: vec![],
                         },
                     );
                 }
             }
+            // Receive instance running behavior
+            BehaviorProtocolServer::Instances(file_id, remote_entities) => {
+                info!("Received Instances: {:?}", file_id);
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    debug!("{:?}", remote_entities);
+                    behavior_inspector_item.instances = remote_entities;
+                }
+            }
             // Receive behavior data
-            BehaviorProtocolServer::File(file_id, behavior) => {
+            BehaviorProtocolServer::FileLoaded(file_id, behavior) => {
+                info!("Received FileLoaded: {:?}", file_id);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
@@ -763,6 +803,7 @@ fn update<T>(
             }
             // Receive file saved
             BehaviorProtocolServer::FileSaved(file_id) => {
+                info!("Received FileSaved: {:?}", file_id);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
@@ -775,11 +816,15 @@ fn update<T>(
             }
             // Behavior started
             BehaviorProtocolServer::Started(file_id) => {
+                info!("Received Started: {:?}", file_id);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Starting(_) = behavior_inspector_item.state {
-                        behavior_inspector_item.state = BehaviorInspectorState::Running;
+                    if let BehaviorInspectorState::Starting(options, _) =
+                        &behavior_inspector_item.state
+                    {
+                        behavior_inspector_item.state =
+                            BehaviorInspectorState::Running(options.clone());
                     }
                 } else {
                     error!("Unexpected behavior started: {:?}", file_id);
@@ -787,6 +832,7 @@ fn update<T>(
             }
             // Behavior stopped
             BehaviorProtocolServer::Stopped(file_id) => {
+                info!("Received Stopped: {:?}", file_id);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
@@ -810,11 +856,11 @@ fn update<T>(
             }
             // Behavior telemetry
             BehaviorProtocolServer::Telemetry(file_id, telemetry) => {
-                trace!("received telemetry: {:#?}", telemetry);
+                trace!("Received Telemetry: {:#?}", telemetry);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Running = behavior_inspector_item.state {
+                    if let BehaviorInspectorState::Running(_) = behavior_inspector_item.state {
                         if let Some(entity) = behavior_inspector_item.entity {
                             if let Ok(mut editor_state) = editor_states.get_mut(entity) {
                                 if let Err(e) = utils::behavior_telemerty_to_graph(
