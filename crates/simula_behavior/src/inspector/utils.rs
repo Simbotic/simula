@@ -4,14 +4,15 @@ use crate::{
             BehaviorData, BehaviorDataType, BehaviorEditorState, BehaviorGraphState,
             BehaviorNodeData, BehaviorNodeTemplate, BehaviorValueType,
         },
-        BehaviorInspectable,
+        BehaviorInspectable, BehaviorInspector
     },
-    protocol::BehaviorTelemetry,
+    protocol::{BehaviorFileId, BehaviorTelemetry},
     Behavior, BehaviorFactory, BehaviorType,
 };
 use bevy::prelude::*;
 use egui_node_graph::{Graph, InputId, NodeId, NodeTemplateTrait, OutputId};
 use simula_inspector::egui;
+use std::borrow::Cow;
 
 fn get_root_child<T: BehaviorFactory>(
     graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
@@ -315,4 +316,17 @@ pub fn close_button(ui: &mut egui::Ui, node_rect: egui::Rect) -> egui::Response 
         .line_segment([rect.right_top(), rect.left_bottom()], stroke);
 
     resp
+}
+
+pub(super) fn get_label_from_id<T: BehaviorFactory>(
+    file_id: &Option<BehaviorFileId>,
+    behavior_inspector: &BehaviorInspector<T>,
+) -> Cow<'static, str> {
+    match file_id {
+        None => Cow::Borrowed("None"),
+        Some(behavior_file_id) => {
+            let behavior_inspector_item = &behavior_inspector.behaviors[behavior_file_id];
+            (*behavior_inspector_item.name).clone()
+        }
+    }
 }
