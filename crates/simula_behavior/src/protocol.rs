@@ -69,7 +69,12 @@ pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     Instances(BehaviorFileId),
     LoadFile(BehaviorFileId),
     SaveFile(BehaviorFileId, BehaviorFileName, Behavior<T>),
-    Start(BehaviorFileId, BehaviorFileName, StartOption, Option<Behavior<T>>),
+    Start(
+        BehaviorFileId,
+        BehaviorFileName,
+        StartOption,
+        Option<Behavior<T>>,
+    ),
     Stop(BehaviorFileId),
 }
 

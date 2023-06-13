@@ -6,7 +6,7 @@ use crate::{
         },
         utils, BehaviorInspector, BehaviorInspectorState,
     },
-    protocol::{StartOption, BehaviorFileName},
+    protocol::{BehaviorFileName, StartOption},
     BehaviorFactory, BehaviorType,
 };
 use bevy::{prelude::*, window::PrimaryWindow};
@@ -90,12 +90,19 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             }
                         }
 
+                        // Add a save button
+                        let mut save_enabled = true;
                         if let BehaviorInspectorState::Saving(_) = inspector_item_state {
-                            ui.add_enabled(false, egui::Label::new("💾"));
-                        } else if let BehaviorInspectorState::Editing = inspector_item_state {
-                            if ui.add(egui::Button::new("💾")).clicked() {
-                                behavior_inspector_item.state = BehaviorInspectorState::Save;
-                            }
+                            save_enabled = false;
+                        }
+                        if !behavior_inspector_item.modified {
+                            save_enabled = false;
+                        }
+                        if ui
+                            .add_enabled(save_enabled, egui::Button::new("💾"))
+                            .clicked()
+                        {
+                            behavior_inspector_item.state = BehaviorInspectorState::Save;
                         }
 
                         if ui
@@ -164,6 +171,8 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                     });
                 });
 
+                let mut modified = behavior_inspector_item.modified;
+
                 if !behavior_inspector_item.collapsed {
                     egui::Frame::none()
                         .fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140))
@@ -223,6 +232,15 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             for response in graph_response.node_responses {
                                 trace!("response: {:?}", response);
                                 match response {
+                                    NodeResponse::CreatedNode(_) => {
+                                        modified = true;
+                                    }
+                                    NodeResponse::DeleteNodeFull {
+                                        node_id: _node_id,
+                                        node: _node,
+                                    } => {
+                                        modified = true;
+                                    }
                                     NodeResponse::SelectNode(node_id) => {
                                         graph_state.active_node = Some(node_id);
                                     }
@@ -233,6 +251,8 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                         output: output_id,
                                         input: input_id,
                                     } => {
+                                        modified = true;
+
                                         // Check if output is already connected, and if so, remove the previous connection
                                         let mut removes = vec![];
                                         for (other_input, other_output) in
@@ -292,10 +312,17 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                             }
                                         }
                                     }
+                                    NodeResponse::DisconnectEvent {
+                                        output: _output,
+                                        input: _input,
+                                    } => {
+                                        modified = true;
+                                    }
                                     NodeResponse::User(BehaviorResponse::NodeEdited(
                                         node_id,
                                         data,
                                     )) => {
+                                        modified = true;
                                         if let Some(node) =
                                             editor_state.graph.nodes.get_mut(node_id)
                                         {
@@ -306,6 +333,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                         node_id,
                                         name,
                                     )) => {
+                                        modified = true;
                                         if let Some(node) =
                                             editor_state.graph.nodes.get_mut(node_id)
                                         {
@@ -317,6 +345,13 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             }
                         });
                 }
+
+                let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
+                let behavior_inspector_item = behavior_inspector
+                    .behaviors
+                    .get_mut(&selected_behavior)
+                    .unwrap();
+                behavior_inspector_item.modified = modified;
             });
         });
 

@@ -17,6 +17,8 @@ pub struct Debug {
     #[serde(skip)]
     #[reflect(ignore)]
     pub start: f64,
+    #[serde(skip)]
+    pub ticks: u64,
 }
 
 impl BehaviorInfo for Debug {
@@ -34,6 +36,7 @@ pub fn run(
     >,
 ) {
     for (entity, mut debug_action, mut running, name) in &mut debug_actions {
+        debug_action.ticks += 1;
         if !running.on_enter_handled {
             running.on_enter_handled = true;
             debug_action.start = time.elapsed_seconds_f64();

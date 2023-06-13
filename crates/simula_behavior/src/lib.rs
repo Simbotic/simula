@@ -28,7 +28,9 @@ pub mod prelude {
     pub use crate::decorators::*;
     pub use crate::inspector::{BehaviorInspectable, BehaviorInspectorPlugin};
     pub use crate::protocol::{self};
-    pub use crate::server::{BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker};
+    pub use crate::server::{
+        BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
+    };
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
@@ -326,7 +328,6 @@ where
         Self {
             root: Some(entity),
             ..default()
-            // asset,
         }
     }
 

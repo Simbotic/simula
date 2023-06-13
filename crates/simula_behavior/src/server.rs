@@ -24,7 +24,7 @@ where
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum EntityTracker {
     None,
     Spawned(Entity),
@@ -250,7 +250,7 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
             let entity = match behavior_tracker.entity {
                 EntityTracker::Attached(entity) => Some(entity),
                 EntityTracker::Spawned(entity) => Some(entity),
-                EntityTracker::None => None,
+                EntityTracker::None => continue,
             };
             if let Some(entity) = entity {
                 if let Some(behavior_asset) = &behavior_tracker.asset {
@@ -265,6 +265,8 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
                 } else {
                     error!("Behavior has no asset");
                 }
+            } else {
+                error!("Behavior has no entity: {:?}", behavior_tracker.entity);
             }
         }
     } else {
@@ -285,6 +287,8 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
                     error!("Failed to build telemetry");
                 }
             }
+        } else {
+            error!("Failed to get behavior tree for file_id: {:?}", file_id);
         }
     }
 }

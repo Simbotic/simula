@@ -82,6 +82,7 @@ pub(self) struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub behavior: Option<Behavior<T>>,
     pub instances: Vec<RemoteEntity>,
     pub start_option: StartOption,
+    pub modified: bool,
 }
 
 #[derive(Default, Clone, Resource)]
@@ -235,10 +236,23 @@ fn update<T>(
                 // if we have an entity, we can run
                 if let Some(entity) = behavior_inspector_item.entity {
                     if let Ok(editor_state) = editor_states.get(entity) {
-                        let behavior = utils::graph_to_behavior(&editor_state, None);
-                        if let Ok(behavior) = behavior {
-                            debug!("behavior: {:#?}", behavior);
-                            behavior_inspector_item.behavior = Some(behavior.clone());
+                        let mut behavior_option = None;
+                        let mut error = false;
+                        // only send a copy of behavior if it has been modified, or StartOption::Spawn
+                        if behavior_inspector_item.modified
+                            || behavior_inspector_item.start_option == StartOption::Spawn
+                        {
+                            let behavior = utils::graph_to_behavior(&editor_state, None);
+                            if let Ok(behavior) = behavior {
+                                behavior_option = Some(behavior.clone());
+                                debug!("behavior: {:#?}", behavior);
+                                behavior_inspector_item.behavior = Some(behavior.clone());
+                            } else if let Err(e) = behavior {
+                                error = true;
+                                error!("{} for behavior: {}", e, *behavior_inspector_item.name);
+                            }
+                        }
+                        if !error {
                             behavior_inspector_item.state = BehaviorInspectorState::Starting(now);
                             behavior_client
                                 .sender
@@ -246,11 +260,9 @@ fn update<T>(
                                     file_id.clone(),
                                     behavior_inspector_item.name.clone(),
                                     behavior_inspector_item.start_option.clone(),
-                                    Some(behavior),
+                                    behavior_option,
                                 ))
                                 .unwrap();
-                        } else if let Err(e) = behavior {
-                            error!("{} for behavior: {}", e, *behavior_inspector_item.name);
                         }
                     } else {
                         error!(
@@ -282,6 +294,14 @@ fn update<T>(
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
                 // ask server to stop behavior only if it was spawned by inspector
                 if let StartOption::Spawn = behavior_inspector_item.start_option {
+                    behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
+                    behavior_client
+                        .sender
+                        .send(BehaviorProtocolClient::Stop(file_id.clone()))
+                        .unwrap();
+                }
+                // or just disconnect from telemetry
+                else if let StartOption::Attach(_) = behavior_inspector_item.start_option {
                     behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
                     behavior_client
                         .sender
@@ -322,6 +342,7 @@ fn update<T>(
                             behavior: None,
                             instances: vec![],
                             start_option: StartOption::Spawn,
+                            modified: false,
                         },
                     );
                 }
@@ -344,6 +365,8 @@ fn update<T>(
                 {
                     if let BehaviorInspectorState::Loading(_) = behavior_inspector_item.state {
                         info!("Loading behavior: {}", *behavior_inspector_item.name);
+
+                        behavior_inspector_item.behavior = Some(behavior.clone());
 
                         let mut graph_state = BehaviorGraphState {
                             type_registry: type_registry.0.clone(),

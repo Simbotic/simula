@@ -1,8 +1,8 @@
 use crate::{
-    inspector::{
-        utils, BehaviorInspector, BehaviorInspectorItem, BehaviorInspectorState,
+    inspector::{utils, BehaviorInspector, BehaviorInspectorItem, BehaviorInspectorState},
+    protocol::{
+        BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, StartOption,
     },
-    protocol::{BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, StartOption},
     BehaviorFactory,
 };
 use bevy::prelude::*;
@@ -28,6 +28,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     behavior: None,
                     instances: vec![],
                     start_option: StartOption::Spawn,
+                    modified: true,
                 },
             );
             behavior_inspector.selected = Some(file_id.clone());
