@@ -13,7 +13,7 @@ use bevy::prelude::*;
 use egui_node_graph::{Graph, InputId, NodeId, NodeTemplateTrait, OutputId};
 use simula_inspector::egui;
 
-pub fn get_root_child<T: BehaviorFactory>(
+fn get_root_child<T: BehaviorFactory>(
     graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
 ) -> Option<NodeId> {
     for node in graph.nodes.values() {
@@ -86,6 +86,7 @@ where
             }
         }
     }
+
     Ok(behavior)
 }
 
@@ -137,6 +138,7 @@ where
     for (node_child, behavior_child) in node_children.zip(behavior_children) {
         behavior_to_graph(editor, Some(node_child), behavior_child)?;
     }
+
     Ok(())
 }
 
@@ -217,11 +219,21 @@ pub fn behavior_into_graph<T>(
 // Recursively update graph from behavior telemetry
 pub fn behavior_telemerty_to_graph<T>(
     graph: &mut Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
-    node_id: NodeId,
+    node_id: Option<NodeId>,
     telemetry: &BehaviorTelemetry<T>,
-) where
+) -> Result<(), String>
+where
     T: BehaviorFactory,
 {
+    let Some(node_id) = node_id else {
+        let root_child_id = get_root_child(&graph);
+        if let Some(root_child_id) = root_child_id {
+            return behavior_telemerty_to_graph(graph, Some(root_child_id), telemetry);
+        } else {
+            return Err("No root child".to_owned());
+        }
+    };
+
     // Update graph node with behavior telemetry
     let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
     if let BehaviorTelemetry(state, Some(behavior), _) = telemetry {
@@ -249,8 +261,10 @@ pub fn behavior_telemerty_to_graph<T>(
     let node_children = node_children.iter().cloned();
     let telemetry_children = telemetry.2.iter();
     for (node_child, behavior_child) in node_children.zip(telemetry_children) {
-        behavior_telemerty_to_graph(graph, node_child, behavior_child);
+        behavior_telemerty_to_graph(graph, Some(node_child), behavior_child)?;
     }
+
+    Ok(())
 }
 
 // For use with world.get_entity_component_reflect

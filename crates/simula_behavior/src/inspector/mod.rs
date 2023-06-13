@@ -817,18 +817,12 @@ fn update<T>(
                     if let BehaviorInspectorState::Running = behavior_inspector_item.state {
                         if let Some(entity) = behavior_inspector_item.entity {
                             if let Ok(mut editor_state) = editor_states.get_mut(entity) {
-                                let root_child_id = utils::get_root_child(&editor_state.graph);
-                                if let Some(root_child_id) = root_child_id {
-                                    utils::behavior_telemerty_to_graph(
-                                        &mut editor_state.graph,
-                                        root_child_id,
-                                        &telemetry,
-                                    );
-                                } else {
-                                    error!(
-                                        "No root child for behavior: {:?}",
-                                        *behavior_inspector_item.name
-                                    );
+                                if let Err(e) = utils::behavior_telemerty_to_graph(
+                                    &mut editor_state.graph,
+                                    None,
+                                    &telemetry,
+                                ) {
+                                    error!("Failed to apply telemetry: {}", e);
                                 }
                             }
                         }
