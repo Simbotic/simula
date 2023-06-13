@@ -3,7 +3,7 @@
     Repeater((repeat:Forever)),
     [
         ("Delay", Delay((duration: 5.0)), [
-            ("Do a thing", Debug((message: "I'm doing a thing!")))
+            ("Do a thing", Debug((message: "I'm doing a cookoo thing!")))
         ]),
     ]
 )

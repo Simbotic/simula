@@ -1,6 +1,8 @@
 use crate::{
-    inspector::{utils, BehaviorInspector, BehaviorInspectorItem, BehaviorInspectorState},
-    protocol::{BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient},
+    inspector::{
+        utils, BehaviorInspector, BehaviorInspectorItem, BehaviorInspectorState,
+    },
+    protocol::{BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, StartOption},
     BehaviorFactory,
 };
 use bevy::prelude::*;
@@ -25,6 +27,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     collapsed: false,
                     behavior: None,
                     instances: vec![],
+                    start_option: StartOption::Spawn,
                 },
             );
             behavior_inspector.selected = Some(file_id.clone());
@@ -50,7 +53,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
 
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
         .width(250.0)
-        .selected_text(utils::get_label_from_id(
+        .selected_text(utils::get_label_from_file_id(
             &behavior_inspector.selected,
             &behavior_inspector,
         ))
@@ -69,7 +72,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             for selectable_behavior in selectable_behaviors {
                 let selectable_label = egui::SelectableLabel::new(
                     behavior_inspector.selected == selectable_behavior,
-                    utils::get_label_from_id(&selectable_behavior, &behavior_inspector),
+                    utils::get_label_from_file_id(&selectable_behavior, &behavior_inspector),
                 );
                 if ui.add(selectable_label).clicked() {
                     info!("Selected: {:?}", selectable_behavior);

@@ -28,7 +28,7 @@ pub mod prelude {
     pub use crate::decorators::*;
     pub use crate::inspector::{BehaviorInspectable, BehaviorInspectorPlugin};
     pub use crate::protocol::{self};
-    pub use crate::server::{BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers};
+    pub use crate::server::{BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
@@ -296,7 +296,9 @@ where
     T: BehaviorFactory,
 {
     pub root: Option<Entity>,
-    pub asset: Handle<BehaviorAsset<T>>,
+    // pub asset: Handle<BehaviorAsset<T>>,
+    #[reflect(ignore)]
+    pub _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> BehaviorTree<T>
@@ -323,7 +325,8 @@ where
             .id();
         Self {
             root: Some(entity),
-            asset,
+            ..default()
+            // asset,
         }
     }
 
@@ -333,6 +336,7 @@ where
         commands: &mut Commands,
         asset: Handle<BehaviorAsset<T>>,
     ) {
+        commands.entity(entity).insert(asset.clone());
         // create a behavior tree component from the asset
         let behavior_tree = BehaviorTree::from_asset(entity, None, commands, asset);
         // insert the behavior tree component into the tree entity and move root to tree entity

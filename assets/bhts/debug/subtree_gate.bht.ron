@@ -3,7 +3,7 @@
     Repeater((repeat:Forever)),
     [
         ("Delay", Delay((duration: 5.0)), [
-            ("Subtree with gate", Subtree((asset: "behaviors/debug_gate_blackboard.bht.ron", unload: true))),
+            ("Subtree with gate", Subtree((asset: "bhts/debug/gate_blackboard.bht.ron", unload: true))),
         ]),
     ]
 )

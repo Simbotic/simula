@@ -2,7 +2,7 @@ use crate::{
     prelude::*,
     protocol::{
         BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, BehaviorProtocolServer,
-        BehaviorServer, BehaviorState, BehaviorTelemetry,
+        BehaviorServer, BehaviorState, BehaviorTelemetry, StartOption,
     },
 };
 use bevy::{prelude::*, utils::HashMap};
@@ -25,10 +25,16 @@ where
 }
 
 #[derive(Clone)]
+pub enum EntityTracker {
+    None,
+    Spawned(Entity),
+    Attached(Entity),
+}
+
+#[derive(Clone)]
 pub struct BehaviorTracker<T: BehaviorFactory> {
     pub file_name: BehaviorFileName,
-    pub entity: Option<Entity>,
-    pub telemetry: bool,
+    pub entity: EntityTracker,
     pub asset: Option<Handle<BehaviorAsset<T>>>,
 }
 
@@ -36,6 +42,13 @@ pub struct BehaviorTracker<T: BehaviorFactory> {
 pub struct BehaviorTrackers<T: BehaviorFactory>(HashMap<BehaviorFileId, BehaviorTracker<T>>);
 
 fn track_loaded_behaviors<T: BehaviorFactory>(
+    mut commands: Commands,
+    mut behavior_trees: Query<(
+        Entity,
+        &Name,
+        &mut BehaviorTree<T>,
+        &Handle<BehaviorAsset<T>>,
+    )>,
     mut asset_events: EventReader<AssetEvent<BehaviorAsset<T>>>,
     asset_server: Res<AssetServer>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
@@ -45,6 +58,19 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
     for event in asset_events.iter() {
         match event {
             AssetEvent::Created { handle } => {
+                // build any tree using this asset
+                for (entity, name, behavior_tree, behavior_asset) in &mut behavior_trees {
+                    if behavior_asset == handle {
+                        if let Some(asset) = behavior_assets.get(&handle) {
+                            info!("Rebuilding behavior for: [{}] {}", entity.index(), name);
+                            if let Some(root) = behavior_tree.root {
+                                commands.entity(root).despawn_recursive();
+                            }
+                            BehaviorTree::build_tree(entity, &mut commands, &asset.behavior);
+                        }
+                    }
+                }
+
                 if let Some(path) = asset_server.get_handle_path(handle) {
                     info!("Created: {:?}", path);
 
@@ -59,7 +85,7 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
 
                     // if there is a tracker send asset to clients
                     if let Some((file_id, _behavior_tracker)) = behavior_tracker {
-                        if let Some(asset) = behavior_assets.get(handle) {
+                        if let Some(asset) = behavior_assets.get(&handle) {
                             // Server send asset to clients
                             behavior_server
                                 .sender
@@ -83,8 +109,7 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
                             behavior_file_id.clone(),
                             BehaviorTracker {
                                 file_name: behavior_file_name.clone(),
-                                entity: None,
-                                telemetry: false,
+                                entity: EntityTracker::None,
                                 asset: Some(handle.clone()),
                             },
                         );
@@ -102,7 +127,26 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
                     // Asset has no soource path, maybe was created manually
                 }
             }
+            AssetEvent::Modified { handle } => {
+                let mut handle = handle.clone();
+                handle.make_strong(&behavior_assets);
+                if let Some(path) = asset_server.get_handle_path(&handle) {
+                    info!("Modified: {:?}", path);
+                }
+                for (entity, name, behavior_tree, behavior_asset) in &mut behavior_trees {
+                    if behavior_asset == &handle {
+                        if let Some(asset) = behavior_assets.get(&handle) {
+                            info!("Rebuilding behavior for: [{}] {}", entity.index(), name);
+                            if let Some(root) = behavior_tree.root {
+                                commands.entity(root).despawn_recursive();
+                            }
+                            BehaviorTree::build_tree(entity, &mut commands, &asset.behavior);
+                        }
+                    }
+                }
+            }
             _ => {
+                error!("{:?}", event);
                 // Other events are not handled
             }
         }
@@ -140,8 +184,7 @@ fn setup<T: BehaviorFactory>(
                         file_id.clone(),
                         BehaviorTracker {
                             file_name: file_name.clone(),
-                            entity: None,
-                            telemetry: false,
+                            entity: EntityTracker::None,
                             asset: None,
                         },
                     );
@@ -204,20 +247,17 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
     let mut tracks = vec![];
     if let Some(behavior_trackers) = world.get_resource::<BehaviorTrackers<T>>() {
         for (file_id, behavior_tracker) in behavior_trackers.iter() {
-            if behavior_tracker.telemetry {
+            let entity = match behavior_tracker.entity {
+                EntityTracker::Attached(entity) => Some(entity),
+                EntityTracker::Spawned(entity) => Some(entity),
+                EntityTracker::None => None,
+            };
+            if let Some(entity) = entity {
                 if let Some(behavior_asset) = &behavior_tracker.asset {
                     if let Some(behavior_assets) = world.get_resource::<Assets<BehaviorAsset<T>>>()
                     {
                         if let Some(behavior_asset) = behavior_assets.get(&behavior_asset) {
-                            if let Some(entity) = behavior_tracker.entity {
-                                tracks.push((
-                                    file_id.clone(),
-                                    entity,
-                                    behavior_asset.behavior.clone(),
-                                ));
-                            } else {
-                                error!("Behavior has no entity");
-                            }
+                            tracks.push((file_id.clone(), entity, behavior_asset.behavior.clone()));
                         }
                     } else {
                         error!("Failed to get behavior assets");
@@ -249,15 +289,20 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
     }
 }
 
-fn update<T: BehaviorFactory>(
+fn update<T>(
     mut commands: Commands,
-    behavior_trees: Query<(Entity, &Name, &BehaviorTree<T>)>,
+    mut behavior_trees: Query<(
+        Entity,
+        &Name,
+        &mut BehaviorTree<T>,
+        &Handle<BehaviorAsset<T>>,
+    )>,
     mut behavior_assets: ResMut<Assets<BehaviorAsset<T>>>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
     behavior_server: Res<BehaviorServer<T>>,
     asset_server: Res<AssetServer>,
 ) where
-    T: Serialize,
+    T: BehaviorFactory + Serialize,
 {
     while let Ok(client_msg) = &behavior_server.receiver.try_recv() {
         match client_msg {
@@ -267,8 +312,8 @@ fn update<T: BehaviorFactory>(
                     if let Some(behavior_asset) = &behavior_tracker.asset {
                         let remote_entities: Vec<protocol::RemoteEntity> = behavior_trees
                             .iter()
-                            .filter_map(|(entity, name, behavior_tree)| {
-                                if &behavior_tree.asset == behavior_asset {
+                            .filter_map(|(entity, name, _, other_behavior_asset)| {
+                                if other_behavior_asset == behavior_asset {
                                     Some(protocol::RemoteEntity::new(
                                         entity,
                                         name.as_str().to_owned(),
@@ -340,70 +385,88 @@ fn update<T: BehaviorFactory>(
                     }
                 }
             }
-            BehaviorProtocolClient::Start(file_id, file_name, behavior) => {
-                info!("Received Start: {:?} {}", file_id, **file_name);
+            BehaviorProtocolClient::Start(file_id, file_name, start_option, behavior) => {
+                info!(
+                    "Received Start: {:?} {} {:?}",
+                    file_id, **file_name, start_option
+                );
                 let mut the_behavior_tracker = None;
 
                 // if we have a tracker for this behavior
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     // if the behavior is already loaded, update it
                     if let Some(behavior_asset) = &behavior_tracker.asset {
-                        if let Some(asset) = behavior_assets.get_mut(&behavior_asset) {
-                            // update behavior in asset resource
-                            asset.behavior = behavior.clone();
-                            the_behavior_tracker = Some(behavior_tracker);
-                        } else {
-                            error!(
-                                "Failed to get behavior asset resource for file_id: {:?}",
-                                file_id
-                            );
+                        if let Some(behavior) = behavior {
+                            if let Some(asset) = behavior_assets.get_mut(&behavior_asset) {
+                                // update behavior in asset resource
+                                asset.behavior = behavior.clone();
+                            } else {
+                                error!(
+                                    "Failed to get behavior asset resource for file_id: {:?}",
+                                    file_id
+                                );
+                            }
                         }
                     } else {
                         error!("Behavior is not loaded for file_id: {:?}", file_id);
                     }
+                    the_behavior_tracker = Some(behavior_tracker);
                 }
                 // we dont have a tracker for this behavior, lets create one
                 else {
-                    let behavior_asset = BehaviorAsset::<T> {
-                        behavior: behavior.clone(),
-                    };
-                    let behavior_tracker = BehaviorTracker::<T> {
-                        file_name: file_name.clone(),
-                        asset: Some(behavior_assets.add(behavior_asset)),
-                        entity: None,
-                        telemetry: false,
-                    };
-                    behavior_trackers.insert(file_id.clone(), behavior_tracker);
-                    the_behavior_tracker = behavior_trackers.get_mut(&file_id);
+                    if let Some(behavior) = behavior {
+                        let behavior_asset = BehaviorAsset::<T> {
+                            behavior: behavior.clone(),
+                        };
+                        let behavior_tracker = BehaviorTracker::<T> {
+                            file_name: file_name.clone(),
+                            asset: Some(behavior_assets.add(behavior_asset)),
+                            entity: EntityTracker::None,
+                        };
+                        behavior_trackers.insert(file_id.clone(), behavior_tracker);
+                        the_behavior_tracker = behavior_trackers.get_mut(&file_id);
+                    }
                 }
 
                 if let Some(behavior_tracker) = the_behavior_tracker {
-                    // delete any existing behavior tree entity, and create a new one
-                    let behavior_tree_entity = {
-                        if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                            if let Ok((_, _, behavior_tree)) =
-                                behavior_trees.get(behavior_tree_entity)
-                            {
-                                if let Some(root) = behavior_tree.root {
-                                    commands.entity(root).despawn_recursive();
-                                }
+                    if let EntityTracker::Spawned(entity) = behavior_tracker.entity {
+                        // Remove previous tree root
+                        if let Ok((_, _, mut behavior_tree, _)) = behavior_trees.get_mut(entity) {
+                            if let Some(root) = behavior_tree.root {
+                                commands.entity(root).despawn_recursive();
                             }
-                            behavior_tree_entity
-                        } else {
-                            let behavior_tree_entity = commands
-                                .spawn(Name::new(format!("BHT: {}", *behavior_tracker.file_name)))
-                                .id();
-                            behavior_tracker.entity = Some(behavior_tree_entity);
-                            behavior_tree_entity
+                            behavior_tree.root = None;
                         }
+                    }
+
+                    let mut confirm_client = false;
+                    match (start_option, &behavior_tracker.asset) {
+                        (StartOption::Spawn, Some(behavior_asset)) => {
+                            // spawn behavior tree for tracking
+                            let entity = commands
+                                .spawn((
+                                    Name::new(format!("BHT: {}", **file_name)),
+                                    behavior_asset.clone(),
+                                    BehaviorTree::<T>::default(),
+                                ))
+                                .id();
+                            behavior_tracker.entity = EntityTracker::Spawned(entity);
+                            confirm_client = true;
+                        }
+                        (StartOption::Attach(remote_entity), _) => {
+                            behavior_tracker.entity =
+                                EntityTracker::Attached(remote_entity.to_entity());
+                            confirm_client = true;
+                        }
+                        _ => error!("Invalid start options: {:?} {}", file_id, **file_name),
                     };
 
-                    BehaviorTree::<T>::build_tree(behavior_tree_entity, &mut commands, &behavior);
-
-                    behavior_server
-                        .sender
-                        .send(BehaviorProtocolServer::Started(file_id.clone()))
-                        .unwrap();
+                    if confirm_client {
+                        behavior_server
+                            .sender
+                            .send(BehaviorProtocolServer::Started(file_id.clone()))
+                            .unwrap();
+                    }
                 } else {
                     error!("Failed to build behavior tree for file_id: {:?}", file_id);
                 }
@@ -411,30 +474,17 @@ fn update<T: BehaviorFactory>(
             BehaviorProtocolClient::Stop(file_id) => {
                 info!("Received Stop: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    behavior_tracker.telemetry = false;
-
-                    if let Some(behavior_tree_entity) = behavior_tracker.entity {
-                        if let Ok((_, _, behavior_tree)) = behavior_trees.get(behavior_tree_entity)
-                        {
-                            if let Some(root) = behavior_tree.root {
-                                commands.entity(root).despawn_recursive();
-                            }
+                    if let EntityTracker::Spawned(entity) = behavior_tracker.entity {
+                        // Remove previous tree root
+                        if let Ok((entity, _, _, _)) = behavior_trees.get_mut(entity) {
+                            commands.entity(entity).despawn_recursive();
                         }
-                        commands.entity(behavior_tree_entity).despawn_recursive();
                     }
-                    behavior_tracker.entity = None;
+                    behavior_tracker.entity = EntityTracker::None;
                     behavior_server
                         .sender
                         .send(BehaviorProtocolServer::Stopped(file_id.clone()))
                         .unwrap();
-                } else {
-                    error!("Invalid file_id: {:?}", file_id);
-                }
-            }
-            BehaviorProtocolClient::Telemetry(file_id, enable) => {
-                info!("Received Telemetry: {:?} enable: {}", file_id, enable);
-                if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    behavior_tracker.telemetry = *enable;
                 } else {
                     error!("Invalid file_id: {:?}", file_id);
                 }

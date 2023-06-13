@@ -18,8 +18,8 @@ pub struct BehaviorServer<T: BehaviorFactory> {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect, FromReflect, PartialEq, Hash, Eq)]
 pub struct RemoteEntity {
-    bits: u64,
-    name: Cow<'static, str>,
+    pub bits: u64,
+    pub name: Cow<'static, str>,
 }
 
 impl RemoteEntity {
@@ -33,6 +33,12 @@ impl RemoteEntity {
     pub fn to_entity(&self) -> Entity {
         Entity::from_bits(self.bits)
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StartOption {
+    Spawn,
+    Attach(RemoteEntity),
 }
 
 #[derive(
@@ -63,9 +69,8 @@ pub enum BehaviorProtocolClient<T: BehaviorFactory> {
     Instances(BehaviorFileId),
     LoadFile(BehaviorFileId),
     SaveFile(BehaviorFileId, BehaviorFileName, Behavior<T>),
-    Start(BehaviorFileId, BehaviorFileName, Behavior<T>),
+    Start(BehaviorFileId, BehaviorFileName, StartOption, Option<Behavior<T>>),
     Stop(BehaviorFileId),
-    Telemetry(BehaviorFileId, bool),
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {

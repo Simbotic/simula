@@ -4,9 +4,9 @@ use crate::{
             BehaviorData, BehaviorDataType, BehaviorEditorState, BehaviorGraphState,
             BehaviorNodeData, BehaviorNodeTemplate, BehaviorValueType,
         },
-        BehaviorInspectable, BehaviorInspector
+        BehaviorInspectable, BehaviorInspector,
     },
-    protocol::{BehaviorFileId, BehaviorTelemetry},
+    protocol::{BehaviorFileId, BehaviorTelemetry, RemoteEntity, StartOption},
     Behavior, BehaviorFactory, BehaviorType,
 };
 use bevy::prelude::*;
@@ -318,7 +318,7 @@ pub fn close_button(ui: &mut egui::Ui, node_rect: egui::Rect) -> egui::Response 
     resp
 }
 
-pub(super) fn get_label_from_id<T: BehaviorFactory>(
+pub(super) fn get_label_from_file_id<T: BehaviorFactory>(
     file_id: &Option<BehaviorFileId>,
     behavior_inspector: &BehaviorInspector<T>,
 ) -> Cow<'static, str> {
@@ -328,5 +328,12 @@ pub(super) fn get_label_from_id<T: BehaviorFactory>(
             let behavior_inspector_item = &behavior_inspector.behaviors[behavior_file_id];
             (*behavior_inspector_item.name).clone()
         }
+    }
+}
+
+pub(super) fn get_label_from_start_option(start_option: &StartOption) -> Cow<'static, str> {
+    match start_option {
+        StartOption::Spawn => Cow::Borrowed("Spawn"),
+        StartOption::Attach(RemoteEntity { bits, name }) => format!("[{}] {}", bits, name).into(),
     }
 }

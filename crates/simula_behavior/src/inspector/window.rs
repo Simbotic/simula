@@ -4,9 +4,9 @@ use crate::{
             BehaviorData, BehaviorDataType, BehaviorEditorState, BehaviorGraphState,
             BehaviorNodeTemplates, BehaviorResponse,
         },
-        utils, BehaviorInspector, BehaviorInspectorState, StartOption,
+        utils, BehaviorInspector, BehaviorInspectorState,
     },
-    protocol::BehaviorFileName,
+    protocol::{StartOption, BehaviorFileName},
     BehaviorFactory, BehaviorType,
 };
 use bevy::{prelude::*, window::PrimaryWindow};
@@ -28,10 +28,10 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
         BehaviorInspectorState::Editing => {}
         BehaviorInspectorState::Save => {}
         BehaviorInspectorState::Saving(_) => {}
-        BehaviorInspectorState::Start(_) => {}
-        BehaviorInspectorState::Starting(_, _) => {}
-        BehaviorInspectorState::Running(_) => {}
-        BehaviorInspectorState::Stop(_) => {}
+        BehaviorInspectorState::Start => {}
+        BehaviorInspectorState::Starting(_) => {}
+        BehaviorInspectorState::Running => {}
+        BehaviorInspectorState::Stop => {}
         BehaviorInspectorState::Stopping(_) => {}
         _ => return,
     }
@@ -73,20 +73,20 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
 
             ui.vertical(|ui| {
                 let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
-                let inspector_item = behavior_inspector
+                let behavior_inspector_item = behavior_inspector
                     .behaviors
                     .get_mut(&selected_behavior)
                     .unwrap();
 
                 ui.horizontal(|ui| {
                     egui::menu::bar(ui, |ui| {
-                        if inspector_item.collapsed {
+                        if behavior_inspector_item.collapsed {
                             if ui.add(egui::Button::new("▶").frame(false)).clicked() {
-                                inspector_item.collapsed = false;
+                                behavior_inspector_item.collapsed = false;
                             }
                         } else {
                             if ui.add(egui::Button::new("▼").frame(false)).clicked() {
-                                inspector_item.collapsed = true;
+                                behavior_inspector_item.collapsed = true;
                             }
                         }
 
@@ -94,7 +94,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             ui.add_enabled(false, egui::Label::new("💾"));
                         } else if let BehaviorInspectorState::Editing = inspector_item_state {
                             if ui.add(egui::Button::new("💾")).clicked() {
-                                inspector_item.state = BehaviorInspectorState::Save;
+                                behavior_inspector_item.state = BehaviorInspectorState::Save;
                             }
                         }
 
@@ -109,14 +109,35 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
 
                         if let BehaviorInspectorState::Editing = inspector_item_state {
                             if ui.add(egui::Button::new("⏵").frame(true)).clicked() {
-                                inspector_item.state =
-                                    BehaviorInspectorState::Start(StartOption::Spawn);
+                                behavior_inspector_item.state = BehaviorInspectorState::Start;
                             }
+                            egui::ComboBox::from_id_source("Behavior Inspector Item StartOption")
+                                .selected_text(utils::get_label_from_start_option(
+                                    &behavior_inspector_item.start_option,
+                                ))
+                                .show_ui(ui, |ui| {
+                                    let mut selectables = vec![StartOption::Spawn];
+                                    for instance in &behavior_inspector_item.instances {
+                                        selectables.push(StartOption::Attach(instance.clone()));
+                                    }
+                                    for selectable in &selectables {
+                                        if ui
+                                            .selectable_label(
+                                                selectable == &behavior_inspector_item.start_option,
+                                                utils::get_label_from_start_option(selectable),
+                                            )
+                                            .clicked()
+                                        {
+                                            behavior_inspector_item.start_option =
+                                                selectable.clone();
+                                        }
+                                    }
+                                });
                         }
 
-                        if let BehaviorInspectorState::Running(options) = inspector_item_state {
+                        if let BehaviorInspectorState::Running = inspector_item_state {
                             if ui.add(egui::Button::new("⏹").frame(true)).clicked() {
-                                inspector_item.state = BehaviorInspectorState::Stop(options);
+                                behavior_inspector_item.state = BehaviorInspectorState::Stop;
                             }
                         }
 
@@ -130,7 +151,8 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             )
                             .changed()
                         {
-                            inspector_item.name = BehaviorFileName(window_name.clone().into());
+                            behavior_inspector_item.name =
+                                BehaviorFileName(window_name.clone().into());
                         }
 
                         // Space for the little cross icon
@@ -142,7 +164,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                     });
                 });
 
-                if !inspector_item.collapsed {
+                if !behavior_inspector_item.collapsed {
                     egui::Frame::none()
                         .fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140))
                         .stroke(egui::Stroke::NONE)

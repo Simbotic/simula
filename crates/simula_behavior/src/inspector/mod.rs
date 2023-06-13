@@ -5,7 +5,7 @@ use crate::{
     },
     protocol::{
         BehaviorClient, BehaviorFileId, BehaviorFileName, BehaviorProtocolClient,
-        BehaviorProtocolServer, BehaviorServer, RemoteEntity,
+        BehaviorProtocolServer, BehaviorServer, RemoteEntity, StartOption,
     },
     Behavior, BehaviorFactory,
 };
@@ -57,13 +57,7 @@ pub trait BehaviorInspectable<T: BehaviorFactory> {
     fn set_pos(&mut self, pos: Vec2);
 }
 
-#[derive(Clone)]
-pub(self) enum StartOption {
-    Spawn,
-    Attach(RemoteEntity),
-}
-
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(self) enum BehaviorInspectorState {
     New,
     Listing,
@@ -72,10 +66,10 @@ pub(self) enum BehaviorInspectorState {
     Loading(Duration),
     Save,
     Saving(Duration),
-    Start(StartOption),
-    Starting(StartOption, Duration),
-    Running(StartOption),
-    Stop(StartOption),
+    Start,
+    Starting(Duration),
+    Running,
+    Stop,
     Stopping(Duration),
 }
 
@@ -87,6 +81,7 @@ pub(self) struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub collapsed: bool,
     pub behavior: Option<Behavior<T>>,
     pub instances: Vec<RemoteEntity>,
+    pub start_option: StartOption,
 }
 
 #[derive(Default, Clone, Resource)]
@@ -126,7 +121,7 @@ fn update<T>(
     }
 
     for (file_id, behavior_inspector_item) in behavior_inspector.behaviors.iter_mut() {
-        match behavior_inspector_item.state.clone() {
+        match &behavior_inspector_item.state {
             // behavior is only listed, no need to do anything
             BehaviorInspectorState::Listing => {}
             // behavior is editing, no need to do anything
@@ -142,7 +137,7 @@ fn update<T>(
             }
             // If behavior item is Loading, check to see if it timed out
             BehaviorInspectorState::Loading(started) => {
-                if now - started > Duration::from_secs(5) {
+                if now - *started > Duration::from_secs(5) {
                     warn!(
                         "Loading behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -224,7 +219,7 @@ fn update<T>(
             }
             // if behavior item is Saving, check to see if it timed out
             BehaviorInspectorState::Saving(started) => {
-                if now - started > Duration::from_secs(5) {
+                if now - *started > Duration::from_secs(5) {
                     warn!(
                         "Saving behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -233,7 +228,7 @@ fn update<T>(
                 }
             }
             // if behavior item should Start, start it
-            BehaviorInspectorState::Start(options) => {
+            BehaviorInspectorState::Start => {
                 info!("Run behavior: {}", *behavior_inspector_item.name);
                 // set Editing in case anything goes wrong
                 behavior_inspector_item.state = BehaviorInspectorState::Editing;
@@ -244,19 +239,15 @@ fn update<T>(
                         if let Ok(behavior) = behavior {
                             debug!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
-                            behavior_inspector_item.state =
-                                BehaviorInspectorState::Starting(options.clone(), now);
+                            behavior_inspector_item.state = BehaviorInspectorState::Starting(now);
                             behavior_client
                                 .sender
                                 .send(BehaviorProtocolClient::Start(
                                     file_id.clone(),
                                     behavior_inspector_item.name.clone(),
-                                    behavior,
+                                    behavior_inspector_item.start_option.clone(),
+                                    Some(behavior),
                                 ))
-                                .unwrap();
-                            behavior_client
-                                .sender
-                                .send(BehaviorProtocolClient::Telemetry(file_id.clone(), true))
                                 .unwrap();
                         } else if let Err(e) = behavior {
                             error!("{} for behavior: {}", e, *behavior_inspector_item.name);
@@ -275,10 +266,10 @@ fn update<T>(
                 }
             }
             // if behavior item is Running, no need to do anything
-            BehaviorInspectorState::Running(_) => {}
+            BehaviorInspectorState::Running => {}
             // if behavior item is Starting, check to see if it timed out
-            BehaviorInspectorState::Starting(_options, started) => {
-                if now - started > Duration::from_secs(5) {
+            BehaviorInspectorState::Starting(started) => {
+                if now - *started > Duration::from_secs(5) {
                     warn!(
                         "Starting behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -287,10 +278,10 @@ fn update<T>(
                 }
             }
             // if behavior item should Stop, stop it
-            BehaviorInspectorState::Stop(options) => {
+            BehaviorInspectorState::Stop => {
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
                 // ask server to stop behavior only if it was spawned by inspector
-                if let StartOption::Spawn = options {
+                if let StartOption::Spawn = behavior_inspector_item.start_option {
                     behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
                     behavior_client
                         .sender
@@ -304,7 +295,7 @@ fn update<T>(
             }
             // if behavior item is Stopping, check to see if it timed out
             BehaviorInspectorState::Stopping(started) => {
-                if now - started > Duration::from_secs(5) {
+                if now - *started > Duration::from_secs(5) {
                     warn!(
                         "Stopping behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -330,6 +321,7 @@ fn update<T>(
                             collapsed: false,
                             behavior: None,
                             instances: vec![],
+                            start_option: StartOption::Spawn,
                         },
                     );
                 }
@@ -340,7 +332,7 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    debug!("{:?}", remote_entities);
+                    info!("{:?}", remote_entities);
                     behavior_inspector_item.instances = remote_entities;
                 }
             }
@@ -417,11 +409,8 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Starting(options, _) =
-                        &behavior_inspector_item.state
-                    {
-                        behavior_inspector_item.state =
-                            BehaviorInspectorState::Running(options.clone());
+                    if let BehaviorInspectorState::Starting(_) = &behavior_inspector_item.state {
+                        behavior_inspector_item.state = BehaviorInspectorState::Running;
                     }
                 } else {
                     error!("Unexpected behavior started: {:?}", file_id);
@@ -457,7 +446,7 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    if let BehaviorInspectorState::Running(_) = behavior_inspector_item.state {
+                    if let BehaviorInspectorState::Running = behavior_inspector_item.state {
                         if let Some(entity) = behavior_inspector_item.entity {
                             if let Ok(mut editor_state) = editor_states.get_mut(entity) {
                                 if let Err(e) = utils::behavior_telemerty_to_graph(
