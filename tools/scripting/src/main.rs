@@ -80,30 +80,12 @@ fn setup(
         "bhts/debug/repeater",
         "bhts/debug/repeat_repeater",
         "bhts/debug/subtree_gate",
+        "?dynamic_01",
+        "?dynamic_02",
+        "?dynamic_03",
     ];
     for behavior in behaviors.into_iter() {
-        // if behavior starts with +, load the behavior and manually build the behavior tree
-        // if let Some(behavior) = behavior.strip_prefix("+") {
-        //     // get a handle to a behavior asset from asset server
-        //     let behavior_handle: Handle<BehaviorAsset<DebugBehavior>> =
-        //         asset_server.load(format!("{}.bht.ron", behavior).as_str());
-
-        //     // create a new scope for the behavior tree
-        //     let mut scope = Scope::new();
-        //     let mut blackboard = script::Map::new();
-        //     blackboard.insert("state".into(), 0.into());
-        //     scope.scope.push("blackboard", blackboard);
-        //     let scope_handle = scopes.add(scope);
-
-        //     // create a new entity for the behavior tree, and insert the scope
-        //     let tree_entity = commands
-        //         .spawn((Name::new(format!("BHT: {}", behavior)), scope_handle))
-        //         .id();
-        //     BehaviorTree::build_tree_from_asset(tree_entity, &mut commands, behavior_handle);
-        // }
-        // // if behavior starts with *, load the behavior and let server build the behavior tree
-        // else
-
+        // create a behavior tree that will automatically load and run
         if let Some(behavior) = behavior.strip_prefix("*") {
             // get a handle to a behavior asset from asset server
             let behavior_handle: Handle<BehaviorAsset<DebugBehavior>> =
@@ -120,7 +102,24 @@ fn setup(
             commands.spawn((
                 Name::new(format!("BHT: {}", behavior)),
                 scope_handle,
-                behavior_handle,
+                behavior_handle.clone(),
+                BehaviorTree::<DebugBehavior>::default(),
+                BehaviorTreeReset::<DebugBehavior>::default(),
+            ));
+        }
+        // create behavior tree without behavior asset, it will dynamically be added later
+        else if let Some(behavior) = behavior.strip_prefix("?") {
+            // create a new scope for the behavior tree
+            let mut scope = Scope::new();
+            let mut blackboard = script::Map::new();
+            blackboard.insert("state".into(), 0.into());
+            scope.scope.push("blackboard", blackboard);
+            let scope_handle = scopes.add(scope);
+
+            // create a new entity for the behavior tree, and insert the scope
+            commands.spawn((
+                Name::new(format!("BHT: {}", behavior)),
+                scope_handle,
                 BehaviorTree::<DebugBehavior>::default(),
             ));
         }

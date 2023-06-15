@@ -28,6 +28,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     collapsed: false,
                     behavior: None,
                     instances: vec![],
+                    orphans: vec![],
                     start_option: StartOption::Spawn,
                     stop_option: StopOption::Despawn,
                     modified: true,
@@ -107,6 +108,10 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                 behavior_client
                     .sender
                     .send(BehaviorProtocolClient::Instances(selected_behavior.clone()))
+                    .unwrap();
+                behavior_client
+                    .sender
+                    .send(BehaviorProtocolClient::Orphans(selected_behavior.clone()))
                     .unwrap();
             }
         }

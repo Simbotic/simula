@@ -57,7 +57,7 @@ pub trait BehaviorInspectable<T: BehaviorFactory> {
     fn set_pos(&mut self, pos: Vec2);
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub(self) enum BehaviorInspectorState {
     New,
     Listing,
@@ -81,6 +81,7 @@ pub(self) struct BehaviorInspectorItem<T: BehaviorFactory> {
     pub collapsed: bool,
     pub behavior: Option<Behavior<T>>,
     pub instances: Vec<RemoteEntity>,
+    pub orphans: Vec<RemoteEntity>,
     pub start_option: StartOption,
     pub stop_option: StopOption,
     pub modified: bool,
@@ -239,10 +240,14 @@ fn update<T>(
                     if let Ok(editor_state) = editor_states.get(entity) {
                         let mut behavior_option = None;
                         let mut error = false;
-                        // only send a copy of behavior if it has been modified, or StartOption::Spawn
-                        if behavior_inspector_item.modified
-                            || behavior_inspector_item.start_option == StartOption::Spawn
-                        {
+                        // only send a copy of behavior if it has been modified,
+                        // is StartOption::Spawn or StartOption::Insert
+                        let send_behavior = match behavior_inspector_item.start_option {
+                            StartOption::Spawn => false,
+                            StartOption::Attach(_) => false,
+                            StartOption::Insert(_) => false,
+                        };
+                        if behavior_inspector_item.modified || send_behavior {
                             let behavior = utils::graph_to_behavior(&editor_state, None);
                             if let Ok(behavior) = behavior {
                                 behavior_option = Some(behavior.clone());
@@ -293,26 +298,14 @@ fn update<T>(
             // if behavior item should Stop, stop it
             BehaviorInspectorState::Stop => {
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
-                let mut stopping = false;
-                if let StartOption::Spawn = behavior_inspector_item.start_option {
-                    stopping = true;
-                } else if let StartOption::Attach(_) = behavior_inspector_item.start_option {
-                    stopping = true;
-                }
-                if stopping {
-                    behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
-                    behavior_client
-                        .sender
-                        .send(BehaviorProtocolClient::Stop(
-                            file_id.clone(),
-                            behavior_inspector_item.stop_option.clone(),
-                        ))
-                        .unwrap();
-                }
-                // if something seems wrong, just go to Editing
-                else {
-                    behavior_inspector_item.state = BehaviorInspectorState::Editing;
-                }
+                behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
+                behavior_client
+                    .sender
+                    .send(BehaviorProtocolClient::Stop(
+                        file_id.clone(),
+                        behavior_inspector_item.stop_option.clone(),
+                    ))
+                    .unwrap();
             }
             // if behavior item is Stopping, check to see if it timed out
             BehaviorInspectorState::Stopping(started) => {
@@ -342,6 +335,7 @@ fn update<T>(
                             collapsed: false,
                             behavior: None,
                             instances: vec![],
+                            orphans: vec![],
                             start_option: StartOption::Spawn,
                             stop_option: StopOption::Despawn,
                             modified: false,
@@ -357,6 +351,16 @@ fn update<T>(
                 {
                     info!("{:?}", remote_entities);
                     behavior_inspector_item.instances = remote_entities;
+                }
+            }
+            // Receive orphans without behaviors
+            BehaviorProtocolServer::Orphans(file_id, remote_entities) => {
+                info!("Received Instances: {:?}", file_id);
+                if let Some(behavior_inspector_item) =
+                    behavior_inspector.behaviors.get_mut(&file_id)
+                {
+                    info!("{:?}", remote_entities);
+                    behavior_inspector_item.orphans = remote_entities;
                 }
             }
             // Receive behavior data

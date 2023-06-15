@@ -1,5 +1,5 @@
 use actions::*;
-use asset::{behavior_loader, Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading};
+use asset::{behavior_tree_reset, Behavior, BehaviorAsset, BehaviorAssetLoader};
 use bevy::{
     ecs::{query::WorldQuery, system::EntityCommands},
     prelude::*,
@@ -22,7 +22,7 @@ pub mod test;
 pub mod prelude {
     pub use crate::actions::*;
     pub use crate::asset::{
-        behavior_loader, Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorAssetLoading,
+        behavior_tree_reset, Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorTreeReset,
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
@@ -97,12 +97,12 @@ where
         app.register_type::<BehaviorTree<T>>()
             .add_asset::<BehaviorAsset<T>>()
             .init_asset_loader::<BehaviorAssetLoader<T>>()
-            .add_system(behavior_loader::<T>);
+            .add_system(behavior_tree_reset::<T>);
     }
 }
 
 #[derive(Bundle)]
-pub struct BehaviorBundle<T>
+struct BehaviorBundle<T>
 where
     T: Reflect + Component + Clone,
 {
@@ -268,10 +268,6 @@ where
     const NAME: &'static str;
     const DESC: &'static str;
 
-    fn insert(commands: &mut EntityCommands) {
-        commands.insert(BehaviorBundle::<Self>::default());
-    }
-
     fn insert_with(commands: &mut EntityCommands, data: &Self) {
         commands.insert(BehaviorBundle::<Self> {
             behavior: data.clone(),
@@ -293,81 +289,15 @@ pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]
 /// A component added to identify the root of a behavior tree
 #[derive(Default, Reflect, Clone, Component)]
 #[reflect(Component)]
-pub struct BehaviorTree<T>
-where
-    T: BehaviorFactory,
-{
-    pub root: Option<Entity>,
-    // pub asset: Handle<BehaviorAsset<T>>,
-    #[reflect(ignore)]
-    pub _phantom: std::marker::PhantomData<T>,
-}
+pub struct BehaviorTree<T: BehaviorFactory>(#[reflect(ignore)] std::marker::PhantomData<T>);
 
 impl<T> BehaviorTree<T>
 where
     T: BehaviorFactory,
 {
-    /// Spawn behavior tree from asset.
-    /// A parent is optional, but if it is provided, it must be a behavior node.
-    /// Interface too complex, private for now.
-    fn from_asset(
-        tree: Entity,
-        parent: Option<Entity>,
-        commands: &mut Commands,
-        asset: Handle<BehaviorAsset<T>>,
-    ) -> Self {
-        let entity = commands
-            .spawn_empty()
-            .insert(BehaviorAssetLoading::<T> {
-                asset: asset.clone(),
-                tree,
-                parent,
-                phantom: std::marker::PhantomData,
-            })
-            .id();
-        Self {
-            root: Some(entity),
-            ..default()
-        }
-    }
-
-    /// Build a behavior tree component for entity from a behavior asset.
-    pub fn build_tree_from_asset(
-        entity: Entity,
-        commands: &mut Commands,
-        asset: Handle<BehaviorAsset<T>>,
-    ) {
-        commands.entity(entity).insert(asset.clone());
-        // create a behavior tree component from the asset
-        let behavior_tree = BehaviorTree::from_asset(entity, None, commands, asset);
-        // insert the behavior tree component into the tree entity and move root to tree entity
-        if let Some(root) = behavior_tree.root {
-            commands
-                .entity(entity)
-                .insert(behavior_tree)
-                .add_child(root);
-        }
-    }
-
-    /// Build a behavior tree component for entity from a behavior node.
-    pub fn build_tree(entity: Entity, commands: &mut Commands, node: &Behavior<T>) {
-        // create a new behavior tree component
-        let mut behavior_tree = BehaviorTree::<T>::default();
-        // create a new root node and set the cursor so it starts running
-        let root = commands.spawn(BehaviorCursor::Delegate).id();
-        // insert the behavior tree into behavior tree entity
-        BehaviorTree::insert_tree(entity, root, None, commands, node);
-        // let the behavior tree know what the root node is
-        behavior_tree.root = Some(root);
-        commands
-            .entity(entity)
-            .insert(behavior_tree)
-            .add_child(root);
-    }
-
-    /// Spawn a behavior tree from a behavior node.
-    /// A parent is optional, but if it is provided, it must be a behavior node.
-    /// Interface too complex, private for now.
+    /// Spawn behavior tree from a behavior node.
+    /// A parent is optional, but if it is provided, it must be a behavior node,
+    /// this parent will link both trees together.
     fn insert_tree(
         tree: Entity,
         entity: Entity,

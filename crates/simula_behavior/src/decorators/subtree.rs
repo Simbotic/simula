@@ -1,4 +1,4 @@
-use crate::{add_children, prelude::*};
+use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
@@ -33,7 +33,6 @@ pub fn run<T: BehaviorFactory>(
             Entity,
             &BehaviorChildren,
             &Subtree<T>,
-            &BehaviorNode,
             Option<&BehaviorTree<T>>,
         ),
         BehaviorRunQuery,
@@ -41,18 +40,15 @@ pub fn run<T: BehaviorFactory>(
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
     asset_server: Res<AssetServer>,
 ) {
-    for (entity, children, subtree, node, child_tree) in &mut subtrees {
+    for (entity, children, subtree, child_tree) in &mut subtrees {
         if child_tree.is_none() {
-            if let Some(tree) = node.tree {
-                let behavior_asset: Handle<BehaviorAsset<T>> =
-                    asset_server.load(subtree.asset.as_ref());
-                let behavior =
-                    BehaviorTree::from_asset(tree, Some(entity), &mut commands, behavior_asset);
-                if let Some(root) = behavior.root {
-                    add_children(&mut commands, entity, &[root]);
-                }
-                commands.entity(entity).insert(behavior);
-            }
+            let behavior_asset: Handle<BehaviorAsset<T>> =
+                asset_server.load(subtree.asset.as_ref());
+            commands
+                .entity(entity)
+                .insert(behavior_asset)
+                .insert(BehaviorTree::<T>::default())
+                .insert(BehaviorTreeReset::<T>::default());
         } else if children.is_empty() {
             // Can be empty while loading subtree
         } else {

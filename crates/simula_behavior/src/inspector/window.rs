@@ -128,6 +128,9 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                     for instance in &behavior_inspector_item.instances {
                                         selectables.push(StartOption::Attach(instance.clone()));
                                     }
+                                    for instance in &behavior_inspector_item.orphans {
+                                        selectables.push(StartOption::Insert(instance.clone()));
+                                    }
                                     for selectable in &selectables {
                                         if ui
                                             .selectable_label(
@@ -143,7 +146,11 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                                 }
                                                 StartOption::Attach(_) => {
                                                     behavior_inspector_item.stop_option =
-                                                        StopOption::Dettach
+                                                        StopOption::Detach
+                                                }
+                                                StartOption::Insert(_) => {
+                                                    behavior_inspector_item.stop_option =
+                                                        StopOption::Remove
                                                 }
                                             }
                                             behavior_inspector_item.start_option =
@@ -164,8 +171,11 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                     &behavior_inspector_item.stop_option,
                                 ))
                                 .show_ui(ui, |ui| {
-                                    let selectables =
-                                        vec![StopOption::Despawn, StopOption::Dettach];
+                                    let selectables = vec![
+                                        StopOption::Despawn,
+                                        StopOption::Detach,
+                                        StopOption::Remove,
+                                    ];
                                     for selectable in &selectables {
                                         if ui
                                             .selectable_label(

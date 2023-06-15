@@ -334,7 +334,12 @@ pub(super) fn get_label_from_file_id<T: BehaviorFactory>(
 pub(super) fn get_label_from_start_option(start_option: &StartOption) -> Cow<'static, str> {
     match start_option {
         StartOption::Spawn => Cow::Borrowed("Spawn"),
-        StartOption::Attach(RemoteEntity { bits, name }) => format!("[{}] {}", bits, name).into(),
+        StartOption::Attach(RemoteEntity { bits, name }) => {
+            format!("Attach: [{}] {}", bits, name).into()
+        }
+        StartOption::Insert(RemoteEntity { bits, name }) => {
+            format!("Insert: [{}] {}", bits, name).into()
+        }
     }
 }
 
@@ -345,9 +350,11 @@ pub(super) fn get_label_from_stop_option(
     let current_label = match start_option {
         StartOption::Spawn => Cow::Borrowed(""),
         StartOption::Attach(RemoteEntity { bits, name }) => format!(": [{}] {}", bits, name).into(),
+        StartOption::Insert(RemoteEntity { bits, name }) => format!(": [{}] {}", bits, name).into(),
     };
     match stop_option {
         StopOption::Despawn => format!("Despawn{}", current_label).into(),
-        StopOption::Dettach => format!("Dettach{}", current_label).into(),
+        StopOption::Detach => format!("Detach{}", current_label).into(),
+        StopOption::Remove => format!("Remove{}", current_label).into(),
     }
 }

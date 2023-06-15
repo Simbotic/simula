@@ -39,12 +39,14 @@ impl RemoteEntity {
 pub enum StartOption {
     Spawn,
     Attach(RemoteEntity),
+    Insert(RemoteEntity),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StopOption {
     Despawn,
-    Dettach,
+    Detach,
+    Remove,
 }
 
 #[derive(
@@ -71,26 +73,43 @@ impl BehaviorFileId {
 )]
 pub struct BehaviorFileName(pub Cow<'static, str>);
 
+#[derive(Debug, Clone)]
 pub enum BehaviorProtocolClient<T: BehaviorFactory> {
+    /// Request instances running behavior
     Instances(BehaviorFileId),
+    /// Request orphans, instances that have behavior trees but no behavior
+    Orphans(BehaviorFileId),
+    /// Request file to be loaded
     LoadFile(BehaviorFileId),
+    /// Request file to be saved
     SaveFile(BehaviorFileId, BehaviorFileName, Behavior<T>),
+    /// Request behavior to be started
     Start(
         BehaviorFileId,
         BehaviorFileName,
         StartOption,
         Option<Behavior<T>>,
     ),
+    /// Request behavior to be stopped
     Stop(BehaviorFileId, StopOption),
 }
 
 pub enum BehaviorProtocolServer<T: BehaviorFactory> {
+    /// Behavior file listed
     FileName(BehaviorFileId, BehaviorFileName),
+    /// Instances running behavior
     Instances(BehaviorFileId, Vec<RemoteEntity>),
+    /// Instances that have behavior trees but no behavior
+    Orphans(BehaviorFileId, Vec<RemoteEntity>),
+    /// Behavior file loaded
     FileLoaded(BehaviorFileId, Behavior<T>),
+    /// Behavior file saved
     FileSaved(BehaviorFileId),
+    /// Behavior started
     Started(BehaviorFileId),
+    /// Behavior stopped
     Stopped(BehaviorFileId),
+    /// Behavior telemetry
     Telemetry(BehaviorFileId, BehaviorTelemetry<T>),
 }
 

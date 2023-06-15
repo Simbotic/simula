@@ -1,4 +1,4 @@
-use crate::{BehaviorFactory, BehaviorTree};
+use crate::{BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -90,34 +90,53 @@ where
     }
 }
 
-#[derive(Component)]
-pub struct BehaviorAssetLoading<T>
+#[derive(Component, Default)]
+pub struct BehaviorTreeReset<T>
 where
     T: TypeUuid + Send + Sync + 'static + Default + Debug + BehaviorFactory,
 {
-    pub asset: Handle<BehaviorAsset<T>>,
-    pub tree: Entity,
-    pub parent: Option<Entity>,
     pub phantom: std::marker::PhantomData<T>,
 }
 
-pub fn behavior_loader<T>(
+pub fn behavior_tree_reset<T>(
     mut commands: Commands,
-    loaded_assets: Res<Assets<BehaviorAsset<T>>>,
-    queued_assets: Query<(Entity, &BehaviorAssetLoading<T>)>,
+    behavior_assets: Res<Assets<BehaviorAsset<T>>>,
+    loadings: Query<
+        (Entity, &Handle<BehaviorAsset<T>>, Option<&BehaviorNode>),
+        (With<BehaviorTree<T>>, With<BehaviorTreeReset<T>>),
+    >,
 ) where
     T: BehaviorFactory + for<'de> Deserialize<'de>,
 {
-    for (entity, queued_asset) in queued_assets.iter() {
-        if let Some(loaded_asset) = loaded_assets.get(&queued_asset.asset) {
+    for (entity, behavior_asset, behavior_node) in loadings.iter() {
+        // Remove behavior tree child nodes
+        commands.entity(entity).clear_children();
+
+        // Once asset is loaded, insert the tree nodes
+        if let Some(behavior_asset) = behavior_assets.get(behavior_asset) {
+            info!("Loading behavior tree for entity {:?}", entity);
+            commands.entity(entity).remove::<BehaviorTreeReset<T>>();
+
+            // if this behavior tree is a behavior node, then it will be a parent for the loaded tree root
+            // this is for linking the trees together
+            let parent = if behavior_node.is_some() {
+                Some(entity)
+            } else {
+                None
+            };
+
+            // Create a child entity for the loaded tree nodes
+            let root = commands.spawn_empty().insert(BehaviorCursor::Delegate).id();
+            commands.entity(entity).add_child(root);
+
+            // Build tree on root
             BehaviorTree::insert_tree(
-                queued_asset.tree,
                 entity,
-                queued_asset.parent,
+                root,
+                parent,
                 &mut commands,
-                &loaded_asset.behavior,
+                &behavior_asset.behavior,
             );
-            commands.entity(entity).remove::<BehaviorAssetLoading<T>>();
         }
     }
 }
