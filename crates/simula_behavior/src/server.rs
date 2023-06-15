@@ -43,6 +43,52 @@ pub struct BehaviorTracker<T: BehaviorFactory> {
 #[derive(Default, Resource, Deref, DerefMut)]
 pub struct BehaviorTrackers<T: BehaviorFactory>(HashMap<BehaviorFileId, BehaviorTracker<T>>);
 
+fn setup<T: BehaviorFactory>(
+    mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
+    behavior_server: Res<BehaviorServer<T>>,
+) {
+    let dir_path = "assets/bhts/u";
+
+    // Read the directory and handle any errors
+    let paths = match std::fs::read_dir(dir_path) {
+        Ok(paths) => paths,
+        Err(err) => {
+            eprintln!("Error reading directory: {}", err);
+            return;
+        }
+    };
+
+    // Iterate over the directory entries
+    for path in paths {
+        if let Ok(entry) = path {
+            // Check if the entry is a file with the desired extension
+            if entry.file_type().unwrap().is_file() {
+                let osfile_name = entry.file_name();
+                let file_name = osfile_name.to_string_lossy().to_owned();
+                if file_name.ends_with(".bht.ron") {
+                    let file_id = BehaviorFileId::new();
+                    let file_name = format!("bhts/u/{}", file_name.trim_end_matches(".bht.ron"));
+                    let file_name = BehaviorFileName(file_name.to_string().into());
+
+                    behavior_trackers.insert(
+                        file_id.clone(),
+                        BehaviorTracker {
+                            file_name: file_name.clone(),
+                            entity: EntityTracker::None,
+                            asset: None,
+                        },
+                    );
+
+                    behavior_server
+                        .sender
+                        .send(BehaviorProtocolServer::FileName(file_id, file_name))
+                        .unwrap();
+                }
+            }
+        }
+    }
+}
+
 fn track_loaded_behaviors<T: BehaviorFactory>(
     mut commands: Commands,
     mut behavior_trees: Query<(Entity, &Name, &Handle<BehaviorAsset<T>>), With<BehaviorTree<T>>>,
@@ -116,52 +162,6 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
             _ => {
                 error!("{:?}", event);
                 // Other events are not handled
-            }
-        }
-    }
-}
-
-fn setup<T: BehaviorFactory>(
-    mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
-    behavior_server: Res<BehaviorServer<T>>,
-) {
-    let dir_path = "assets/bhts/u";
-
-    // Read the directory and handle any errors
-    let paths = match std::fs::read_dir(dir_path) {
-        Ok(paths) => paths,
-        Err(err) => {
-            eprintln!("Error reading directory: {}", err);
-            return;
-        }
-    };
-
-    // Iterate over the directory entries
-    for path in paths {
-        if let Ok(entry) = path {
-            // Check if the entry is a file with the desired extension
-            if entry.file_type().unwrap().is_file() {
-                let osfile_name = entry.file_name();
-                let file_name = osfile_name.to_string_lossy().to_owned();
-                if file_name.ends_with(".bht.ron") {
-                    let file_id = BehaviorFileId::new();
-                    let file_name = format!("bhts/u/{}", file_name.trim_end_matches(".bht.ron"));
-                    let file_name = BehaviorFileName(file_name.to_string().into());
-
-                    behavior_trackers.insert(
-                        file_id.clone(),
-                        BehaviorTracker {
-                            file_name: file_name.clone(),
-                            entity: EntityTracker::None,
-                            asset: None,
-                        },
-                    );
-
-                    behavior_server
-                        .sender
-                        .send(BehaviorProtocolServer::FileName(file_id, file_name))
-                        .unwrap();
-                }
             }
         }
     }
@@ -410,7 +410,7 @@ fn update<T>(
                         } else {
                             // asset not ready, check again later
                             queued_msgs.push(PriorityMessage {
-                                priority: msg.priority + Duration::from_secs(1),
+                                priority: priority + Duration::from_secs(1),
                                 count: msg.count + 1,
                                 msg: msg.msg.clone(),
                             });
@@ -423,7 +423,7 @@ fn update<T>(
                         behavior_tracker.asset = Some(behavior_handle);
                         // check again later
                         queued_msgs.push(PriorityMessage {
-                            priority: msg.priority + Duration::from_secs(1),
+                            priority: priority + Duration::from_secs(1),
                             count: msg.count + 1,
                             msg: msg.msg.clone(),
                         });
@@ -555,6 +555,19 @@ fn update<T>(
             }
             BehaviorProtocolClient::Stop(file_id, stop_option) => {
                 info!("Received Stop: {:?}", file_id);
+
+                // Make sure client gets update status of behaviors
+                queued_msgs.push(PriorityMessage {
+                    priority: msg.priority + Duration::from_secs(1),
+                    count: msg.count + 1,
+                    msg: BehaviorProtocolClient::Instances(file_id.clone()),
+                });
+                queued_msgs.push(PriorityMessage {
+                    priority: msg.priority + Duration::from_secs(1),
+                    count: msg.count + 1,
+                    msg: BehaviorProtocolClient::Orphans(file_id.clone()),
+                });
+
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     let entity = match behavior_tracker.entity {
                         EntityTracker::Spawned(entity) => Some(entity),

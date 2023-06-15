@@ -90,7 +90,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             }
                         }
 
-                        // Add a save button
+                        // add a save button
                         let mut save_enabled = true;
                         if let BehaviorInspectorState::Saving(_) = inspector_item_state {
                             save_enabled = false;
@@ -105,6 +105,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             behavior_inspector_item.state = BehaviorInspectorState::Save;
                         }
 
+                        // enable the center button if the pan is off centered
                         if ui
                             .add_enabled(pan_length > 1000.0, egui::Button::new("⨀").frame(true))
                             .clicked()

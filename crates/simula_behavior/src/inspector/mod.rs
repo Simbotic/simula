@@ -351,6 +351,8 @@ fn update<T>(
                 {
                     info!("{:?}", remote_entities);
                     behavior_inspector_item.instances = remote_entities;
+                    behavior_inspector_item.start_option = StartOption::Spawn;
+                    behavior_inspector_item.stop_option = StopOption::Despawn;
                 }
             }
             // Receive orphans without behaviors
@@ -361,6 +363,8 @@ fn update<T>(
                 {
                     info!("{:?}", remote_entities);
                     behavior_inspector_item.orphans = remote_entities;
+                    behavior_inspector_item.start_option = StartOption::Spawn;
+                    behavior_inspector_item.stop_option = StopOption::Despawn;
                 }
             }
             // Receive behavior data
