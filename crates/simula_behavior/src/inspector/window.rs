@@ -49,6 +49,8 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
         .single(world);
     let default_size = egui::vec2(window.width() * 0.7, window.height() * 0.7);
 
+    let mut reset_graph_layout = false;
+
     let mut open = true;
     let mut window_name = format!("{}", *file_name);
     egui::Window::new(&format!("BHI:[{}]", *selected_behavior))
@@ -111,6 +113,14 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                             .clicked()
                         {
                             pan_reset = true;
+                        }
+
+                        // enable the center button if the pan is off centered
+                        if ui
+                            .add_enabled(true, egui::Button::new("📐").frame(true))
+                            .clicked()
+                        {
+                            reset_graph_layout = true;
                         }
 
                         ui.add_space(20.0);
@@ -401,6 +411,13 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                 behavior_inspector_item.modified = modified;
             });
         });
+
+    if reset_graph_layout {
+        if let Ok((_, _, _graph_state, mut editor_state)) = behavior_graphs.get_mut(world, entity) {
+            let mut child = 0;
+            utils::layout_graph(&mut editor_state, None, 0, &mut child);
+        }
+    }
 
     if !open {
         let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();

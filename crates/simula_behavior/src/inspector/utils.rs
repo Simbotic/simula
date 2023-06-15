@@ -268,6 +268,61 @@ where
     Ok(())
 }
 
+pub fn layout_graph<T>(
+    editor: &mut BehaviorEditorState<T>,
+    node_id: Option<NodeId>,
+    depth: usize,
+    child: &mut usize,
+)
+where
+    T: BehaviorFactory,
+{
+    // TODO: Make these dynamic
+    const NODE_WIDTH: f32 = 200.0;
+    const NODE_HEIGHT: f32 = 150.0;
+
+    let Some(node_id) = node_id else {
+            let root_child_id = get_root_child(&editor.graph);
+            if let Some(root_child_id) = root_child_id {
+                layout_graph(editor, Some(root_child_id), 1, child);
+            } else {
+                error!("No root child");
+                
+            }
+            return;
+        };
+
+    editor.node_positions[node_id] =
+        egui::pos2((depth as f32) * NODE_WIDTH, (*child as f32) * NODE_HEIGHT);
+
+    // Get node children
+    let graph = &mut editor.graph;
+    let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
+    let node_children: Vec<NodeId> = node
+        .outputs
+        .iter()
+        .filter_map(|(_, output_id)| {
+            graph
+                .connections
+                .iter()
+                .find(|(input_id, rhs_output_id)| {
+                    output_id == *rhs_output_id
+                        && graph.inputs[*input_id].typ == BehaviorDataType::Flow
+                })
+                .and_then(|(input_id, _)| Some(graph.inputs[input_id].node))
+        })
+        .collect();
+
+    // Zip and iterate over children
+    let node_children = node_children.iter().enumerate();
+    for (idx, node_child) in node_children {
+        if idx > 0 {
+            *child = *child + 1;
+        }
+        layout_graph(editor, Some(*node_child), depth + 1, child);
+    }
+}
+
 // For use with world.get_entity_component_reflect
 fn _components_of_entity(
     world: &mut World,

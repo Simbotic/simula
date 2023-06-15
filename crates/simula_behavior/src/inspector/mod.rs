@@ -414,6 +414,22 @@ fn update<T>(
                             &behavior,
                         );
 
+                        // calculate min and max positions
+                        let mut min_pos = egui::pos2(f32::MAX, f32::MAX);
+                        let mut max_pos = egui::pos2(f32::MIN, f32::MIN);
+                        editor_state.node_positions.iter().for_each(|(_, pos)| {
+                            min_pos = egui::pos2(pos.x.min(min_pos.x), pos.y.min(min_pos.y));
+                            max_pos = egui::pos2(pos.x.max(max_pos.x), pos.y.max(max_pos.y));
+                        });
+
+                        // auto layout graph if it's too tight
+                        let size_pos = (max_pos - min_pos).length_sq();
+                        if size_pos < 1000.0 {
+                            let mut child = 0;
+                            utils::layout_graph(&mut editor_state, None, 0, &mut child);
+                        }
+
+                        // spawn an entity for this behavior graph
                         let entity = commands
                             .spawn(Name::new(format!("BHI: {}", *behavior_inspector_item.name)))
                             .insert(graph_state)
