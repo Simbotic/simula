@@ -16,14 +16,14 @@ fn sequence_single_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Sequencer of a few actions",
-        "[1] STARTED Do action 0",
-        "[1] SUCCESS Do action 0",
-        "[2] STARTED Do action 1",
-        "[2] SUCCESS Do action 1",
-        "[3] STARTED Do action 2",
-        "[3] SUCCESS Do action 2",
-        "[0] SUCCESS Sequencer of a few actions",
+        "[1] STARTED Sequencer of a few actions",
+        "[2] STARTED Do action 0",
+        "[2] SUCCESS Do action 0",
+        "[3] STARTED Do action 1",
+        "[3] SUCCESS Do action 1",
+        "[4] STARTED Do action 2",
+        "[4] SUCCESS Do action 2",
+        "[1] SUCCESS Sequencer of a few actions",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -44,12 +44,12 @@ fn sequence_single_failure() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Sequencer of a few actions",
-        "[1] STARTED Do action 0",
-        "[1] SUCCESS Do action 0",
-        "[2] STARTED Do action 1",
-        "[2] FAILURE Do action 1",
-        "[0] FAILURE Sequencer of a few actions",
+        "[1] STARTED Sequencer of a few actions",
+        "[2] STARTED Do action 0",
+        "[2] SUCCESS Do action 0",
+        "[3] STARTED Do action 1",
+        "[3] FAILURE Do action 1",
+        "[1] FAILURE Sequencer of a few actions",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -88,20 +88,20 @@ fn sequence_nested_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Sequencer of sequence",
-        "[1] STARTED Depth 1 sequence",
-        "[2] STARTED Depth 2 sequence",
-        "[3] STARTED Deep nested action 1",
-        "[3] SUCCESS Deep nested action 1",
-        "[2] SUCCESS Depth 2 sequence",
-        "[4] STARTED Another depth 2 sequence",
-        "[5] STARTED Deep nested action 2",
-        "[5] SUCCESS Deep nested action 2",
-        "[6] STARTED Deep nested action 3",
-        "[6] SUCCESS Deep nested action 3",
-        "[4] SUCCESS Another depth 2 sequence",
-        "[1] SUCCESS Depth 1 sequence",
-        "[0] SUCCESS Sequencer of sequence",
+        "[1] STARTED Sequencer of sequence",
+        "[2] STARTED Depth 1 sequence",
+        "[3] STARTED Depth 2 sequence",
+        "[4] STARTED Deep nested action 1",
+        "[4] SUCCESS Deep nested action 1",
+        "[3] SUCCESS Depth 2 sequence",
+        "[5] STARTED Another depth 2 sequence",
+        "[6] STARTED Deep nested action 2",
+        "[6] SUCCESS Deep nested action 2",
+        "[7] STARTED Deep nested action 3",
+        "[7] SUCCESS Deep nested action 3",
+        "[5] SUCCESS Another depth 2 sequence",
+        "[2] SUCCESS Depth 1 sequence",
+        "[1] SUCCESS Sequencer of sequence",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -140,18 +140,18 @@ fn sequence_nested_failure() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Sequencer of sequence",
-        "[1] STARTED Nested sequence of sequences",
-        "[2] STARTED First depth 2 sequence",
-        "[3] STARTED Deep nested action 1",
-        "[3] SUCCESS Deep nested action 1",
-        "[2] SUCCESS First depth 2 sequence",
-        "[4] STARTED Second depth 2 sequence",
-        "[5] STARTED Deep nested action 2",
-        "[5] FAILURE Deep nested action 2",
-        "[4] FAILURE Second depth 2 sequence",
-        "[1] FAILURE Nested sequence of sequences",
-        "[0] FAILURE Sequencer of sequence",
+        "[1] STARTED Sequencer of sequence",
+        "[2] STARTED Nested sequence of sequences",
+        "[3] STARTED First depth 2 sequence",
+        "[4] STARTED Deep nested action 1",
+        "[4] SUCCESS Deep nested action 1",
+        "[3] SUCCESS First depth 2 sequence",
+        "[5] STARTED Second depth 2 sequence",
+        "[6] STARTED Deep nested action 2",
+        "[6] FAILURE Deep nested action 2",
+        "[5] FAILURE Second depth 2 sequence",
+        "[2] FAILURE Nested sequence of sequences",
+        "[1] FAILURE Sequencer of sequence",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -190,20 +190,20 @@ fn sequence_nested_selector_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Sequencer of sequence",
-        "[1] STARTED Nested sequence of sequences",
-        "[2] STARTED First depth 2 sequence",
-        "[3] STARTED Unlock doors",
-        "[3] SUCCESS Unlock doors",
-        "[2] SUCCESS First depth 2 sequence",
-        "[4] STARTED Second depth 2 sequence",
-        "[5] STARTED Close doors",
-        "[5] SUCCESS Close doors",
-        "[6] STARTED Enter door",
-        "[6] SUCCESS Enter door",
-        "[4] SUCCESS Second depth 2 sequence",
-        "[1] SUCCESS Nested sequence of sequences",
-        "[0] SUCCESS Sequencer of sequence",
+        "[1] STARTED Sequencer of sequence",
+        "[2] STARTED Nested sequence of sequences",
+        "[3] STARTED First depth 2 sequence",
+        "[4] STARTED Unlock doors",
+        "[4] SUCCESS Unlock doors",
+        "[3] SUCCESS First depth 2 sequence",
+        "[5] STARTED Second depth 2 sequence",
+        "[6] STARTED Close doors",
+        "[6] SUCCESS Close doors",
+        "[7] STARTED Enter door",
+        "[7] SUCCESS Enter door",
+        "[5] SUCCESS Second depth 2 sequence",
+        "[2] SUCCESS Nested sequence of sequences",
+        "[1] SUCCESS Sequencer of sequence",
     ]);
     assert_eq!(&trace, &expected_trace);
 }

@@ -273,8 +273,7 @@ pub fn layout_graph<T>(
     node_id: Option<NodeId>,
     depth: usize,
     child: &mut usize,
-)
-where
+) where
     T: BehaviorFactory,
 {
     // TODO: Make these dynamic
@@ -287,7 +286,6 @@ where
                 layout_graph(editor, Some(root_child_id), 1, child);
             } else {
                 error!("No root child");
-                
             }
             return;
         };

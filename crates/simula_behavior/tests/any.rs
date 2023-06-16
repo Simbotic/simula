@@ -16,14 +16,14 @@ fn any_simple() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Run until any good",
-        "[1] STARTED Do a thing",
-        "[2] STARTED Do another",
-        "[3] STARTED Do more",
-        "[1] FAILURE Do a thing",
-        "[3] FAILURE Do more",
-        "[2] SUCCESS Do another",
-        "[0] SUCCESS Run until any good",
+        "[1] STARTED Run until any good",
+        "[2] STARTED Do a thing",
+        "[3] STARTED Do another",
+        "[4] STARTED Do more",
+        "[2] FAILURE Do a thing",
+        "[4] FAILURE Do more",
+        "[3] SUCCESS Do another",
+        "[1] SUCCESS Run until any good",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -44,14 +44,14 @@ fn any_simple_failure() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Run until any good",
-        "[1] STARTED Do a thing",
-        "[2] STARTED Do another",
-        "[3] STARTED Do more",
-        "[1] FAILURE Do a thing",
-        "[2] FAILURE Do another",
-        "[3] FAILURE Do more",
-        "[0] FAILURE Run until any good",
+        "[1] STARTED Run until any good",
+        "[2] STARTED Do a thing",
+        "[3] STARTED Do another",
+        "[4] STARTED Do more",
+        "[2] FAILURE Do a thing",
+        "[3] FAILURE Do another",
+        "[4] FAILURE Do more",
+        "[1] FAILURE Run until any good",
     ]);
     assert_eq!(&trace, &expected_trace);
 }

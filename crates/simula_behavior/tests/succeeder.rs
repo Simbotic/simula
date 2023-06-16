@@ -21,12 +21,12 @@ fn succeeder_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Just succeed",
-        "[1] STARTED Do a few things",
-        "[2] STARTED Do an action",
-        "[2] FAILURE Do an action",
-        "[1] FAILURE Do a few things",
-        "[0] SUCCESS Just succeed",
+        "[1] STARTED Just succeed",
+        "[2] STARTED Do a few things",
+        "[3] STARTED Do an action",
+        "[3] FAILURE Do an action",
+        "[2] FAILURE Do a few things",
+        "[1] SUCCESS Just succeed",
     ]);
     assert_eq!(&trace, &expected_trace);
 }

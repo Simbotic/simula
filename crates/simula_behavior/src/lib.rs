@@ -295,16 +295,15 @@ impl<T> BehaviorTree<T>
 where
     T: BehaviorFactory,
 {
-    /// Spawn behavior tree from a behavior node.
-    /// A parent is optional, but if it is provided, it must be a behavior node,
-    /// this parent will link both trees together.
+    /// Build behavior tree from a behavior node.
     fn insert_tree(
         tree: Entity,
-        entity: Entity,
         parent: Option<Entity>,
         commands: &mut Commands,
         node: &Behavior<T>,
     ) -> Entity {
+        let entity = commands.spawn_empty().id();
+
         let mut entity_commands = commands.entity(entity);
         node.data().insert(&mut entity_commands);
         entity_commands.insert(Name::new(node.name().to_owned()));
@@ -314,15 +313,7 @@ where
         let children = node
             .nodes()
             .iter()
-            .map(|node| {
-                Self::insert_tree(
-                    tree,
-                    commands.spawn_empty().id(),
-                    Some(entity),
-                    commands,
-                    node,
-                )
-            })
+            .map(|node| Self::insert_tree(tree, Some(entity), commands, node))
             .collect::<Vec<Entity>>();
         add_children(commands, entity, &children);
         entity

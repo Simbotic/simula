@@ -1,4 +1,4 @@
-use crate::{BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree};
+use crate::{BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -125,18 +125,18 @@ pub fn behavior_tree_reset<T>(
                 None
             };
 
-            // Create a child entity for the loaded tree nodes
-            let root = commands.spawn_empty().insert(BehaviorCursor::Delegate).id();
-            commands.entity(entity).add_child(root);
-
             // Build tree on root
-            BehaviorTree::insert_tree(
-                entity,
-                root,
-                parent,
-                &mut commands,
-                &behavior_asset.behavior,
-            );
+            let root =
+                BehaviorTree::insert_tree(entity, parent, &mut commands, &behavior_asset.behavior);
+
+            // all tree nodes are linked, but tree root needs to be linked to parent
+            commands.entity(entity).add_child(root);
+            if behavior_node.is_some() {
+                commands.entity(entity).insert(BehaviorChildren(vec![root]));
+            }
+
+            // start running behavior
+            commands.entity(root).insert(BehaviorCursor::Delegate);
         }
     }
 }

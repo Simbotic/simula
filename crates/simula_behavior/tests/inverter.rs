@@ -21,12 +21,12 @@ fn inverter_sequence_success() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Invert results of sequence",
-        "[1] STARTED Sequencer of two actions",
-        "[2] STARTED Do action",
-        "[2] FAILURE Do action",
-        "[1] FAILURE Sequencer of two actions",
-        "[0] SUCCESS Invert results of sequence",
+        "[1] STARTED Invert results of sequence",
+        "[2] STARTED Sequencer of two actions",
+        "[3] STARTED Do action",
+        "[3] FAILURE Do action",
+        "[2] FAILURE Sequencer of two actions",
+        "[1] SUCCESS Invert results of sequence",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
@@ -52,14 +52,14 @@ fn inverter_sequence_failure() {
     let trace = trace_behavior(behavior);
     println!("{:#?}", trace);
     let expected_trace = BehaviorTrace::from_list(&[
-        "[0] STARTED Invert results of sequence",
-        "[1] STARTED Sequencer of two actions",
-        "[2] STARTED Do action",
-        "[2] SUCCESS Do action",
-        "[3] STARTED Do another action",
-        "[3] SUCCESS Do another action",
-        "[1] SUCCESS Sequencer of two actions",
-        "[0] FAILURE Invert results of sequence",
+        "[1] STARTED Invert results of sequence",
+        "[2] STARTED Sequencer of two actions",
+        "[3] STARTED Do action",
+        "[3] SUCCESS Do action",
+        "[4] STARTED Do another action",
+        "[4] SUCCESS Do another action",
+        "[2] SUCCESS Sequencer of two actions",
+        "[1] FAILURE Invert results of sequence",
     ]);
     assert_eq!(&trace, &expected_trace);
 }
