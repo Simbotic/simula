@@ -14,10 +14,13 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     ui: &mut egui::Ui,
     world: &mut World,
 ) {
+    let mut refresh_instances = false;
+    let mut refresh_orphans = false;
+
     egui::menu::menu_button(ui, "🏃 Behaviors", |ui| {
         if ui.add(egui::Button::new("✚ New")).clicked() {
             let file_id = BehaviorFileId::new();
-            let file_name = BehaviorFileName(format!("bhts/u/bt_{}", *file_id).into());
+            let file_name = BehaviorFileName(format!("bht/u/bt_{}", *file_id).into());
             let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
             behavior_inspector.behaviors.insert(
                 file_id.clone(),
@@ -35,6 +38,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                 },
             );
             behavior_inspector.selected = Some(file_id.clone());
+            refresh_orphans = true;
         }
 
         let mut behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
@@ -53,7 +57,6 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
 
     let behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
     let mut selected_behavior = behavior_inspector.selected.clone();
-    let mut refresh_instances = false;
 
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
         .width(250.0)
@@ -82,6 +85,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
                     info!("Selected: {:?}", selectable_behavior);
                     selected_behavior = selectable_behavior.clone();
                     refresh_instances = true;
+                    refresh_orphans = true;
                 }
             }
         });
@@ -102,17 +106,21 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     }
 
     if let Some(selected_behavior) = &selected_behavior {
-        if refresh_instances {
+        if refresh_instances || refresh_orphans {
             let behavior_client = world.get_resource::<BehaviorClient<T>>();
             if let Some(behavior_client) = behavior_client {
-                behavior_client
-                    .sender
-                    .send(BehaviorProtocolClient::Instances(selected_behavior.clone()))
-                    .unwrap();
-                behavior_client
-                    .sender
-                    .send(BehaviorProtocolClient::Orphans(selected_behavior.clone()))
-                    .unwrap();
+                if refresh_instances {
+                    behavior_client
+                        .sender
+                        .send(BehaviorProtocolClient::Instances(selected_behavior.clone()))
+                        .unwrap();
+                }
+                if refresh_orphans {
+                    behavior_client
+                        .sender
+                        .send(BehaviorProtocolClient::Orphans(selected_behavior.clone()))
+                        .unwrap();
+                }
             }
         }
     }

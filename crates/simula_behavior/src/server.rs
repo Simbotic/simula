@@ -47,7 +47,7 @@ fn setup<T: BehaviorFactory>(
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
     behavior_server: Res<BehaviorServer<T>>,
 ) {
-    let dir_path = "assets/bhts/u";
+    let dir_path = "assets/bht/u";
 
     // Read the directory and handle any errors
     let paths = match std::fs::read_dir(dir_path) {
@@ -222,7 +222,7 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
                 EntityTracker::None => continue,
             };
             if let Some(entity) = entity {
-                if let Some(behavior_asset) = &behavior_tracker.asset {
+                if let Some(behavior_asset) = world.get::<Handle<BehaviorAsset<T>>>(entity) {
                     if let Some(behavior_assets) = world.get_resource::<Assets<BehaviorAsset<T>>>()
                     {
                         if let Some(behavior_asset) = behavior_assets.get(&behavior_asset) {
@@ -232,7 +232,7 @@ fn update_telemetry<T: BehaviorFactory>(world: &mut World) {
                         error!("Failed to get behavior assets");
                     }
                 } else {
-                    error!("Behavior has no asset");
+                    // Behavior has no asset yet
                 }
             } else {
                 error!("Behavior has no entity: {:?}", behavior_tracker.entity);
@@ -368,31 +368,27 @@ fn update<T>(
                 }
             }
             BehaviorProtocolClient::Orphans(file_id) => {
-                info!("Received Instances: {:?}", file_id);
-                if let Some(_behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    let remote_entities: Vec<protocol::RemoteEntity> = behavior_trees
-                        .iter()
-                        .filter_map(|(entity, name, behavior_asset)| {
-                            if behavior_asset.is_none() {
-                                Some(protocol::RemoteEntity::new(
-                                    entity,
-                                    name.as_str().to_owned(),
-                                ))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    behavior_server
-                        .sender
-                        .send(BehaviorProtocolServer::Orphans(
-                            file_id.clone(),
-                            remote_entities,
-                        ))
-                        .unwrap();
-                } else {
-                    error!("Invalid file_id: {:?}", file_id);
-                }
+                info!("Received Orphans: {:?}", file_id);
+                let remote_entities: Vec<protocol::RemoteEntity> = behavior_trees
+                    .iter()
+                    .filter_map(|(entity, name, behavior_asset)| {
+                        if behavior_asset.is_none() {
+                            Some(protocol::RemoteEntity::new(
+                                entity,
+                                name.as_str().to_owned(),
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                behavior_server
+                    .sender
+                    .send(BehaviorProtocolServer::Orphans(
+                        file_id.clone(),
+                        remote_entities,
+                    ))
+                    .unwrap();
             }
             BehaviorProtocolClient::LoadFile(file_id) => {
                 info!("Received LoadFile: {:?}", file_id);

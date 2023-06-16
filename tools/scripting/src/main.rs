@@ -68,7 +68,7 @@ fn setup(
 ) {
     // load debug behaviors
     let behaviors = [
-        "*bht/d/delay",
+        "bht/d/delay",
         "bht/d/gate_true",
         "bht/d/gate_blackboard",
         "bht/d/all",

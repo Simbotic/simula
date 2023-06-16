@@ -31,7 +31,7 @@
                             ]
                         ),
                         ("Wait a bit", Wait((duration: 5.0))),
-                        ("A Quest", Subtree((asset: "bhts/debug/defaults.bht.ron", unload: true))),
+                        ("A Quest", Subtree((asset: "bht/d/defaults.bht.ron", unload: true))),
                     ]
                 )
             ]

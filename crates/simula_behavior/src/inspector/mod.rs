@@ -349,7 +349,7 @@ fn update<T>(
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    info!("{:?}", remote_entities);
+                    info!("Received Instances: {:?}", remote_entities);
                     behavior_inspector_item.instances = remote_entities;
                     behavior_inspector_item.start_option = StartOption::Spawn;
                     behavior_inspector_item.stop_option = StopOption::Despawn;
@@ -357,11 +357,11 @@ fn update<T>(
             }
             // Receive orphans without behaviors
             BehaviorProtocolServer::Orphans(file_id, remote_entities) => {
-                info!("Received Instances: {:?}", file_id);
+                info!("Received Orphans: {:?}", file_id);
                 if let Some(behavior_inspector_item) =
                     behavior_inspector.behaviors.get_mut(&file_id)
                 {
-                    info!("{:?}", remote_entities);
+                    info!("Received Orphans: {:?}", remote_entities);
                     behavior_inspector_item.orphans = remote_entities;
                     behavior_inspector_item.start_option = StartOption::Spawn;
                     behavior_inspector_item.stop_option = StopOption::Despawn;
