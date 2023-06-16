@@ -1,0 +1,24 @@
+("Repeater", Repeater((
+    repeat: Times(0),
+)), [
+    ("⌛ Delay", Delay((
+        duration: 5.0,
+    )), [
+        ("⌛ Delay", Delay((
+            duration: 0.0,
+        )), [
+            ("➡ Sequencer", Sequencer((
+                random: false,
+            )), [
+                ("👁 Debug", Debug((
+                    message: "",
+                    fail: false,
+                    duration: 0.0,
+                ))),
+                ("⌛ Wait", Wait((
+                    duration: 0.0,
+                ))),
+            ]),
+        ]),
+    ]),
+])

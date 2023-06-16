@@ -11,8 +11,9 @@ pub struct Delay {
     #[inspector(min = 0.0, max = f64::MAX)]
     pub duration: f64,
     #[serde(skip)]
-    #[reflect(ignore)]
     pub start: f64,
+    #[serde(skip)]
+    pub ticks: u64,
 }
 
 impl BehaviorInfo for Delay {
@@ -29,13 +30,16 @@ pub fn run(
             Entity,
             &mut Delay,
             &mut BehaviorChildren,
-            &mut BehaviorRunning,
+            Option<&BehaviorStarted>,
+            Option<&BehaviorCursor>,
         ),
         (With<Delay>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, mut delay, children, mut running) in &mut delays {
+    for (entity, mut delay, children, started, cursor) in &mut delays {
+        delay.ticks += 1;
+
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
@@ -43,12 +47,12 @@ pub fn run(
         }
 
         let elapsed = time.elapsed_seconds_f64();
-        if !running.on_enter_handled {
-            running.on_enter_handled = true;
+        if started.is_some() {
             delay.start = elapsed;
+            println!("[{}] Delay started with {:?}", entity.index(), cursor);
         }
-        let current_time = elapsed;
-        if current_time - delay.start < delay.duration {
+
+        if elapsed - delay.start < delay.duration + f64::EPSILON {
             continue; // We're still in delay, so don't do anything yet.
         }
 

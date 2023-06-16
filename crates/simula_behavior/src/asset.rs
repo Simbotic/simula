@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt::Debug;
 
+/// This is the one and only data type for creating behaviors.
+/// The idea is to have an extremely simple data type that can be serialized,
+/// deserialized, generated from script, code or AI.
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Behavior<T: BehaviorFactory>(
     Cow<'static, str>,

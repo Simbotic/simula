@@ -15,7 +15,6 @@ pub struct Debug {
     #[inspector(min = 0.0, max = f64::MAX)]
     pub duration: f64,
     #[serde(skip)]
-    #[reflect(ignore)]
     pub start: f64,
     #[serde(skip)]
     pub ticks: u64,
@@ -31,20 +30,19 @@ pub fn run(
     time: Res<Time>,
     mut commands: Commands,
     mut debug_actions: Query<
-        (Entity, &mut Debug, &mut BehaviorRunning, Option<&Name>),
+        (Entity, &mut Debug, Option<&Name>, Option<&BehaviorStarted>),
         BehaviorRunQuery,
     >,
 ) {
-    for (entity, mut debug_action, mut running, name) in &mut debug_actions {
+    for (entity, mut debug_action, name, started) in &mut debug_actions {
+        let elapsed = time.elapsed_seconds_f64();
         debug_action.ticks += 1;
-        if !running.on_enter_handled {
-            running.on_enter_handled = true;
-            debug_action.start = time.elapsed_seconds_f64();
+        if started.is_some() {
+            debug_action.start = elapsed;
             let name = name.map(|name| name.as_str()).unwrap_or("");
             info!("[{}:{}] {}", entity.index(), name, debug_action.message);
         }
-        let duration = time.elapsed_seconds_f64() - debug_action.start;
-        if duration > debug_action.duration {
+        if elapsed - debug_action.start > debug_action.duration - f64::EPSILON {
             if debug_action.fail {
                 commands.entity(entity).insert(BehaviorFailure);
             } else {

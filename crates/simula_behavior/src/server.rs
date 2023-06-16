@@ -67,7 +67,7 @@ fn setup<T: BehaviorFactory>(
                 let file_name = osfile_name.to_string_lossy().to_owned();
                 if file_name.ends_with(".bht.ron") {
                     let file_id = BehaviorFileId::new();
-                    let file_name = format!("bhts/u/{}", file_name.trim_end_matches(".bht.ron"));
+                    let file_name = format!("bht/u/{}", file_name.trim_end_matches(".bht.ron"));
                     let file_name = BehaviorFileName(file_name.to_string().into());
 
                     behavior_trackers.insert(

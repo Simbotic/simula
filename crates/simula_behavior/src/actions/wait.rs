@@ -11,8 +11,9 @@ pub struct Wait {
     #[inspector(min = 0.0, max = f64::MAX)]
     pub duration: f64,
     #[serde(skip)]
-    #[reflect(ignore)]
     pub start: f64,
+    #[serde(skip)]
+    pub ticks: u64,
 }
 
 impl BehaviorInfo for Wait {
@@ -24,15 +25,15 @@ impl BehaviorInfo for Wait {
 pub fn run(
     time: Res<Time>,
     mut commands: Commands,
-    mut waits: Query<(Entity, &mut Wait, &mut BehaviorRunning), BehaviorRunQuery>,
+    mut waits: Query<(Entity, &mut Wait, Option<&BehaviorStarted>), BehaviorRunQuery>,
 ) {
-    for (entity, mut wait, mut running) in &mut waits {
-        if !running.on_enter_handled {
-            running.on_enter_handled = true;
-            wait.start = time.elapsed_seconds_f64();
+    for (entity, mut wait, started) in &mut waits {
+        wait.ticks += 1;
+        let elapsed = time.elapsed_seconds_f64();
+        if started.is_some() {
+            wait.start = elapsed;
         }
-        let duration = time.elapsed_seconds_f64() - wait.start;
-        if duration > wait.duration {
+        if elapsed - wait.start > wait.duration - f64::EPSILON {
             commands.entity(entity).insert(BehaviorSuccess);
         }
     }

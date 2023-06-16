@@ -29,13 +29,13 @@ pub fn run(
             Entity,
             &mut Timeout,
             &mut BehaviorChildren,
-            &mut BehaviorRunning,
+            Option<&BehaviorStarted>,
         ),
         (With<Timeout>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, mut timeout, children, mut running) in &mut timeouts {
+    for (entity, mut timeout, children, started) in &mut timeouts {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
@@ -43,13 +43,11 @@ pub fn run(
         }
 
         let elapsed = time.elapsed_seconds_f64();
-        if !running.on_enter_handled {
-            running.on_enter_handled = true;
+        if started.is_some() {
             timeout.start = elapsed;
         }
 
-        let current_time = elapsed;
-        if current_time - timeout.start >= timeout.duration {
+        if elapsed - timeout.start > timeout.duration - f64::EPSILON {
             // Time limit reached, we fail
             commands.entity(entity).insert(BehaviorFailure);
             continue;

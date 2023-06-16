@@ -32,21 +32,20 @@ pub fn run(
             Entity,
             &BehaviorChildren,
             &mut Repeater,
-            &mut BehaviorRunning,
+            Option<&BehaviorStarted>,
         ),
         (With<Repeater>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, children, mut repeater, mut running) in &mut repeaters {
+    for (entity, children, mut repeater, started) in &mut repeaters {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
             continue;
         }
 
-        if !running.on_enter_handled {
-            running.on_enter_handled = true;
+        if started.is_some() {
             repeater.count = 0;
         }
 

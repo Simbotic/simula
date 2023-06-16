@@ -35,7 +35,7 @@ pub mod prelude {
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
         BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
-        BehaviorSuccess, BehaviorTree, BehaviorTreePlugin, BehaviorType,
+        BehaviorStarted, BehaviorSuccess, BehaviorTree, BehaviorTreePlugin, BehaviorType,
     };
 }
 
@@ -66,7 +66,7 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Guard>()
             .register_type::<Timeout>()
             .add_systems(
-                (complete_behavior, start_behavior)
+                (clear_behavior_started, complete_behavior, start_behavior)
                     .chain()
                     .in_base_set(CoreSet::PostUpdate),
             )
@@ -201,9 +201,19 @@ pub enum BehaviorCursor {
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
-pub struct BehaviorRunning {
-    pub on_enter_handled: bool,
-}
+pub struct BehaviorRunning;
+
+/// A marker added to entities that want to run a behavior
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
+#[reflect(Component)]
+#[component(storage = "SparseSet")]
+pub struct BehaviorPaused;
+
+/// A marker added to entities that want to run a behavior
+#[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
+#[reflect(Component)]
+#[component(storage = "SparseSet")]
+pub struct BehaviorStarted;
 
 /// A marker added to behaviors that complete with success
 #[derive(Debug, Default, Reflect, Clone, Copy, Component, PartialEq)]
@@ -326,6 +336,7 @@ pub struct BehaviorRunQuery {
     _node: With<BehaviorNode>,
     _cursor: With<BehaviorCursor>,
     _running: With<BehaviorRunning>,
+    _paused: Without<BehaviorPaused>,
     _failure: Without<BehaviorFailure>,
     _success: Without<BehaviorSuccess>,
 }
@@ -371,6 +382,13 @@ pub struct BehaviorTrace(pub Vec<String>);
 impl BehaviorTrace {
     pub fn from_list(traces: &[&str]) -> Self {
         Self(traces.iter().map(|s| s.to_string()).collect())
+    }
+}
+
+/// Clear BehaviorStarted every frame
+fn clear_behavior_started(mut commands: Commands, started: Query<Entity, With<BehaviorStarted>>) {
+    for entity in &mut started.iter() {
+        commands.entity(entity).remove::<BehaviorStarted>();
     }
 }
 
@@ -460,13 +478,17 @@ fn start_behavior(
         if let Some(trace) = trace.as_mut() {
             trace.push(format!("[{}] STARTED {}", entity.index(), name));
         }
-        let on_enter_handled = match cursor {
-            BehaviorCursor::Delegate => false,
-            BehaviorCursor::Return => true,
+
+        commands.entity(entity).insert(BehaviorRunning);
+
+        let starting = match cursor {
+            BehaviorCursor::Delegate => true,
+            BehaviorCursor::Return => false,
         };
-        commands
-            .entity(entity)
-            .insert(BehaviorRunning { on_enter_handled });
+
+        if starting {
+            commands.entity(entity).insert(BehaviorStarted);
+        }
     }
 }
 
