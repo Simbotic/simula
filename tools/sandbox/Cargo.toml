@@ -11,7 +11,6 @@ gst = ["simula_video/gst"]
 
 [dependencies]
 bevy = { version = "0.10" }
-bevy-inspector-egui = "0.18"
 bevy_mod_debugdump = "0.7"
 
 simula_core = { path = "../../crates/simula_core" }
@@ -20,11 +19,8 @@ simula_viz = { path = "../../crates/simula_viz" }
 simula_action = { path = "../../crates/simula_action" }
 simula_video = { path = "../../crates/simula_video" }
 simula_inspector = { path = "../../crates/simula_inspector" }
+simula_cad = { path = "../../crates/simula_cad" }
 
 rand = "0.8.5"
 enum-iterator = "1.4"
 enum-display-derive = "0.1.1"
-
-# while we wait for WASM support
-# [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-simula_cad = { path = "../../crates/simula_cad" }

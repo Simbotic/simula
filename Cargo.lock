@@ -2035,13 +2035,10 @@ name = "empty"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-inspector-egui",
- "enum-display-derive",
- "enum-iterator",
- "rand",
  "simula_action",
  "simula_camera",
  "simula_core",
+ "simula_inspector",
  "simula_viz",
 ]
 
@@ -4844,7 +4841,6 @@ name = "sandbox"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy-inspector-egui",
  "bevy_mod_debugdump",
  "enum-display-derive",
  "enum-iterator",

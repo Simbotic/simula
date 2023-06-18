@@ -3,7 +3,10 @@ use bevy::{
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     // log::LogPlugin,
     prelude::*,
-    render::view::{NoFrustumCulling, RenderLayers},
+    render::{
+        camera::RenderTarget,
+        view::{NoFrustumCulling, RenderLayers},
+    },
     window::PresentMode,
 };
 use enum_iterator::all;
@@ -248,7 +251,7 @@ fn setup(
                 },
                 camera: Camera {
                     order: -1,
-                    target: bevy::render::camera::RenderTarget::Image(rt_image.clone()),
+                    target: RenderTarget::Image(rt_image.clone()),
                     ..default()
                 },
                 ..default()
