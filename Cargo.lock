@@ -4620,10 +4620,11 @@ checksum = "8c31b5c4033f8fdde8700e4657be2c497e7288f01515be52168c631e2e4d4086"
 
 [[package]]
 name = "rhai"
-version = "0.14.1"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6decb9f89ffac31c8d25f3a7189abb4229202593f1c92d79faf0d66dee330be2"
+checksum = "7c5b0b8ea9425657b9b8487c66253b4eb3321e30e35df062b69d11e2ea60100f"
 dependencies = [
+ "instant",
  "num-traits",
 ]
 
