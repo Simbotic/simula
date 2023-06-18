@@ -2,10 +2,8 @@ use bevy::prelude::*;
 use bevy::reflect::FromReflect;
 use bevy::render::camera::Camera;
 use simula_action::{
-    action_axis_map, action_map,
-    touch_sides::{TouchAxis, TouchSide, TouchSideAxis},
-    Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput, AxisMapInput, AxisMapSource,
-    MouseAxis,
+    action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
+    AxisMapInput, AxisMapSource, MouseAxis,
 };
 use std::ops::RangeInclusive;
 
@@ -196,13 +194,6 @@ fn setup(
                 shift: false,
                 alt: false,
             },
-            ActionMapInput {
-                action: OrbitCameraMode::Orbit,
-                button: TouchSide::Left.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
             // Pan Mode
             ActionMapInput {
                 action: OrbitCameraMode::Pan,
@@ -235,13 +226,6 @@ fn setup(
             ActionMapInput {
                 action: OrbitCameraMode::Pan,
                 button: MouseButton::Right.into(),
-                ctrl: false,
-                shift: false,
-                alt: false,
-            },
-            ActionMapInput {
-                action: OrbitCameraMode::Pan,
-                button: TouchSide::Right.into(),
                 ctrl: false,
                 shift: false,
                 alt: false,
@@ -293,23 +277,6 @@ fn setup(
             AxisMapInput {
                 axis: OrbitCameraMotion::Zoom,
                 source: AxisMapSource::MouseAxis(MouseAxis::Z),
-            },
-            // Touch
-            AxisMapInput {
-                axis: OrbitCameraMotion::Right,
-                source: AxisMapSource::TouchSideAxis(TouchSideAxis::Left(TouchAxis::PositiveX)),
-            },
-            AxisMapInput {
-                axis: OrbitCameraMotion::Up,
-                source: AxisMapSource::TouchSideAxis(TouchSideAxis::Left(TouchAxis::PositiveY)),
-            },
-            AxisMapInput {
-                axis: OrbitCameraMotion::Right,
-                source: AxisMapSource::TouchSideAxis(TouchSideAxis::Right(TouchAxis::NegativeX)),
-            },
-            AxisMapInput {
-                axis: OrbitCameraMotion::Up,
-                source: AxisMapSource::TouchSideAxis(TouchSideAxis::Right(TouchAxis::NegativeY)),
             },
         ];
 
