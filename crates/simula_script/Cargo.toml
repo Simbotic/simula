@@ -8,7 +8,6 @@ authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 bevy = { version = "0.10" }
 
 rhai = { version = "0.15", features = ["sync"]}
-clap = { version = "=4.2.7", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

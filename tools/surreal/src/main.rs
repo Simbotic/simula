@@ -6,14 +6,19 @@ use bevy::{
 use simula_action::ActionPlugin;
 use simula_camera::orbitcam::*;
 use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
-use simula_surrealdb::SurrealPlugin;
+use simula_surrealdb::{client::SurrealClientPlugin, SurrealPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
     lines::LinesPlugin,
 };
+use std::env;
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    println!("args: {:?}", args);
+
     App::new()
         .insert_resource(Msaa::Sample4)
         .insert_resource(ClearColor(Color::rgb(0.105, 0.10, 0.11)))
@@ -37,6 +42,7 @@ fn main() {
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(SurrealPlugin)
+        .add_plugin(SurrealClientPlugin)
         .add_startup_system(setup)
         .add_system(debug_info)
         .run();
