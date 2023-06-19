@@ -116,7 +116,7 @@ fn update<T>(
     <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
 {
     // Get now
-    let now = time.elapsed();
+    let elapsed = time.elapsed();
 
     // provide time for all graph states
     for mut graph_state in graph_states.iter_mut() {
@@ -132,7 +132,7 @@ fn update<T>(
             // If behavior item is Load, load it
             BehaviorInspectorState::Load => {
                 info!("Loading behavior: {}", *behavior_inspector_item.name);
-                behavior_inspector_item.state = BehaviorInspectorState::Loading(now);
+                behavior_inspector_item.state = BehaviorInspectorState::Loading(elapsed);
                 behavior_client
                     .sender
                     .send(BehaviorProtocolClient::LoadFile(file_id.clone()))
@@ -140,7 +140,7 @@ fn update<T>(
             }
             // If behavior item is Loading, check to see if it timed out
             BehaviorInspectorState::Loading(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if elapsed - *started > Duration::from_secs(5) {
                     warn!(
                         "Loading behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -195,7 +195,7 @@ fn update<T>(
                         if let Ok(behavior) = behavior {
                             debug!("behavior: {:#?}", behavior);
                             behavior_inspector_item.behavior = Some(behavior.clone());
-                            behavior_inspector_item.state = BehaviorInspectorState::Saving(now);
+                            behavior_inspector_item.state = BehaviorInspectorState::Saving(elapsed);
                             behavior_client
                                 .sender
                                 .send(BehaviorProtocolClient::SaveFile(
@@ -222,7 +222,7 @@ fn update<T>(
             }
             // if behavior item is Saving, check to see if it timed out
             BehaviorInspectorState::Saving(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if elapsed - *started > Duration::from_secs(5) {
                     warn!(
                         "Saving behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -259,7 +259,8 @@ fn update<T>(
                             }
                         }
                         if !error {
-                            behavior_inspector_item.state = BehaviorInspectorState::Starting(now);
+                            behavior_inspector_item.state =
+                                BehaviorInspectorState::Starting(elapsed);
                             behavior_client
                                 .sender
                                 .send(BehaviorProtocolClient::Start(
@@ -287,7 +288,7 @@ fn update<T>(
             BehaviorInspectorState::Running => {}
             // if behavior item is Starting, check to see if it timed out
             BehaviorInspectorState::Starting(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if elapsed - *started > Duration::from_secs(5) {
                     warn!(
                         "Starting behavior timed out: {}",
                         *behavior_inspector_item.name
@@ -298,7 +299,7 @@ fn update<T>(
             // if behavior item should Stop, stop it
             BehaviorInspectorState::Stop => {
                 info!("Stop behavior: {}", *behavior_inspector_item.name);
-                behavior_inspector_item.state = BehaviorInspectorState::Stopping(now);
+                behavior_inspector_item.state = BehaviorInspectorState::Stopping(elapsed);
                 behavior_client
                     .sender
                     .send(BehaviorProtocolClient::Stop(
@@ -309,7 +310,7 @@ fn update<T>(
             }
             // if behavior item is Stopping, check to see if it timed out
             BehaviorInspectorState::Stopping(started) => {
-                if now - *started > Duration::from_secs(5) {
+                if elapsed - *started > Duration::from_secs(5) {
                     warn!(
                         "Stopping behavior timed out: {}",
                         *behavior_inspector_item.name

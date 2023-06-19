@@ -174,7 +174,7 @@ where
                     .any(|selected| *selected == node_id),
                 pan: self.pan_zoom.pan + editor_rect.min.to_vec2(),
             }
-            .show(ui, user_state);
+            .show(ui, user_state, self.editing);
 
             // Actions executed later
             delayed_responses.extend(responses);
@@ -306,7 +306,9 @@ where
         for response in delayed_responses.iter() {
             match response {
                 NodeResponse::ConnectEventStarted(node_id, port) => {
-                    self.connection_in_progress = Some((*node_id, *port));
+                    if self.editing {
+                        self.connection_in_progress = Some((*node_id, *port));
+                    }
                 }
                 NodeResponse::ConnectEventEnded { input, output } => {
                     self.graph.add_connection(*output, *input)
@@ -339,10 +341,12 @@ where
                     self.node_order.retain(|id| *id != *node_id);
                 }
                 NodeResponse::DisconnectEvent { input, output } => {
-                    let other_node = self.graph.get_output(*output).node;
-                    self.graph.remove_connection(*input);
-                    self.connection_in_progress =
-                        Some((other_node, AnyParameterId::Output(*output)));
+                    if self.editing {
+                        let other_node = self.graph.get_output(*output).node;
+                        self.graph.remove_connection(*input);
+                        self.connection_in_progress =
+                            Some((other_node, AnyParameterId::Output(*output)));
+                    }
                 }
                 NodeResponse::RaiseNode(node_id) => {
                     let old_pos = self
@@ -485,6 +489,7 @@ where
         self,
         ui: &mut Ui,
         user_state: &mut UserState,
+        editing: bool,
     ) -> Vec<NodeResponse<UserResponse, NodeData>> {
         let mut child_ui = ui.child_ui_with_id_source(
             Rect::from_min_size(*self.position + self.pan, Self::MAX_NODE_SIZE.into()),
@@ -492,7 +497,7 @@ where
             self.node_id,
         );
 
-        Self::show_graph_node(self, &mut child_ui, user_state)
+        Self::show_graph_node(self, &mut child_ui, user_state, editing)
     }
 
     /// Draws this node. Also fills in the list of port locations with all of its ports.
@@ -501,6 +506,7 @@ where
         self,
         ui: &mut Ui,
         user_state: &mut UserState,
+        editing: bool,
     ) -> Vec<NodeResponse<UserResponse, NodeData>> {
         let margin = egui::vec2(6.0, 2.0);
         let mut responses = Vec::<NodeResponse<UserResponse, NodeData>>::new();
@@ -558,7 +564,7 @@ where
                 responses.extend(
                     self.graph[self.node_id]
                         .user_data
-                        .top_bar_ui(ui, self.node_id, self.graph, user_state)
+                        .top_bar_ui(ui, self.node_id, self.graph, user_state, editing)
                         .into_iter(),
                 );
                 // ui.add(Label::new(
@@ -631,7 +637,7 @@ where
                     responses.extend(
                         self.graph[self.node_id]
                             .user_data
-                            .body_ui(ui, self.node_id, self.graph, user_state)
+                            .body_ui(ui, self.node_id, self.graph, user_state, editing)
                             .into_iter(),
                     );
                 });
@@ -694,6 +700,7 @@ where
             port_locations: &mut PortLocations,
             ongoing_drag: Option<(NodeId, AnyParameterId)>,
             is_connected_input: bool,
+            editing: bool,
         ) where
             DataType: DataTypeTrait<NodeData, DataType, ValueType, UserState>,
             UserResponse: UserResponseTrait,
@@ -703,7 +710,7 @@ where
 
             let port_rect = Rect::from_center_size(port_pos, egui::vec2(10.0, 10.0));
 
-            let sense = if ongoing_drag.is_some() {
+            let sense = if ongoing_drag.is_some() || !editing {
                 Sense::hover()
             } else {
                 Sense::click_and_drag()
@@ -720,7 +727,7 @@ where
 
             let mut port_color = Color32::DARK_GRAY;
 
-            if close_enough {
+            if close_enough && editing {
                 port_color = Color32::WHITE;
             } else {
                 if let AnyParameterId::Input(_) = param_id {
@@ -742,8 +749,20 @@ where
                 }
             }
 
-            ui.painter()
-                .circle(port_rect.center(), 4.0, port_color, Stroke::NONE);
+            let is_output_and_disconnected = if let AnyParameterId::Output(output) = param_id {
+                graph
+                    .connections
+                    .iter()
+                    .find(|(_input, &other_output)| other_output == output)
+                    .is_none()
+            } else {
+                false
+            };
+
+            if editing || !is_output_and_disconnected {
+                ui.painter()
+                    .circle(port_rect.center(), 4.0, port_color, Stroke::NONE);
+            }
 
             if resp.drag_started() {
                 if is_connected_input {
@@ -806,6 +825,7 @@ where
                     self.port_locations,
                     self.ongoing_drag,
                     self.graph.connection(*param).is_some(),
+                    editing,
                 );
             }
         }
@@ -828,6 +848,7 @@ where
                 self.port_locations,
                 self.ongoing_drag,
                 false,
+                editing,
             );
         }
 
@@ -904,7 +925,7 @@ where
             user_state,
         );
 
-        if can_delete && Self::close_button(ui, outer_rect).clicked() {
+        if editing && can_delete && Self::close_button(ui, outer_rect).clicked() {
             responses.push(NodeResponse::DeleteNodeUi(self.node_id));
         };
 

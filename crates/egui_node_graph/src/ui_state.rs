@@ -33,6 +33,8 @@ pub struct GraphEditorState<NodeData, DataType, ValueType, NodeTemplate, UserSta
     /// The panning of the graph viewport.
     pub pan_zoom: PanZoom,
     pub _user_state: PhantomData<fn() -> UserState>,
+    /// Is the graph allowing editing?
+    pub editing: bool,
 }
 
 impl<NodeData, DataType, ValueType, NodeKind, UserState>
@@ -62,6 +64,7 @@ impl<NodeData, DataType, ValueType, NodeKind, UserState> Default
             node_finder: Default::default(),
             pan_zoom: Default::default(),
             _user_state: Default::default(),
+            editing: true,
         }
     }
 }

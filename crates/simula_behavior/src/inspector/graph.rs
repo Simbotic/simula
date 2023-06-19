@@ -365,6 +365,7 @@ where
         node_id: NodeId,
         graph: &Graph<Self, Self::DataType, Self::ValueType>,
         user_state: &mut Self::UserState,
+        editing: bool,
     ) -> Vec<NodeResponse<Self::Response, Self>>
     where
         Self::Response: UserResponseTrait,
@@ -378,7 +379,7 @@ where
             BehaviorData::Behavior(_behavior) => {
                 if let Some(node) = graph.nodes.get(node_id) {
                     match user_state.active_node {
-                        Some(active_node_id) if active_node_id == node_id => {
+                        Some(active_node_id) if editing && active_node_id == node_id => {
                             let mut name = node.label.clone();
                             ui.style_mut().visuals.extreme_bg_color =
                                 egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
@@ -426,6 +427,7 @@ where
         node_id: NodeId,
         graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
         user_state: &mut Self::UserState,
+        editing: bool,
     ) -> Vec<NodeResponse<BehaviorResponse<T>, BehaviorNodeData<T>>>
     where
         T: BehaviorFactory,
@@ -444,7 +446,7 @@ where
                     // Reflect behavior properties
                     let type_registry = user_state.type_registry.read();
                     match user_state.active_node {
-                        Some(active_node_id) if active_node_id == node_id => {
+                        Some(active_node_id) if editing && active_node_id == node_id => {
                             let mut behavior = behavior.clone();
                             if reflect_inspector::ui_for_value(
                                 behavior.reflect_mut(),

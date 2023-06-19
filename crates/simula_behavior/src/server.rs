@@ -393,8 +393,9 @@ fn update<T>(
             BehaviorProtocolClient::LoadFile(file_id) => {
                 info!("Received LoadFile: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    // check if behavior is already loaded
+                    // check if behavior has an asset
                     if let Some(behavior_asset) = &behavior_tracker.asset {
+                        // check if asset is ready, or try again later
                         if let Some(behavior_asset) = behavior_assets.get(&behavior_asset) {
                             behavior_server
                                 .sender
@@ -412,14 +413,14 @@ fn update<T>(
                             });
                         }
                     }
-                    // if not loaded, load and get a handle to asset
+                    // if no asset, load and get a handle to asset
                     else {
                         let behavior_handle: Handle<BehaviorAsset<T>> = asset_server
                             .load(format!("{}.bht.ron", *behavior_tracker.file_name).as_str());
                         behavior_tracker.asset = Some(behavior_handle);
                         // check again later
                         queued_msgs.push(PriorityMessage {
-                            priority: priority + Duration::from_secs(1),
+                            priority: priority + Duration::from_millis(100),
                             count: msg.count + 1,
                             msg: msg.msg.clone(),
                         });

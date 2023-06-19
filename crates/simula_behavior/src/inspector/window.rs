@@ -14,6 +14,8 @@ use egui_node_graph::NodeResponse;
 use simula_inspector::egui;
 
 pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
+    let elapsed = world.get_resource::<Time>().unwrap().elapsed();
+
     let selected_behavior = world
         .resource_mut::<BehaviorInspector<T>>()
         .selected
@@ -24,6 +26,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
         = behavior_inspector.behaviors
         .get(&selected_behavior)
         .and_then(|item| Some((item.name.clone(), item.state.clone(), item.entity))) else { return;};
+
     match inspector_item_state {
         BehaviorInspectorState::Editing => {}
         BehaviorInspectorState::Save => {}
@@ -43,6 +46,23 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
         &mut BehaviorGraphState,
         &mut BehaviorEditorState<T>,
     )>();
+
+    if let Ok((_, _, _graph_state, mut editor_state)) = behavior_graphs.get_mut(world, entity) {
+        editor_state.editing = false;
+        match inspector_item_state {
+            BehaviorInspectorState::Editing => {
+                editor_state.editing = true;
+            }
+            BehaviorInspectorState::Save => {}
+            BehaviorInspectorState::Saving(_) => {}
+            BehaviorInspectorState::Start => {}
+            BehaviorInspectorState::Starting(_) => {}
+            BehaviorInspectorState::Running => {}
+            BehaviorInspectorState::Stop => {}
+            BehaviorInspectorState::Stopping(_) => {}
+            _ => return,
+        }
+    }
 
     let window = world
         .query_filtered::<&Window, With<PrimaryWindow>>()
@@ -94,13 +114,18 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
 
                         // add a save button
                         let mut save_enabled = true;
-                        if let BehaviorInspectorState::Saving(_) = inspector_item_state {
-                            save_enabled = false;
-                        }
                         if !behavior_inspector_item.modified {
                             save_enabled = false;
                         }
-                        if ui
+                        if let BehaviorInspectorState::Saving(started) = inspector_item_state {
+                            let elapsed = elapsed - started;
+                            let waiting = if elapsed.as_millis() % 200 < 100 {
+                                "⌛"
+                            } else {
+                                "⏳"
+                            };
+                            ui.label(waiting);
+                        } else if ui
                             .add_enabled(save_enabled, egui::Button::new("💾"))
                             .clicked()
                         {

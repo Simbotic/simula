@@ -14,6 +14,8 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     ui: &mut egui::Ui,
     world: &mut World,
 ) {
+    let elapsed = world.get_resource::<Time>().unwrap().elapsed();
+
     let mut refresh_instances = false;
     let mut refresh_orphans = false;
 
@@ -58,12 +60,30 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
     let behavior_inspector = world.resource_mut::<BehaviorInspector<T>>();
     let mut selected_behavior = behavior_inspector.selected.clone();
 
+    let mut selected_label_prefix = "".to_string();
+    if let Some(behavior_inspector_item) = selected_behavior
+        .as_ref()
+        .and_then(|behavior| behavior_inspector.behaviors.get(behavior))
+    {
+        if let BehaviorInspectorState::Loading(started) = behavior_inspector_item.state {
+            let elapsed = elapsed - started;
+            let choose = if elapsed.as_millis() % 200 < 100 {
+                "⌛"
+            } else {
+                "⏳"
+            };
+            selected_label_prefix = format!("{} ", choose);
+        }
+    }
+    let selected_label = format!(
+        "{}{}",
+        selected_label_prefix,
+        utils::get_label_from_file_id(&selected_behavior, &behavior_inspector)
+    );
+
     egui::ComboBox::from_id_source("Behavior Inspector Selector")
         .width(250.0)
-        .selected_text(utils::get_label_from_file_id(
-            &behavior_inspector.selected,
-            &behavior_inspector,
-        ))
+        .selected_text(selected_label)
         .show_ui(ui, |ui| {
             let mut selectable_behaviors: Vec<Option<BehaviorFileId>> = {
                 let mut keys: Vec<BehaviorFileId> =
@@ -77,9 +97,11 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
             };
             selectable_behaviors.insert(0, None);
             for selectable_behavior in selectable_behaviors {
+                let label =
+                    utils::get_label_from_file_id(&selectable_behavior, &behavior_inspector);
                 let selectable_label = egui::SelectableLabel::new(
                     behavior_inspector.selected == selectable_behavior,
-                    utils::get_label_from_file_id(&selectable_behavior, &behavior_inspector),
+                    label,
                 );
                 if ui.add(selectable_label).clicked() {
                     info!("Selected: {:?}", selectable_behavior);
