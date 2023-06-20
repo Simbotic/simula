@@ -26,10 +26,6 @@ So much of AI is about compressing reality to a small vector space, like a video
 
 ![Force Graph Function](docs/force_graph_function.png)
 
-### P2P Networking
-
-![P2P Networking](docs/p2p.png)
-
 ## WASM
 To add WASM support to your Rust installation. Using Rustup:
 ```
@@ -70,23 +66,6 @@ It will automatically run a minimal local webserver and open your simulation in 
 ### Trunk
 ```
 trunk --config tools/sandbox/Trunk.toml serve
-```
-
-## P2P Networking
-
-Launch signaling server:
-```
-cargo run --release -p simula_signaling
-```
-
-Launch any number of native peers:
-```
-cargo run --release -p net_peer
-```
-
-Launch any number of WASM peers:
-```
-cargo run --target wasm32-unknown-unknown --release -p net_peer
 ```
 
 ## GStreamer
