@@ -166,7 +166,7 @@ where
 // from the templates in the node finder
 impl<T> NodeTemplateTrait for BehaviorNodeTemplate<T>
 where
-    T: BehaviorFactory,
+    T: BehaviorFactory + BehaviorInspectable,
 {
     type NodeData = BehaviorNodeData<T>;
     type DataType = BehaviorDataType;
@@ -327,7 +327,7 @@ impl<T> UserResponseTrait for BehaviorResponse<T> where T: BehaviorFactory {}
 
 impl<T> NodeDataTrait for BehaviorNodeData<T>
 where
-    T: BehaviorFactory,
+    T: BehaviorFactory + BehaviorInspectable,
 {
     type Response = BehaviorResponse<T>;
     type UserState = BehaviorGraphState;

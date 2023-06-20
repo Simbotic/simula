@@ -1,13 +1,11 @@
-use crate::{
-    actions::*, asset::Behavior, complete_behavior, composites::*, decorators::*, start_behavior,
-    BehaviorCursor, BehaviorFactory, BehaviorInfo, BehaviorTrace, BehaviorTree,
-};
+use crate::{clear_behavior_started, complete_behavior, prelude::*, start_behavior, BehaviorTrace};
 use bevy::{
     ecs::system::{CommandQueue, EntityCommands},
     prelude::*,
     reflect::TypeUuid,
 };
 use serde::{Deserialize, Serialize};
+use simula_behavior_macro::BehaviorFactory;
 use simula_script::{Scope, Script};
 
 pub const MAX_ITERS: usize = 200;
@@ -17,8 +15,7 @@ pub fn test_app(app: &mut App) -> &mut App {
     app.add_asset::<Script>();
     app.add_asset::<Scope>();
     // Add the behaviors system to the app
-    app.add_system(start_behavior);
-    app.add_system(complete_behavior);
+    app.add_systems((clear_behavior_started, complete_behavior, start_behavior).chain());
     app.add_system(debug::run);
     app.add_system(selector::run);
     app.add_system(sequencer::run);
@@ -38,8 +35,9 @@ pub fn test_app(app: &mut App) -> &mut App {
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct TestBehaviorAttributes;
 
-#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, BehaviorFactory)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
+#[BehaviorAttributes(TestBehaviorAttributes)]
 pub enum TestBehavior {
     Debug(Debug),
     Selector(Selector),
@@ -59,28 +57,6 @@ pub enum TestBehavior {
 impl Default for TestBehavior {
     fn default() -> Self {
         Self::Debug(Debug::default())
-    }
-}
-
-impl BehaviorFactory for TestBehavior {
-    type Attributes = TestBehaviorAttributes;
-
-    fn insert(&self, commands: &mut EntityCommands) {
-        match self {
-            TestBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::All(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Any(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Identity(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Guard(data) => BehaviorInfo::insert_with(commands, data),
-            TestBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
-        }
     }
 }
 

@@ -26,8 +26,8 @@ pub struct BehaviorInspectorPlugin<T: BehaviorFactory>(pub std::marker::PhantomD
 
 impl<T> Plugin for BehaviorInspectorPlugin<T>
 where
-    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
-    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
+    T: BehaviorFactory + BehaviorInspectable + Serialize + for<'de> Deserialize<'de>,
+    <T as BehaviorFactory>::Attributes: BehaviorNodeInspectable<T>,
 {
     fn build(&self, app: &mut App) {
         // Setup bi-directional communication channels
@@ -52,9 +52,19 @@ where
     }
 }
 
-pub trait BehaviorInspectable<T: BehaviorFactory> {
+pub trait BehaviorNodeInspectable<T: BehaviorFactory> {
     fn get_pos(&self) -> Vec2;
     fn set_pos(&mut self, pos: Vec2);
+}
+
+pub trait BehaviorInspectable {
+    fn color(&self) -> Color {
+        panic!("BehaviorInspectable::color() not implemented")
+    }
+
+    fn categories(&self) -> Vec<&'static str> {
+        panic!("BehaviorInspectable::categories() not implemented")
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -95,7 +105,7 @@ pub(self) struct BehaviorInspector<T: BehaviorFactory> {
 
 fn setup<T>(mut inspectors: ResMut<Inspectors>)
 where
-    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+    T: BehaviorFactory + BehaviorInspectable + Serialize + for<'de> Deserialize<'de>,
 {
     inspectors.inspectors.push(Inspector {
         menu_ui: menu::ui::<T>,
@@ -112,8 +122,8 @@ fn update<T>(
     mut graph_states: Query<&mut BehaviorGraphState>,
     mut editor_states: Query<&mut BehaviorEditorState<T>>,
 ) where
-    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
-    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
+    T: BehaviorFactory + BehaviorInspectable + Serialize + for<'de> Deserialize<'de>,
+    <T as BehaviorFactory>::Attributes: BehaviorNodeInspectable<T>,
 {
     // Get now
     let elapsed = time.elapsed();

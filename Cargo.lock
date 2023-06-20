@@ -4877,6 +4877,7 @@ dependencies = [
  "serde",
  "simula_action",
  "simula_behavior",
+ "simula_behavior_macro",
  "simula_camera",
  "simula_core",
  "simula_inspector",
@@ -5102,10 +5103,19 @@ dependencies = [
  "rand",
  "ron",
  "serde",
+ "simula_behavior_macro",
  "simula_core",
  "simula_inspector",
  "simula_script",
  "strum",
+]
+
+[[package]]
+name = "simula_behavior_macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]

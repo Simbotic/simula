@@ -3,7 +3,6 @@ use bevy::{
     prelude::*,
     window::PresentMode,
 };
-use debug_behavior::{DebugBehavior, DebugBehaviorPlugin};
 use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
@@ -15,7 +14,11 @@ use simula_viz::{
     lines::LinesPlugin,
 };
 
-mod debug_behavior;
+// use implemented_behavior::{ImplementedBehavior, ImplementedBehaviorPlugin};
+use derived_behavior::{DerivedBehavior, DerivedBehaviorPlugin};
+
+mod derived_behavior;
+mod implemented_behavior;
 
 fn main() {
     App::new()
@@ -48,23 +51,29 @@ fn main() {
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
         .add_plugin(ScriptPlugin)
-        .add_startup_system(setup)
         .add_system(debug_info)
+        .add_startup_system(scene_setup)
         // Behavior setup
         .add_plugin(BehaviorPlugin)
-        .add_plugin(DebugBehaviorPlugin)
-        .add_plugin(BehaviorServerPlugin::<DebugBehavior>::default())
-        .add_plugin(BehaviorInspectorPlugin::<DebugBehavior>::default())
+        // DebugBehavior setup
+        // .add_plugin(ImplementedBehaviorPlugin)
+        // .add_plugin(BehaviorServerPlugin::<ImplementedBehavior>::default())
+        // .add_plugin(BehaviorInspectorPlugin::<ImplementedBehavior>::default())
+        // .add_startup_system(behavior_setup::<ImplementedBehavior>)
+        // DerivedBehavior setup
+        .add_plugin(DerivedBehaviorPlugin)
+        .add_plugin(BehaviorServerPlugin::<DerivedBehavior>::default())
+        .add_plugin(BehaviorInspectorPlugin::<DerivedBehavior>::default())
+        .add_startup_system(behavior_setup::<DerivedBehavior>)
         .run();
 }
 
-fn setup(
+fn behavior_setup<T: BehaviorFactory>(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut scopes: ResMut<Assets<Scope>>,
-    behavior_server: Res<protocol::BehaviorServer<DebugBehavior>>,
-    mut behavior_trackers: ResMut<BehaviorTrackers<DebugBehavior>>,
-    // behavior_assets: Res<Assets<BehaviorAsset<DebugBehavior>>>,
+    behavior_server: Res<protocol::BehaviorServer<T>>,
+    mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
 ) {
     // load debug behaviors
     let behaviors = [
@@ -89,7 +98,7 @@ fn setup(
         // create a behavior tree that will automatically load and run
         if let Some(behavior) = behavior.strip_prefix("*") {
             // get a handle to a behavior asset from asset server
-            let behavior_handle: Handle<BehaviorAsset<DebugBehavior>> =
+            let behavior_handle: Handle<BehaviorAsset<T>> =
                 asset_server.load(format!("{}.bht.ron", behavior).as_str());
 
             // create a new scope for the behavior tree
@@ -104,8 +113,8 @@ fn setup(
                 Name::new(format!("BHT: {}", behavior)),
                 scope_handle,
                 behavior_handle.clone(),
-                BehaviorTree::<DebugBehavior>::default(),
-                BehaviorTreeReset::<DebugBehavior>::default(),
+                BehaviorTree::<T>::default(),
+                BehaviorTreeReset::<T>::default(),
             ));
         }
         // create behavior tree without behavior asset, it will dynamically be added later
@@ -121,7 +130,7 @@ fn setup(
             commands.spawn((
                 Name::new(format!("BHT: {}", behavior)),
                 scope_handle,
-                BehaviorTree::<DebugBehavior>::default(),
+                BehaviorTree::<T>::default(),
             ));
         }
         // do not load just yet, track file and send file name to client
@@ -144,7 +153,9 @@ fn setup(
                 .unwrap();
         }
     }
+}
 
+fn scene_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands

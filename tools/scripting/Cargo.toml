@@ -12,8 +12,9 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_action = { path = "../../crates/simula_action" }
 simula_script = { path = "../../crates/simula_script" }
-simula_behavior = { path = "../../crates/simula_behavior" }
 simula_inspector = { path = "../../crates/simula_inspector" }
+simula_behavior = { path = "../../crates/simula_behavior" }
+simula_behavior_macro = { path = "../../crates/simula_behavior/simula_behavior_macro" }
 
 serde = { version = "1.0", features = ["derive"] }
 crossbeam-channel = "0.5.0"

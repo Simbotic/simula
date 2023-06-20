@@ -4,7 +4,7 @@ use crate::{
             BehaviorData, BehaviorDataType, BehaviorEditorState, BehaviorGraphState,
             BehaviorNodeTemplates, BehaviorResponse,
         },
-        utils, BehaviorInspector, BehaviorInspectorState,
+        utils, BehaviorInspectable, BehaviorInspector, BehaviorInspectorState,
     },
     protocol::{BehaviorFileName, StartOption, StopOption},
     BehaviorFactory, BehaviorType,
@@ -13,7 +13,10 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use egui_node_graph::NodeResponse;
 use simula_inspector::egui;
 
-pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
+pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
+    context: &mut egui::Context,
+    world: &mut World,
+) {
     let elapsed = world.get_resource::<Time>().unwrap().elapsed();
 
     let selected_behavior = world
@@ -74,6 +77,7 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
     let mut open = true;
     let mut window_name = format!("{}", *file_name);
     egui::Window::new(&format!("BHI:[{}]", *selected_behavior))
+        .id(T::TYPE_UUID.to_string().into())
         .default_size(default_size)
         .title_bar(false)
         .resizable(true)

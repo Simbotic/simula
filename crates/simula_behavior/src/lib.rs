@@ -26,7 +26,9 @@ pub mod prelude {
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
-    pub use crate::inspector::{BehaviorInspectable, BehaviorInspectorPlugin};
+    pub use crate::inspector::{
+        BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable,
+    };
     pub use crate::protocol::{self};
     pub use crate::server::{
         BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
@@ -152,37 +154,17 @@ pub trait BehaviorFactory:
 
     fn insert(&self, commands: &mut EntityCommands);
 
-    fn label(&self) -> &str {
-        std::any::type_name::<Self>()
-    }
+    fn label(&self) -> &str;
 
-    fn typ(&self) -> BehaviorType {
-        panic!("BehaviorFactory::typ() not implemented")
-    }
+    fn typ(&self) -> BehaviorType;
 
-    fn color(&self) -> Color {
-        panic!("BehaviorFactory::color() not implemented")
-    }
+    fn reflect(&self) -> &dyn Reflect;
 
-    fn reflect(&self) -> &dyn Reflect {
-        panic!("BehaviorFactory::reflect() not implemented")
-    }
+    fn reflect_mut(&mut self) -> &mut dyn Reflect;
 
-    fn reflect_mut(&mut self) -> &mut dyn Reflect {
-        panic!("BehaviorFactory::reflect_mut() not implemented")
-    }
+    fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing>;
 
-    fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing> {
-        panic!("BehaviorFactory::copy_from() not implemented")
-    }
-
-    fn categories(&self) -> Vec<&'static str> {
-        panic!("BehaviorFactory::categories() not implemented")
-    }
-
-    fn list() -> Vec<Self> {
-        panic!("BehaviorFactory::list() not implemented")
-    }
+    fn list() -> Vec<Self>;
 }
 
 /// A marker added to currently running behaviors

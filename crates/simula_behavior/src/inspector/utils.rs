@@ -4,7 +4,7 @@ use crate::{
             BehaviorData, BehaviorDataType, BehaviorEditorState, BehaviorGraphState,
             BehaviorNodeData, BehaviorNodeTemplate, BehaviorValueType,
         },
-        BehaviorInspectable, BehaviorInspector,
+        BehaviorInspectable, BehaviorInspector, BehaviorNodeInspectable,
     },
     protocol::{BehaviorFileId, BehaviorTelemetry, RemoteEntity, StartOption, StopOption},
     Behavior, BehaviorFactory, BehaviorType,
@@ -47,7 +47,7 @@ pub fn graph_to_behavior<T>(
 ) -> Result<Behavior<T>, String>
 where
     T: BehaviorFactory,
-    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
+    <T as BehaviorFactory>::Attributes: BehaviorNodeInspectable<T>,
 {
     let Some(node_id) = node_id else {
         let root_child_id = get_root_child(&editor.graph);
@@ -99,7 +99,7 @@ pub fn behavior_to_graph<T>(
 ) -> Result<(), String>
 where
     T: BehaviorFactory,
-    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
+    <T as BehaviorFactory>::Attributes: BehaviorNodeInspectable<T>,
 {
     let Some(node_id) = node_id else {
         let root_child_id = get_root_child(&editor.graph);
@@ -150,8 +150,8 @@ pub fn behavior_into_graph<T>(
     parent_node_id: NodeId,
     behavior: &Behavior<T>,
 ) where
-    T: BehaviorFactory,
-    <T as BehaviorFactory>::Attributes: BehaviorInspectable<T>,
+    T: BehaviorFactory + BehaviorInspectable,
+    <T as BehaviorFactory>::Attributes: BehaviorNodeInspectable<T>,
 {
     // Create graph node with behavior data
     let behavior_data = BehaviorData::Behavior(behavior.data().clone());
