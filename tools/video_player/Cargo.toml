@@ -2,6 +2,7 @@
 name = "video_player"
 version = "0.1.0"
 edition = "2021"
+authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [features]
 default = ["gif", "video"]
