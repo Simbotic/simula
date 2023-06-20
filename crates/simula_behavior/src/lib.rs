@@ -152,18 +152,25 @@ pub trait BehaviorFactory:
         + Serialize
         + for<'de> Deserialize<'de>;
 
+    /// insert behavior components into the entity
     fn insert(&self, commands: &mut EntityCommands);
 
+    /// get behavior label
     fn label(&self) -> &str;
 
+    /// get behavior type: composite, decorator, action
     fn typ(&self) -> BehaviorType;
 
+    /// get behavior properties for inspector
     fn reflect(&self) -> &dyn Reflect;
 
+    /// get mutable behavior properties for inspector
     fn reflect_mut(&mut self) -> &mut dyn Reflect;
 
+    /// copy behavior data from entity into this behavior
     fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing>;
 
+    /// list all behaviors, with an instance of each
     fn list() -> Vec<Self>;
 }
 
