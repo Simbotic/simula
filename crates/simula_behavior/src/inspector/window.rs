@@ -304,6 +304,15 @@ pub fn ui<T: BehaviorFactory>(context: &mut egui::Context, world: &mut World) {
                                 editor_state.pan_zoom.pan = egui::vec2(0.0, 0.0);
                             }
 
+                            // keep graph inside scroll rect
+                            let mut clip_rect = ui.available_rect_before_wrap();
+                            clip_rect.min.x -= 9.0;
+                            clip_rect.max.x += 9.0;
+                            clip_rect.min.y -= 9.0;
+                            clip_rect.max.y += 9.0;
+                            ui.set_clip_rect(clip_rect);
+
+                            // draw node graph
                             let graph_response = editor_state.draw_graph_editor(
                                 ui,
                                 BehaviorNodeTemplates::<T>::default(),
