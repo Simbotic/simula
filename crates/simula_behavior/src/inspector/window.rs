@@ -317,12 +317,16 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
                             ui.set_clip_rect(clip_rect);
 
                             // draw node graph
-                            let graph_response = editor_state.draw_graph_editor(
-                                ui,
-                                BehaviorNodeTemplates::<T>::default(),
-                                &mut graph_state,
-                                Vec::default(),
-                            );
+                            let graph_response = ui
+                                .push_id(T::TYPE_UUID, |ui| {
+                                    editor_state.draw_graph_editor(
+                                        ui,
+                                        BehaviorNodeTemplates::<T>::default(),
+                                        &mut graph_state,
+                                        Vec::default(),
+                                    )
+                                })
+                                .inner;
 
                             for response in graph_response.node_responses {
                                 trace!("response: {:?}", response);

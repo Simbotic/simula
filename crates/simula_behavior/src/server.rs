@@ -6,7 +6,8 @@ use crate::{
     },
 };
 use bevy::{prelude::*, utils::HashMap};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::{cmp::Ordering, collections::BinaryHeap, time::Duration};
 
 #[derive(Default)]
@@ -14,12 +15,13 @@ pub struct BehaviorServerPlugin<T: BehaviorFactory>(pub std::marker::PhantomData
 
 impl<T> Plugin for BehaviorServerPlugin<T>
 where
-    T: BehaviorFactory + Serialize,
+    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
 {
     fn build(&self, app: &mut App) {
         app.insert_resource(BehaviorTrackers::<T>::default())
             .add_startup_system(setup::<T>)
             .add_system(track_loaded_behaviors::<T>)
+            .add_system(tracker_documents::<T>)
             .add_system(update::<T>)
             .add_system(update_telemetry::<T>);
     }
@@ -33,11 +35,18 @@ pub enum EntityTracker {
     Inserted(Entity),
 }
 
+#[derive(Clone, Debug)]
+pub enum AssetTracker<T: BehaviorFactory> {
+    None,
+    Document(Handle<BehaviorDocument>),
+    Asset(Handle<BehaviorAsset<T>>),
+}
+
 #[derive(Clone)]
 pub struct BehaviorTracker<T: BehaviorFactory> {
     pub file_name: BehaviorFileName,
     pub entity: EntityTracker,
-    pub asset: Option<Handle<BehaviorAsset<T>>>,
+    pub asset: AssetTracker<T>,
 }
 
 #[derive(Default, Resource, Deref, DerefMut)]
@@ -75,7 +84,7 @@ fn setup<T: BehaviorFactory>(
                         BehaviorTracker {
                             file_name: file_name.clone(),
                             entity: EntityTracker::None,
-                            asset: None,
+                            asset: AssetTracker::None,
                         },
                     );
 
@@ -83,6 +92,43 @@ fn setup<T: BehaviorFactory>(
                         .sender
                         .send(BehaviorProtocolServer::FileName(file_id, file_name))
                         .unwrap();
+                }
+            }
+        }
+    }
+}
+
+// Convert AssetTracker::Document to AssetTracker::Asset
+fn tracker_documents<T: BehaviorFactory + for<'de> Deserialize<'de>>(
+    asset_server: Res<AssetServer>,
+    mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
+    behavior_documents: Res<Assets<BehaviorDocument>>,
+    mut behavior_assets: ResMut<Assets<BehaviorAsset<T>>>,
+) {
+    for (_file_id, tracker) in behavior_trackers.iter_mut() {
+        if let AssetTracker::Document(document_handle) = &tracker.asset {
+            if let Some(document) = behavior_documents.get(document_handle) {
+                let res = ron::de::from_str::<Behavior<T>>(&document);
+                if let Ok(behavior) = res {
+                    // Get file name
+                    let path = asset_server.get_handle_path(document_handle);
+                    let file_name = path.and_then(|path| {
+                        let file_path = path.path().to_string_lossy();
+                        let file_name: Cow<'static, str> =
+                            file_path.trim_end_matches(".bht.ron").to_owned().into();
+                        Some(file_name)
+                    });
+
+                    // Add behavior asset to asset manager
+                    let behavior_handle = behavior_assets.add(BehaviorAsset {
+                        behavior,
+                        file_name,
+                    });
+
+                    // Update tracker
+                    tracker.asset = AssetTracker::Asset(behavior_handle);
+                } else if let Err(err) = res {
+                    error!("Failed to deserialize behavior {:?}", err);
                 }
             }
         }
@@ -101,47 +147,47 @@ fn track_loaded_behaviors<T: BehaviorFactory>(
     for event in asset_events.iter() {
         match event {
             AssetEvent::Created { handle } => {
-                if let Some(path) = asset_server.get_handle_path(handle) {
-                    info!("Created: {:?}", path);
+                let Some(behavior_asset) = behavior_assets.get(handle) else {
+                    continue;
+                };
 
-                    // check if there is a tracker for this asset
-                    let behavior_tracker = behavior_trackers.iter_mut().find(|(_, tracker)| {
-                        if let Some(asset) = &tracker.asset {
-                            asset == handle
-                        } else {
-                            false
-                        }
-                    });
+                let Some(file_name) = &behavior_asset.file_name else {
+                    continue;
+                };
 
-                    // if there is no tracker, create one, notify file name to clients
-                    if behavior_tracker.is_none() {
-                        // Get asset path and build a tracker for it
-                        let file_path = path.path().to_string_lossy();
-                        let file_name = file_path.trim_end_matches(".bht.ron").to_owned();
+                info!("Created: {:?}", file_name);
 
-                        let behavior_file_id = BehaviorFileId::new();
-                        let behavior_file_name = BehaviorFileName(file_name.into());
-
-                        behavior_trackers.insert(
-                            behavior_file_id.clone(),
-                            BehaviorTracker {
-                                file_name: behavior_file_name.clone(),
-                                entity: EntityTracker::None,
-                                asset: Some(handle.clone()),
-                            },
-                        );
-
-                        // server send file name to clients
-                        behavior_server
-                            .sender
-                            .send(BehaviorProtocolServer::FileName(
-                                behavior_file_id,
-                                behavior_file_name,
-                            ))
-                            .unwrap();
+                // check if there is a tracker for this asset
+                let behavior_tracker = behavior_trackers.iter_mut().find(|(_, tracker)| {
+                    if let AssetTracker::Asset(asset) = &tracker.asset {
+                        asset == handle
+                    } else {
+                        false
                     }
-                } else {
-                    // Asset has no soource path, maybe was created manually
+                });
+
+                // if there is no tracker, create one, notify file name to clients
+                if behavior_tracker.is_none() {
+                    let behavior_file_id = BehaviorFileId::new();
+                    let behavior_file_name = BehaviorFileName(file_name.to_owned());
+
+                    behavior_trackers.insert(
+                        behavior_file_id.clone(),
+                        BehaviorTracker {
+                            file_name: behavior_file_name.clone(),
+                            entity: EntityTracker::None,
+                            asset: AssetTracker::Asset(handle.clone()),
+                        },
+                    );
+
+                    // server send file name to clients
+                    behavior_server
+                        .sender
+                        .send(BehaviorProtocolServer::FileName(
+                            behavior_file_id,
+                            behavior_file_name,
+                        ))
+                        .unwrap();
                 }
             }
             AssetEvent::Modified { handle } => {
@@ -341,7 +387,7 @@ fn update<T>(
             BehaviorProtocolClient::Instances(file_id) => {
                 info!("Received Instances: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    if let Some(behavior_asset) = &behavior_tracker.asset {
+                    if let AssetTracker::Asset(behavior_asset) = &behavior_tracker.asset {
                         let remote_entities: Vec<protocol::RemoteEntity> = behavior_trees
                             .iter()
                             .filter_map(|(entity, name, other_behavior_asset)| {
@@ -393,18 +439,28 @@ fn update<T>(
             BehaviorProtocolClient::LoadFile(file_id) => {
                 info!("Received LoadFile: {:?}", file_id);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
-                    // check if behavior has an asset
-                    if let Some(behavior_asset) = &behavior_tracker.asset {
-                        // check if asset is ready, or try again later
-                        if let Some(behavior_asset) = behavior_assets.get(&behavior_asset) {
-                            behavior_server
-                                .sender
-                                .send(BehaviorProtocolServer::FileLoaded(
-                                    file_id.clone(),
-                                    behavior_asset.behavior.clone(),
-                                ))
-                                .unwrap();
-                        } else {
+                    match &behavior_tracker.asset {
+                        // check if behavior has an asset
+                        AssetTracker::Asset(behavior_asset) => {
+                            // check if asset is ready, or try again later
+                            if let Some(behavior_asset) = behavior_assets.get(&behavior_asset) {
+                                behavior_server
+                                    .sender
+                                    .send(BehaviorProtocolServer::FileLoaded(
+                                        file_id.clone(),
+                                        behavior_asset.behavior.clone(),
+                                    ))
+                                    .unwrap();
+                            } else {
+                                // asset not ready, check again later
+                                queued_msgs.push(PriorityMessage {
+                                    priority: priority + Duration::from_secs(1),
+                                    count: msg.count + 1,
+                                    msg: msg.msg.clone(),
+                                });
+                            }
+                        }
+                        AssetTracker::Document(_) => {
                             // asset not ready, check again later
                             queued_msgs.push(PriorityMessage {
                                 priority: priority + Duration::from_secs(1),
@@ -412,18 +468,19 @@ fn update<T>(
                                 msg: msg.msg.clone(),
                             });
                         }
-                    }
-                    // if no asset, load and get a handle to asset
-                    else {
-                        let behavior_handle: Handle<BehaviorAsset<T>> = asset_server
-                            .load(format!("{}.bht.ron", *behavior_tracker.file_name).as_str());
-                        behavior_tracker.asset = Some(behavior_handle);
-                        // check again later
-                        queued_msgs.push(PriorityMessage {
-                            priority: priority + Duration::from_millis(100),
-                            count: msg.count + 1,
-                            msg: msg.msg.clone(),
-                        });
+                        // if no asset, load and get a handle to asset
+                        AssetTracker::None => {
+                            info!("No Loading asset: {:?}", behavior_tracker.file_name);
+                            let behavior_handle: Handle<BehaviorDocument> = asset_server
+                                .load(format!("{}.bht.ron", *behavior_tracker.file_name).as_str());
+                            behavior_tracker.asset = AssetTracker::Document(behavior_handle);
+                            // check again later
+                            queued_msgs.push(PriorityMessage {
+                                priority: priority + Duration::from_millis(100),
+                                count: msg.count + 1,
+                                msg: msg.msg.clone(),
+                            });
+                        }
                     }
                 } else {
                     error!("Invalid file_id: {:?}", file_id);
@@ -463,16 +520,17 @@ fn update<T>(
                     behavior.is_some()
                 );
                 let mut behavior_tracker = None;
-                let mut behavior_asset = None;
+                let mut behavior_asset = AssetTracker::None;
 
                 // use the behavior passed in
                 if let Some(behavior) = behavior {
                     // create a new asset to hold the behavior
                     let a_behavior_asset = BehaviorAsset::<T> {
                         behavior: behavior.clone(),
+                        file_name: None,
                     };
                     let handle = behavior_assets.add(a_behavior_asset);
-                    behavior_asset = Some(handle.clone());
+                    behavior_asset = AssetTracker::Asset(handle.clone());
                 }
 
                 // if we have a tracker for this behavior, use it
@@ -488,12 +546,13 @@ fn update<T>(
                     if let Some(behavior) = behavior {
                         let a_behavior_asset = BehaviorAsset::<T> {
                             behavior: behavior.clone(),
+                            file_name: None,
                         };
                         let handle = behavior_assets.add(a_behavior_asset);
-                        behavior_asset = Some(handle.clone());
+                        behavior_asset = AssetTracker::Asset(handle.clone());
                         let a_behavior_tracker = BehaviorTracker::<T> {
                             file_name: file_name.clone(),
-                            asset: Some(handle.clone()),
+                            asset: AssetTracker::Asset(handle.clone()),
                             entity: EntityTracker::None,
                         };
                         behavior_trackers.insert(file_id.clone(), a_behavior_tracker);
@@ -501,7 +560,7 @@ fn update<T>(
                     }
                 }
 
-                if let (Some(behavior_tracker), Some(behavior_asset)) =
+                if let (Some(behavior_tracker), AssetTracker::Asset(behavior_asset)) =
                     (behavior_tracker, behavior_asset)
                 {
                     behavior_tracker.entity = EntityTracker::None;

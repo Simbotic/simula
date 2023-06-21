@@ -1,5 +1,8 @@
 use actions::*;
-use asset::{behavior_tree_reset, Behavior, BehaviorAsset, BehaviorAssetLoader};
+use asset::{
+    behavior_document_to_asset, behavior_tree_reset, Behavior, BehaviorAsset, BehaviorAssetLoader,
+    BehaviorDocument,
+};
 use bevy::{
     ecs::{query::WorldQuery, system::EntityCommands},
     prelude::*,
@@ -22,7 +25,7 @@ pub mod test;
 pub mod prelude {
     pub use crate::actions::*;
     pub use crate::asset::{
-        behavior_tree_reset, Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorTreeReset,
+        Behavior, BehaviorAsset, BehaviorAssetLoader, BehaviorDocument, BehaviorTreeReset,
     };
     pub use crate::composites::*;
     pub use crate::decorators::*;
@@ -31,13 +34,14 @@ pub mod prelude {
     };
     pub use crate::protocol::{self};
     pub use crate::server::{
-        BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
+        AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
     };
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
         BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
-        BehaviorStarted, BehaviorSuccess, BehaviorTree, BehaviorTreePlugin, BehaviorType,
+        BehaviorSet, BehaviorStarted, BehaviorSuccess, BehaviorTree, BehaviorTreePlugin,
+        BehaviorType,
     };
 }
 
@@ -45,7 +49,9 @@ pub struct BehaviorPlugin;
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<BehaviorDesc>()
+        app.init_asset_loader::<BehaviorAssetLoader>()
+            .add_asset::<BehaviorDocument>()
+            .register_type::<BehaviorDesc>()
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
@@ -67,10 +73,11 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Identity>()
             .register_type::<Guard>()
             .register_type::<Timeout>()
+            .configure_set(BehaviorSet::PostUpdate.in_base_set(CoreSet::PostUpdate))
             .add_systems(
                 (clear_behavior_started, complete_behavior, start_behavior)
                     .chain()
-                    .in_base_set(CoreSet::PostUpdate),
+                    .in_set(BehaviorSet::PostUpdate),
             )
             .add_system(debug::run)
             .add_system(selector::run)
@@ -88,6 +95,11 @@ impl Plugin for BehaviorPlugin {
     }
 }
 
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum BehaviorSet {
+    PostUpdate,
+}
+
 #[derive(Default)]
 pub struct BehaviorTreePlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T>);
 
@@ -98,8 +110,7 @@ where
     fn build(&self, app: &mut App) {
         app.register_type::<BehaviorTree<T>>()
             .add_asset::<BehaviorAsset<T>>()
-            .init_asset_loader::<BehaviorAssetLoader<T>>()
-            .add_system(behavior_tree_reset::<T>);
+            .add_systems((behavior_document_to_asset::<T>, behavior_tree_reset::<T>).chain());
     }
 }
 

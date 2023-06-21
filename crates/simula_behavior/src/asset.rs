@@ -59,21 +59,24 @@ where
 }
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
-#[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
+#[uuid = "B543FD10-86EA-42A6-BC87-2A9DB57BFBAD"]
+
 pub struct BehaviorAsset<T>
 where
     T: BehaviorFactory,
 {
     pub behavior: Behavior<T>,
+    pub file_name: Option<Cow<'static, str>>,
 }
 
-#[derive(Default)]
-pub struct BehaviorAssetLoader<T>(std::marker::PhantomData<T>);
+#[derive(Default, Debug, TypeUuid, Deserialize, Deref)]
+#[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
+pub struct BehaviorDocument(String);
 
-impl<T> AssetLoader for BehaviorAssetLoader<T>
-where
-    T: Default + TypeUuid + Send + Sync + 'static + for<'de> Deserialize<'de> + BehaviorFactory,
-{
+#[derive(Default)]
+pub struct BehaviorAssetLoader;
+
+impl AssetLoader for BehaviorAssetLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
@@ -81,8 +84,7 @@ where
     ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
             let document = std::str::from_utf8(bytes)?.to_string();
-            let behavior = ron::de::from_str(&document)?;
-            let asset = BehaviorAsset::<T> { behavior };
+            let asset = BehaviorDocument(document);
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })
@@ -140,6 +142,50 @@ pub fn behavior_tree_reset<T>(
 
             // start running behavior
             commands.entity(root).insert(BehaviorCursor::Delegate);
+        }
+    }
+}
+
+pub fn behavior_document_to_asset<T>(
+    mut commands: Commands,
+    behavior_documents: Res<Assets<BehaviorDocument>>,
+    mut behavior_assets: ResMut<Assets<BehaviorAsset<T>>>,
+    asset_server: Res<AssetServer>,
+    documents: Query<(Entity, &Handle<BehaviorDocument>), With<BehaviorTree<T>>>,
+) where
+    T: BehaviorFactory + for<'de> Deserialize<'de>,
+{
+    for (entity, behavior_document_handle) in documents.iter() {
+        // Convert document into behavior asset
+        if let Some(behavior_document) = behavior_documents.get(behavior_document_handle) {
+            // Remove document handle, if it fails to deserialize we wont keep trying
+            commands.entity(entity).remove::<Handle<BehaviorDocument>>();
+            // Deserialize behavior asset
+            let res = ron::de::from_str::<Behavior<T>>(&behavior_document);
+            if let Ok(behavior) = res {
+                // Get file name
+                let path = asset_server.get_handle_path(behavior_document_handle);
+                let file_name = path.and_then(|path| {
+                    let file_path = path.path().to_string_lossy();
+                    let file_name: Cow<'static, str> =
+                        file_path.trim_end_matches(".bht.ron").to_owned().into();
+                    Some(file_name)
+                });
+
+                // Add behavior asset to asset manager
+                let behavior_handle = behavior_assets.add(BehaviorAsset {
+                    behavior,
+                    file_name,
+                });
+
+                // and insert
+                commands.entity(entity).insert(behavior_handle);
+            } else if let Err(err) = res {
+                error!(
+                    "Failed to deserialize behavior tree for entity {:?} {}",
+                    entity, err
+                );
+            }
         }
     }
 }

@@ -14,8 +14,8 @@ use simula_viz::{
     lines::LinesPlugin,
 };
 
-// use implemented_behavior::{ImplementedBehavior, ImplementedBehaviorPlugin};
 use derived_behavior::{DerivedBehavior, DerivedBehaviorPlugin};
+use implemented_behavior::{ImplementedBehavior, ImplementedBehaviorPlugin};
 
 mod derived_behavior;
 mod implemented_behavior;
@@ -56,10 +56,10 @@ fn main() {
         // Behavior setup
         .add_plugin(BehaviorPlugin)
         // DebugBehavior setup
-        // .add_plugin(ImplementedBehaviorPlugin)
-        // .add_plugin(BehaviorServerPlugin::<ImplementedBehavior>::default())
-        // .add_plugin(BehaviorInspectorPlugin::<ImplementedBehavior>::default())
-        // .add_startup_system(behavior_setup::<ImplementedBehavior>)
+        .add_plugin(ImplementedBehaviorPlugin)
+        .add_plugin(BehaviorServerPlugin::<ImplementedBehavior>::default())
+        .add_plugin(BehaviorInspectorPlugin::<ImplementedBehavior>::default())
+        .add_startup_system(behavior_setup::<ImplementedBehavior>)
         // DerivedBehavior setup
         .add_plugin(DerivedBehaviorPlugin)
         .add_plugin(BehaviorServerPlugin::<DerivedBehavior>::default())
@@ -77,7 +77,7 @@ fn behavior_setup<T: BehaviorFactory>(
 ) {
     // load debug behaviors
     let behaviors = [
-        "bht/d/delay",
+        "*bht/d/delay",
         "bht/d/gate_true",
         "bht/d/gate_blackboard",
         "bht/d/all",
@@ -98,7 +98,7 @@ fn behavior_setup<T: BehaviorFactory>(
         // create a behavior tree that will automatically load and run
         if let Some(behavior) = behavior.strip_prefix("*") {
             // get a handle to a behavior asset from asset server
-            let behavior_handle: Handle<BehaviorAsset<T>> =
+            let behavior_handle: Handle<BehaviorDocument> =
                 asset_server.load(format!("{}.bht.ron", behavior).as_str());
 
             // create a new scope for the behavior tree
@@ -142,7 +142,7 @@ fn behavior_setup<T: BehaviorFactory>(
                 BehaviorTracker {
                     file_name: file_name.clone(),
                     entity: EntityTracker::None,
-                    asset: None,
+                    asset: AssetTracker::None,
                 },
             );
             behavior_server
