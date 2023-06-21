@@ -42,11 +42,11 @@ pub fn run<T: BehaviorFactory>(
 ) {
     for (entity, children, subtree, child_tree) in &mut subtrees {
         if child_tree.is_none() {
-            let behavior_asset: Handle<BehaviorAsset<T>> =
+            let behavior_document: Handle<BehaviorDocument> =
                 asset_server.load(subtree.asset.as_ref());
             commands
                 .entity(entity)
-                .insert(behavior_asset)
+                .insert(behavior_document)
                 .insert(BehaviorTree::<T>::default())
                 .insert(BehaviorTreeReset::<T>::default());
         } else if children.is_empty() {
