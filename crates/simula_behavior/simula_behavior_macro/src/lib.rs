@@ -29,9 +29,9 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
             .iter()
             .map(|variant| {
                 let variant_ident = &variant.ident;
-                let variant_argument = get_variant_argument(&variant.fields).unwrap();
+                let variant_ident_label = format!("{}", variant_ident);
                 quote! {
-                    Self::#variant_ident(_) => <#variant_argument as BehaviorInfo>::NAME,
+                    Self::#variant_ident(_) => #variant_ident_label,
                 }
             })
             .collect();

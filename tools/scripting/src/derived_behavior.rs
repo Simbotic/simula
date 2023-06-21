@@ -1,3 +1,4 @@
+use crate::implemented_behavior::ImplementedBehavior;
 use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
@@ -34,7 +35,9 @@ pub enum DerivedBehavior {
     Delay(Delay),
     Guard(Guard),
     Timeout(Timeout),
-    Subtree(Subtree<DerivedBehavior>), // Substrees are typed, this loads same tree type
+    // Substrees are typed, can load same or different types of subtrees
+    Subtree(Subtree<DerivedBehavior>),
+    SubImpl(Subtree<ImplementedBehavior>),
 }
 
 impl Default for DerivedBehavior {
@@ -69,6 +72,7 @@ impl BehaviorInspectable for DerivedBehavior {
             DerivedBehavior::Guard(_) => Color::hex("#440").unwrap(),
             DerivedBehavior::Timeout(_) => Color::hex("#440").unwrap(),
             DerivedBehavior::Subtree(_) => Color::hex("#440").unwrap(),
+            DerivedBehavior::SubImpl(_) => Color::hex("#440").unwrap(),
         }
     }
 
@@ -88,6 +92,7 @@ impl BehaviorInspectable for DerivedBehavior {
             DerivedBehavior::Guard(_) => vec![<Guard as BehaviorInfo>::TYPE.as_ref()],
             DerivedBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
             DerivedBehavior::Subtree(_) => vec![<Subtree<DerivedBehavior> as BehaviorInfo>::TYPE.as_ref()],
+            DerivedBehavior::SubImpl(_) => vec![<Subtree<ImplementedBehavior> as BehaviorInfo>::TYPE.as_ref()],
         }
     }
 }
