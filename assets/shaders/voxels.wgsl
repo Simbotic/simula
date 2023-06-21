@@ -1,10 +1,6 @@
 #import bevy_pbr::mesh_view_bindings
 #import bevy_pbr::mesh_types
 
-// struct VoxelsMaterial;
-// [[group(1), binding(0)]]
-// var<uniform> material: VoxelsMaterial;
-
 @group(2) @binding(0)
 var<uniform> mesh: Mesh;
 
@@ -47,18 +43,18 @@ struct FragmentInput {
 @fragment
 fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 
-//     var threshold = array<array<f32, 4>, 4>(
-//         array<f32, 4>( 1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0),
-//         array<f32, 4>(13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0),
-//         array<f32, 4>( 4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0),
-//         array<f32, 4>(16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0)
-//     );
+    var threshold = array<array<f32, 4>, 4>(
+        array<f32, 4>( 1.0 / 17.0,  9.0 / 17.0,  3.0 / 17.0, 11.0 / 17.0),
+        array<f32, 4>(13.0 / 17.0,  5.0 / 17.0, 15.0 / 17.0,  7.0 / 17.0),
+        array<f32, 4>( 4.0 / 17.0, 12.0 / 17.0,  2.0 / 17.0, 10.0 / 17.0),
+        array<f32, 4>(16.0 / 17.0,  8.0 / 17.0, 14.0 / 17.0,  6.0 / 17.0)
+    );
 
-//    let xy = vec4<u32>(in.frag_coord % 4.0);
-//    let alpha = in.color.a - threshold[xy.x][xy.y];
-// 	if (alpha < -1.0) {
-// 		discard;
-// 	}
+    let xy = vec2<i32>(fract(in.frag_coord.xy / 4.0) * 4.0); 
+    let alpha = in.color.a - threshold[xy.x][xy.y];
+    if (alpha < 0.0) {
+        discard;
+    }
 
     return vec4<f32>(in.color.rgb, 1.0);
 }
