@@ -28,7 +28,7 @@ impl Default for Selector {
 impl BehaviorInfo for Selector {
     const TYPE: BehaviorType = BehaviorType::Composite;
     const NAME: &'static str = "Selector";
-    const ICON: &'static str = "?";
+    const ICON: &'static str = "❓";
     const DESC: &'static str =
         "A Selector will visit each child in order and succeed if any of its children \
         succeed and not process any further children. It will process the first child, \

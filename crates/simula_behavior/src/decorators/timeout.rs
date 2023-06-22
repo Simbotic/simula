@@ -20,7 +20,7 @@ pub struct Timeout {
 impl BehaviorInfo for Timeout {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Timeout";
-    const ICON: &'static str = "⌛";
+    const ICON: &'static str = "🕓";
     const DESC: &'static str = "Fails if its child does not return within the given time limit";
 }
 

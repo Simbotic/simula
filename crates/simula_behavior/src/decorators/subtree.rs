@@ -30,7 +30,7 @@ where
     // A subtree, once connected works as a decorator node
     const TYPE: BehaviorType = BehaviorType::Subtree;
     const NAME: &'static str = "Subtree";
-    const ICON: &'static str = "🌳";
+    const ICON: &'static str = "🏃";
     const DESC: &'static str = "Connects a behavior subtree to this node";
 }
 
