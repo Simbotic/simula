@@ -2,11 +2,7 @@ use crate::{
     prelude::*,
     protocol::{BehaviorState, RemoteEntity},
 };
-use bevy::{
-    log::debug,
-    prelude::{default, Color, Component, Deref, DerefMut, Time},
-    reflect::TypeRegistryArc,
-};
+use bevy::{log::debug, prelude::*, reflect::TypeRegistryArc};
 use bevy_inspector_egui::{
     egui::{self, Widget},
     reflect_inspector,
@@ -83,6 +79,7 @@ pub enum BehaviorResponse<T: BehaviorFactory> {
     NodeEdited(NodeId, T),
     NameEdited(NodeId, String),
     NodeEditDone(NodeId),
+    GoToSubtree(NodeId),
 }
 
 /// The graph 'global' state. This state struct is passed around to the node and
@@ -455,9 +452,39 @@ where
             match &node.user_data.data {
                 BehaviorData::Behavior(behavior) => {
                     // Behavior label
-                    let label =
-                        egui::RichText::new(behavior.label()).color(egui::Color32::DARK_GRAY);
-                    egui::Label::new(label).ui(ui);
+                    let label = behavior.label();
+                    let label = egui::RichText::new(label).color(egui::Color32::DARK_GRAY);
+
+                    // Behavior tooltip
+                    // TODO: lazily compute tooltip
+                    let tooltip = || {
+                        let inner_type_name = behavior.inner_reflect().type_name();
+                        // Remove "simula_behavior::..." prefix, keep full custom types
+                        let inner_type_name = if inner_type_name.starts_with("simula_behavior") {
+                            inner_type_name
+                                .split("::")
+                                .fold(None, |acc, f| {
+                                    if let Some(acc) = acc {
+                                        Some(format!("{}::{}", acc, f))
+                                    } else {
+                                        if f.chars().next().map_or(false, |c| c.is_uppercase()) {
+                                            Some(f.to_string())
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                })
+                                .unwrap_or("".to_string())
+                        } else {
+                            inner_type_name.to_string()
+                        };
+                        format!("{}\n\n{}", inner_type_name, behavior.desc())
+                    };
+
+                    // Behavior label with tooltip
+                    egui::Label::new(label)
+                        .ui(ui)
+                        .on_hover_text_at_pointer(tooltip());
 
                     // Reflect behavior properties
                     let type_registry = user_state.type_registry.read();
@@ -465,7 +492,8 @@ where
                         Some(active_node_id) if editing && active_node_id == node_id => {
                             let mut behavior = behavior.clone();
                             if reflect_inspector::ui_for_value(
-                                behavior.reflect_mut(),
+                                // BehaviorFactory::reflect_mut(&mut behavior),
+                                behavior.inner_reflect_mut(),
                                 ui,
                                 &type_registry,
                             ) {
@@ -476,7 +504,7 @@ where
                         }
                         _ => {
                             reflect_inspector::ui_for_value_readonly(
-                                behavior.reflect(),
+                                behavior.inner_reflect(),
                                 ui,
                                 &type_registry,
                             );
@@ -492,8 +520,8 @@ where
 
     fn bottom_ui(
         &self,
-        _ui: &mut egui::Ui,
-        _node_id: NodeId,
+        ui: &mut egui::Ui,
+        node_id: NodeId,
         _graph: &Graph<BehaviorNodeData<T>, BehaviorDataType, BehaviorValueType<T>>,
         _user_state: &mut Self::UserState,
     ) -> Vec<NodeResponse<BehaviorResponse<T>, BehaviorNodeData<T>>>
@@ -501,7 +529,19 @@ where
         T: BehaviorFactory,
         BehaviorResponse<T>: UserResponseTrait,
     {
-        let responses = vec![];
+        let mut responses = vec![];
+
+        match &self.data {
+            BehaviorData::Root => (),
+            BehaviorData::Behavior(behavior) => {
+                if behavior.typ() == BehaviorType::Subtree {
+                    if ui.add(egui::Button::new("⤵").small()).clicked() {
+                        responses.push(NodeResponse::User(BehaviorResponse::GoToSubtree(node_id)));
+                    }
+                }
+            }
+        };
+
         responses
     }
 }

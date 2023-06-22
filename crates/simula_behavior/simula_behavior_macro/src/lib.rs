@@ -36,6 +36,18 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
             })
             .collect();
 
+        let desc_variant_impls: Vec<_> = data_enum
+            .variants
+            .iter()
+            .map(|variant| {
+                let variant_ident = &variant.ident;
+                let variant_argument = get_variant_argument(&variant.fields).unwrap();
+                quote! {
+                    Self::#variant_ident(_) => <#variant_argument as BehaviorInfo>::DESC,
+                }
+            })
+            .collect();
+
         let typ_variant_impls: Vec<_> = data_enum
             .variants
             .iter()
@@ -98,19 +110,25 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                     }
                 }
 
+                fn desc(&self) -> &str {
+                    match self {
+                        #(#desc_variant_impls)*
+                    }
+                }
+
                 fn typ(&self) -> BehaviorType {
                     match self {
                         #(#typ_variant_impls)*
                     }
                 }
 
-                fn reflect(&self) -> &dyn Reflect {
+                fn inner_reflect(&self) -> &dyn Reflect {
                     match self {
                         #(#reflect_variant_impls)*
                     }
                 }
 
-                fn reflect_mut(&mut self) -> &mut dyn Reflect {
+                fn inner_reflect_mut(&mut self) -> &mut dyn Reflect {
                     match self {
                         #(#reflect_variant_impls)*
                     }

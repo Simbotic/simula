@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// any further children. It will process the first child, and if it fails will
 /// process the second, until a success is reached, at which point it will instantly
 /// return success. It will fail if all children fail.
-#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Selector {
     #[serde(default)]
     random: bool,

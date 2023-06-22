@@ -35,7 +35,7 @@ pub fn test_app(app: &mut App) -> &mut App {
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct TestBehaviorAttributes;
 
-#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, BehaviorFactory)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, Reflect, FromReflect, BehaviorFactory)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
 #[BehaviorAttributes(TestBehaviorAttributes)]
 pub enum TestBehavior {

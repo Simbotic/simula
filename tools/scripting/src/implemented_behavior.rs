@@ -19,7 +19,7 @@ pub struct ImplementedBehaviorAttributes {
     pub pos: Vec2,
 }
 
-#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, Reflect, FromReflect)]
 #[uuid = "7CFA1742-7725-416C-B167-95DA01750E1C"]
 pub enum ImplementedBehavior {
     Debug(Debug),
@@ -131,12 +131,31 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::NAME,
             ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::NAME,
             ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::NAME,
-            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::NAME,
-            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::NAME,
+            ImplementedBehavior::Subtree(_) => "Subtree",
+            ImplementedBehavior::AnotherTree(_) => "AnotherTree",
         }
     }
 
-    fn reflect(&self) -> &dyn Reflect {
+    fn desc(&self) -> &str {
+        match self {
+            ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::DESC,
+            ImplementedBehavior::Selector(_) => <Selector as BehaviorInfo>::DESC,
+            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::DESC,
+            ImplementedBehavior::All(_) => <All as BehaviorInfo>::DESC,
+            ImplementedBehavior::Any(_) => <Any as BehaviorInfo>::DESC,
+            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorInfo>::DESC,
+            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorInfo>::DESC,
+            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::DESC,
+            ImplementedBehavior::Wait(_) => <Wait as BehaviorInfo>::DESC,
+            ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::DESC,
+            ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::DESC,
+            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::DESC,
+            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::DESC,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::DESC,
+        }
+    }
+
+    fn inner_reflect(&self) -> &dyn Reflect {
         match self {
             ImplementedBehavior::Debug(data) => data,
             ImplementedBehavior::Selector(data) => data,
@@ -155,7 +174,7 @@ impl BehaviorFactory for ImplementedBehavior {
         }
     }
 
-    fn reflect_mut(&mut self) -> &mut dyn Reflect {
+    fn inner_reflect_mut(&mut self) -> &mut dyn Reflect {
         match self {
             ImplementedBehavior::Debug(data) => data,
             ImplementedBehavior::Selector(data) => data,

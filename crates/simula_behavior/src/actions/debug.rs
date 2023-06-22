@@ -4,7 +4,9 @@ use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, InspectorOptions)]
+#[derive(
+    Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize, InspectorOptions,
+)]
 #[reflect(InspectorOptions)]
 pub struct Debug {
     #[serde(default)]

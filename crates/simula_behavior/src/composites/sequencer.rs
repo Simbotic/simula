@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// succeeds will call the second, and so on down the list of children. If any child
 /// fails it will immediately return failure to the parent. If the last child in the
 /// sequence succeeds, then the sequence will return success to its parent.
-#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Sequencer {
     #[serde(default)]
     random: bool,

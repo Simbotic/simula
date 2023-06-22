@@ -2,7 +2,7 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub enum Repeat {
     #[default]
     Forever,
@@ -12,7 +12,7 @@ pub enum Repeat {
 }
 
 /// Repeat a child until condition is met
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Repeater {
     pub repeat: Repeat,
     #[serde(skip)]

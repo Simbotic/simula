@@ -13,7 +13,7 @@ pub enum Source {
 /// Guard evals a script to control the flow of execution. If the script returns
 /// `true`, the child is executed. If the script returns `false`, the child is
 /// not executed. The Scope of the script should be at the tree entity.
-#[derive(Debug, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Guard {
     /// The script to evaluate
     pub script: Source,

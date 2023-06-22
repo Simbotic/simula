@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Identity decorator. It returns the same result as its child.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Identity;
 
 impl BehaviorInfo for Identity {

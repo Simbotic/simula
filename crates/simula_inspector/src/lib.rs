@@ -45,7 +45,8 @@ fn setup_ui(mut contexts: EguiContexts) {
     let mut visuals = egui::Visuals::dark();
     visuals.window_rounding = 2.0.into();
     visuals.window_shadow.extrusion = 0.0;
-    visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140);
+    // visuals.window_fill = egui::Color32::from_rgba_unmultiplied(52, 50, 55, 200);
+    visuals.window_fill = egui::Color32::from_rgb(32, 30, 35);
     visuals.window_stroke = egui::Stroke::NONE;
     visuals.override_text_color = Some(egui::Color32::GRAY);
     contexts.ctx_mut().set_visuals(visuals);

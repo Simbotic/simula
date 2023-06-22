@@ -19,7 +19,7 @@ pub struct DerivedBehaviorAttributes {
     pub pos: Vec2,
 }
 
-#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, BehaviorFactory)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, Reflect, FromReflect, BehaviorFactory)]
 #[uuid = "DBE1D06F-A606-46A2-BFDA-A9480DFEAC6C"]
 #[BehaviorAttributes(DerivedBehaviorAttributes)]
 pub enum DerivedBehavior {

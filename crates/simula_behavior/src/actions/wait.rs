@@ -4,7 +4,9 @@ use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// A wait will succeed after a specified amount of time.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, InspectorOptions)]
+#[derive(
+    Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize, InspectorOptions,
+)]
 #[reflect(InspectorOptions)]
 pub struct Wait {
     #[serde(default)]

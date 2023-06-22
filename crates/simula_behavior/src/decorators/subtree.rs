@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// Subtree connects a behavior subtree to the current behavior tree.
-#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Component, Reflect, FromReflect, Clone, Default, Deserialize, Serialize)]
 pub struct Subtree<T: BehaviorFactory> {
     /// Behavior asset to load.
     pub asset: Cow<'static, str>,
@@ -17,11 +17,17 @@ pub struct Subtree<T: BehaviorFactory> {
     phantom: std::marker::PhantomData<T>,
 }
 
+impl<T: BehaviorFactory> Subtree<T> {
+    pub fn type_name() -> &'static str {
+        std::any::type_name::<T>()
+    }
+}
+
 impl<T> BehaviorInfo for Subtree<T>
 where
     T: BehaviorFactory,
 {
-    // A subtree, but once connected works as a decorator node
+    // A subtree, once connected works as a decorator node
     const TYPE: BehaviorType = BehaviorType::Subtree;
     const NAME: &'static str = "Subtree";
     const DESC: &'static str = "Connects a behavior subtree to this node";

@@ -151,7 +151,16 @@ pub struct BehaviorMissing;
 
 /// How to spawn a behavior node
 pub trait BehaviorFactory:
-    Clone + Default + TypeUuid + Send + Sync + 'static + Default + std::fmt::Debug
+    Clone
+    + Default
+    + TypeUuid
+    + Send
+    + Sync
+    + 'static
+    + Default
+    + std::fmt::Debug
+    + Reflect
+    + FromReflect
 {
     type Attributes: Clone
         + Default
@@ -169,14 +178,17 @@ pub trait BehaviorFactory:
     /// get behavior label
     fn label(&self) -> &str;
 
+    /// get behavior description
+    fn desc(&self) -> &str;
+
     /// get behavior type: composite, decorator, action
     fn typ(&self) -> BehaviorType;
 
     /// get behavior properties for inspector
-    fn reflect(&self) -> &dyn Reflect;
+    fn inner_reflect(&self) -> &dyn Reflect;
 
     /// get mutable behavior properties for inspector
-    fn reflect_mut(&mut self) -> &mut dyn Reflect;
+    fn inner_reflect_mut(&mut self) -> &mut dyn Reflect;
 
     /// copy behavior data from entity into this behavior
     fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing>;

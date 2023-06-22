@@ -4,13 +4,14 @@ use serde::{Deserialize, Serialize};
 
 /// All will run all of its children in parallel until all of them succeed.
 /// If any of them fail, the All node will fail.
-#[derive(Default, Debug, Component, Reflect, Clone, Deserialize, Serialize)]
+#[derive(Default, Debug, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct All;
 
 impl BehaviorInfo for All {
     const TYPE: BehaviorType = BehaviorType::Composite;
     const NAME: &'static str = "⇉ All";
-    const DESC: &'static str = "All behavior node";
+    const DESC: &'static str = "All will run all of its children in parallel until all \
+        of them succeed. If any of them fail, the All node will fail.";
 }
 
 pub fn run(
