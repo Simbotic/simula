@@ -2,7 +2,7 @@ use crate::{
     prelude::*,
     protocol::{
         BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, BehaviorProtocolServer,
-        BehaviorServer, BehaviorState, BehaviorTelemetry, StartOption, StopOption,
+        BehaviorServer, BehaviorState, BehaviorTelemetry, RemoteEntity, StartOption, StopOption,
     },
 };
 use bevy::{prelude::*, utils::HashMap};
@@ -252,7 +252,12 @@ fn build_telemetry<T: BehaviorFactory>(
         }
     }
 
-    *telemetry = BehaviorTelemetry(behavior_state, Some(data), telemetry_children);
+    *telemetry = BehaviorTelemetry(
+        Some(RemoteEntity::new(entity, "")),
+        behavior_state,
+        Some(data),
+        telemetry_children,
+    );
 
     Ok(())
 }
@@ -487,7 +492,7 @@ fn update<T>(
                 }
             }
             BehaviorProtocolClient::SaveFile(file_id, file_name, file_data) => {
-                info!("Received SaveFile: {:?} {}", file_id, **file_name);
+                info!("Received SaveFile: {:?} {}", file_id, file_name.as_ref());
                 let file_data =
                     ron::ser::to_string_pretty(&file_data, ron::ser::PrettyConfig::default());
                 match file_data {
@@ -498,7 +503,7 @@ fn update<T>(
                         }
                         let dir_path = "assets";
                         let file_ext = "bht.ron";
-                        let file_path = format!("{}/{}.{}", dir_path, **file_name, file_ext);
+                        let file_path = format!("{}/{}.{}", dir_path, file_name.as_ref(), file_ext);
                         std::fs::write(&file_path, file_data).unwrap();
                         info!("Saved file: {}", &file_path);
                         behavior_server
@@ -515,7 +520,7 @@ fn update<T>(
                 info!(
                     "Received Start: {:?} {} {:?} behavior: {}",
                     file_id,
-                    **file_name,
+                    file_name.as_ref(),
                     start_option,
                     behavior.is_some()
                 );
@@ -570,13 +575,13 @@ fn update<T>(
                         StartOption::Spawn => {
                             let entity = commands
                                 .spawn((
-                                    Name::new(format!("BHT: {}", **file_name)),
+                                    Name::new(format!("BHT: {}", file_name.as_ref())),
                                     behavior_asset.clone(),
                                     BehaviorTree::<T>::default(),
                                     BehaviorTreeReset::<T>::default(),
                                 ))
                                 .id();
-                            println!("Spawned entity: {:?}", entity);
+                            info!("Spawned entity: {:?} for: {}", entity, file_name.as_ref());
                             behavior_tracker.entity = EntityTracker::Spawned(entity);
                         }
                         // attach to behavior tree

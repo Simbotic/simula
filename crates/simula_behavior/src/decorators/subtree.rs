@@ -21,7 +21,8 @@ impl<T> BehaviorInfo for Subtree<T>
 where
     T: BehaviorFactory,
 {
-    const TYPE: BehaviorType = BehaviorType::Decorator;
+    // A subtree, but once connected works as a decorator node
+    const TYPE: BehaviorType = BehaviorType::Subtree;
     const NAME: &'static str = "Subtree";
     const DESC: &'static str = "Connects a behavior subtree to this node";
 }

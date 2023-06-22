@@ -1,4 +1,7 @@
-use crate::{prelude::*, protocol::BehaviorState};
+use crate::{
+    prelude::*,
+    protocol::{BehaviorState, RemoteEntity},
+};
 use bevy::{
     log::debug,
     prelude::{default, Color, Component, Deref, DerefMut, Time},
@@ -22,6 +25,7 @@ use std::borrow::Cow;
 pub struct BehaviorNodeData<T: BehaviorFactory> {
     pub data: BehaviorData<T>,
     pub state: Option<BehaviorState>,
+    pub entity: Option<RemoteEntity>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -204,6 +208,7 @@ where
                 _ => BehaviorData::Root,
             },
             state: None,
+            entity: None,
         }
     }
 
@@ -239,6 +244,17 @@ where
                         true,
                     );
                     graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
+                }
+                BehaviorType::Subtree => {
+                    graph.add_input_param(
+                        node_id,
+                        "".into(),
+                        BehaviorDataType::Flow,
+                        BehaviorValueType::Flow,
+                        InputParamKind::ConnectionOnly,
+                        true,
+                    );
+                    // graph.add_output_param(node_id, "".into(), BehaviorDataType::Flow);
                 }
                 BehaviorType::Composite => {
                     graph.add_input_param(

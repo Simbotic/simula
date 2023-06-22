@@ -1,0 +1,7 @@
+(
+    "Forever",
+    Repeater((repeat:Forever)),
+    [
+        ("Say hi", Debug((message:"Hello, from DebugMessage 0!")))
+    ]
+)

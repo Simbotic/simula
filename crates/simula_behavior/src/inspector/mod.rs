@@ -172,6 +172,7 @@ fn update<T>(
                 let root_node_data = BehaviorNodeData {
                     data: BehaviorData::Root,
                     state: None,
+                    entity: None,
                 };
                 let root_node =
                     editor_state
@@ -400,6 +401,7 @@ fn update<T>(
                         let root_node_data = BehaviorNodeData {
                             data: BehaviorData::Root,
                             state: None,
+                            entity: None,
                         };
                         let root_node = editor_state.graph.add_node(
                             "Root".into(),

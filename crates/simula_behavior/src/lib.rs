@@ -267,6 +267,7 @@ pub enum BehaviorType {
     Action,
     Composite,
     Decorator,
+    Subtree,
 }
 
 /// A component to provide static behavior node info

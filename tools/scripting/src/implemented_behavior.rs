@@ -2,6 +2,8 @@ use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
+use crate::derived_behavior::DerivedBehavior;
+
 pub struct ImplementedBehaviorPlugin;
 
 impl Plugin for ImplementedBehaviorPlugin {
@@ -33,6 +35,7 @@ pub enum ImplementedBehavior {
     Guard(Guard),
     Timeout(Timeout),
     Subtree(Subtree<ImplementedBehavior>), // Substrees are typed, this loads same tree type
+    AnotherTree(Subtree<DerivedBehavior>),
 }
 
 impl Default for ImplementedBehavior {
@@ -67,6 +70,7 @@ impl BehaviorInspectable for ImplementedBehavior {
             ImplementedBehavior::Guard(_) => Color::hex("#440").unwrap(),
             ImplementedBehavior::Timeout(_) => Color::hex("#440").unwrap(),
             ImplementedBehavior::Subtree(_) => Color::hex("#440").unwrap(),
+            ImplementedBehavior::AnotherTree(_) => Color::hex("#440").unwrap(),
         }
     }
 
@@ -86,6 +90,7 @@ impl BehaviorInspectable for ImplementedBehavior {
             ImplementedBehavior::Guard(_) => vec![<Guard as BehaviorInfo>::TYPE.as_ref()],
             ImplementedBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
             ImplementedBehavior::Subtree(_) => vec![<Subtree<ImplementedBehavior> as BehaviorInfo>::TYPE.as_ref()],
+            ImplementedBehavior::AnotherTree(_) => vec![<Subtree<DerivedBehavior> as BehaviorInfo>::TYPE.as_ref()],
         }
     }
 }
@@ -108,6 +113,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(data) => BehaviorInfo::insert_with(commands, data),
             ImplementedBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
             ImplementedBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
+            ImplementedBehavior::AnotherTree(data) => BehaviorInfo::insert_with(commands, data),
         }
     }
 
@@ -126,6 +132,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::NAME,
             ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::NAME,
             ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::NAME,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::NAME,
         }
     }
 
@@ -144,6 +151,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(data) => data,
             ImplementedBehavior::Timeout(data) => data,
             ImplementedBehavior::Subtree(data) => data,
+            ImplementedBehavior::AnotherTree(data) => data,
         }
     }
 
@@ -162,6 +170,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(data) => data,
             ImplementedBehavior::Timeout(data) => data,
             ImplementedBehavior::Subtree(data) => data,
+            ImplementedBehavior::AnotherTree(data) => data,
         }
     }
 
@@ -181,6 +190,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(data) => *data = world.get::<Guard>(entity).ok_or(BehaviorMissing)?.clone(),
             ImplementedBehavior::Timeout(data) => *data = world.get::<Timeout>(entity).ok_or(BehaviorMissing)?.clone(),
             ImplementedBehavior::Subtree(data) => *data = world.get::<Subtree<ImplementedBehavior>>(entity).ok_or(BehaviorMissing)?.clone(),
+            ImplementedBehavior::AnotherTree(data) => *data = world.get::<Subtree<DerivedBehavior>>(entity).ok_or(BehaviorMissing)?.clone(),
         };
         Ok(())
     }
@@ -200,6 +210,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::TYPE,
             ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::TYPE,
             ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::TYPE,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::TYPE,
         }
     }
 
@@ -218,6 +229,7 @@ impl BehaviorFactory for ImplementedBehavior {
             ImplementedBehavior::Guard(Default::default()),
             ImplementedBehavior::Timeout(Default::default()),
             ImplementedBehavior::Subtree(Default::default()),
+            ImplementedBehavior::AnotherTree(Default::default()),
         ]
     }
 }

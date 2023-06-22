@@ -31,13 +31,12 @@ pub fn run(
             &mut Delay,
             &mut BehaviorChildren,
             Option<&BehaviorStarted>,
-            Option<&BehaviorCursor>,
         ),
         (With<Delay>, BehaviorRunQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, mut delay, children, started, cursor) in &mut delays {
+    for (entity, mut delay, children, started) in &mut delays {
         delay.ticks += 1;
 
         if children.len() != 1 {
@@ -49,7 +48,6 @@ pub fn run(
         let elapsed = time.elapsed_seconds_f64();
         if started.is_some() {
             delay.start = elapsed;
-            println!("[{}] Delay started with {:?}", entity.index(), cursor);
         }
 
         if elapsed - delay.start < delay.duration + f64::EPSILON {

@@ -115,6 +115,7 @@ pub enum BehaviorProtocolServer<T: BehaviorFactory> {
 
 #[derive(Debug, Default)]
 pub struct BehaviorTelemetry<T: BehaviorFactory>(
+    pub Option<RemoteEntity>,
     pub BehaviorState,
     pub Option<T>,
     pub Vec<BehaviorTelemetry<T>>,

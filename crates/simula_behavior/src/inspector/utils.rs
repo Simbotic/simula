@@ -159,6 +159,7 @@ pub fn behavior_into_graph<T>(
     let node_data = BehaviorNodeData {
         data: behavior_data.clone(),
         state: None,
+        entity: None,
     };
     let node_id = editor
         .graph
@@ -237,9 +238,10 @@ where
 
     // Update graph node with behavior telemetry
     let node: &mut egui_node_graph::Node<BehaviorNodeData<T>> = &mut graph.nodes[node_id];
-    if let BehaviorTelemetry(state, Some(behavior), _) = telemetry {
+    if let BehaviorTelemetry(entity, state, Some(behavior), _) = telemetry {
         node.user_data.data = BehaviorData::Behavior(behavior.clone());
         node.user_data.state = Some(*state);
+        node.user_data.entity = entity.clone();
     }
 
     // Get node children
@@ -258,11 +260,31 @@ where
         })
         .collect();
 
-    // Zip and iterate over children
-    let node_children = node_children.iter().cloned();
-    let telemetry_children = telemetry.2.iter();
-    for (node_child, behavior_child) in node_children.zip(telemetry_children) {
-        behavior_telemerty_to_graph(graph, Some(node_child), behavior_child)?;
+    // children iterators
+    let mut node_children = node_children.iter();
+    let mut telemetry_children = telemetry.3.iter();
+
+    let mut node_child = node_children.next();
+    let mut behavior_child = telemetry_children.next();
+
+    loop {
+        match (node_child, behavior_child) {
+            (Some(node_child), Some(behavior_child)) => {
+                behavior_telemerty_to_graph(graph, Some(*node_child), behavior_child)?;
+            }
+            (Some(_node_child), None) => {
+                warn!("More graph nodes then behaviors");
+            }
+            (None, Some(_behavior_child)) => {
+                warn!("More behaviors then graph nodes");
+            }
+            (None, None) => {
+                break;
+            }
+        }
+
+        node_child = node_children.next();
+        behavior_child = telemetry_children.next();
     }
 
     Ok(())

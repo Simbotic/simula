@@ -77,7 +77,8 @@ fn behavior_setup<T: BehaviorFactory>(
 ) {
     // load debug behaviors
     let behaviors = [
-        "*bht/d/delay",
+        "bht/d/delay",
+        "bht/d/debug",
         "bht/d/gate_true",
         "bht/d/gate_blackboard",
         "bht/d/all",
@@ -88,6 +89,7 @@ fn behavior_setup<T: BehaviorFactory>(
         "bht/d/defaults",
         "bht/d/repeater",
         "bht/d/repeat_repeater",
+        "bht/d/subtree_typed",
         "bht/d/subtree_gate",
         "bht/d/zero_timers",
         "?dynamic_01",

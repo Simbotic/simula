@@ -71,8 +71,8 @@ impl BehaviorInspectable for DerivedBehavior {
             DerivedBehavior::Delay(_) => Color::hex("#440").unwrap(),
             DerivedBehavior::Guard(_) => Color::hex("#440").unwrap(),
             DerivedBehavior::Timeout(_) => Color::hex("#440").unwrap(),
-            DerivedBehavior::Subtree(_) => Color::hex("#440").unwrap(),
-            DerivedBehavior::SubImpl(_) => Color::hex("#440").unwrap(),
+            DerivedBehavior::Subtree(_) => Color::hex("#530").unwrap(),
+            DerivedBehavior::SubImpl(_) => Color::hex("#530").unwrap(),
         }
     }
 
