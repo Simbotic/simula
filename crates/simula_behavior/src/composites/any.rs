@@ -9,8 +9,10 @@ pub struct Any;
 
 impl BehaviorInfo for Any {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "⇉ Any";
-    const DESC: &'static str = "Any behavior node";
+    const NAME: &'static str = "Any";
+    const ICON: &'static str = "⇉";
+    const DESC: &'static str = "Run all of its children in parallel until one of them succeed. \
+        If all of them fail, the Any node will fail.";
 }
 
 pub fn run(

@@ -12,6 +12,8 @@ pub struct Wait {
     #[serde(default)]
     #[inspector(min = 0.0, max = f64::MAX)]
     pub duration: f64,
+    #[serde(default)]
+    pub fail: bool,
     #[serde(skip)]
     pub start: f64,
     #[serde(skip)]
@@ -20,8 +22,10 @@ pub struct Wait {
 
 impl BehaviorInfo for Wait {
     const TYPE: BehaviorType = BehaviorType::Action;
-    const NAME: &'static str = "⌛ Wait";
-    const DESC: &'static str = "Wait for a specified amount of time";
+    const NAME: &'static str = "Wait";
+    const ICON: &'static str = "⌛";
+    const DESC: &'static str = "Wait for a specified amount of time and then complete with \
+    success or failure.";
 }
 
 pub fn run(
@@ -36,7 +40,11 @@ pub fn run(
             wait.start = elapsed;
         }
         if elapsed - wait.start > wait.duration - f64::EPSILON {
-            commands.entity(entity).insert(BehaviorSuccess);
+            if wait.fail {
+                commands.entity(entity).insert(BehaviorFailure);
+            } else {
+                commands.entity(entity).insert(BehaviorSuccess);
+            }
         }
     }
 }

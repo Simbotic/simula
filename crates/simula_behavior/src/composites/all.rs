@@ -9,8 +9,9 @@ pub struct All;
 
 impl BehaviorInfo for All {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "⇉ All";
-    const DESC: &'static str = "All will run all of its children in parallel until all \
+    const NAME: &'static str = "All";
+    const ICON: &'static str = "⇉";
+    const DESC: &'static str = "Run all of its children in parallel until all \
         of them succeed. If any of them fail, the All node will fail.";
 }
 

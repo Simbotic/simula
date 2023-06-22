@@ -22,6 +22,7 @@ pub struct Repeater {
 impl BehaviorInfo for Repeater {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Repeater";
+    const ICON: &'static str = "⟳";
     const DESC: &'static str = "Repeat a child until condition is met";
 }
 

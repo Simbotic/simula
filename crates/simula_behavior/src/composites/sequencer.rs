@@ -27,8 +27,13 @@ impl Default for Sequencer {
 
 impl BehaviorInfo for Sequencer {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "➡ Sequencer";
-    const DESC: &'static str = "Sequencer behavior node";
+    const NAME: &'static str = "Sequencer";
+    const ICON: &'static str = "➡";
+    const DESC: &'static str =
+        "A Sequence will visit each child in order, starting with the first, and when that \
+        succeeds will call the second, and so on down the list of children. If any child \
+        fails it will immediately return failure to the parent. If the last child in the \
+        sequence succeeds, then the sequence will return success to its parent.";
 }
 
 pub fn run(

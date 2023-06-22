@@ -20,7 +20,8 @@ pub struct Delay {
 
 impl BehaviorInfo for Delay {
     const TYPE: BehaviorType = BehaviorType::Decorator;
-    const NAME: &'static str = "⌛ Delay";
+    const NAME: &'static str = "Delay";
+    const ICON: &'static str = "⌛";
     const DESC: &'static str = "Delays the execution of its child";
 }
 

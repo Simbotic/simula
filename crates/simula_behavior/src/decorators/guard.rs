@@ -30,7 +30,11 @@ impl Default for Guard {
 impl BehaviorInfo for Guard {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Guard";
-    const DESC: &'static str = "Guard evals script to control the flow of execution.";
+    const ICON: &'static str = "🚫";
+    const DESC: &'static str =
+        "Guard evals a script to control the flow of execution. If the script returns \
+        `true`, the child is executed. If the script returns `false`, the child is \
+        not executed. The Scope of the script should be at the tree entity.";
 }
 
 pub fn run(

@@ -9,7 +9,9 @@ pub struct Inverter;
 impl BehaviorInfo for Inverter {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Inverter";
-    const DESC: &'static str = "Inverts result of child node";
+    const ICON: &'static str = "~";
+    const DESC: &'static str = "Inverts result of their child node. Success becomes failure, \
+        and failure becomes success.";
 }
 
 pub fn run(

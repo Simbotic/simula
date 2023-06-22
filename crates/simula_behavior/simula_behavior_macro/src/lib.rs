@@ -36,6 +36,18 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
             })
             .collect();
 
+        let icon_variant_impls: Vec<_> = data_enum
+            .variants
+            .iter()
+            .map(|variant| {
+                let variant_ident = &variant.ident;
+                let variant_argument = get_variant_argument(&variant.fields).unwrap();
+                quote! {
+                    Self::#variant_ident(_) => <#variant_argument as BehaviorInfo>::ICON,
+                }
+            })
+            .collect();
+
         let desc_variant_impls: Vec<_> = data_enum
             .variants
             .iter()
@@ -107,6 +119,12 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                 fn label(&self) -> &str {
                     match self {
                         #(#label_variant_impls)*
+                    }
+                }
+
+                fn icon(&self) -> &str {
+                    match self {
+                        #(#icon_variant_impls)*
                     }
                 }
 

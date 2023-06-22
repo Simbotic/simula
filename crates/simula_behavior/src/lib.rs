@@ -178,6 +178,9 @@ pub trait BehaviorFactory:
     /// get behavior label
     fn label(&self) -> &str;
 
+    /// get behavior icon
+    fn icon(&self) -> &str;
+
     /// get behavior description
     fn desc(&self) -> &str;
 
@@ -289,6 +292,7 @@ where
 {
     const TYPE: BehaviorType;
     const NAME: &'static str;
+    const ICON: &'static str;
     const DESC: &'static str;
 
     fn insert_with(commands: &mut EntityCommands, data: &Self) {

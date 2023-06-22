@@ -136,6 +136,25 @@ impl BehaviorFactory for ImplementedBehavior {
         }
     }
 
+    fn icon(&self) -> &str {
+        match self {
+            ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::ICON,
+            ImplementedBehavior::Selector(_) => <Selector as BehaviorInfo>::ICON,
+            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::ICON,
+            ImplementedBehavior::All(_) => <All as BehaviorInfo>::ICON,
+            ImplementedBehavior::Any(_) => <Any as BehaviorInfo>::ICON,
+            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorInfo>::ICON,
+            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorInfo>::ICON,
+            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::ICON,
+            ImplementedBehavior::Wait(_) => <Wait as BehaviorInfo>::ICON,
+            ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::ICON,
+            ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::ICON,
+            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::ICON,
+            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::ICON,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::ICON,
+        }
+    }
+
     fn desc(&self) -> &str {
         match self {
             ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::DESC,

@@ -27,8 +27,13 @@ impl Default for Selector {
 
 impl BehaviorInfo for Selector {
     const TYPE: BehaviorType = BehaviorType::Composite;
-    const NAME: &'static str = "? Selector";
-    const DESC: &'static str = "Selector behavior node";
+    const NAME: &'static str = "Selector";
+    const ICON: &'static str = "?";
+    const DESC: &'static str =
+        "A Selector will visit each child in order and succeed if any of its children \
+        succeed and not process any further children. It will process the first child, \
+        and if it fails will process the second, until a success is reached, at which \
+        point it will instantly return success. It will fail if all children fail.";
 }
 
 pub fn run(

@@ -178,7 +178,10 @@ where
     fn node_finder_label(&self, _user_state: &mut Self::UserState) -> Cow<'_, str> {
         match self {
             BehaviorNodeTemplate::Root => Cow::Borrowed("Root"),
-            BehaviorNodeTemplate::Behavior(behavior) => Cow::Borrowed(behavior.label()),
+            BehaviorNodeTemplate::Behavior(behavior) => {
+                let label = format!("{} {}", behavior.icon(), behavior.label());
+                label.into()
+            }
         }
     }
 
@@ -452,7 +455,7 @@ where
             match &node.user_data.data {
                 BehaviorData::Behavior(behavior) => {
                     // Behavior label
-                    let label = behavior.label();
+                    let label = format!("{} {}", behavior.icon(), behavior.label());
                     let label = egui::RichText::new(label).color(egui::Color32::DARK_GRAY);
 
                     // Behavior tooltip

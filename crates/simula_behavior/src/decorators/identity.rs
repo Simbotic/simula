@@ -9,6 +9,7 @@ pub struct Identity;
 impl BehaviorInfo for Identity {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Identity";
+    const ICON: &'static str = "=";
     const DESC: &'static str = "Returns the same result as its child";
 }
 
