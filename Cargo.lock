@@ -5145,6 +5145,7 @@ dependencies = [
  "clap",
  "enum-display-derive",
  "enum-iterator",
+ "num-traits",
  "oorandom",
  "petgraph",
  "rand",

@@ -5,12 +5,12 @@ use bevy::render::{
 };
 use simula_core::{
     ease::{Ease, EaseFunction},
-    lerp::lerp,
+    map_range::lerp,
 };
 
 fn interpolate(ease_func: EaseFunction, a: f32, b: f32, t: f32) -> f32 {
     let t = t.calc(ease_func);
-    lerp(&a, &b, &t)
+    lerp(t, (a, b))
 }
 
 /// A cylinder with variable hemispheres at the top and bottom

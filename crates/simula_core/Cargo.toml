@@ -7,6 +7,7 @@ authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 [dependencies]
 bevy = { version = "0.10" }
 serde = { version = "1.0", features = ["derive"] }
+num-traits = "0.2"
 enum-iterator = "1.4"
 enum-display-derive = "0.1.1"
 oorandom = "11.1.3"
