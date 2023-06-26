@@ -133,6 +133,8 @@ fn update<T>(
         graph_state.time = time.clone();
     }
 
+    let mut selected = behavior_inspector.selected.clone();
+
     for (file_id, behavior_inspector_item) in behavior_inspector.behaviors.iter_mut() {
         match &behavior_inspector_item.state {
             // behavior is only listed, no need to do anything
@@ -156,6 +158,11 @@ fn update<T>(
                         *behavior_inspector_item.name
                     );
                     behavior_inspector_item.state = BehaviorInspectorState::Listing;
+
+                    // if inspector has this item selected, deselect it
+                    if selected == Some(file_id.clone()) {
+                        selected = None;
+                    }
                 }
             }
             // if behavior item is New, create it
@@ -331,6 +338,8 @@ fn update<T>(
             }
         }
     }
+
+    behavior_inspector.selected = selected;
 
     while let Ok(server_msg) = behavior_client.receiver.try_recv() {
         match server_msg {

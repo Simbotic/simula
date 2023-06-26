@@ -128,6 +128,8 @@ fn tracker_documents<T: BehaviorFactory + for<'de> Deserialize<'de>>(
                     // Update tracker
                     tracker.asset = AssetTracker::Asset(behavior_handle);
                 } else if let Err(err) = res {
+                    // Remove asset from tracker
+                    tracker.asset = AssetTracker::None;
                     error!("Failed to deserialize behavior {:?}", err);
                 }
             }
@@ -442,7 +444,7 @@ fn update<T>(
                     .unwrap();
             }
             BehaviorProtocolClient::LoadFile(file_id) => {
-                info!("Received LoadFile: {:?}", file_id);
+                info!("Received LoadFile: {:?} retries: {}", file_id, msg.count);
                 if let Some(behavior_tracker) = behavior_trackers.get_mut(&file_id) {
                     match &behavior_tracker.asset {
                         // check if behavior has an asset
@@ -474,8 +476,8 @@ fn update<T>(
                             });
                         }
                         // if no asset, load and get a handle to asset
-                        AssetTracker::None => {
-                            info!("No Loading asset: {:?}", behavior_tracker.file_name);
+                        AssetTracker::None if msg.count == 0 => {
+                            info!("Behavior not loaded for: {:?}", behavior_tracker.file_name);
                             let behavior_handle: Handle<BehaviorDocument> = asset_server
                                 .load(format!("{}.bht.ron", *behavior_tracker.file_name).as_str());
                             behavior_tracker.asset = AssetTracker::Document(behavior_handle);
@@ -485,6 +487,10 @@ fn update<T>(
                                 count: msg.count + 1,
                                 msg: msg.msg.clone(),
                             });
+                        }
+                        // asset may be invalid, don't try again
+                        AssetTracker::None => {
+                            error!("Invalid asset: {:?}", behavior_tracker.file_name);
                         }
                     }
                 } else {
