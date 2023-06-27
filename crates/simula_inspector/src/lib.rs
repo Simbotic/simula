@@ -50,6 +50,29 @@ fn setup_ui(mut contexts: EguiContexts) {
     visuals.window_stroke = egui::Stroke::NONE;
     visuals.override_text_color = Some(egui::Color32::from_rgb(200, 200, 200));
     contexts.ctx_mut().set_visuals(visuals);
+
+    let mut style = egui::Style::default();
+    if let Some(text_style) = style.text_styles.get_mut(&egui::TextStyle::Body) {
+        text_style.family = egui::FontFamily::Monospace;
+        text_style.size = 12.0;
+    }
+    if let Some(text_style) = style.text_styles.get_mut(&egui::TextStyle::Button) {
+        text_style.family = egui::FontFamily::Monospace;
+        text_style.size = 12.0;
+    }
+    if let Some(text_style) = style.text_styles.get_mut(&egui::TextStyle::Heading) {
+        text_style.family = egui::FontFamily::Monospace;
+        text_style.size = 12.0;
+    }
+    if let Some(text_style) = style.text_styles.get_mut(&egui::TextStyle::Monospace) {
+        text_style.family = egui::FontFamily::Monospace;
+        text_style.size = 12.0;
+    }
+    if let Some(text_style) = style.text_styles.get_mut(&egui::TextStyle::Small) {
+        text_style.family = egui::FontFamily::Monospace;
+        text_style.size = 10.0;
+    }
+    contexts.ctx_mut().set_style(style);
 }
 
 #[derive(Clone)]

@@ -412,7 +412,9 @@ where
                             }
                         }
                         _ => {
-                            ui.label(&node.label);
+                            let label = egui::RichText::new(format!("{}", node.label))
+                                .color(egui::Color32::WHITE);
+                            ui.label(label);
                         }
                     }
                 }
