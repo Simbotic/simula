@@ -195,6 +195,8 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
                                             }
                                             behavior_inspector_item.start_option =
                                                 selectable.clone();
+                                            behavior_inspector_item.state =
+                                                BehaviorInspectorState::Start;
                                         }
                                     }
                                 });
@@ -229,6 +231,8 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
                                         {
                                             behavior_inspector_item.stop_option =
                                                 selectable.clone();
+                                            behavior_inspector_item.state =
+                                                BehaviorInspectorState::Stop;
                                         }
                                     }
                                 });

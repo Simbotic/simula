@@ -659,8 +659,12 @@ fn update<T>(
                             }
                             StopOption::Detach => {}
                             StopOption::Remove => {
+                                commands
+                                    .entity(entity)
+                                    .remove::<Handle<BehaviorAsset<T>>>()
+                                    .remove::<Handle<ScriptContext>>()
+                                    .despawn_descendants();
                                 commands.entity(entity).clear_children();
-                                commands.entity(entity).remove::<Handle<BehaviorAsset<T>>>();
                             }
                         }
                     }
