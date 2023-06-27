@@ -6,49 +6,65 @@ use bevy::{
 };
 use rhai as script;
 use serde::Deserialize;
+use std::borrow::Cow;
 
 #[derive(TypeUuid)]
 #[uuid = "1EDAA495-674E-45AA-903B-212D088BD991"]
-pub struct Scope {
+pub struct ScriptContext {
     pub engine: script::Engine,
     pub scope: script::Scope<'static>,
 }
 
-impl Scope {
+impl ScriptContext {
     pub fn new() -> Self {
         let mut engine = script::Engine::new();
         engine.on_print(|x| info!("{x}"));
         let scope = script::Scope::new();
         Self { engine, scope }
     }
+
+    pub fn eval<T>(&mut self, script: &str) -> Result<T, Box<script::EvalAltResult>>
+    where
+        T: Clone + Deserialize<'static> + Send + Sync + 'static,
+    {
+        let ast = self.engine.compile(&script)?;
+        let stack = self.scope.len();
+        let result = self.engine.eval_ast_with_scope::<T>(&mut self.scope, &ast);
+        self.scope.rewind(stack);
+        result
+    }
 }
 
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
 pub struct Script {
-    pub script: String,
+    pub script: Cow<'static, str>,
     #[serde(skip)]
-    ast: script::AST,
+    ast: Option<script::AST>,
 }
 
 impl Script {
-    pub fn from_str(script: &str) -> Result<Self, Box<script::ParseError>> {
-        let engine = script::Engine::new();
-        let ast = engine.compile(&script)?;
-        Ok(Script {
-            script: script.into(),
-            ast,
-        })
+    pub fn compile(
+        &mut self,
+        context: &mut ScriptContext,
+    ) -> Result<(), std::boxed::Box<script::EvalAltResult>> {
+        let ast = context.engine.compile(&self.script)?;
+        self.ast = Some(ast);
+        Ok(())
     }
 
-    pub fn eval<T>(&self, context: &mut Scope) -> Result<T, std::boxed::Box<script::EvalAltResult>>
+    pub fn eval<T>(
+        &self,
+        context: &mut ScriptContext,
+    ) -> Result<T, std::boxed::Box<script::EvalAltResult>>
     where
         T: Clone + Deserialize<'static> + Send + Sync + 'static,
     {
+        let ast = self.ast.as_ref().unwrap();
         let stack = context.scope.len();
         let result = context
             .engine
-            .eval_ast_with_scope::<T>(&mut context.scope, &self.ast);
+            .eval_ast_with_scope::<T>(&mut context.scope, ast);
         context.scope.rewind(stack);
         result
     }
@@ -64,10 +80,11 @@ impl AssetLoader for ScriptLoader {
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
         Box::pin(async move {
-            let engine = script::Engine::new();
             let script = String::from_utf8(bytes.to_vec()).unwrap();
-            let ast = engine.compile(&script)?;
-            load_context.set_default_asset(LoadedAsset::new(Script { script, ast }));
+            load_context.set_default_asset(LoadedAsset::new(Script {
+                script: script.into(),
+                ast: None,
+            }));
             Ok(())
         })
     }

@@ -11,6 +11,7 @@ use bevy::{
 use composites::*;
 use decorators::*;
 use serde::{Deserialize, Serialize};
+use simula_script::ScriptPlugin;
 use strum::AsRefStr;
 
 pub mod actions;
@@ -19,6 +20,7 @@ pub mod composites;
 pub mod decorators;
 pub mod inspector;
 pub mod protocol;
+pub mod script;
 pub mod server;
 pub mod test;
 
@@ -33,6 +35,7 @@ pub mod prelude {
         BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable,
     };
     pub use crate::protocol::{self};
+    pub use crate::script::{self, BehaviorEval};
     pub use crate::server::{
         AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
     };
@@ -49,7 +52,8 @@ pub struct BehaviorPlugin;
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset_loader::<BehaviorAssetLoader>()
+        app.add_plugin(ScriptPlugin)
+            .init_asset_loader::<BehaviorAssetLoader>()
             .add_asset::<BehaviorDocument>()
             .register_type::<BehaviorDesc>()
             .register_type::<BehaviorNode>()

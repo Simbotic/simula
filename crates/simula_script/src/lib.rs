@@ -1,5 +1,5 @@
 use asset::ScriptLoader;
-pub use asset::{Scope, Script};
+pub use asset::{Script, ScriptContext};
 use bevy::prelude::*;
 pub use rhai as script;
 
@@ -10,7 +10,7 @@ pub struct ScriptPlugin;
 impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<Script>()
-            .add_asset::<Scope>()
+            .add_asset::<ScriptContext>()
             .init_asset_loader::<ScriptLoader>()
             .add_system(script_changed);
     }

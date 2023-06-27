@@ -7,7 +7,6 @@ use simula_action::ActionPlugin;
 use simula_behavior::prelude::*;
 use simula_camera::orbitcam::*;
 use simula_inspector::{InspectorPlugin, WorldInspectorPlugin};
-use simula_script::{script, Scope, ScriptPlugin};
 use simula_viz::{
     axes::{Axes, AxesBundle, AxesPlugin},
     grid::{Grid, GridBundle, GridPlugin},
@@ -50,7 +49,6 @@ fn main() {
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
-        .add_plugin(ScriptPlugin)
         .add_system(debug_info)
         .add_startup_system(scene_setup)
         // Behavior setup
@@ -71,7 +69,6 @@ fn main() {
 fn behavior_setup<T: BehaviorFactory>(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut scopes: ResMut<Assets<Scope>>,
     behavior_server: Res<protocol::BehaviorServer<T>>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
 ) {
@@ -103,17 +100,9 @@ fn behavior_setup<T: BehaviorFactory>(
             let behavior_handle: Handle<BehaviorDocument> =
                 asset_server.load(format!("{}.bht.ron", behavior).as_str());
 
-            // create a new scope for the behavior tree
-            let mut scope = Scope::new();
-            let mut blackboard = script::Map::new();
-            blackboard.insert("state".into(), 0.into());
-            scope.scope.push("blackboard", blackboard);
-            let scope_handle = scopes.add(scope);
-
-            // create a new entity for the behavior tree, and insert the scope
+            // create a new entity for the behavior tree
             commands.spawn((
                 Name::new(format!("BHT: {}", behavior)),
-                scope_handle,
                 behavior_handle.clone(),
                 BehaviorTree::<T>::default(),
                 BehaviorTreeReset::<T>::default(),
@@ -121,17 +110,9 @@ fn behavior_setup<T: BehaviorFactory>(
         }
         // create behavior tree without behavior asset, it will dynamically be added later
         else if let Some(behavior) = behavior.strip_prefix("?") {
-            // create a new scope for the behavior tree
-            let mut scope = Scope::new();
-            let mut blackboard = script::Map::new();
-            blackboard.insert("state".into(), 0.into());
-            scope.scope.push("blackboard", blackboard);
-            let scope_handle = scopes.add(scope);
-
             // create a new entity for the behavior tree, and insert the scope
             commands.spawn((
                 Name::new(format!("BHT: {}", behavior)),
-                scope_handle,
                 BehaviorTree::<T>::default(),
             ));
         }

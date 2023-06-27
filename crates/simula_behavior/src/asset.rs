@@ -1,4 +1,7 @@
-use crate::{BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree};
+use crate::{
+    script::create_script_context, BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorNode,
+    BehaviorTree,
+};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -6,6 +9,7 @@ use bevy::{
     utils::BoxedFuture,
 };
 use serde::{Deserialize, Serialize};
+use simula_script::ScriptContext;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
@@ -150,6 +154,7 @@ pub fn behavior_document_to_asset<T>(
     mut commands: Commands,
     behavior_documents: Res<Assets<BehaviorDocument>>,
     mut behavior_assets: ResMut<Assets<BehaviorAsset<T>>>,
+    mut script_ctxs: ResMut<Assets<ScriptContext>>,
     asset_server: Res<AssetServer>,
     documents: Query<(Entity, &Handle<BehaviorDocument>), With<BehaviorTree<T>>>,
 ) where
@@ -160,6 +165,7 @@ pub fn behavior_document_to_asset<T>(
         if let Some(behavior_document) = behavior_documents.get(behavior_document_handle) {
             // Remove document handle, if it fails to deserialize we wont keep trying
             commands.entity(entity).remove::<Handle<BehaviorDocument>>();
+
             // Deserialize behavior asset
             let res = ron::de::from_str::<Behavior<T>>(&behavior_document);
             if let Ok(behavior) = res {
@@ -178,8 +184,15 @@ pub fn behavior_document_to_asset<T>(
                     file_name,
                 });
 
+                // Create scripting scope
+                let script_ctx = create_script_context();
+                let script_ctx_handle = script_ctxs.add(script_ctx);
+
                 // and insert
-                commands.entity(entity).insert(behavior_handle);
+                commands
+                    .entity(entity)
+                    .insert(behavior_handle)
+                    .insert(script_ctx_handle);
             } else if let Err(err) = res {
                 error!(
                     "Failed to deserialize behavior tree for entity {:?} {}",

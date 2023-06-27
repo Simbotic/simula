@@ -4,9 +4,11 @@ use crate::{
         BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, BehaviorProtocolServer,
         BehaviorServer, BehaviorState, BehaviorTelemetry, RemoteEntity, StartOption, StopOption,
     },
+    script::create_script_context,
 };
 use bevy::{prelude::*, utils::HashMap};
 use serde::{Deserialize, Serialize};
+use simula_script::ScriptContext;
 use std::borrow::Cow;
 use std::{cmp::Ordering, collections::BinaryHeap, time::Duration};
 
@@ -361,6 +363,7 @@ fn update<T>(
     >,
     mut behavior_assets: ResMut<Assets<BehaviorAsset<T>>>,
     mut behavior_trackers: ResMut<BehaviorTrackers<T>>,
+    mut script_ctxs: ResMut<Assets<ScriptContext>>,
     behavior_server: Res<BehaviorServer<T>>,
     asset_server: Res<AssetServer>,
     mut queued_msgs: Local<PriorityMessageQueue<T>>,
@@ -579,12 +582,15 @@ fn update<T>(
                     match start_option {
                         // spawn behavior tree
                         StartOption::Spawn => {
+                            let script_ctx = create_script_context();
+                            let script_ctx_handle = script_ctxs.add(script_ctx);
                             let entity = commands
                                 .spawn((
                                     Name::new(format!("BHT: {}", file_name.as_ref())),
                                     behavior_asset.clone(),
                                     BehaviorTree::<T>::default(),
                                     BehaviorTreeReset::<T>::default(),
+                                    script_ctx_handle,
                                 ))
                                 .id();
                             info!("Spawned entity: {:?} for: {}", entity, file_name.as_ref());
@@ -603,11 +609,14 @@ fn update<T>(
                         }
                         // insert behavior asset
                         StartOption::Insert(remote_entity) => {
+                            let script_ctx = create_script_context();
+                            let script_ctx_handle = script_ctxs.add(script_ctx);
                             let entity = remote_entity.to_entity();
                             commands
                                 .entity(entity)
                                 .insert(behavior_asset.clone())
-                                .insert(BehaviorTreeReset::<T>::default());
+                                .insert(BehaviorTreeReset::<T>::default())
+                                .insert(script_ctx_handle);
                             behavior_tracker.entity = EntityTracker::Inserted(entity);
                         }
                     };

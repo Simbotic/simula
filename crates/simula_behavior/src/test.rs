@@ -6,14 +6,14 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 use simula_behavior_macro::BehaviorFactory;
-use simula_script::{Scope, Script};
+use simula_script::{Script, ScriptContext};
 
 pub const MAX_ITERS: usize = 200;
 
 pub fn test_app(app: &mut App) -> &mut App {
     app.add_plugin(AssetPlugin::default());
     app.add_asset::<Script>();
-    app.add_asset::<Scope>();
+    app.add_asset::<ScriptContext>();
     // Add the behaviors system to the app
     app.add_systems((clear_behavior_started, complete_behavior, start_behavior).chain());
     app.add_system(debug::run);
