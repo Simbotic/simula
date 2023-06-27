@@ -3,7 +3,7 @@
     Repeater((repeat:Forever)),
     [
         ("Delay", Delay((duration: 5.0)), [
-            ("Can do?", Guard(((eval: "true"))), [
+            ("Can do?", Guard(((eval: "2 + 2 == 4"))), [
                 ("Do a thing", Debug((message: "I'm doing a thing!")))
             ])
         ]),
