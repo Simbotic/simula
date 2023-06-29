@@ -20,13 +20,13 @@ fn script_changed(mut script_events: EventReader<AssetEvent<Script>>) {
     for event in script_events.iter() {
         match event {
             AssetEvent::Created { handle } => {
-                println!("Script {:?} was created", handle.id());
+                info!("Script {:?} was created", handle.id());
             }
             AssetEvent::Modified { handle } => {
-                println!("Script {:?} was modified", handle.id());
+                info!("Script {:?} was modified", handle.id());
             }
             AssetEvent::Removed { handle } => {
-                println!("Script {:?} was removed", handle.id());
+                info!("Script {:?} was removed", handle.id());
             }
         }
     }

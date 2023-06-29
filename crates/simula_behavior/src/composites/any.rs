@@ -60,6 +60,7 @@ pub fn run(
                     // Child failed, so we move to next child
                 } else if child_running.is_some() {
                     // Child running, so we move to next child
+                    // TODO: Why do we remove the cursor here?
                     commands.entity(entity).remove::<BehaviorCursor>();
                     should_fail = false;
                 } else {

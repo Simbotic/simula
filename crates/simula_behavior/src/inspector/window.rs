@@ -104,6 +104,10 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
                     .get_mut(&selected_behavior)
                     .unwrap();
 
+                // if this behavior item has been modified in any way
+                // e.g. the graph has been edited, or renamed
+                let mut modified = behavior_inspector_item.modified;
+
                 ui.horizontal(|ui| {
                     egui::menu::bar(ui, |ui| {
                         if behavior_inspector_item.collapsed {
@@ -250,6 +254,7 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
                         {
                             behavior_inspector_item.name =
                                 BehaviorFileName(window_name.clone().into());
+                            modified = true;
                         }
 
                         // Space for the little cross icon
@@ -260,8 +265,6 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
                         }
                     });
                 });
-
-                let mut modified = behavior_inspector_item.modified;
 
                 if !behavior_inspector_item.collapsed {
                     egui::Frame::none()

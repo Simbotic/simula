@@ -4,7 +4,12 @@ use asset::{
     BehaviorDocument,
 };
 use bevy::{
-    ecs::{query::WorldQuery, system::EntityCommands},
+    ecs::{
+        entity::{EntityMap, MapEntities, MapEntitiesError},
+        query::WorldQuery,
+        reflect::ReflectMapEntities,
+        system::EntityCommands,
+    },
     prelude::*,
     reflect::TypeUuid,
 };
@@ -41,10 +46,10 @@ pub mod prelude {
     };
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorInfo, BehaviorMissing,
-        BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
-        BehaviorSet, BehaviorStarted, BehaviorSuccess, BehaviorTree, BehaviorTreePlugin,
-        BehaviorType,
+        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorIdleQuery, BehaviorInfo,
+        BehaviorMissing, BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery,
+        BehaviorRunning, BehaviorSet, BehaviorStarted, BehaviorSuccess, BehaviorTree,
+        BehaviorTreePlugin, BehaviorType,
     };
 }
 
@@ -55,7 +60,6 @@ impl Plugin for BehaviorPlugin {
         app.add_plugin(ScriptPlugin)
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_asset::<BehaviorDocument>()
-            .register_type::<BehaviorDesc>()
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
@@ -115,39 +119,6 @@ where
         app.register_type::<BehaviorTree<T>>()
             .add_asset::<BehaviorAsset<T>>()
             .add_systems((behavior_document_to_asset::<T>, behavior_tree_reset::<T>).chain());
-    }
-}
-
-#[derive(Bundle)]
-struct BehaviorBundle<T>
-where
-    T: Reflect + Component + Clone,
-{
-    pub behavior: T,
-    pub desc: BehaviorDesc,
-    pub node: BehaviorNode,
-    pub name: Name,
-    pub parent: BehaviorParent,
-    pub children: BehaviorChildren,
-}
-
-impl<T> Default for BehaviorBundle<T>
-where
-    T: BehaviorInfo + Default + Reflect + Component + Clone,
-{
-    fn default() -> Self {
-        Self {
-            behavior: T::default(),
-            desc: BehaviorDesc {
-                typ: T::TYPE,
-                name: T::NAME.to_string(),
-                desc: T::DESC.to_string(),
-            },
-            node: BehaviorNode::default(),
-            name: Name::new(format!("Behavior: {}", T::NAME)),
-            parent: BehaviorParent::default(),
-            children: BehaviorChildren::default(),
-        }
     }
 }
 
@@ -253,25 +224,48 @@ pub struct BehaviorFailure;
 pub struct BehaviorStopped;
 
 /// A marker added to behavior node entities
-#[derive(Debug, Default, Reflect, Clone, Component)]
-#[reflect(Component)]
+#[derive(Component, Debug, Eq, PartialEq, Reflect)]
+#[reflect(Component, MapEntities, PartialEq)]
 pub struct BehaviorNode {
-    pub tree: Option<Entity>,
+    pub tree: Entity,
 }
 
-/// A marker added to behavior node entities
-#[derive(Debug, Default, Reflect, Clone, Component)]
-#[reflect(Component)]
-pub struct BehaviorDesc {
-    pub typ: BehaviorType,
-    pub name: String,
-    pub desc: String,
+impl FromWorld for BehaviorNode {
+    fn from_world(_world: &mut World) -> Self {
+        BehaviorNode {
+            tree: Entity::PLACEHOLDER,
+        }
+    }
+}
+
+impl MapEntities for BehaviorNode {
+    fn map_entities(&mut self, entity_map: &EntityMap) -> Result<(), MapEntitiesError> {
+        if let Ok(mapped_entity) = entity_map.get(self.tree) {
+            self.tree = mapped_entity;
+        }
+        Ok(())
+    }
 }
 
 /// A component to point to the parent of a behavior node
-#[derive(Deref, Debug, Default, Reflect, Clone, Component)]
-#[reflect(Component)]
-pub struct BehaviorParent(Option<Entity>);
+#[derive(Component, Debug, Eq, PartialEq, Reflect, Deref, DerefMut)]
+#[reflect(Component, MapEntities, PartialEq)]
+pub struct BehaviorParent(Entity);
+
+impl FromWorld for BehaviorParent {
+    fn from_world(_world: &mut World) -> Self {
+        BehaviorParent(Entity::PLACEHOLDER)
+    }
+}
+
+impl MapEntities for BehaviorParent {
+    fn map_entities(&mut self, entity_map: &EntityMap) -> Result<(), MapEntitiesError> {
+        if let Ok(mapped_entity) = entity_map.get(self.0) {
+            self.0 = mapped_entity;
+        }
+        Ok(())
+    }
+}
 
 /// A component to point to the children of a behavior node
 #[derive(Deref, DerefMut, Debug, Default, Reflect, Clone, Component)]
@@ -300,19 +294,19 @@ where
     const DESC: &'static str;
 
     fn insert_with(commands: &mut EntityCommands, data: &Self) {
-        commands.insert(BehaviorBundle::<Self> {
-            behavior: data.clone(),
-            ..Default::default()
-        });
+        commands.insert(data.clone());
     }
 }
 
 pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]) {
+    if children.is_empty() {
+        return;
+    }
     commands
         .entity(parent)
         .insert(BehaviorChildren(children.to_vec()));
     for child in children {
-        commands.entity(*child).insert(BehaviorParent(Some(parent)));
+        commands.entity(*child).insert(BehaviorParent(parent));
     }
     commands.entity(parent).push_children(children);
 }
@@ -338,8 +332,10 @@ where
         let mut entity_commands = commands.entity(entity);
         node.data().insert(&mut entity_commands);
         entity_commands.insert(Name::new(node.name().to_owned()));
-        entity_commands.insert(BehaviorParent(parent));
-        entity_commands.insert(BehaviorNode { tree: Some(tree) });
+        if let Some(parent) = parent {
+            entity_commands.insert(BehaviorParent(parent));
+        }
+        entity_commands.insert(BehaviorNode { tree });
 
         let children = node
             .nodes()
@@ -356,6 +352,17 @@ where
 pub struct BehaviorRunQuery {
     _node: With<BehaviorNode>,
     _cursor: With<BehaviorCursor>,
+    _running: With<BehaviorRunning>,
+    _paused: Without<BehaviorPaused>,
+    _failure: Without<BehaviorFailure>,
+    _success: Without<BehaviorSuccess>,
+}
+
+/// Query filter for idle behaviors
+/// Same as running, but without the cursor
+#[derive(WorldQuery)]
+pub struct BehaviorIdleQuery {
+    _node: With<BehaviorNode>,
     _running: With<BehaviorRunning>,
     _paused: Without<BehaviorPaused>,
     _failure: Without<BehaviorFailure>,
@@ -421,21 +428,16 @@ fn complete_behavior(
             Entity,
             Option<&BehaviorSuccess>,
             Option<&BehaviorFailure>,
-            &BehaviorParent,
-            &BehaviorChildren,
+            Option<&BehaviorParent>,
+            Option<&BehaviorChildren>,
             &Name,
         ),
         BehaviorDoneQuery,
     >,
-    parents: Query<Entity, (With<BehaviorParent>, With<BehaviorRunning>)>,
+    parents: Query<Entity, (With<BehaviorChildren>, With<BehaviorRunning>)>,
     nodes: Query<
-        (Entity, &BehaviorChildren),
-        Or<(
-            With<BehaviorCursor>,
-            With<BehaviorRunning>,
-            With<BehaviorSuccess>,
-            With<BehaviorFailure>,
-        )>,
+        (Entity, Option<&BehaviorChildren>),
+        Or<(With<BehaviorCursor>, With<BehaviorRunning>)>,
     >,
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
@@ -460,13 +462,15 @@ fn complete_behavior(
         commands.entity(entity).remove::<BehaviorRunning>();
         commands.entity(entity).remove::<BehaviorCursor>();
 
-        // Reset all children recursively
-        reset_children(true, &mut commands, children, &nodes);
+        // Stop all children recursively
+        if let Some(children) = children {
+            stop_children(&mut commands, children, &nodes);
+        }
 
         // Pass cursor to parent, only if parent is running
-        if let Some(parent) = **parent {
-            if parents.get(parent).is_ok() {
-                commands.entity(parent).insert(BehaviorCursor::Return);
+        if let Some(parent) = parent {
+            if parents.get(**parent).is_ok() {
+                commands.entity(**parent).insert(BehaviorCursor::Return);
             }
         }
     }
@@ -475,9 +479,9 @@ fn complete_behavior(
 /// Process ready behaviors, start them
 fn start_behavior(
     mut commands: Commands,
-    ready: Query<(Entity, &BehaviorChildren, &Name, &BehaviorCursor), BehaviorReadyQuery>,
+    ready: Query<(Entity, Option<&BehaviorChildren>, &Name, &BehaviorCursor), BehaviorReadyQuery>,
     nodes: Query<
-        (Entity, &BehaviorChildren),
+        (Entity, Option<&BehaviorChildren>),
         Or<(
             With<BehaviorCursor>,
             With<BehaviorRunning>,
@@ -488,8 +492,10 @@ fn start_behavior(
     mut trace: Option<ResMut<BehaviorTrace>>,
 ) {
     for (entity, children, name, cursor) in &ready {
-        // Reset children
-        reset_children(false, &mut commands, children, &nodes);
+        // Reset all children recursively
+        if let Some(children) = children {
+            reset_children(&mut commands, children, &nodes);
+        }
         // debug!("[{}] RESETNG {}", entity.id(), name.to_string());
         debug!(
             "[{}] STARTED {}",
@@ -513,12 +519,28 @@ fn start_behavior(
     }
 }
 
-fn reset_children(
-    recursively: bool,
+fn stop_children(
     commands: &mut Commands,
     children: &BehaviorChildren,
     nodes: &Query<
-        (Entity, &BehaviorChildren),
+        (Entity, Option<&BehaviorChildren>),
+        Or<(With<BehaviorCursor>, With<BehaviorRunning>)>,
+    >,
+) {
+    for (entity, children) in nodes.iter_many(children.iter()) {
+        commands.entity(entity).remove::<BehaviorCursor>();
+        commands.entity(entity).remove::<BehaviorRunning>();
+        if let Some(children) = children {
+            stop_children(commands, children, nodes);
+        }
+    }
+}
+
+fn reset_children(
+    commands: &mut Commands,
+    children: &BehaviorChildren,
+    nodes: &Query<
+        (Entity, Option<&BehaviorChildren>),
         Or<(
             With<BehaviorCursor>,
             With<BehaviorRunning>,
@@ -532,8 +554,8 @@ fn reset_children(
         commands.entity(entity).remove::<BehaviorRunning>();
         commands.entity(entity).remove::<BehaviorSuccess>();
         commands.entity(entity).remove::<BehaviorFailure>();
-        if recursively {
-            reset_children(true, commands, children, nodes);
+        if let Some(children) = children {
+            reset_children(commands, children, nodes);
         }
     }
 }

@@ -88,6 +88,7 @@ fn behavior_setup<T: BehaviorFactory>(
         "bht/d/repeat_repeater",
         "bht/d/subtree_typed",
         "bht/d/subtree_gate",
+        "bht/d/timeout",
         "bht/d/zero_timers",
         "?dynamic_01",
         "?dynamic_02",

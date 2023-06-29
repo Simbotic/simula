@@ -28,18 +28,16 @@ pub fn run(
             let mut should_fail = false;
             for BehaviorChildQueryItem {
                 child_entity: _,
-                child_parent,
+                child_parent: _,
                 child_failure,
                 child_success: _,
                 child_running: _,
             } in nodes.iter_many(children.iter())
             {
-                if let Some(child_parent) = **child_parent {
-                    if entity == child_parent && child_failure.is_some() {
-                        // Child failed, so we fail
-                        should_fail = true;
-                        break;
-                    }
+                if child_failure.is_some() {
+                    // Child failed, so we fail
+                    should_fail = true;
+                    break;
                 }
             }
             if should_fail {
@@ -62,6 +60,7 @@ pub fn run(
                     // Child succeeded, so we move to next child
                 } else if child_running.is_some() {
                     // Child running, so we move to next child
+                    // TODO: Why do we remove the cursor here?
                     commands.entity(entity).remove::<BehaviorCursor>();
                     should_succeed = false;
                 } else {

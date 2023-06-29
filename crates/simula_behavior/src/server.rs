@@ -502,6 +502,7 @@ fn update<T>(
             }
             BehaviorProtocolClient::SaveFile(file_id, file_name, file_data) => {
                 info!("Received SaveFile: {:?} {}", file_id, file_name.as_ref());
+                // let file_data = serde_yaml::to_string(&file_data);
                 let file_data =
                     ron::ser::to_string_pretty(&file_data, ron::ser::PrettyConfig::default());
                 match file_data {

@@ -143,8 +143,8 @@ where
                             }
                             BehaviorState::Running => egui::Color32::GREEN,
                             BehaviorState::Success => egui::Color32::DARK_GREEN,
-                            BehaviorState::Failure => egui::Color32::RED,
-                            _ => egui::Color32::GRAY,
+                            BehaviorState::Failure => egui::Color32::DARK_RED,
+                            _ => egui::Color32::from_rgb(80, 80, 80),
                         }
                     } else {
                         egui::Color32::DARK_GRAY
@@ -497,7 +497,6 @@ where
                         Some(active_node_id) if editing && active_node_id == node_id => {
                             let mut behavior = behavior.clone();
                             if reflect_inspector::ui_for_value(
-                                // BehaviorFactory::reflect_mut(&mut behavior),
                                 behavior.inner_reflect_mut(),
                                 ui,
                                 &type_registry,

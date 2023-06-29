@@ -33,12 +33,13 @@ pub fn run(
             &mut Timeout,
             &mut BehaviorChildren,
             Option<&BehaviorStarted>,
+            Option<&BehaviorCursor>,
         ),
-        (With<Timeout>, BehaviorRunQuery),
+        (With<Timeout>, BehaviorIdleQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
 ) {
-    for (entity, mut timeout, children, started) in &mut timeouts {
+    for (entity, mut timeout, children, started, cursor) in &mut timeouts {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
@@ -51,8 +52,15 @@ pub fn run(
         }
 
         if elapsed - timeout.start > timeout.duration - f64::EPSILON {
-            // Time limit reached, we fail
-            commands.entity(entity).insert(BehaviorFailure);
+            // Time limit reached, short circuit by forcing a cursor and fail
+            commands
+                .entity(entity)
+                .insert(BehaviorCursor::Return)
+                .insert(BehaviorFailure);
+            continue;
+        }
+
+        if cursor.is_none() {
             continue;
         }
 

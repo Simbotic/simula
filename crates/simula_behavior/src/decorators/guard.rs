@@ -33,22 +33,35 @@ impl BehaviorInfo for Guard {
 
 pub fn run(
     mut commands: Commands,
-    mut guards: Query<(Entity, &BehaviorChildren, &mut Guard, &BehaviorNode), BehaviorRunQuery>,
+    mut guards: Query<
+        (
+            Entity,
+            &BehaviorChildren,
+            &mut Guard,
+            &BehaviorNode,
+            Option<&BehaviorStarted>,
+        ),
+        BehaviorRunQuery,
+    >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    script_ctx_handles: Query<&Handle<ScriptContext>>,
     mut scripts: ResMut<Assets<Script>>,
+    script_ctx_handles: Query<&Handle<ScriptContext>>,
     mut script_ctxs: ResMut<Assets<ScriptContext>>,
 ) {
-    for (entity, children, mut guard, node) in &mut guards {
+    for (entity, children, mut guard, node, started) in &mut guards {
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
             continue;
         }
 
+        if started.is_some() {
+            guard.result = None;
+        }
+
         if guard.script_handle.is_none() {
             if let Err(err) =
-                guard.make_handle(node, &script_ctx_handles, &mut scripts, &mut script_ctxs)
+                guard.make_handle(node, &mut scripts, &script_ctx_handles, &mut script_ctxs)
             {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
@@ -76,33 +89,33 @@ pub fn run(
                     if guard.script_handle.is_some() {
                         let result = guard.eval(
                             node,
-                            &script_ctx_handles,
                             scripts.as_ref(),
+                            &script_ctx_handles,
                             &mut script_ctxs,
                         );
-                        match result {
-                            Ok(true) => {
+                        if let Err(err) = result {
+                            error!("Script errored: {:?}", err);
+                            commands.entity(entity).insert(BehaviorFailure);
+                            continue;
+                        }
+                        match &guard.result {
+                            Some(true) => {
                                 // Script returned true, so let the child run
                                 commands.entity(entity).remove::<BehaviorCursor>();
                                 commands
                                     .entity(child_entity)
                                     .insert(BehaviorCursor::Delegate);
                             }
-                            Ok(false) => {
+                            Some(false) => {
                                 // Script returned false, so we fail
                                 commands.entity(entity).insert(BehaviorFailure);
                             }
-                            Err(err) => {
-                                // Script errored, so we fail
-                                error!("Script errored: {:?}", err);
-                                commands.entity(entity).insert(BehaviorFailure);
+                            None => {
+                                // Script is still running, so we keep running
                             }
                         };
                     } else {
-                        // TODO: Revisit to consider loading times
-                        warn!("Script asset not loaded");
-                        commands.entity(entity).insert(BehaviorFailure);
-                        guard.result = None;
+                        // Script is still loading, so we keep running
                     }
                 }
             }

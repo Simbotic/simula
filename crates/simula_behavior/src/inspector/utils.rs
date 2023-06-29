@@ -300,7 +300,7 @@ pub fn layout_graph<T>(
 {
     // TODO: Make these dynamic
     const NODE_WIDTH: f32 = 200.0;
-    const NODE_HEIGHT: f32 = 150.0;
+    const NODE_HEIGHT: f32 = 200.0;
 
     let Some(node_id) = node_id else {
             let root_child_id = get_root_child(&editor.graph);

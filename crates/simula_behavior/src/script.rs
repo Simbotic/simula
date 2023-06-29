@@ -26,12 +26,20 @@ impl<T> BehaviorEval<T>
 where
     T: Reflect + Default + Clone + for<'de> Deserialize<'de>,
 {
+    pub fn new(eval: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            eval: eval.into(),
+            result: None,
+            script_handle: None,
+        }
+    }
+
     /// Return a script handle, compiling the script if necessary
     pub fn make_handle(
         &mut self,
         node: &BehaviorNode,
-        script_ctx_handles: &Query<&Handle<ScriptContext>>,
         scripts: &mut ResMut<Assets<Script>>,
+        script_ctx_handles: &Query<&Handle<ScriptContext>>,
         script_ctxs: &mut Assets<ScriptContext>,
     ) -> Result<Handle<Script>, String> {
         // if we have a handle already, return it
@@ -41,9 +49,7 @@ where
 
         // if we have a script context handle, compile the script
         // script context are stored in the tree entity
-        if let Some(script_ctx_handle) =
-            node.tree.and_then(|tree| script_ctx_handles.get(tree).ok())
-        {
+        if let Some(script_ctx_handle) = script_ctx_handles.get(node.tree).ok() {
             // if we have a script context, compile the script
             if let Some(script_ctx) = script_ctxs.get_mut(&script_ctx_handle) {
                 let mut script = Script::default();
@@ -73,25 +79,23 @@ where
     pub fn eval(
         &mut self,
         node: &BehaviorNode,
-        script_ctx_handles: &Query<&Handle<ScriptContext>>,
         scripts: &Assets<Script>,
+        script_ctx_handles: &Query<&Handle<ScriptContext>>,
         script_ctxs: &mut Assets<ScriptContext>,
-    ) -> Result<T, String> {
+    ) -> Result<(), String> {
         if let Some(script_asset) = self
             .script_handle
             .as_ref()
             .and_then(|script_handle| scripts.get(&script_handle))
         {
             self.result = None;
-            if let Some(script_ctx_handle) =
-                node.tree.and_then(|tree| script_ctx_handles.get(tree).ok())
-            {
+            if let Some(script_ctx_handle) = script_ctx_handles.get(node.tree).ok() {
                 if let Some(script_ctx) = script_ctxs.get_mut(&script_ctx_handle) {
                     let result = script_asset.eval::<T>(script_ctx);
                     match result {
                         Ok(result) => {
                             self.result = Some(result.clone());
-                            return Ok(result);
+                            return Ok(());
                         }
                         Err(err) => {
                             error!("{:#?}", err);
@@ -107,8 +111,8 @@ where
                 return Err("Cannot find script context handle in tree entity".into());
             };
         } else {
-            error!("Script asset not loaded");
-            return Err("Script asset not loaded".into());
+            // Still evaluating
+            return Ok(());
         }
     }
 }
