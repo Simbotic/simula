@@ -4,7 +4,6 @@ use crate::{
         BehaviorFileId, BehaviorFileName, BehaviorProtocolClient, BehaviorProtocolServer,
         BehaviorServer, BehaviorState, BehaviorTelemetry, RemoteEntity, StartOption, StopOption,
     },
-    script::create_script_context,
 };
 use bevy::{prelude::*, utils::HashMap};
 use serde::{Deserialize, Serialize};
@@ -583,7 +582,7 @@ fn update<T>(
                     match start_option {
                         // spawn behavior tree
                         StartOption::Spawn => {
-                            let script_ctx = create_script_context();
+                            let script_ctx = BehaviorTree::<T>::create_script_context();
                             let script_ctx_handle = script_ctxs.add(script_ctx);
                             let entity = commands
                                 .spawn((
@@ -610,7 +609,7 @@ fn update<T>(
                         }
                         // insert behavior asset
                         StartOption::Insert(remote_entity) => {
-                            let script_ctx = create_script_context();
+                            let script_ctx = BehaviorTree::<T>::create_script_context();
                             let script_ctx_handle = script_ctxs.add(script_ctx);
                             let entity = remote_entity.to_entity();
                             commands

@@ -22,12 +22,14 @@ pub struct Debug {
     pub ticks: u64,
 }
 
-impl BehaviorInfo for Debug {
+impl BehaviorSpec for Debug {
     const TYPE: BehaviorType = BehaviorType::Action;
     const NAME: &'static str = "Debug";
     const ICON: &'static str = "👁";
     const DESC: &'static str = "Display a debug message and complete with success or failure";
 }
+
+impl BehaviorUI for Debug {}
 
 pub fn run(
     time: Res<Time>,

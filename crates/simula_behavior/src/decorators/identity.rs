@@ -6,12 +6,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Identity;
 
-impl BehaviorInfo for Identity {
+impl BehaviorSpec for Identity {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Identity";
     const ICON: &'static str = "=";
     const DESC: &'static str = "Returns the same result as its child";
 }
+
+impl BehaviorUI for Identity {}
 
 pub fn run(
     mut commands: Commands,

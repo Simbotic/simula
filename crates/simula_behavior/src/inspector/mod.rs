@@ -15,11 +15,14 @@ use egui_node_graph::NodeTemplateTrait;
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 use std::time::Duration;
+pub use behavior::BehaviorUI;
 
 pub mod graph;
 mod menu;
 mod utils;
 mod window;
+mod property;
+mod behavior;
 
 #[derive(Default)]
 pub struct BehaviorInspectorPlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T>);

@@ -19,7 +19,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
             .map(|variant| {
                 let variant_ident = &variant.ident;
                 quote! {
-                    Self::#variant_ident(data) => BehaviorInfo::insert_with(commands, data),
+                    Self::#variant_ident(data) => BehaviorSpec::insert_with(commands, data),
                 }
             })
             .collect();
@@ -43,7 +43,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                 let variant_ident = &variant.ident;
                 let variant_argument = get_variant_argument(&variant.fields).unwrap();
                 quote! {
-                    Self::#variant_ident(_) => <#variant_argument as BehaviorInfo>::ICON,
+                    Self::#variant_ident(_) => <#variant_argument as BehaviorSpec>::ICON,
                 }
             })
             .collect();
@@ -55,7 +55,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                 let variant_ident = &variant.ident;
                 let variant_argument = get_variant_argument(&variant.fields).unwrap();
                 quote! {
-                    Self::#variant_ident(_) => <#variant_argument as BehaviorInfo>::DESC,
+                    Self::#variant_ident(_) => <#variant_argument as BehaviorSpec>::DESC,
                 }
             })
             .collect();
@@ -67,7 +67,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                 let variant_ident = &variant.ident;
                 let variant_argument = get_variant_argument(&variant.fields).unwrap();
                 quote! {
-                    Self::#variant_ident(_) => <#variant_argument as BehaviorInfo>::TYPE,
+                    Self::#variant_ident(_) => <#variant_argument as BehaviorSpec>::TYPE,
                 }
             })
             .collect();
@@ -79,6 +79,28 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                 let variant_ident = &variant.ident;
                 quote! {
                     Self::#variant_ident(data) => data,
+                }
+            })
+            .collect();
+
+        let ui_variant_impls: Vec<_> = data_enum
+            .variants
+            .iter()
+            .map(|variant| {
+                let variant_ident = &variant.ident;
+                quote! {
+                    Self::#variant_ident(data) => data.ui(state, ui, type_registry),
+                }
+            })
+            .collect();
+
+        let ui_readonly_variant_impls: Vec<_> = data_enum
+            .variants
+            .iter()
+            .map(|variant| {
+                let variant_ident = &variant.ident;
+                quote! {
+                    Self::#variant_ident(data) => data.ui_readonly(state, ui, type_registry),
                 }
             })
             .collect();
@@ -149,6 +171,28 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                 fn inner_reflect_mut(&mut self) -> &mut dyn Reflect {
                     match self {
                         #(#reflect_variant_impls)*
+                    }
+                }
+
+                fn ui(
+                    &mut self,
+                    state: Option<protocol::BehaviorState>,
+                    ui: &mut bevy_inspector_egui::egui::Ui,
+                    type_registry: &bevy::reflect::TypeRegistry,
+                ) -> bool {
+                    match self {
+                        #(#ui_variant_impls)*
+                    }
+                }
+
+                fn ui_readonly(
+                    &self,
+                    state: Option<protocol::BehaviorState>,
+                    ui: &mut bevy_inspector_egui::egui::Ui,
+                    type_registry: &bevy::reflect::TypeRegistry,
+                ) {
+                    match self {
+                        #(#ui_readonly_variant_impls)*
                     }
                 }
 

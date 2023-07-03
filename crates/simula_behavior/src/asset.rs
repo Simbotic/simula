@@ -1,7 +1,4 @@
-use crate::{
-    script::create_script_context, BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorNode,
-    BehaviorTree,
-};
+use crate::{BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree};
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
@@ -185,7 +182,7 @@ pub fn behavior_document_to_asset<T>(
                 });
 
                 // Create scripting scope
-                let script_ctx = create_script_context();
+                let script_ctx = BehaviorTree::<T>::create_script_context();
                 let script_ctx_handle = script_ctxs.add(script_ctx);
 
                 // and insert

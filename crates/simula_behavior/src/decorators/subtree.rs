@@ -23,7 +23,7 @@ impl<T: BehaviorFactory> Subtree<T> {
     }
 }
 
-impl<T> BehaviorInfo for Subtree<T>
+impl<T> BehaviorSpec for Subtree<T>
 where
     T: BehaviorFactory,
 {
@@ -33,6 +33,8 @@ where
     const ICON: &'static str = "🏃";
     const DESC: &'static str = "Connects a behavior subtree to this node";
 }
+
+impl<T> BehaviorUI for Subtree<T> where T: BehaviorFactory {}
 
 pub fn run<T: BehaviorFactory>(
     mut commands: Commands,

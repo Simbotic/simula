@@ -20,13 +20,15 @@ pub struct Wait {
     pub ticks: u64,
 }
 
-impl BehaviorInfo for Wait {
+impl BehaviorSpec for Wait {
     const TYPE: BehaviorType = BehaviorType::Action;
     const NAME: &'static str = "Wait";
     const ICON: &'static str = "⌛";
     const DESC: &'static str = "Wait for a specified amount of time and then complete with \
     success or failure.";
 }
+
+impl BehaviorUI for Wait {}
 
 pub fn run(
     time: Res<Time>,

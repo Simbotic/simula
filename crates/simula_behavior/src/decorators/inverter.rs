@@ -6,13 +6,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Inverter;
 
-impl BehaviorInfo for Inverter {
+impl BehaviorSpec for Inverter {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Inverter";
     const ICON: &'static str = "~";
     const DESC: &'static str = "Inverts result of their child node. Success becomes failure, \
         and failure becomes success.";
 }
+
+impl BehaviorUI for Inverter {}
 
 pub fn run(
     mut commands: Commands,

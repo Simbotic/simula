@@ -5,16 +5,23 @@ use std::borrow::Cow;
 #[derive(
     Reflect, FromReflect, Clone, Debug, Hash, PartialEq, Eq, Default, Serialize, Deserialize,
 )]
+#[reflect(Default)]
 pub enum E {
     #[default]
+    #[reflect(default)]
     Root,
+    #[reflect(default)]
     Name(Cow<'static, str>),
+    #[reflect(default)]
     First,
+    #[reflect(default)]
     Last,
+    #[reflect(default)]
     Nth(usize),
     // TODO: Parent, to go up the tree
-    // TODO: Regex, to match multiple names
+    // TODO: Regex or Predicate, to match multiple names
     // TODO: Contains, StartsWith, EndsWith, to match multiple names
+    // TODO: Wildcard child, to keep going down the tree
 }
 
 #[derive(
@@ -31,16 +38,40 @@ pub enum E {
     Serialize,
     Deserialize,
 )]
-pub struct EPath(Vec<E>);
+#[reflect(Default)]
+pub struct EPath(#[reflect(default)]Vec<E>);
 
 #[derive(Reflect, FromReflect, Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EEntity {
-    path: EPath,
-    entity: Entity,
-    name: Option<Cow<'static, str>>,
+    pub path: EPath,
+    pub entity: Entity,
+    pub name: Option<Cow<'static, str>>,
 }
 
 pub fn select(
+    parent: Option<Entity>,
+    path: &[E],
+    names: &Query<&Name>,
+    parents: &Query<&Parent>,
+    children: &Query<&Children>,
+    roots: &Query<Entity, Without<Parent>>,
+) -> Vec<EEntity> {
+    let mut entities = Vec::new();
+    let mut breadcrumb = EPath::default();
+    select_traverse(
+        &mut entities,
+        &mut breadcrumb,
+        parent,
+        &path,
+        &names,
+        &parents,
+        &children,
+        &roots,
+    );
+    entities
+}
+
+fn select_traverse(
     entities: &mut Vec<EEntity>,
     breadcrumb: &mut EPath,
     parent: Option<Entity>,
@@ -59,7 +90,7 @@ pub fn select(
             if !parent.is_none() {
                 panic!("Root must be first element in path");
             }
-            select(
+            select_traverse(
                 entities,
                 breadcrumb,
                 None,
@@ -85,7 +116,7 @@ pub fn select(
                                         name: Some(name.as_ref().to_owned().into()),
                                     });
                                 } else {
-                                    select(
+                                    select_traverse(
                                         entities,
                                         breadcrumb,
                                         Some(*child),
@@ -111,7 +142,7 @@ pub fn select(
                                     name: Some(name.as_ref().to_owned().into()),
                                 });
                             } else {
-                                select(
+                                select_traverse(
                                     entities,
                                     breadcrumb,
                                     Some(root),
@@ -144,7 +175,7 @@ pub fn select(
                                 name,
                             });
                         } else {
-                            select(
+                            select_traverse(
                                 entities,
                                 breadcrumb,
                                 Some(*child),
@@ -170,7 +201,7 @@ pub fn select(
                             name,
                         });
                     } else {
-                        select(
+                        select_traverse(
                             entities,
                             breadcrumb,
                             Some(root),
@@ -201,7 +232,7 @@ pub fn select(
                                 name,
                             });
                         } else {
-                            select(
+                            select_traverse(
                                 entities,
                                 breadcrumb,
                                 Some(*child),
@@ -227,7 +258,7 @@ pub fn select(
                             name,
                         });
                     } else {
-                        select(
+                        select_traverse(
                             entities,
                             breadcrumb,
                             Some(root),
@@ -258,7 +289,7 @@ pub fn select(
                                 name,
                             });
                         } else {
-                            select(
+                            select_traverse(
                                 entities,
                                 breadcrumb,
                                 Some(*child),
@@ -284,7 +315,7 @@ pub fn select(
                             name,
                         });
                     } else {
-                        select(
+                        select_traverse(
                             entities,
                             breadcrumb,
                             Some(root),
@@ -365,11 +396,7 @@ mod tests {
         //     println!("{:?}: {}", entity, name.as_ref());
         // }
 
-        let mut entities = Vec::new();
-        let mut breadcrumb = EPath::default();
-        select(
-            &mut entities,
-            &mut breadcrumb,
+        let entities = select(
             path_test.parent,
             &path_test.path,
             &names,

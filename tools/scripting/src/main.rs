@@ -14,7 +14,7 @@ use simula_viz::{
 };
 
 use derived_behavior::{DerivedBehavior, DerivedBehaviorPlugin};
-// use implemented_behavior::{ImplementedBehavior, ImplementedBehaviorPlugin};
+use implemented_behavior::{ImplementedBehavior, ImplementedBehaviorPlugin};
 
 mod derived_behavior;
 mod implemented_behavior;
@@ -53,11 +53,11 @@ fn main() {
         .add_startup_system(scene_setup)
         // Behavior setup
         .add_plugin(BehaviorPlugin)
-        // DebugBehavior setup
-        // .add_plugin(ImplementedBehaviorPlugin)
-        // .add_plugin(BehaviorServerPlugin::<ImplementedBehavior>::default())
-        // .add_plugin(BehaviorInspectorPlugin::<ImplementedBehavior>::default())
-        // .add_startup_system(behavior_setup::<ImplementedBehavior>)
+        // ImplementedBehavior setup
+        .add_plugin(ImplementedBehaviorPlugin)
+        .add_plugin(BehaviorServerPlugin::<ImplementedBehavior>::default())
+        .add_plugin(BehaviorInspectorPlugin::<ImplementedBehavior>::default())
+        .add_startup_system(behavior_setup::<ImplementedBehavior>)
         // DerivedBehavior setup
         .add_plugin(DerivedBehaviorPlugin)
         .add_plugin(BehaviorServerPlugin::<DerivedBehavior>::default())

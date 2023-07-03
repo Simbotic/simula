@@ -25,7 +25,7 @@ impl Default for Selector {
     }
 }
 
-impl BehaviorInfo for Selector {
+impl BehaviorSpec for Selector {
     const TYPE: BehaviorType = BehaviorType::Composite;
     const NAME: &'static str = "Selector";
     const ICON: &'static str = "❓";
@@ -35,6 +35,8 @@ impl BehaviorInfo for Selector {
         and if it fails will process the second, until a success is reached, at which \
         point it will instantly return success. It will fail if all children fail.";
 }
+
+impl BehaviorUI for Selector {}
 
 pub fn run(
     mut commands: Commands,

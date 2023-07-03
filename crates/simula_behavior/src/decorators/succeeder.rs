@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Succeeder;
 
-impl BehaviorInfo for Succeeder {
+impl BehaviorSpec for Succeeder {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Succeeder";
     const ICON: &'static str = "✓";
@@ -19,6 +19,8 @@ impl BehaviorInfo for Succeeder {
         of a tree where a failure is expected or anticipated, but you don’t want to \
         abandon processing of a sequence that branch sits on.";
 }
+
+impl BehaviorUI for Succeeder {}
 
 pub fn run(
     mut commands: Commands,

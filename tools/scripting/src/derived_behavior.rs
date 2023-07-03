@@ -79,20 +79,20 @@ impl BehaviorInspectable for DerivedBehavior {
     #[rustfmt::skip]
     fn categories(&self) -> Vec<&'static str> {
         match self {
-            DerivedBehavior::Debug(_) => vec![<Debug as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Selector(_) => vec![<Selector as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Sequencer(_) => vec![<Sequencer as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::All(_) => vec![<All as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Any(_) => vec![<Any as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Repeater(_) => vec![<Repeater as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Inverter(_) => vec![<Inverter as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Succeeder(_) => vec![<Succeeder as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Wait(_) => vec![<Wait as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Delay(_) => vec![<Delay as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Guard(_) => vec![<Guard as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::Subtree(_) => vec![<Subtree<DerivedBehavior> as BehaviorInfo>::TYPE.as_ref()],
-            DerivedBehavior::SubImpl(_) => vec![<Subtree<ImplementedBehavior> as BehaviorInfo>::TYPE.as_ref()],
+            DerivedBehavior::Debug(_) => vec![<Debug as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Selector(_) => vec![<Selector as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Sequencer(_) => vec![<Sequencer as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::All(_) => vec![<All as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Any(_) => vec![<Any as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Repeater(_) => vec![<Repeater as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Inverter(_) => vec![<Inverter as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Succeeder(_) => vec![<Succeeder as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Wait(_) => vec![<Wait as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Delay(_) => vec![<Delay as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Guard(_) => vec![<Guard as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Timeout(_) => vec![<Timeout as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::Subtree(_) => vec![<Subtree<DerivedBehavior> as BehaviorSpec>::TYPE.as_ref()],
+            DerivedBehavior::SubImpl(_) => vec![<Subtree<ImplementedBehavior> as BehaviorSpec>::TYPE.as_ref()],
         }
     }
 }

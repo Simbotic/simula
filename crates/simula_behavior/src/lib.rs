@@ -11,12 +11,12 @@ use bevy::{
         system::EntityCommands,
     },
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypeRegistry, TypeUuid},
 };
 use composites::*;
 use decorators::*;
 use serde::{Deserialize, Serialize};
-use simula_script::ScriptPlugin;
+use simula_script::{ScriptContext, ScriptPlugin};
 use strum::AsRefStr;
 
 pub mod actions;
@@ -24,8 +24,8 @@ pub mod asset;
 pub mod composites;
 pub mod decorators;
 pub mod inspector;
+pub mod property;
 pub mod protocol;
-pub mod script;
 pub mod server;
 pub mod test;
 
@@ -37,18 +37,18 @@ pub mod prelude {
     pub use crate::composites::*;
     pub use crate::decorators::*;
     pub use crate::inspector::{
-        BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable,
+        BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable, BehaviorUI,
     };
+    pub use crate::property::{BehaviorEval, BehaviorProperty};
     pub use crate::protocol::{self};
-    pub use crate::script::{self, BehaviorEval};
     pub use crate::server::{
         AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
     };
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorIdleQuery, BehaviorInfo,
-        BehaviorMissing, BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery,
-        BehaviorRunning, BehaviorSet, BehaviorStarted, BehaviorSuccess, BehaviorTree,
+        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorIdleQuery, BehaviorMissing,
+        BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
+        BehaviorSet, BehaviorSpec, BehaviorStarted, BehaviorSuccess, BehaviorTree,
         BehaviorTreePlugin, BehaviorType,
     };
 }
@@ -60,6 +60,12 @@ impl Plugin for BehaviorPlugin {
         app.add_plugin(ScriptPlugin)
             .init_asset_loader::<BehaviorAssetLoader>()
             .add_asset::<BehaviorDocument>()
+            .configure_set(BehaviorSet::PostUpdate.in_base_set(CoreSet::PostUpdate))
+            .add_systems(
+                (clear_behavior_started, complete_behavior, start_behavior)
+                    .chain()
+                    .in_set(BehaviorSet::PostUpdate),
+            )
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
             .register_type::<BehaviorRunning>()
@@ -81,12 +87,6 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Identity>()
             .register_type::<Guard>()
             .register_type::<Timeout>()
-            .configure_set(BehaviorSet::PostUpdate.in_base_set(CoreSet::PostUpdate))
-            .add_systems(
-                (clear_behavior_started, complete_behavior, start_behavior)
-                    .chain()
-                    .in_set(BehaviorSet::PostUpdate),
-            )
             .add_system(debug::run)
             .add_system(selector::run)
             .add_system(sequencer::run)
@@ -167,6 +167,22 @@ pub trait BehaviorFactory:
 
     /// get mutable behavior properties for inspector
     fn inner_reflect_mut(&mut self) -> &mut dyn Reflect;
+
+    /// ui inspector for behavior properties
+    fn ui(
+        &mut self,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &TypeRegistry,
+    ) -> bool;
+
+    /// ui readonly inspector for behavior properties
+    fn ui_readonly(
+        &self,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &TypeRegistry,
+    );
 
     /// copy behavior data from entity into this behavior
     fn copy_from(&mut self, _entity: Entity, _world: &World) -> Result<(), BehaviorMissing>;
@@ -283,8 +299,8 @@ pub enum BehaviorType {
     Subtree,
 }
 
-/// A component to provide static behavior node info
-pub trait BehaviorInfo
+/// A component to provide static behavior node definition
+pub trait BehaviorSpec
 where
     Self: Reflect + Component + Clone + Default + Sized + 'static,
 {
@@ -298,19 +314,6 @@ where
     }
 }
 
-pub fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]) {
-    if children.is_empty() {
-        return;
-    }
-    commands
-        .entity(parent)
-        .insert(BehaviorChildren(children.to_vec()));
-    for child in children {
-        commands.entity(*child).insert(BehaviorParent(parent));
-    }
-    commands.entity(parent).push_children(children);
-}
-
 /// A component added to identify the root of a behavior tree
 #[derive(Default, Reflect, Clone, Component)]
 #[reflect(Component)]
@@ -320,6 +323,15 @@ impl<T> BehaviorTree<T>
 where
     T: BehaviorFactory,
 {
+    /// Create a script context to be used by the behavior tree
+    pub fn create_script_context() -> ScriptContext {
+        let mut scope = ScriptContext::new();
+        let mut blackboard = simula_script::script::Map::new();
+        blackboard.insert("state".into(), 0.into());
+        scope.scope.push("blackboard", blackboard);
+        scope
+    }
+
     /// Build behavior tree from a behavior node.
     fn insert_tree(
         tree: Entity,
@@ -342,8 +354,22 @@ where
             .iter()
             .map(|node| Self::insert_tree(tree, Some(entity), commands, node))
             .collect::<Vec<Entity>>();
-        add_children(commands, entity, &children);
+        Self::add_children(commands, entity, &children);
         entity
+    }
+
+    /// Add chidren to a behavior node using bevy hierarchy and behavior hierarchy
+    fn add_children(commands: &mut Commands, parent: Entity, children: &[Entity]) {
+        if children.is_empty() {
+            return;
+        }
+        commands
+            .entity(parent)
+            .insert(BehaviorChildren(children.to_vec()));
+        for child in children {
+            commands.entity(*child).insert(BehaviorParent(parent));
+        }
+        commands.entity(parent).push_children(children);
     }
 }
 
@@ -519,6 +545,7 @@ fn start_behavior(
     }
 }
 
+/// Stop all children nodes recursively, but keep their execution states
 fn stop_children(
     commands: &mut Commands,
     children: &BehaviorChildren,
@@ -536,6 +563,7 @@ fn stop_children(
     }
 }
 
+/// Reset all children nodes recursively and remove their execution states
 fn reset_children(
     commands: &mut Commands,
     children: &BehaviorChildren,

@@ -1,4 +1,8 @@
-use bevy::{ecs::system::EntityCommands, prelude::*, reflect::TypeUuid};
+use bevy::{
+    ecs::system::EntityCommands,
+    prelude::*,
+    reflect::{TypeRegistry, TypeUuid},
+};
 use serde::{Deserialize, Serialize};
 use simula_behavior::prelude::*;
 
@@ -77,20 +81,20 @@ impl BehaviorInspectable for ImplementedBehavior {
     #[rustfmt::skip]
     fn categories(&self) -> Vec<&'static str> {
         match self {
-            ImplementedBehavior::Debug(_) => vec![<Debug as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Selector(_) => vec![<Selector as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Sequencer(_) => vec![<Sequencer as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::All(_) => vec![<All as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Any(_) => vec![<Any as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Repeater(_) => vec![<Repeater as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Inverter(_) => vec![<Inverter as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Succeeder(_) => vec![<Succeeder as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Wait(_) => vec![<Wait as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Delay(_) => vec![<Delay as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Guard(_) => vec![<Guard as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Timeout(_) => vec![<Timeout as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::Subtree(_) => vec![<Subtree<ImplementedBehavior> as BehaviorInfo>::TYPE.as_ref()],
-            ImplementedBehavior::AnotherTree(_) => vec![<Subtree<DerivedBehavior> as BehaviorInfo>::TYPE.as_ref()],
+            ImplementedBehavior::Debug(_) => vec![<Debug as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Selector(_) => vec![<Selector as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Sequencer(_) => vec![<Sequencer as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::All(_) => vec![<All as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Any(_) => vec![<Any as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Repeater(_) => vec![<Repeater as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Inverter(_) => vec![<Inverter as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Succeeder(_) => vec![<Succeeder as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Wait(_) => vec![<Wait as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Delay(_) => vec![<Delay as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Guard(_) => vec![<Guard as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Timeout(_) => vec![<Timeout as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::Subtree(_) => vec![<Subtree<ImplementedBehavior> as BehaviorSpec>::TYPE.as_ref()],
+            ImplementedBehavior::AnotherTree(_) => vec![<Subtree<DerivedBehavior> as BehaviorSpec>::TYPE.as_ref()],
         }
     }
 }
@@ -100,37 +104,37 @@ impl BehaviorFactory for ImplementedBehavior {
 
     fn insert(&self, commands: &mut EntityCommands) {
         match self {
-            ImplementedBehavior::Debug(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Selector(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Sequencer(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::All(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Any(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Repeater(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Inverter(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Succeeder(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Wait(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Delay(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Guard(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Timeout(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::Subtree(data) => BehaviorInfo::insert_with(commands, data),
-            ImplementedBehavior::AnotherTree(data) => BehaviorInfo::insert_with(commands, data),
+            ImplementedBehavior::Debug(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Selector(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Sequencer(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::All(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Any(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Repeater(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Inverter(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Succeeder(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Wait(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Delay(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Guard(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Timeout(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::Subtree(data) => BehaviorSpec::insert_with(commands, data),
+            ImplementedBehavior::AnotherTree(data) => BehaviorSpec::insert_with(commands, data),
         }
     }
 
     fn label(&self) -> &str {
         match self {
-            ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::NAME,
-            ImplementedBehavior::Selector(_) => <Selector as BehaviorInfo>::NAME,
-            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::NAME,
-            ImplementedBehavior::All(_) => <All as BehaviorInfo>::NAME,
-            ImplementedBehavior::Any(_) => <Any as BehaviorInfo>::NAME,
-            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorInfo>::NAME,
-            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorInfo>::NAME,
-            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::NAME,
-            ImplementedBehavior::Wait(_) => <Wait as BehaviorInfo>::NAME,
-            ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::NAME,
-            ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::NAME,
-            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::NAME,
+            ImplementedBehavior::Debug(_) => <Debug as BehaviorSpec>::NAME,
+            ImplementedBehavior::Selector(_) => <Selector as BehaviorSpec>::NAME,
+            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorSpec>::NAME,
+            ImplementedBehavior::All(_) => <All as BehaviorSpec>::NAME,
+            ImplementedBehavior::Any(_) => <Any as BehaviorSpec>::NAME,
+            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorSpec>::NAME,
+            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorSpec>::NAME,
+            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorSpec>::NAME,
+            ImplementedBehavior::Wait(_) => <Wait as BehaviorSpec>::NAME,
+            ImplementedBehavior::Delay(_) => <Delay as BehaviorSpec>::NAME,
+            ImplementedBehavior::Guard(_) => <Guard as BehaviorSpec>::NAME,
+            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorSpec>::NAME,
             ImplementedBehavior::Subtree(_) => "Subtree",
             ImplementedBehavior::AnotherTree(_) => "AnotherTree",
         }
@@ -138,39 +142,39 @@ impl BehaviorFactory for ImplementedBehavior {
 
     fn icon(&self) -> &str {
         match self {
-            ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::ICON,
-            ImplementedBehavior::Selector(_) => <Selector as BehaviorInfo>::ICON,
-            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::ICON,
-            ImplementedBehavior::All(_) => <All as BehaviorInfo>::ICON,
-            ImplementedBehavior::Any(_) => <Any as BehaviorInfo>::ICON,
-            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorInfo>::ICON,
-            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorInfo>::ICON,
-            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::ICON,
-            ImplementedBehavior::Wait(_) => <Wait as BehaviorInfo>::ICON,
-            ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::ICON,
-            ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::ICON,
-            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::ICON,
-            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::ICON,
-            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::ICON,
+            ImplementedBehavior::Debug(_) => <Debug as BehaviorSpec>::ICON,
+            ImplementedBehavior::Selector(_) => <Selector as BehaviorSpec>::ICON,
+            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorSpec>::ICON,
+            ImplementedBehavior::All(_) => <All as BehaviorSpec>::ICON,
+            ImplementedBehavior::Any(_) => <Any as BehaviorSpec>::ICON,
+            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorSpec>::ICON,
+            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorSpec>::ICON,
+            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorSpec>::ICON,
+            ImplementedBehavior::Wait(_) => <Wait as BehaviorSpec>::ICON,
+            ImplementedBehavior::Delay(_) => <Delay as BehaviorSpec>::ICON,
+            ImplementedBehavior::Guard(_) => <Guard as BehaviorSpec>::ICON,
+            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorSpec>::ICON,
+            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorSpec>::ICON,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorSpec>::ICON,
         }
     }
 
     fn desc(&self) -> &str {
         match self {
-            ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::DESC,
-            ImplementedBehavior::Selector(_) => <Selector as BehaviorInfo>::DESC,
-            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::DESC,
-            ImplementedBehavior::All(_) => <All as BehaviorInfo>::DESC,
-            ImplementedBehavior::Any(_) => <Any as BehaviorInfo>::DESC,
-            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorInfo>::DESC,
-            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorInfo>::DESC,
-            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::DESC,
-            ImplementedBehavior::Wait(_) => <Wait as BehaviorInfo>::DESC,
-            ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::DESC,
-            ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::DESC,
-            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::DESC,
-            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::DESC,
-            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::DESC,
+            ImplementedBehavior::Debug(_) => <Debug as BehaviorSpec>::DESC,
+            ImplementedBehavior::Selector(_) => <Selector as BehaviorSpec>::DESC,
+            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorSpec>::DESC,
+            ImplementedBehavior::All(_) => <All as BehaviorSpec>::DESC,
+            ImplementedBehavior::Any(_) => <Any as BehaviorSpec>::DESC,
+            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorSpec>::DESC,
+            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorSpec>::DESC,
+            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorSpec>::DESC,
+            ImplementedBehavior::Wait(_) => <Wait as BehaviorSpec>::DESC,
+            ImplementedBehavior::Delay(_) => <Delay as BehaviorSpec>::DESC,
+            ImplementedBehavior::Guard(_) => <Guard as BehaviorSpec>::DESC,
+            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorSpec>::DESC,
+            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorSpec>::DESC,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorSpec>::DESC,
         }
     }
 
@@ -212,6 +216,54 @@ impl BehaviorFactory for ImplementedBehavior {
         }
     }
 
+    fn ui(
+        &mut self,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &TypeRegistry,
+    ) -> bool {
+        match self {
+            ImplementedBehavior::Debug(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Selector(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Sequencer(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::All(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Any(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Repeater(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Inverter(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Succeeder(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Wait(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Delay(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Guard(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Timeout(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Subtree(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::AnotherTree(data) => data.ui(state, ui, type_registry),
+        }
+    }
+
+    fn ui_readonly(
+        &self,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &TypeRegistry,
+    ) {
+        match self {
+            ImplementedBehavior::Debug(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Selector(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Sequencer(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::All(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Any(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Repeater(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Inverter(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Succeeder(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Wait(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Delay(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Guard(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Timeout(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Subtree(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::AnotherTree(data) => data.ui_readonly(state, ui, type_registry),
+        }
+    }
+
     #[rustfmt::skip]
     fn copy_from(&mut self, entity: Entity, world: &World) -> Result<(), BehaviorMissing> {
         match self {
@@ -235,20 +287,20 @@ impl BehaviorFactory for ImplementedBehavior {
 
     fn typ(&self) -> BehaviorType {
         match self {
-            ImplementedBehavior::Debug(_) => <Debug as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Selector(_) => <Selector as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorInfo>::TYPE,
-            ImplementedBehavior::All(_) => <All as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Any(_) => <Any as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Wait(_) => <Wait as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Delay(_) => <Delay as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Guard(_) => <Guard as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorInfo>::TYPE,
-            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorInfo>::TYPE,
-            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorInfo>::TYPE,
+            ImplementedBehavior::Debug(_) => <Debug as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Selector(_) => <Selector as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Sequencer(_) => <Sequencer as BehaviorSpec>::TYPE,
+            ImplementedBehavior::All(_) => <All as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Any(_) => <Any as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Repeater(_) => <Repeater as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Inverter(_) => <Inverter as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Succeeder(_) => <Succeeder as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Wait(_) => <Wait as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Delay(_) => <Delay as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Guard(_) => <Guard as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Timeout(_) => <Timeout as BehaviorSpec>::TYPE,
+            ImplementedBehavior::Subtree(_) => <Subtree<ImplementedBehavior> as BehaviorSpec>::TYPE,
+            ImplementedBehavior::AnotherTree(_) => <Subtree<DerivedBehavior> as BehaviorSpec>::TYPE,
         }
     }
 

@@ -19,12 +19,14 @@ pub struct Repeater {
     pub count: u64,
 }
 
-impl BehaviorInfo for Repeater {
+impl BehaviorSpec for Repeater {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Repeater";
     const ICON: &'static str = "⟳";
     const DESC: &'static str = "Repeat a child until condition is met";
 }
+
+impl BehaviorUI for Repeater {}
 
 pub fn run(
     mut commands: Commands,

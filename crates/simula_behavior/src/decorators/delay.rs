@@ -18,12 +18,14 @@ pub struct Delay {
     pub ticks: u64,
 }
 
-impl BehaviorInfo for Delay {
+impl BehaviorSpec for Delay {
     const TYPE: BehaviorType = BehaviorType::Decorator;
     const NAME: &'static str = "Delay";
     const ICON: &'static str = "⌛";
     const DESC: &'static str = "Delays the execution of its child";
 }
+
+impl BehaviorUI for Delay {}
 
 pub fn run(
     time: Res<Time>,

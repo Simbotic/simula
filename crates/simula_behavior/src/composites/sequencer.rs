@@ -25,7 +25,7 @@ impl Default for Sequencer {
     }
 }
 
-impl BehaviorInfo for Sequencer {
+impl BehaviorSpec for Sequencer {
     const TYPE: BehaviorType = BehaviorType::Composite;
     const NAME: &'static str = "Sequencer";
     const ICON: &'static str = "➡";
@@ -35,6 +35,8 @@ impl BehaviorInfo for Sequencer {
         fails it will immediately return failure to the parent. If the last child in the \
         sequence succeeds, then the sequence will return success to its parent.";
 }
+
+impl BehaviorUI for Sequencer {}
 
 pub fn run(
     mut commands: Commands,

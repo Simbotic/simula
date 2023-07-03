@@ -46,6 +46,8 @@ impl AssetLoader for WebPAssetLoader {
     }
 }
 
+impl BehaviorUI for Debug {}
+
 pub fn run(
     mut gifs: ResMut<Assets<WebPAsset>>,
     mut images: ResMut<Assets<Image>>,

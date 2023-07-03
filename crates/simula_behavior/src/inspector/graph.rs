@@ -492,12 +492,12 @@ where
                         .on_hover_text_at_pointer(tooltip());
 
                     // Reflect behavior properties
-                    let type_registry = user_state.type_registry.read();
+                    let type_registry = &user_state.type_registry;
                     match user_state.active_node {
                         Some(active_node_id) if editing && active_node_id == node_id => {
                             let mut behavior = behavior.clone();
-                            if reflect_inspector::ui_for_value(
-                                behavior.inner_reflect_mut(),
+                            if behavior.ui(
+                                node.user_data.state,
                                 ui,
                                 &type_registry,
                             ) {
@@ -507,11 +507,16 @@ where
                             }
                         }
                         _ => {
-                            reflect_inspector::ui_for_value_readonly(
-                                behavior.inner_reflect(),
+                            behavior.ui_readonly(
+                                node.user_data.state,
                                 ui,
                                 &type_registry,
                             );
+                            // reflect_inspector::ui_for_value_readonly(
+                            //     behavior.inner_reflect(),
+                            //     ui,
+                            //     &type_registry,
+                            // );
                         }
                     }
                 }

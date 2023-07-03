@@ -7,13 +7,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
 pub struct Any;
 
-impl BehaviorInfo for Any {
+impl BehaviorSpec for Any {
     const TYPE: BehaviorType = BehaviorType::Composite;
     const NAME: &'static str = "Any";
     const ICON: &'static str = "⇉";
     const DESC: &'static str = "Run all of its children in parallel until one of them succeed. \
         If all of them fail, the Any node will fail.";
 }
+
+impl BehaviorUI for Any {}
 
 pub fn run(
     mut commands: Commands,
