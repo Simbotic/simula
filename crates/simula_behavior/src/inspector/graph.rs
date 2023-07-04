@@ -3,10 +3,7 @@ use crate::{
     protocol::{BehaviorState, RemoteEntity},
 };
 use bevy::{log::debug, prelude::*, reflect::TypeRegistryArc};
-use bevy_inspector_egui::{
-    egui::{self, Widget},
-    reflect_inspector,
-};
+use bevy_inspector_egui::egui::{self, Widget};
 use egui_node_graph::{
     DataTypeTrait, Graph, GraphEditorState, InputParamKind, NodeDataTrait, NodeId, NodeResponse,
     NodeTemplateIter, NodeTemplateTrait, UserResponseTrait, WidgetValueTrait,
@@ -496,22 +493,14 @@ where
                     match user_state.active_node {
                         Some(active_node_id) if editing && active_node_id == node_id => {
                             let mut behavior = behavior.clone();
-                            if behavior.ui(
-                                node.user_data.state,
-                                ui,
-                                &type_registry,
-                            ) {
+                            if behavior.ui(node.user_data.state, ui, &type_registry) {
                                 responses.push(NodeResponse::User(BehaviorResponse::NodeEdited(
                                     node_id, behavior,
                                 )));
                             }
                         }
                         _ => {
-                            behavior.ui_readonly(
-                                node.user_data.state,
-                                ui,
-                                &type_registry,
-                            );
+                            behavior.ui_readonly(node.user_data.state, ui, &type_registry);
                             // reflect_inspector::ui_for_value_readonly(
                             //     behavior.inner_reflect(),
                             //     ui,

@@ -39,17 +39,17 @@ pub mod prelude {
     pub use crate::inspector::{
         BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable, BehaviorUI,
     };
-    pub use crate::property::{BehaviorEval, BehaviorProperty};
+    pub use crate::property::{BehaviorEval, BehaviorProp, BehaviorPropValue};
     pub use crate::protocol::{self};
     pub use crate::server::{
         AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
     };
     pub use crate::{
-        BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
-        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorIdleQuery, BehaviorMissing,
-        BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
-        BehaviorSet, BehaviorSpec, BehaviorStarted, BehaviorSuccess, BehaviorTree,
-        BehaviorTreePlugin, BehaviorType,
+        behavior_ui, behavior_ui_readonly, BehaviorChildQuery, BehaviorChildQueryFilter,
+        BehaviorChildQueryItem, BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorFailure,
+        BehaviorIdleQuery, BehaviorMissing, BehaviorNode, BehaviorParent, BehaviorPlugin,
+        BehaviorRunQuery, BehaviorRunning, BehaviorSet, BehaviorSpec, BehaviorStarted,
+        BehaviorSuccess, BehaviorTree, BehaviorTreePlugin, BehaviorType,
     };
 }
 

@@ -9,20 +9,20 @@ use crate::{
     },
     Behavior, BehaviorFactory,
 };
+pub use behavior::BehaviorUI;
 use bevy::{prelude::*, utils::HashMap};
 use crossbeam_channel::unbounded;
 use egui_node_graph::NodeTemplateTrait;
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 use std::time::Duration;
-pub use behavior::BehaviorUI;
 
+mod behavior;
 pub mod graph;
 mod menu;
+mod property;
 mod utils;
 mod window;
-mod property;
-mod behavior;
 
 #[derive(Default)]
 pub struct BehaviorInspectorPlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T>);

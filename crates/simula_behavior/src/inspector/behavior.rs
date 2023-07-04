@@ -8,6 +8,7 @@ where
     /// ui inspector for behavior properties
     fn ui(
         &mut self,
+        _label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
         type_registry: &TypeRegistry,
@@ -23,6 +24,7 @@ where
     /// ui readonly inspector for behavior properties
     fn ui_readonly(
         &self,
+        _label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
         type_registry: &TypeRegistry,
@@ -34,4 +36,20 @@ where
             &type_registry,
         )
     }
+}
+
+#[macro_export]
+macro_rules! behavior_ui {
+    ($s:expr, $field:ident, $state:expr, $ui:expr, $type_registry:expr) => {
+        $s.$field
+            .ui(Some(stringify!($field)), $state, $ui, $type_registry)
+    };
+}
+
+#[macro_export]
+macro_rules! behavior_ui_readonly {
+    ($s:expr, $field:ident, $state:expr, $ui:expr, $type_registry:expr) => {
+        $s.$field
+            .ui_readonly(Some(stringify!($field)), $state, $ui, $type_registry)
+    };
 }

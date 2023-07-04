@@ -9,11 +9,11 @@ use simula_script::{Script, ScriptContext};
 #[derive(
     Debug, Deref, DerefMut, Component, Reflect, FromReflect, Clone, Deserialize, Serialize,
 )]
-pub struct Guard(BehaviorProperty<bool>);
+pub struct Guard(BehaviorProp<bool>);
 
 impl Default for Guard {
     fn default() -> Self {
-        Self(BehaviorProperty {
+        Self(BehaviorProp {
             prop: BehaviorEval::Value(true),
             ..default()
         })
@@ -57,51 +57,50 @@ pub fn run(
         }
 
         if started.is_some() {
-            guard.value = None;
+            guard.value = BehaviorPropValue::None;
         }
 
-        let guard_state = guard.fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
-
-        if let Some(Err(err)) = guard_state {
-            error!("Script errored: {:?}", err);
-            commands.entity(entity).insert(BehaviorFailure);
-        } else {
-            let child_entity = children[0]; // Safe because we checked for empty
-            if let Ok(BehaviorChildQueryItem {
-                child_entity,
-                child_parent: _,
-                child_failure,
-                child_success,
-                child_running: _,
-            }) = nodes.get(child_entity)
-            {
-                // Child failed, we fail
-                if child_failure.is_some() {
-                    commands.entity(entity).insert(BehaviorFailure);
-                }
-                // Child succeeded, so we succeed
-                else if child_success.is_some() {
-                    commands.entity(entity).insert(BehaviorSuccess);
-                }
-                // Child is ready, eval script to see if we should pass on cursor
-                else {
-                    match &guard.value {
-                        Some(true) => {
-                            // Script returned true, so let the child run
-                            commands.entity(entity).remove::<BehaviorCursor>();
-                            commands
-                                .entity(child_entity)
-                                .insert(BehaviorCursor::Delegate);
-                        }
-                        Some(false) => {
-                            // Script returned false, so we fail
-                            commands.entity(entity).insert(BehaviorFailure);
-                        }
-                        None => {
-                            // Script is still busy
-                        }
-                    };
-                }
+        let _ = guard.fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+        let child_entity = children[0]; // Safe because we checked for empty
+        if let Ok(BehaviorChildQueryItem {
+            child_entity,
+            child_parent: _,
+            child_failure,
+            child_success,
+            child_running: _,
+        }) = nodes.get(child_entity)
+        {
+            // Child failed, we fail
+            if child_failure.is_some() {
+                commands.entity(entity).insert(BehaviorFailure);
+            }
+            // Child succeeded, so we succeed
+            else if child_success.is_some() {
+                commands.entity(entity).insert(BehaviorSuccess);
+            }
+            // Child is ready, eval script to see if we should pass on cursor
+            else {
+                match &guard.value {
+                    BehaviorPropValue::Some(true) => {
+                        // Script returned true, so let the child run
+                        commands.entity(entity).remove::<BehaviorCursor>();
+                        commands
+                            .entity(child_entity)
+                            .insert(BehaviorCursor::Delegate);
+                    }
+                    BehaviorPropValue::Some(false) => {
+                        // Script returned false, so we fail
+                        commands.entity(entity).insert(BehaviorFailure);
+                    }
+                    BehaviorPropValue::Err(err) => {
+                        // Script errored, so we fail
+                        error!("Script errored: {:?}", err);
+                        commands.entity(entity).insert(BehaviorFailure);
+                    }
+                    BehaviorPropValue::None => {
+                        // Script is still busy
+                    }
+                };
             }
         }
     }

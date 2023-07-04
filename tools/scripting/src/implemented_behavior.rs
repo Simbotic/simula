@@ -223,20 +223,20 @@ impl BehaviorFactory for ImplementedBehavior {
         type_registry: &TypeRegistry,
     ) -> bool {
         match self {
-            ImplementedBehavior::Debug(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Selector(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Sequencer(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::All(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Any(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Repeater(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Inverter(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Succeeder(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Wait(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Delay(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Guard(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Timeout(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::Subtree(data) => data.ui(state, ui, type_registry),
-            ImplementedBehavior::AnotherTree(data) => data.ui(state, ui, type_registry),
+            ImplementedBehavior::Debug(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Selector(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Sequencer(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::All(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Any(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Repeater(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Inverter(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Succeeder(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Wait(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Delay(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Guard(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Timeout(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::Subtree(data) => data.ui(None, state, ui, type_registry),
+            ImplementedBehavior::AnotherTree(data) => data.ui(None, state, ui, type_registry),
         }
     }
 
@@ -247,20 +247,26 @@ impl BehaviorFactory for ImplementedBehavior {
         type_registry: &TypeRegistry,
     ) {
         match self {
-            ImplementedBehavior::Debug(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Selector(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Sequencer(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::All(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Any(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Repeater(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Inverter(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Succeeder(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Wait(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Delay(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Guard(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Timeout(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::Subtree(data) => data.ui_readonly(state, ui, type_registry),
-            ImplementedBehavior::AnotherTree(data) => data.ui_readonly(state, ui, type_registry),
+            ImplementedBehavior::Debug(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Selector(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Sequencer(data) => {
+                data.ui_readonly(None, state, ui, type_registry)
+            }
+            ImplementedBehavior::All(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Any(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Repeater(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Inverter(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Succeeder(data) => {
+                data.ui_readonly(None, state, ui, type_registry)
+            }
+            ImplementedBehavior::Wait(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Delay(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Guard(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Timeout(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::Subtree(data) => data.ui_readonly(None, state, ui, type_registry),
+            ImplementedBehavior::AnotherTree(data) => {
+                data.ui_readonly(None, state, ui, type_registry)
+            }
         }
     }
 

@@ -22,13 +22,21 @@ impl<T: Reflect + Default> Default for BehaviorEval<T> {
 }
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
-pub struct BehaviorProperty<T: Reflect + Default> {
-    pub prop: BehaviorEval<T>,
-    #[serde(skip)]
-    pub value: Option<T>,
+pub enum BehaviorPropValue<T: Reflect + Default> {
+    #[default]
+    None,
+    Some(T),
+    Err(String),
 }
 
-impl<T> BehaviorProperty<T>
+#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+pub struct BehaviorProp<T: Reflect + Default> {
+    pub prop: BehaviorEval<T>,
+    #[serde(skip)]
+    pub value: BehaviorPropValue<T>,
+}
+
+impl<T> BehaviorProp<T>
 where
     T: Reflect + Default + Clone + for<'de> Deserialize<'de>,
 {
@@ -39,7 +47,7 @@ where
         script_ctx_handles: &Query<&Handle<ScriptContext>>,
         script_ctxs: &mut Assets<ScriptContext>,
     ) -> Option<Result<(), String>> {
-        let state = match &mut self.prop {
+        let state: Result<(), String> = match &mut self.prop {
             BehaviorEval::Eval { eval, handle } => {
                 if handle.is_none() {
                     match make_handle(
@@ -66,19 +74,28 @@ where
                 BehaviorEval::Eval { eval: _, handle } => {
                     match eval::<T>(&handle, node, scripts, script_ctx_handles, script_ctxs) {
                         Some(Ok(val)) => {
-                            self.value = Some(val.clone());
+                            self.value = BehaviorPropValue::Some(val.clone());
                             Some(Ok(()))
                         }
-                        Some(Err(err)) => Some(Err(err)),
-                        None => None,
+                        Some(Err(err)) => {
+                            self.value = BehaviorPropValue::Err(err.clone());
+                            Some(Err(err))
+                        }
+                        None => {
+                            self.value = BehaviorPropValue::None;
+                            None
+                        }
                     }
                 }
                 BehaviorEval::Value(val) => {
-                    self.value = Some(val.clone());
+                    self.value = BehaviorPropValue::Some(val.clone());
                     Some(Ok(()))
                 }
             },
-            Err(err) => Some(Err(err)),
+            Err(err) => {
+                self.value = BehaviorPropValue::Err(err.clone());
+                Some(Err(err))
+            }
         }
     }
 }

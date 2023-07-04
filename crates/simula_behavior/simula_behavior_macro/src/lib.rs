@@ -89,7 +89,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
             .map(|variant| {
                 let variant_ident = &variant.ident;
                 quote! {
-                    Self::#variant_ident(data) => data.ui(state, ui, type_registry),
+                    Self::#variant_ident(data) => data.ui(None, state, ui, type_registry),
                 }
             })
             .collect();
@@ -100,7 +100,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
             .map(|variant| {
                 let variant_ident = &variant.ident;
                 quote! {
-                    Self::#variant_ident(data) => data.ui_readonly(state, ui, type_registry),
+                    Self::#variant_ident(data) => data.ui_readonly(None, state, ui, type_registry),
                 }
             })
             .collect();
