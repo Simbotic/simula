@@ -29,38 +29,31 @@ pub enum BehaviorPropValue<T: Reflect + Default> {
     Err(String),
 }
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
-pub struct BehaviorProp<
-    ValueType: Reflect + Default,
-    InputType: Reflect + Default = ValueType,
-    ScriptType: Reflect + Default = ValueType,
-> {
-    pub prop: BehaviorEval<ValueType>,
-    #[serde(skip)]
-    pub value: BehaviorPropValue<ValueType>,
-    #[serde(skip)]
-    #[reflect(ignore)]
-    pub input: Option<InputType>,
-    #[serde(skip)]
-    #[reflect(ignore)]
-    pub _phantom: std::marker::PhantomData<ScriptType>,
-}
-
-impl<ValueType, InputType, ScriptType> BehaviorProp<ValueType, InputType, ScriptType>
+pub trait BehaviorProp
 where
-    ValueType: Reflect + Default + Clone + TryFrom<ScriptType>,
-    InputType: Reflect + Default + Clone,
-    ScriptType: Reflect + Default + Clone,
-    <ValueType as TryFrom<ScriptType>>::Error: std::fmt::Debug,
+    <Self::ValueType as TryFrom<Self::ScriptType>>::Error: std::fmt::Debug,
 {
-    pub fn fetch(
+    type ValueType: Reflect + Default + Clone + TryFrom<Self::ScriptType>;
+    type InputType: Reflect + Default + Clone;
+    type ScriptType: Reflect + Default + Clone;
+
+    fn prop(&self) -> &BehaviorEval<Self::ValueType>;
+    fn prop_mut(&mut self) -> &mut BehaviorEval<Self::ValueType>;
+
+    fn value(&self) -> &BehaviorPropValue<Self::ValueType>;
+    fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType>;
+
+    fn input(&self) -> &Option<Self::InputType>;
+    fn input_mut(&mut self) -> &mut Option<Self::InputType>;
+
+    fn fetch(
         &mut self,
         node: &BehaviorNode,
         scripts: &mut ResMut<Assets<Script>>,
         script_ctx_handles: &Query<&Handle<ScriptContext>>,
         script_ctxs: &mut Assets<ScriptContext>,
     ) -> Option<Result<(), String>> {
-        let state: Result<(), String> = match &mut self.prop {
+        let state: Result<(), String> = match self.prop_mut() {
             BehaviorEval::Eval { eval, handle } => {
                 if handle.is_none() {
                     match make_handle(
@@ -82,10 +75,12 @@ where
             }
             BehaviorEval::Value(_) => Ok(()),
         };
-        match state {
-            Ok(_) => match &mut self.prop {
+
+        let value;
+        let res = match state {
+            Ok(_) => match self.prop() {
                 BehaviorEval::Eval { eval: _, handle } => {
-                    match eval::<ValueType, ScriptType>(
+                    match eval::<Self::ValueType, Self::ScriptType>(
                         &handle,
                         node,
                         scripts,
@@ -93,29 +88,88 @@ where
                         script_ctxs,
                     ) {
                         Some(Ok(val)) => {
-                            self.value = BehaviorPropValue::Some(val.clone());
+                            value = Some(BehaviorPropValue::Some(val.clone()));
                             Some(Ok(()))
                         }
                         Some(Err(err)) => {
-                            self.value = BehaviorPropValue::Err(err.clone());
+                            value = Some(BehaviorPropValue::Err(err.clone()));
                             Some(Err(err))
                         }
                         None => {
-                            self.value = BehaviorPropValue::None;
+                            value = Some(BehaviorPropValue::None);
                             None
                         }
                     }
                 }
                 BehaviorEval::Value(val) => {
-                    self.value = BehaviorPropValue::Some(val.clone());
+                    value = Some(BehaviorPropValue::Some(val.clone()));
                     Some(Ok(()))
                 }
             },
             Err(err) => {
-                self.value = BehaviorPropValue::Err(err.clone());
+                value = Some(BehaviorPropValue::Err(err.clone()));
                 Some(Err(err))
             }
+        };
+
+        if let Some(value) = value {
+            *self.value_mut() = value;
         }
+
+        res
+    }
+}
+
+#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+pub struct BehaviorPropGeneric<
+    ValueType: Reflect + Default + Clone + From<ScriptType>,
+    InputType: Reflect + Default = ValueType,
+    ScriptType: Reflect + Default = ValueType,
+> {
+    pub prop: BehaviorEval<ValueType>,
+    #[serde(skip)]
+    pub value: BehaviorPropValue<ValueType>,
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub input: Option<InputType>,
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub _phantom: std::marker::PhantomData<ScriptType>,
+}
+
+impl<ValueType, InputType, ScriptType> BehaviorProp
+    for BehaviorPropGeneric<ValueType, InputType, ScriptType>
+where
+    ValueType: Reflect + Default + Clone + From<ScriptType>,
+    InputType: Reflect + Default + Clone,
+    ScriptType: Reflect + Default + Clone,
+{
+    type ValueType = ValueType;
+    type InputType = InputType;
+    type ScriptType = ScriptType;
+
+    fn prop(&self) -> &BehaviorEval<Self::ValueType> {
+        &self.prop
+    }
+
+    fn prop_mut(&mut self) -> &mut BehaviorEval<Self::ValueType> {
+        &mut self.prop
+    }
+
+    fn value(&self) -> &BehaviorPropValue<Self::ValueType> {
+        &self.value
+    }
+
+    fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
+        &mut self.value
+    }
+
+    fn input(&self) -> &Option<Self::InputType> {
+        &self.input
+    }
+
+    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
+        &mut self.input
     }
 }
 

@@ -9,11 +9,11 @@ use simula_script::{Script, ScriptContext};
 #[derive(
     Debug, Deref, DerefMut, Component, Reflect, FromReflect, Clone, Deserialize, Serialize,
 )]
-pub struct Guard(BehaviorProp<bool>);
+pub struct Guard(BehaviorPropGeneric<bool>);
 
 impl Default for Guard {
     fn default() -> Self {
-        Self(BehaviorProp {
+        Self(BehaviorPropGeneric {
             prop: BehaviorEval::Value(true),
             ..default()
         })

@@ -37,9 +37,10 @@ pub mod prelude {
     pub use crate::composites::*;
     pub use crate::decorators::*;
     pub use crate::inspector::{
-        BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable, BehaviorUI,
+        BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable, BehaviorPropEPath,
+        BehaviorPropStr, BehaviorUI,
     };
-    pub use crate::property::{BehaviorEval, BehaviorProp, BehaviorPropValue};
+    pub use crate::property::{BehaviorEval, BehaviorProp, BehaviorPropGeneric, BehaviorPropValue};
     pub use crate::protocol::{self};
     pub use crate::server::{
         AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,

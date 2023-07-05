@@ -13,6 +13,7 @@ pub use behavior::BehaviorUI;
 use bevy::{prelude::*, utils::HashMap};
 use crossbeam_channel::unbounded;
 use egui_node_graph::NodeTemplateTrait;
+pub use property::{BehaviorPropEPath, BehaviorPropStr};
 use serde::{Deserialize, Serialize};
 use simula_inspector::{egui, Inspector, Inspectors};
 use std::time::Duration;
