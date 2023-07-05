@@ -29,7 +29,37 @@ impl BehaviorSpec for Debug {
     const DESC: &'static str = "Display a debug message and complete with success or failure";
 }
 
-impl BehaviorUI for Debug {}
+impl BehaviorUI for Debug {
+    fn ui(
+        &mut self,
+        _label: Option<&str>,
+        _state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) -> bool {
+        let type_registry = type_registry.read();
+        bevy_inspector_egui::reflect_inspector::ui_for_value(
+            self.as_reflect_mut(),
+            ui,
+            &type_registry,
+        )
+    }
+
+    fn ui_readonly(
+        &self,
+        _label: Option<&str>,
+        _state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) {
+        let type_registry = type_registry.read();
+        bevy_inspector_egui::reflect_inspector::ui_for_value_readonly(
+            self.as_reflect(),
+            ui,
+            &type_registry,
+        )
+    }
+}
 
 pub fn run(
     time: Res<Time>,

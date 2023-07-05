@@ -35,6 +35,10 @@ impl ScriptContext {
     }
 }
 
+// trait FromScript<InputType, OutputType> {
+//     fn from_script(script: &str) -> Result<OutputType, Box<script::EvalAltResult>>;
+// }
+
 #[derive(Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
 pub struct Script {
@@ -47,7 +51,7 @@ impl Script {
     pub fn compile(
         &mut self,
         context: &mut ScriptContext,
-    ) -> Result<(), std::boxed::Box<script::EvalAltResult>> {
+    ) -> Result<(), Box<script::EvalAltResult>> {
         let ast = context.engine.compile(&self.script)?;
         self.ast = Some(ast);
         Ok(())
@@ -58,7 +62,7 @@ impl Script {
         context: &mut ScriptContext,
     ) -> Result<T, std::boxed::Box<script::EvalAltResult>>
     where
-        T: Clone + Deserialize<'static> + Send + Sync + 'static,
+        T: Clone + Send + Sync + 'static,
     {
         let ast = self.ast.as_ref().unwrap();
         let stack = context.scope.len();

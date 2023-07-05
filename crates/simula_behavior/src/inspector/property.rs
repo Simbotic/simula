@@ -2,6 +2,7 @@ use crate::prelude::*;
 use bevy::reflect::TypeRegistry;
 use bevy_inspector_egui::egui;
 use simula_core::epath::EPath;
+use std::borrow::Cow;
 use std::str::FromStr;
 
 const PROP_ICON_COLOR: egui::Color32 = egui::Color32::GRAY;
@@ -15,7 +16,7 @@ const PROP_ERR_COLOR: egui::Color32 = egui::Color32::RED;
 const PROP_VALUE_ICON: &str = "=";
 const PROP_EVAL_ICON: &str = "∑";
 
-impl BehaviorUI for BehaviorProp<String> {
+impl BehaviorUI for BehaviorProp<Cow<'static, str>, Cow<'static, str>, String> {
     fn ui(
         &mut self,
         label: Option<&str>,
@@ -24,7 +25,7 @@ impl BehaviorUI for BehaviorProp<String> {
         _type_registry: &TypeRegistry,
     ) -> bool {
         let mut editing_text = match &self.prop {
-            BehaviorEval::Value(value) => value.to_owned(),
+            BehaviorEval::Value(value) => value.to_string(),
             BehaviorEval::Eval { eval, .. } => eval.to_owned().into(),
         };
 
@@ -77,7 +78,7 @@ impl BehaviorUI for BehaviorProp<String> {
         if changed {
             match &mut self.prop {
                 BehaviorEval::Value(value) => {
-                    *value = editing_text.to_owned();
+                    *value = editing_text.into();
                 }
                 BehaviorEval::Eval { eval, .. } => {
                     *eval = editing_text.to_owned().into();
@@ -130,12 +131,14 @@ impl BehaviorUI for BehaviorProp<String> {
                     ui.label(icon.color(PROP_ICON_COLOR));
                     match &self.prop {
                         BehaviorEval::Value(value) => {
-                            let mut content = value.as_str();
-                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0));
+                            let mut content = value.as_ref();
+                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0))
+                                .on_hover_text(content);
                         }
                         BehaviorEval::Eval { eval, .. } => {
                             let mut content = eval.as_ref();
-                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0));
+                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0))
+                                .on_hover_text(content);
                         }
                     };
                 }
@@ -144,7 +147,7 @@ impl BehaviorUI for BehaviorProp<String> {
     }
 }
 
-impl BehaviorUI for BehaviorProp<EPath> {
+impl BehaviorUI for BehaviorProp<EPath, Cow<'static, str>, String> {
     fn ui(
         &mut self,
         label: Option<&str>,
@@ -152,12 +155,17 @@ impl BehaviorUI for BehaviorProp<EPath> {
         ui: &mut bevy_inspector_egui::egui::Ui,
         _type_registry: &TypeRegistry,
     ) -> bool {
-        let mut editing_text = match &self.prop {
-            BehaviorEval::Value(value) => value.to_string(),
-            BehaviorEval::Eval { eval, .. } => eval.to_owned().into(),
+        let mut editing_text = if let Some(in_progress_editing) = &self.input {
+            in_progress_editing.to_string()
+        } else {
+            match &self.prop {
+                BehaviorEval::Value(value) => value.to_string(),
+                BehaviorEval::Eval { eval, .. } => eval.to_owned().into(),
+            }
         };
 
         let mut changed = false;
+        let mut commit = false;
         ui.vertical(|ui| {
             let label = label.unwrap_or("");
             let label = egui::RichText::new(format!("🌎 {}", label))
@@ -187,27 +195,51 @@ impl BehaviorUI for BehaviorProp<EPath> {
                 }
 
                 changed |= match &self.prop {
-                    BehaviorEval::Value(_) => ui
-                        .add(egui::TextEdit::singleline(&mut editing_text).desired_width(180.0))
-                        .changed(),
-                    BehaviorEval::Eval { .. } => ui
-                        .add(
+                    BehaviorEval::Value(_) => {
+                        let epath = EPath::from_str(&editing_text);
+                        let frame_color = if let Err(_) = epath {
+                            egui::Color32::RED
+                        } else {
+                            egui::Color32::TRANSPARENT
+                        };
+                        let frame = egui::Frame::none()
+                            .fill(frame_color)
+                            .inner_margin(3.0)
+                            .rounding(4.0);
+                        let res = frame
+                            .show(ui, |ui| {
+                                ui.add(
+                                    egui::TextEdit::singleline(&mut editing_text)
+                                        .desired_width(180.0)
+                                        .cursor_at_end(true),
+                                )
+                            })
+                            .inner;
+                        if res.lost_focus() {
+                            commit = true;
+                        }
+                        res.changed()
+                    }
+                    BehaviorEval::Eval { .. } => {
+                        let res = ui.add(
                             egui::TextEdit::multiline(&mut editing_text)
                                 .desired_width(180.0)
                                 .code_editor(),
-                        )
-                        .changed(),
+                        );
+                        res.changed()
+                    }
                 };
             });
         });
 
-        if changed {
+        if commit {
+            self.input = None;
+            changed = true;
             match &mut self.prop {
                 BehaviorEval::Value(value) => {
                     let epath = EPath::from_str(&editing_text);
-                    if let Err(err) = epath {
-                        ui.label(egui::RichText::new(err.to_string()).color(PROP_ERR_COLOR));
-                    } else if let Ok(epath) = epath {
+                    if let Ok(epath) = epath {
+                        println!("epath: {:?}", epath);
                         *value = epath;
                     }
                 }
@@ -215,6 +247,8 @@ impl BehaviorUI for BehaviorProp<EPath> {
                     *eval = editing_text.to_owned().into();
                 }
             }
+        } else if changed {
+            self.input = Some(editing_text.into());
         }
 
         changed
@@ -251,7 +285,8 @@ impl BehaviorUI for BehaviorProp<EPath> {
                             ui.label(icon.color(PROP_SOME_COLOR));
                             ui.label(
                                 egui::RichText::new(value.to_string()).color(PROP_VALUE_COLOR),
-                            );
+                            )
+                            .on_disabled_hover_text(value.to_string());
                         }
                         BehaviorPropValue::Err(err) => {
                             ui.label(icon.color(PROP_ERR_COLOR));
@@ -264,11 +299,13 @@ impl BehaviorUI for BehaviorProp<EPath> {
                         BehaviorEval::Value(value) => {
                             let content = value.to_string();
                             let mut content = content.as_str();
-                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0));
+                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0))
+                                .on_hover_text(content);
                         }
                         BehaviorEval::Eval { eval, .. } => {
                             let mut content = eval.as_ref();
-                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0));
+                            ui.add(egui::TextEdit::singleline(&mut content).desired_width(180.0))
+                                .on_hover_text(content);
                         }
                     };
                 }

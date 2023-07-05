@@ -45,11 +45,11 @@ pub mod prelude {
         AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
     };
     pub use crate::{
-        behavior_ui, behavior_ui_readonly, BehaviorChildQuery, BehaviorChildQueryFilter,
-        BehaviorChildQueryItem, BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorFailure,
-        BehaviorIdleQuery, BehaviorMissing, BehaviorNode, BehaviorParent, BehaviorPlugin,
-        BehaviorRunQuery, BehaviorRunning, BehaviorSet, BehaviorSpec, BehaviorStarted,
-        BehaviorSuccess, BehaviorTree, BehaviorTreePlugin, BehaviorType,
+        BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
+        BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorIdleQuery, BehaviorMissing,
+        BehaviorNode, BehaviorParent, BehaviorPlugin, BehaviorRunQuery, BehaviorRunning,
+        BehaviorSet, BehaviorSpec, BehaviorStarted, BehaviorSuccess, BehaviorTree,
+        BehaviorTreePlugin, BehaviorType,
     };
 }
 

@@ -34,39 +34,34 @@ pub struct EPath(Vec<E>);
 impl ToString for EPath {
     fn to_string(&self) -> String {
         let mut s = String::new();
-        let mut is_root = true;
+        let mut prefix_forward_slash = false;
         for e in &self.0 {
+            if prefix_forward_slash {
+                s.push_str("/");
+            }
             match e {
                 E::Root => {
                     s.push_str("/");
                 }
                 E::Name(name) => {
-                    if !is_root {
-                        s.push_str("/");
-                    }
                     s.push_str(name);
+                    prefix_forward_slash = true;
                 }
                 E::First => {
-                    if !is_root {
-                        s.push_str("/");
-                    }
                     s.push_str("^");
+                    prefix_forward_slash = true;
                 }
                 E::Last => {
-                    if !is_root {
-                        s.push_str("/");
-                    }
                     s.push_str("$");
+                    prefix_forward_slash = true;
                 }
                 E::Nth(n) => {
-                    if !is_root {
-                        s.push_str("/");
-                    }
                     s.push_str(&format!("[{}]", n));
+                    prefix_forward_slash = true;
                 }
             }
-            is_root = false;
         }
+        println!("EPath::to_string: {:?} {:?}", self, s);
         s
     }
 }
@@ -112,7 +107,10 @@ impl FromStr for E {
 impl FromStr for EPath {
     type Err = ParseEPathError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err>
+    where
+        Self::Err: std::fmt::Debug,
+    {
         let parts: Vec<&str> = s.split('/').collect();
         let mut result = vec![];
 
@@ -129,6 +127,14 @@ impl FromStr for EPath {
             result.push(e);
         }
         Ok(EPath(result))
+    }
+}
+
+impl TryFrom<String> for EPath {
+    type Error = ParseEPathError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        s.parse::<EPath>()
     }
 }
 

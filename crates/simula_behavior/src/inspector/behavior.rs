@@ -37,19 +37,3 @@ where
         )
     }
 }
-
-#[macro_export]
-macro_rules! behavior_ui {
-    ($s:expr, $field:ident, $state:expr, $ui:expr, $type_registry:expr) => {
-        $s.$field
-            .ui(Some(stringify!($field)), $state, $ui, $type_registry)
-    };
-}
-
-#[macro_export]
-macro_rules! behavior_ui_readonly {
-    ($s:expr, $field:ident, $state:expr, $ui:expr, $type_registry:expr) => {
-        $s.$field
-            .ui_readonly(Some(stringify!($field)), $state, $ui, $type_registry)
-    };
-}

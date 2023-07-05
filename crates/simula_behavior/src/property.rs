@@ -30,15 +30,28 @@ pub enum BehaviorPropValue<T: Reflect + Default> {
 }
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
-pub struct BehaviorProp<T: Reflect + Default> {
-    pub prop: BehaviorEval<T>,
+pub struct BehaviorProp<
+    ValueType: Reflect + Default,
+    InputType: Reflect + Default = ValueType,
+    ScriptType: Reflect + Default = ValueType,
+> {
+    pub prop: BehaviorEval<ValueType>,
     #[serde(skip)]
-    pub value: BehaviorPropValue<T>,
+    pub value: BehaviorPropValue<ValueType>,
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub input: Option<InputType>,
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub _phantom: std::marker::PhantomData<ScriptType>,
 }
 
-impl<T> BehaviorProp<T>
+impl<ValueType, InputType, ScriptType> BehaviorProp<ValueType, InputType, ScriptType>
 where
-    T: Reflect + Default + Clone + for<'de> Deserialize<'de>,
+    ValueType: Reflect + Default + Clone + TryFrom<ScriptType>,
+    InputType: Reflect + Default + Clone,
+    ScriptType: Reflect + Default + Clone,
+    <ValueType as TryFrom<ScriptType>>::Error: std::fmt::Debug,
 {
     pub fn fetch(
         &mut self,
@@ -72,7 +85,13 @@ where
         match state {
             Ok(_) => match &mut self.prop {
                 BehaviorEval::Eval { eval: _, handle } => {
-                    match eval::<T>(&handle, node, scripts, script_ctx_handles, script_ctxs) {
+                    match eval::<ValueType, ScriptType>(
+                        &handle,
+                        node,
+                        scripts,
+                        script_ctx_handles,
+                        script_ctxs,
+                    ) {
                         Some(Ok(val)) => {
                             self.value = BehaviorPropValue::Some(val.clone());
                             Some(Ok(()))
@@ -135,23 +154,34 @@ fn make_handle(
 }
 
 /// Eval the script
-fn eval<T: Reflect + Default + Clone + for<'de> Deserialize<'de>>(
+fn eval<ValueType: Reflect + Default + Clone + TryFrom<ScriptType>, ScriptType: Reflect + Clone>(
     handle: &Option<Handle<Script>>,
     node: &BehaviorNode,
     scripts: &Assets<Script>,
     script_ctx_handles: &Query<&Handle<ScriptContext>>,
     script_ctxs: &mut Assets<ScriptContext>,
-) -> Option<Result<T, String>> {
+) -> Option<Result<ValueType, String>>
+where
+    <ValueType as TryFrom<ScriptType>>::Error: std::fmt::Debug,
+{
     if let Some(script_asset) = handle
         .as_ref()
         .and_then(|script_handle| scripts.get(&script_handle))
     {
         if let Some(script_ctx_handle) = script_ctx_handles.get(node.tree).ok() {
             if let Some(script_ctx) = script_ctxs.get_mut(&script_ctx_handle) {
-                let result = script_asset.eval::<T>(script_ctx);
+                let result = script_asset.eval::<ScriptType>(script_ctx);
                 match result {
                     Ok(result) => {
-                        return Some(Ok(result));
+                        let result = ValueType::try_from(result);
+                        match result {
+                            Ok(result) => return Some(Ok(result)),
+                            Err(err) => {
+                                error!("{:#?}", err);
+                                let err = format!("{:#?}", err);
+                                return Some(Err(err.to_string()));
+                            }
+                        }
                     }
                     Err(err) => {
                         error!("{:#?}", err);
