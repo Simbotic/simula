@@ -61,7 +61,7 @@ impl ToString for EPath {
                 }
             }
         }
-        println!("EPath::to_string: {:?} {:?}", self, s);
+        trace!("EPath::to_string: {:?} {:?}", self, s);
         s
     }
 }
