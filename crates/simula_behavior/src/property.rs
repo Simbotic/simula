@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+use simula_core::epath::EPath;
 use simula_script::{Script, ScriptContext};
 use std::borrow::Cow;
 
@@ -67,7 +68,7 @@ where
                             *handle = Some(new_handle);
                             Ok(())
                         }
-                        Err(err) => return Some(Err(err)),
+                        Err(err) => Err(err),
                     }
                 } else {
                     Ok(())
@@ -147,6 +148,86 @@ where
     type ValueType = ValueType;
     type InputType = InputType;
     type ScriptType = ScriptType;
+
+    fn prop(&self) -> &BehaviorEval<Self::ValueType> {
+        &self.prop
+    }
+
+    fn prop_mut(&mut self) -> &mut BehaviorEval<Self::ValueType> {
+        &mut self.prop
+    }
+
+    fn value(&self) -> &BehaviorPropValue<Self::ValueType> {
+        &self.value
+    }
+
+    fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
+        &mut self.value
+    }
+
+    fn input(&self) -> &Option<Self::InputType> {
+        &self.input
+    }
+
+    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
+        &mut self.input
+    }
+}
+
+#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+pub struct BehaviorPropStr {
+    pub prop: BehaviorEval<Cow<'static, str>>,
+    #[serde(skip)]
+    pub value: BehaviorPropValue<Cow<'static, str>>,
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub input: Option<Cow<'static, str>>,
+}
+
+impl BehaviorProp for BehaviorPropStr {
+    type ValueType = Cow<'static, str>;
+    type InputType = Cow<'static, str>;
+    type ScriptType = String;
+
+    fn prop(&self) -> &BehaviorEval<Self::ValueType> {
+        &self.prop
+    }
+
+    fn prop_mut(&mut self) -> &mut BehaviorEval<Self::ValueType> {
+        &mut self.prop
+    }
+
+    fn value(&self) -> &BehaviorPropValue<Self::ValueType> {
+        &self.value
+    }
+
+    fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
+        &mut self.value
+    }
+
+    fn input(&self) -> &Option<Self::InputType> {
+        &self.input
+    }
+
+    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
+        &mut self.input
+    }
+}
+
+#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+pub struct BehaviorPropEPath {
+    pub prop: BehaviorEval<EPath>,
+    #[serde(skip)]
+    pub value: BehaviorPropValue<EPath>,
+    #[serde(skip)]
+    #[reflect(ignore)]
+    pub input: Option<Cow<'static, str>>,
+}
+
+impl BehaviorProp for BehaviorPropEPath {
+    type ValueType = EPath;
+    type InputType = Cow<'static, str>;
+    type ScriptType = String;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
         &self.prop
