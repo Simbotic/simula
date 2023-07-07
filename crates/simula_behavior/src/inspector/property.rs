@@ -14,7 +14,7 @@ const PROP_ERR_COLOR: egui::Color32 = egui::Color32::RED;
 
 const PROP_TEXT_WIDTH: f32 = 180.0;
 
-const PROP_FRAME_COLOR: egui::Color32 = egui::Color32::from_gray(32);
+const PROP_FRAME_COLOR: egui::Color32 = egui::Color32::from_rgb(32, 30, 35);
 const PROP_FRAME_RADIUS: f32 = 2.0;
 const PROP_FRAME_WIDTH: f32 = 200.0;
 const PROP_FRAME_INNER_MARGIN: egui::Margin = egui::Margin {

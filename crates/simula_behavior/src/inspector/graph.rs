@@ -398,7 +398,7 @@ where
                                 egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
                             if egui::TextEdit::singleline(&mut name)
                                 .hint_text("node name")
-                                .text_color(egui::Color32::GRAY)
+                                .text_color(egui::Color32::WHITE)
                                 .show(ui)
                                 .response
                                 .changed()
@@ -410,7 +410,7 @@ where
                         }
                         _ => {
                             let label = egui::RichText::new(format!("{}", node.label))
-                                .color(egui::Color32::GRAY);
+                                .color(egui::Color32::WHITE);
                             ui.label(label);
                         }
                     }
@@ -457,9 +457,9 @@ where
                     let label = format!("{} {}", behavior.icon(), behavior.label());
                     let label = egui::RichText::new(label).color(egui::Color32::DARK_GRAY);
 
-                    // Behavior tooltip
-                    // TODO: lazily compute tooltip
-                    let tooltip = || {
+                    // Behavior label with tooltip
+                    egui::Label::new(label).ui(ui).on_hover_ui_at_pointer(|ui| {
+                        // Behavior tooltip
                         let inner_type_name = behavior.inner_reflect().type_name();
                         // Remove "simula_behavior::..." prefix, keep full custom types
                         let inner_type_name = if inner_type_name.starts_with("simula_behavior") {
@@ -480,13 +480,9 @@ where
                         } else {
                             inner_type_name.to_string()
                         };
-                        format!("{}\n\n{}", inner_type_name, behavior.desc())
-                    };
-
-                    // Behavior label with tooltip
-                    egui::Label::new(label)
-                        .ui(ui)
-                        .on_hover_text_at_pointer(tooltip());
+                        let tooltip = format!("{}\n\n{}", inner_type_name, behavior.desc());
+                        ui.add(egui::Label::new(tooltip));
+                    });
 
                     // Reflect behavior properties
                     let type_registry = &user_state.type_registry;
