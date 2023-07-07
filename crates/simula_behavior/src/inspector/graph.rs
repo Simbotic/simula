@@ -397,8 +397,8 @@ where
                             ui.style_mut().visuals.extreme_bg_color =
                                 egui::Color32::from_rgba_premultiplied(0, 0, 0, 200);
                             if egui::TextEdit::singleline(&mut name)
-                                .hint_text("node_name")
-                                .text_color(egui::Color32::WHITE)
+                                .hint_text("node name")
+                                .text_color(egui::Color32::GRAY)
                                 .show(ui)
                                 .response
                                 .changed()
@@ -410,7 +410,7 @@ where
                         }
                         _ => {
                             let label = egui::RichText::new(format!("{}", node.label))
-                                .color(egui::Color32::WHITE);
+                                .color(egui::Color32::GRAY);
                             ui.label(label);
                         }
                     }

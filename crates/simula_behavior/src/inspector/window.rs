@@ -268,7 +268,7 @@ pub fn ui<T: BehaviorFactory + BehaviorInspectable>(
 
                 if !behavior_inspector_item.collapsed {
                     egui::Frame::none()
-                        .fill(egui::Color32::from_rgba_unmultiplied(52, 50, 55, 140))
+                        .fill(egui::Color32::from_rgba_unmultiplied(42, 40, 45, 140))
                         .stroke(egui::Stroke::NONE)
                         .inner_margin(egui::Margin {
                             left: 10.0,

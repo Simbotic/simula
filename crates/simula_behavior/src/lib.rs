@@ -47,6 +47,7 @@ pub mod prelude {
     pub use crate::server::{
         AssetTracker, BehaviorServerPlugin, BehaviorTracker, BehaviorTrackers, EntityTracker,
     };
+    pub use crate::{behavior_ui, behavior_ui_readonly};
     pub use crate::{
         BehaviorChildQuery, BehaviorChildQueryFilter, BehaviorChildQueryItem, BehaviorChildren,
         BehaviorCursor, BehaviorFactory, BehaviorFailure, BehaviorIdleQuery, BehaviorMissing,

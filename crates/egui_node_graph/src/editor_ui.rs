@@ -514,7 +514,7 @@ where
         let background_color;
         let text_color;
         if ui.visuals().dark_mode {
-            background_color = color_from_hex("#222222").unwrap();
+            background_color = color_from_hex("#191919").unwrap();
             text_color = color_from_hex("#aaaaaa").unwrap();
         } else {
             background_color = color_from_hex("#ffffff").unwrap();
