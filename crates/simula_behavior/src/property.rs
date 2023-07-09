@@ -35,7 +35,6 @@ where
     <Self::ValueType as TryFrom<Self::ScriptType>>::Error: std::fmt::Debug,
 {
     type ValueType: Reflect + Default + Clone + TryFrom<Self::ScriptType>;
-    type InputType: Reflect + Default + Clone;
     type ScriptType: Reflect + Default + Clone;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType>;
@@ -43,9 +42,6 @@ where
 
     fn value(&self) -> &BehaviorPropValue<Self::ValueType>;
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType>;
-
-    fn input(&self) -> &Option<Self::InputType>;
-    fn input_mut(&mut self) -> &mut Option<Self::InputType>;
 
     fn fetch(
         &mut self,
@@ -146,7 +142,6 @@ where
     ScriptType: Reflect + Default + Clone,
 {
     type ValueType = ValueType;
-    type InputType = InputType;
     type ScriptType = ScriptType;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
@@ -164,14 +159,6 @@ where
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
         &mut self.value
     }
-
-    fn input(&self) -> &Option<Self::InputType> {
-        &self.input
-    }
-
-    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
-        &mut self.input
-    }
 }
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
@@ -186,7 +173,6 @@ pub struct BehaviorPropStr {
 
 impl BehaviorProp for BehaviorPropStr {
     type ValueType = Cow<'static, str>;
-    type InputType = Cow<'static, str>;
     type ScriptType = String;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
@@ -203,14 +189,6 @@ impl BehaviorProp for BehaviorPropStr {
 
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
         &mut self.value
-    }
-
-    fn input(&self) -> &Option<Self::InputType> {
-        &self.input
-    }
-
-    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
-        &mut self.input
     }
 }
 
@@ -226,7 +204,6 @@ pub struct BehaviorPropEPath {
 
 impl BehaviorProp for BehaviorPropEPath {
     type ValueType = EPath;
-    type InputType = Cow<'static, str>;
     type ScriptType = String;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
@@ -243,14 +220,6 @@ impl BehaviorProp for BehaviorPropEPath {
 
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
         &mut self.value
-    }
-
-    fn input(&self) -> &Option<Self::InputType> {
-        &self.input
-    }
-
-    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
-        &mut self.input
     }
 }
 
