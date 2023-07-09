@@ -32,6 +32,7 @@ pub enum BehaviorPropValue<T: Reflect + Default> {
 
 pub trait BehaviorProp
 where
+    Self: FromReflect + Reflect + Default + Clone,
     <Self::ValueType as TryFrom<Self::ScriptType>>::Error: std::fmt::Debug,
 {
     type ValueType: Reflect + Default + Clone + TryFrom<Self::ScriptType>;
@@ -117,6 +118,21 @@ where
     }
 }
 
+#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default, Deref, DerefMut)]
+pub struct BehaviorPropOption<Prop>(Option<Prop>)
+where
+    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone,
+    <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
+        std::fmt::Debug;
+
+impl<Prop> BehaviorPropOption<Prop>
+where
+    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone,
+    <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
+        std::fmt::Debug,
+{
+}
+
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
 pub struct BehaviorPropGeneric<
     ValueType: Reflect + Default + Clone + From<ScriptType>,
@@ -132,7 +148,7 @@ pub struct BehaviorPropGeneric<
 
 impl<ValueType, ScriptType> BehaviorProp for BehaviorPropGeneric<ValueType, ScriptType>
 where
-    ValueType: Reflect + Default + Clone + From<ScriptType>,
+    ValueType: FromReflect + Reflect + Default + Clone + From<ScriptType>,
     ScriptType: Reflect + Default + Clone,
 {
     type ValueType = ValueType;
