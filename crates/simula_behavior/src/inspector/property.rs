@@ -33,11 +33,9 @@ const PROP_FRAME_OUTER_MARGIN: egui::Margin = egui::Margin {
 const PROP_VALUE_ICON: &str = "=";
 const PROP_EVAL_ICON: &str = "λ";
 
-impl<ValueType, InputType, ScriptType> BehaviorUI
-    for BehaviorPropGeneric<ValueType, InputType, ScriptType>
+impl<ValueType, ScriptType> BehaviorUI for BehaviorPropGeneric<ValueType, ScriptType>
 where
     ValueType: FromReflect + Reflect + Default + Clone + From<ScriptType>,
-    InputType: Reflect + Default,
     ScriptType: Reflect + Default,
 {
     fn ui(

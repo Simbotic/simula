@@ -120,7 +120,6 @@ where
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
 pub struct BehaviorPropGeneric<
     ValueType: Reflect + Default + Clone + From<ScriptType>,
-    InputType: Reflect + Default = ValueType,
     ScriptType: Reflect + Default = ValueType,
 > {
     pub prop: BehaviorEval<ValueType>,
@@ -128,17 +127,12 @@ pub struct BehaviorPropGeneric<
     pub value: BehaviorPropValue<ValueType>,
     #[serde(skip)]
     #[reflect(ignore)]
-    pub input: Option<InputType>,
-    #[serde(skip)]
-    #[reflect(ignore)]
     pub _phantom: std::marker::PhantomData<ScriptType>,
 }
 
-impl<ValueType, InputType, ScriptType> BehaviorProp
-    for BehaviorPropGeneric<ValueType, InputType, ScriptType>
+impl<ValueType, ScriptType> BehaviorProp for BehaviorPropGeneric<ValueType, ScriptType>
 where
     ValueType: Reflect + Default + Clone + From<ScriptType>,
-    InputType: Reflect + Default + Clone,
     ScriptType: Reflect + Default + Clone,
 {
     type ValueType = ValueType;
