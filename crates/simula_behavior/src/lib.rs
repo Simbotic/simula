@@ -40,8 +40,8 @@ pub mod prelude {
         BehaviorInspectable, BehaviorInspectorPlugin, BehaviorNodeInspectable, BehaviorUI,
     };
     pub use crate::property::{
-        BehaviorEval, BehaviorProp, BehaviorPropEPath, BehaviorPropGeneric, BehaviorPropStr,
-        BehaviorPropValue,
+        BehaviorEval, BehaviorProp, BehaviorPropEPath, BehaviorPropGeneric, BehaviorPropOption,
+        BehaviorPropStr, BehaviorPropValue,
     };
     pub use crate::protocol::{self};
     pub use crate::server::{

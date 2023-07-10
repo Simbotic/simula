@@ -33,11 +33,9 @@ const PROP_FRAME_OUTER_MARGIN: egui::Margin = egui::Margin {
 const PROP_VALUE_ICON: &str = "=";
 const PROP_EVAL_ICON: &str = "λ";
 
-impl<ValueType, InputType, ScriptType> BehaviorUI
-    for BehaviorPropGeneric<ValueType, InputType, ScriptType>
+impl<ValueType, ScriptType> BehaviorUI for BehaviorPropGeneric<ValueType, ScriptType>
 where
     ValueType: FromReflect + Reflect + Default + Clone + From<ScriptType>,
-    InputType: Reflect + Default,
     ScriptType: Reflect + Default,
 {
     fn ui(
@@ -564,6 +562,97 @@ impl BehaviorUI for BehaviorPropEPath {
                         }
                     });
                 });
+            });
+    }
+}
+
+impl<Prop> BehaviorUI for BehaviorPropOption<Prop>
+where
+    Prop: BehaviorProp + BehaviorUI,
+    <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
+        std::fmt::Debug,
+{
+    fn ui(
+        &mut self,
+        label: Option<&str>,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &TypeRegistry,
+    ) -> bool {
+        egui::Frame::none()
+            .inner_margin(PROP_FRAME_INNER_MARGIN)
+            .outer_margin(PROP_FRAME_OUTER_MARGIN)
+            .rounding(PROP_FRAME_RADIUS)
+            .fill(PROP_FRAME_COLOR)
+            .show(ui, |ui| {
+                ui.set_width(PROP_FRAME_WIDTH);
+
+                let mut changed = false;
+
+                let mut reset = false;
+
+                if let Some(prop) = self.as_mut() {
+                    if ui.small_button("-").clicked() {
+                        reset = true;
+                        changed |= true;
+                    }
+                    changed |= prop.ui(label, state, ui, type_registry);
+                } else {
+                    ui.vertical(|ui| {
+                        let label = label.unwrap_or("");
+                        let label = egui::RichText::new(format!("{}", label))
+                            .small()
+                            .color(PROP_LABEL_COLOR);
+                        ui.label(label);
+                        ui.horizontal(|ui| {
+                            ui.add_space(10.0);
+
+                            if ui.small_button("+").clicked() {
+                                **self = Some(Prop::default());
+                                changed |= true;
+                            }
+                        });
+                    });
+                }
+
+                if reset {
+                    **self = None;
+                }
+
+                changed
+            })
+            .inner
+    }
+
+    fn ui_readonly(
+        &self,
+        label: Option<&str>,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &TypeRegistry,
+    ) {
+        egui::Frame::none()
+            .inner_margin(PROP_FRAME_INNER_MARGIN)
+            .outer_margin(PROP_FRAME_OUTER_MARGIN)
+            .rounding(PROP_FRAME_RADIUS)
+            .fill(PROP_FRAME_COLOR)
+            .show(ui, |ui| {
+                ui.set_width(PROP_FRAME_WIDTH);
+
+                if let Some(prop) = self.as_ref() {
+                    prop.ui_readonly(label, state, ui, type_registry);
+                } else {
+                    ui.vertical(|ui| {
+                        let label = label.unwrap_or("");
+                        let label = egui::RichText::new(format!("{}", label))
+                            .small()
+                            .color(PROP_LABEL_COLOR);
+                        ui.label(label);
+                        ui.horizontal(|ui| {
+                            ui.add_space(10.0);
+                        });
+                    });
+                }
             });
     }
 }

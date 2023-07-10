@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemParam, prelude::*};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Cow;
@@ -174,6 +174,14 @@ impl<'de> Deserialize<'de> for EPath {
     }
 }
 
+#[derive(SystemParam)]
+pub struct EPathQueries<'w, 's> {
+    pub names: Query<'w, 's, &'static Name>,
+    pub parents: Query<'w, 's, &'static Parent>,
+    pub children: Query<'w, 's, &'static Children>,
+    pub roots: Query<'w, 's, Entity, Without<Parent>>,
+}
+
 #[derive(Reflect, FromReflect, Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EEntity {
     pub path: EPath,
@@ -181,26 +189,10 @@ pub struct EEntity {
     pub name: Option<Cow<'static, str>>,
 }
 
-pub fn select(
-    parent: Option<Entity>,
-    path: &[E],
-    names: &Query<&Name>,
-    parents: &Query<&Parent>,
-    children: &Query<&Children>,
-    roots: &Query<Entity, Without<Parent>>,
-) -> Vec<EEntity> {
+pub fn select(parent: Option<Entity>, path: &[E], equeries: &EPathQueries) -> Vec<EEntity> {
     let mut entities = Vec::new();
     let mut breadcrumb = EPath::default();
-    select_traverse(
-        &mut entities,
-        &mut breadcrumb,
-        parent,
-        &path,
-        &names,
-        &parents,
-        &children,
-        &roots,
-    );
+    select_traverse(&mut entities, &mut breadcrumb, parent, &path, equeries);
     entities
 }
 
@@ -209,10 +201,7 @@ fn select_traverse(
     breadcrumb: &mut EPath,
     parent: Option<Entity>,
     path: &[E],
-    names: &Query<&Name>,
-    parents: &Query<&Parent>,
-    children: &Query<&Children>,
-    roots: &Query<Entity, Without<Parent>>,
+    equeries: &EPathQueries,
 ) {
     let item = path.first();
 
@@ -223,24 +212,15 @@ fn select_traverse(
             if !parent.is_none() {
                 panic!("Root must be first element in path");
             }
-            select_traverse(
-                entities,
-                breadcrumb,
-                None,
-                &path[1..],
-                names,
-                parents,
-                children,
-                roots,
-            );
+            select_traverse(entities, breadcrumb, None, &path[1..], equeries);
         }
         Some(E::Name(ename)) => {
             breadcrumb.push(E::Name(ename.clone()));
 
             if let Some(ancestor) = parent {
-                if let Ok(childs) = children.get(ancestor) {
+                if let Ok(childs) = equeries.children.get(ancestor) {
                     for child in childs.iter() {
-                        if let Ok(name) = names.get(*child) {
+                        if let Ok(name) = equeries.names.get(*child) {
                             if ename == name.as_ref() {
                                 if path.len() == 1 {
                                     entities.push(EEntity {
@@ -254,10 +234,7 @@ fn select_traverse(
                                         breadcrumb,
                                         Some(*child),
                                         &path[1..],
-                                        names,
-                                        parents,
-                                        children,
-                                        roots,
+                                        equeries,
                                     );
                                 }
                             }
@@ -265,8 +242,8 @@ fn select_traverse(
                     }
                 }
             } else {
-                for root in roots.iter() {
-                    if let Ok(name) = names.get(root) {
+                for root in equeries.roots.iter() {
+                    if let Ok(name) = equeries.names.get(root) {
                         if ename == name.as_ref() {
                             if path.len() == 1 {
                                 entities.push(EEntity {
@@ -280,10 +257,7 @@ fn select_traverse(
                                     breadcrumb,
                                     Some(root),
                                     &path[1..],
-                                    names,
-                                    parents,
-                                    children,
-                                    roots,
+                                    equeries,
                                 );
                             }
                         }
@@ -295,10 +269,11 @@ fn select_traverse(
             breadcrumb.push(E::First);
 
             if let Some(ancestor) = parent {
-                if let Ok(childs) = children.get(ancestor) {
+                if let Ok(childs) = equeries.children.get(ancestor) {
                     if let Some(child) = childs.iter().next() {
                         if path.len() == 1 {
-                            let name = names
+                            let name = equeries
+                                .names
                                 .get(*child)
                                 .and_then(|name| Ok(name.as_ref().to_owned().into()))
                                 .ok();
@@ -313,18 +288,16 @@ fn select_traverse(
                                 breadcrumb,
                                 Some(*child),
                                 &path[1..],
-                                names,
-                                parents,
-                                children,
-                                roots,
+                                equeries,
                             );
                         }
                     }
                 }
             } else {
-                if let Some(root) = roots.iter().next() {
+                if let Some(root) = equeries.roots.iter().next() {
                     if path.len() == 1 {
-                        let name = names
+                        let name = equeries
+                            .names
                             .get(root)
                             .and_then(|name| Ok(name.as_ref().to_owned().into()))
                             .ok();
@@ -334,16 +307,7 @@ fn select_traverse(
                             name,
                         });
                     } else {
-                        select_traverse(
-                            entities,
-                            breadcrumb,
-                            Some(root),
-                            &path[1..],
-                            names,
-                            parents,
-                            children,
-                            roots,
-                        );
+                        select_traverse(entities, breadcrumb, Some(root), &path[1..], equeries);
                     }
                 }
             }
@@ -352,10 +316,11 @@ fn select_traverse(
             breadcrumb.push(E::Last);
 
             if let Some(ancestor) = parent {
-                if let Ok(childs) = children.get(ancestor) {
+                if let Ok(childs) = equeries.children.get(ancestor) {
                     if let Some(child) = childs.iter().last() {
                         if path.len() == 1 {
-                            let name = names
+                            let name = equeries
+                                .names
                                 .get(*child)
                                 .and_then(|name| Ok(name.as_ref().to_owned().into()))
                                 .ok();
@@ -370,18 +335,16 @@ fn select_traverse(
                                 breadcrumb,
                                 Some(*child),
                                 &path[1..],
-                                names,
-                                parents,
-                                children,
-                                roots,
+                                equeries,
                             );
                         }
                     }
                 }
             } else {
-                if let Some(root) = roots.iter().last() {
+                if let Some(root) = equeries.roots.iter().last() {
                     if path.len() == 1 {
-                        let name = names
+                        let name = equeries
+                            .names
                             .get(root)
                             .and_then(|name| Ok(name.as_ref().to_owned().into()))
                             .ok();
@@ -391,16 +354,7 @@ fn select_traverse(
                             name,
                         });
                     } else {
-                        select_traverse(
-                            entities,
-                            breadcrumb,
-                            Some(root),
-                            &path[1..],
-                            names,
-                            parents,
-                            children,
-                            roots,
-                        );
+                        select_traverse(entities, breadcrumb, Some(root), &path[1..], equeries);
                     }
                 }
             }
@@ -409,10 +363,11 @@ fn select_traverse(
             breadcrumb.push(E::Nth(*index));
 
             if let Some(ancestor) = parent {
-                if let Ok(childs) = children.get(ancestor) {
+                if let Ok(childs) = equeries.children.get(ancestor) {
                     if let Some(child) = childs.iter().nth(*index) {
                         if path.len() == 1 {
-                            let name = names
+                            let name = equeries
+                                .names
                                 .get(*child)
                                 .and_then(|name| Ok(name.as_ref().to_owned().into()))
                                 .ok();
@@ -427,18 +382,16 @@ fn select_traverse(
                                 breadcrumb,
                                 Some(*child),
                                 &path[1..],
-                                names,
-                                parents,
-                                children,
-                                roots,
+                                equeries,
                             );
                         }
                     }
                 }
             } else {
-                if let Some(root) = roots.iter().nth(*index) {
+                if let Some(root) = equeries.roots.iter().nth(*index) {
                     if path.len() == 1 {
-                        let name = names
+                        let name = equeries
+                            .names
                             .get(root)
                             .and_then(|name| Ok(name.as_ref().to_owned().into()))
                             .ok();
@@ -448,16 +401,7 @@ fn select_traverse(
                             name,
                         });
                     } else {
-                        select_traverse(
-                            entities,
-                            breadcrumb,
-                            Some(root),
-                            &path[1..],
-                            names,
-                            parents,
-                            children,
-                            roots,
-                        );
+                        select_traverse(entities, breadcrumb, Some(root), &path[1..], equeries);
                     }
                 }
             }
@@ -519,24 +463,14 @@ mod tests {
     fn select_test(
         path_test: Res<EPathTest>,
         _debug: Query<(Entity, &Name)>,
-        names: Query<&Name>,
-        parents: Query<&Parent>,
-        childrens: Query<&Children>,
-        roots: Query<Entity, Without<Parent>>,
+        equeries: EPathQueries,
     ) {
         // Entity names and IDs
         // for (entity, name) in &debug {
         //     println!("{:?}: {}", entity, name.as_ref());
         // }
 
-        let entities = select(
-            path_test.parent,
-            &path_test.path,
-            &names,
-            &parents,
-            &childrens,
-            &roots,
-        );
+        let entities = select(path_test.parent, &path_test.path, &equeries);
 
         // let result = ron::to_string(&entities).unwrap();
         assert_eq!(path_test.result, entities);

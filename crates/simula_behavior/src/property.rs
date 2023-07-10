@@ -32,10 +32,10 @@ pub enum BehaviorPropValue<T: Reflect + Default> {
 
 pub trait BehaviorProp
 where
+    Self: FromReflect + Reflect + Default + Clone,
     <Self::ValueType as TryFrom<Self::ScriptType>>::Error: std::fmt::Debug,
 {
     type ValueType: Reflect + Default + Clone + TryFrom<Self::ScriptType>;
-    type InputType: Reflect + Default + Clone;
     type ScriptType: Reflect + Default + Clone;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType>;
@@ -43,9 +43,6 @@ where
 
     fn value(&self) -> &BehaviorPropValue<Self::ValueType>;
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType>;
-
-    fn input(&self) -> &Option<Self::InputType>;
-    fn input_mut(&mut self) -> &mut Option<Self::InputType>;
 
     fn fetch(
         &mut self,
@@ -121,10 +118,24 @@ where
     }
 }
 
+#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default, Deref, DerefMut)]
+pub struct BehaviorPropOption<Prop>(Option<Prop>)
+where
+    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone,
+    <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
+        std::fmt::Debug;
+
+impl<Prop> BehaviorPropOption<Prop>
+where
+    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone,
+    <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
+        std::fmt::Debug,
+{
+}
+
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
 pub struct BehaviorPropGeneric<
     ValueType: Reflect + Default + Clone + From<ScriptType>,
-    InputType: Reflect + Default = ValueType,
     ScriptType: Reflect + Default = ValueType,
 > {
     pub prop: BehaviorEval<ValueType>,
@@ -132,21 +143,15 @@ pub struct BehaviorPropGeneric<
     pub value: BehaviorPropValue<ValueType>,
     #[serde(skip)]
     #[reflect(ignore)]
-    pub input: Option<InputType>,
-    #[serde(skip)]
-    #[reflect(ignore)]
     pub _phantom: std::marker::PhantomData<ScriptType>,
 }
 
-impl<ValueType, InputType, ScriptType> BehaviorProp
-    for BehaviorPropGeneric<ValueType, InputType, ScriptType>
+impl<ValueType, ScriptType> BehaviorProp for BehaviorPropGeneric<ValueType, ScriptType>
 where
-    ValueType: Reflect + Default + Clone + From<ScriptType>,
-    InputType: Reflect + Default + Clone,
+    ValueType: FromReflect + Reflect + Default + Clone + From<ScriptType>,
     ScriptType: Reflect + Default + Clone,
 {
     type ValueType = ValueType;
-    type InputType = InputType;
     type ScriptType = ScriptType;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
@@ -164,14 +169,6 @@ where
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
         &mut self.value
     }
-
-    fn input(&self) -> &Option<Self::InputType> {
-        &self.input
-    }
-
-    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
-        &mut self.input
-    }
 }
 
 #[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
@@ -186,7 +183,6 @@ pub struct BehaviorPropStr {
 
 impl BehaviorProp for BehaviorPropStr {
     type ValueType = Cow<'static, str>;
-    type InputType = Cow<'static, str>;
     type ScriptType = String;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
@@ -203,14 +199,6 @@ impl BehaviorProp for BehaviorPropStr {
 
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
         &mut self.value
-    }
-
-    fn input(&self) -> &Option<Self::InputType> {
-        &self.input
-    }
-
-    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
-        &mut self.input
     }
 }
 
@@ -226,7 +214,6 @@ pub struct BehaviorPropEPath {
 
 impl BehaviorProp for BehaviorPropEPath {
     type ValueType = EPath;
-    type InputType = Cow<'static, str>;
     type ScriptType = String;
 
     fn prop(&self) -> &BehaviorEval<Self::ValueType> {
@@ -243,14 +230,6 @@ impl BehaviorProp for BehaviorPropEPath {
 
     fn value_mut(&mut self) -> &mut BehaviorPropValue<Self::ValueType> {
         &mut self.value
-    }
-
-    fn input(&self) -> &Option<Self::InputType> {
-        &self.input
-    }
-
-    fn input_mut(&mut self) -> &mut Option<Self::InputType> {
-        &mut self.input
     }
 }
 
