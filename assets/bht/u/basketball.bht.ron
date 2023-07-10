@@ -1,0 +1,560 @@
+("Basketball Play", Repeater((
+    repeat: Forever,
+)), [
+    ("⌛ Delay", Delay((
+        duration: 1.5,
+    )), [
+        ("Select type of Possesion", Selector((
+            random: false,
+        )), [
+            ("➡ Ofensive Possesion", Sequencer((
+                random: false,
+            )), [
+                ("Your team have the ball?", Debug((
+                    message: "",
+                    fail: false,
+                    duration: 1.5,
+                )), [], (
+                    pos: (1000.0, 0.0),
+                )),
+                ("⌛ Delay", Delay((
+                    duration: 1.5,
+                )), [
+                    ("Select Play", Selector((
+                        random: false,
+                    )), [
+                        ("➡ On-Ball Play", Sequencer((
+                            random: false,
+                        )), [
+                            ("You have the ball?", Debug((
+                                message: "",
+                                fail: false,
+                                duration: 1.5,
+                            )), [], (
+                                pos: (1600.0, 200.0),
+                            )),
+                            ("⌛ Delay", Delay((
+                                duration: 1.5,
+                            )), [
+                                ("Select Offensive On-Ball play", Selector((
+                                    random: false,
+                                )), [
+                                    ("➡ Forced Shot", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("👁 Is the clock ticking near 0?", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 400.0),
+                                        )),
+                                        ("👁 Force Shot", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 600.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 400.0),
+                                    )),
+                                    ("Shoot", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("Are you in range?", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 800.0),
+                                        )),
+                                        ("❓ Select way of make space", Selector((
+                                            random: false,
+                                        )), [
+                                            ("Have space to shoot?", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 1000.0),
+                                            )),
+                                            ("Fake and Drive", Sequencer((
+                                                random: false,
+                                            )), [
+                                                ("👁 Fake pass", Debug((
+                                                    message: "",
+                                                    fail: true,
+                                                    duration: 1.5,
+                                                )), [], (
+                                                    pos: (2600.0, 1200.0),
+                                                )),
+                                                ("Drive", Debug((
+                                                    message: "",
+                                                    fail: false,
+                                                    duration: 0.0,
+                                                )), [], (
+                                                    pos: (2600.0, 1400.0),
+                                                )),
+                                            ], (
+                                                pos: (2400.0, 1200.0),
+                                            )),
+                                            ("Step back", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 1600.0),
+                                            )),
+                                            ("👁 Fake shot", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 1800.0),
+                                            )),
+                                        ], (
+                                            pos: (2200.0, 1000.0),
+                                        )),
+                                        ("👁 Shoot", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 2000.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 800.0),
+                                    )),
+                                    ("➡ Pass", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("👁Have a free teammate?", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 2200.0),
+                                        )),
+                                        ("❓ Type of pass", Selector((
+                                            random: false,
+                                        )), [
+                                            ("Direct pass", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 2400.0),
+                                            )),
+                                            ("Pick pass", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 2600.0),
+                                            )),
+                                            ("Upper pass", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 2800.0),
+                                            )),
+                                            ("👁 Baseball pass", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 3000.0),
+                                            )),
+                                        ], (
+                                            pos: (2200.0, 2400.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 2200.0),
+                                    )),
+                                    ("➡ Layup", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("👁 Open Zone?", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 3200.0),
+                                        )),
+                                        ("👁Drive", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 3400.0),
+                                        )),
+                                        ("➡ Layup", Sequencer((
+                                            random: false,
+                                        )), [
+                                            ("~ Inverter", Inverter(()), [
+                                                ("You got double teamed?", Debug((
+                                                    message: "",
+                                                    fail: true,
+                                                    duration: 1.5,
+                                                )), [], (
+                                                    pos: (2600.0, 3600.0),
+                                                )),
+                                            ], (
+                                                pos: (2400.0, 3600.0),
+                                            )),
+                                            ("👁 Make Layup", Debug((
+                                                message: "",
+                                                fail: false,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 3800.0),
+                                            )),
+                                        ], (
+                                            pos: (2200.0, 3600.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 3200.0),
+                                    )),
+                                    ("👁 Dribble", Debug((
+                                        message: "",
+                                        fail: false,
+                                        duration: 1.5,
+                                    )), [], (
+                                        pos: (2000.0, 4000.0),
+                                    )),
+                                ], (
+                                    pos: (1800.0, 400.0),
+                                )),
+                            ], (
+                                pos: (1600.0, 400.0),
+                            )),
+                        ], (
+                            pos: (1400.0, 200.0),
+                        )),
+                        ("➡ Off-Ball Play", Sequencer((
+                            random: false,
+                        )), [
+                            ("⌛ Delay", Delay((
+                                duration: 3.5,
+                            )), [
+                                ("Select Offensive Off-Ball play", Selector((
+                                    random: false,
+                                )), [
+                                    ("Request a Pass", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("⌛ Delay", Delay((
+                                            duration: 1.5,
+                                        )), [
+                                            ("Free yourself", Selector((
+                                                random: false,
+                                            )), [
+                                                ("👁Are you free?", Debug((
+                                                    message: "",
+                                                    fail: false,
+                                                    duration: 0.0,
+                                                )), [], (
+                                                    pos: (2600.0, 4200.0),
+                                                )),
+                                                ("👁 Fake movement", Debug((
+                                                    message: "",
+                                                    fail: true,
+                                                    duration: 1.5,
+                                                )), [], (
+                                                    pos: (2600.0, 4400.0),
+                                                )),
+                                                ("➡ Pick and Action", Sequencer((
+                                                    random: false,
+                                                )), [
+                                                    ("👁 Set Screen", Debug((
+                                                        message: "",
+                                                        fail: false,
+                                                        duration: 1.5,
+                                                    )), [], (
+                                                        pos: (2800.0, 4600.0),
+                                                    )),
+                                                    ("⌛ Delay", Delay((
+                                                        duration: 1.5,
+                                                    )), [
+                                                        ("Select the Action", Selector((
+                                                            random: true,
+                                                        )), [
+                                                            ("➡ Roll", Sequencer((
+                                                                random: false,
+                                                            )), [
+                                                                ("The paint area is free?", Debug((
+                                                                    message: "",
+                                                                    fail: false,
+                                                                    duration: 1.5,
+                                                                )), [], (
+                                                                    pos: (3400.0, 4800.0),
+                                                                )),
+                                                                ("👁 Roll", Debug((
+                                                                    message: "",
+                                                                    fail: false,
+                                                                    duration: 1.5,
+                                                                )), [], (
+                                                                    pos: (3400.0, 5000.0),
+                                                                )),
+                                                            ], (
+                                                                pos: (3200.0, 4800.0),
+                                                            )),
+                                                            ("👁 Pop", Debug((
+                                                                message: "",
+                                                                fail: false,
+                                                                duration: 1.5,
+                                                            )), [], (
+                                                                pos: (3200.0, 5200.0),
+                                                            )),
+                                                        ], (
+                                                            pos: (3000.0, 4800.0),
+                                                        )),
+                                                    ], (
+                                                        pos: (2800.0, 4800.0),
+                                                    )),
+                                                ], (
+                                                    pos: (2600.0, 4600.0),
+                                                )),
+                                                ("👁 Run", Debug((
+                                                    message: "",
+                                                    fail: true,
+                                                    duration: 1.5,
+                                                )), [], (
+                                                    pos: (2600.0, 5400.0),
+                                                )),
+                                                ("👁 Push", Debug((
+                                                    message: "",
+                                                    fail: true,
+                                                    duration: 1.5,
+                                                )), [], (
+                                                    pos: (2600.0, 5600.0),
+                                                )),
+                                            ], (
+                                                pos: (2400.0, 4200.0),
+                                            )),
+                                        ], (
+                                            pos: (2200.0, 4200.0),
+                                        )),
+                                        ("👁Request a Pass", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 5800.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 4200.0),
+                                    )),
+                                ], (
+                                    pos: (1800.0, 4200.0),
+                                )),
+                            ], (
+                                pos: (1600.0, 4200.0),
+                            )),
+                        ], (
+                            pos: (1400.0, 4200.0),
+                        )),
+                    ], (
+                        pos: (1200.0, 200.0),
+                    )),
+                ], (
+                    pos: (1000.0, 200.0),
+                )),
+            ], (
+                pos: (800.0, 0.0),
+            )),
+            ("Defensive Possesion", Sequencer((
+                random: false,
+            )), [
+                ("Set a Mark", Debug((
+                    message: "",
+                    fail: false,
+                    duration: 1.5,
+                )), [], (
+                    pos: (1000.0, 6000.0),
+                )),
+                ("👁 Get to your mark", Debug((
+                    message: "",
+                    fail: false,
+                    duration: 1.5,
+                )), [], (
+                    pos: (1000.0, 6200.0),
+                )),
+                ("⌛ Delay", Delay((
+                    duration: 1.5,
+                )), [
+                    ("Select Defensive Play", Selector((
+                        random: false,
+                    )), [
+                        ("➡ On-Ball Defense", Sequencer((
+                            random: false,
+                        )), [
+                            ("👁 Your Mark have the Ball?", Debug((
+                                message: "",
+                                fail: true,
+                                duration: 1.5,
+                            )), [], (
+                                pos: (1600.0, 6400.0),
+                            )),
+                            ("⌛ Delay", Delay((
+                                duration: 1.5,
+                            )), [
+                                ("Select Defensive On-Ball Action", Selector((
+                                    random: true,
+                                )), [
+                                    ("Block shot", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("Your opponent is shooting?", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 6600.0),
+                                        )),
+                                        ("👁 Go for the block", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 6800.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 6600.0),
+                                    )),
+                                    ("➡ Pressure defense", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("~ Inverter", Inverter(()), [
+                                            ("Your mark is dribbling?", Debug((
+                                                message: "",
+                                                fail: true,
+                                                duration: 1.5,
+                                            )), [], (
+                                                pos: (2400.0, 7000.0),
+                                            )),
+                                        ], (
+                                            pos: (2200.0, 7000.0),
+                                        )),
+                                        ("Pressure defense", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 7200.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 7000.0),
+                                    )),
+                                    ("➡ Steal the ball", Sequencer((
+                                        random: false,
+                                    )), [
+                                        ("👁 Your mark is distracted?", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 7400.0),
+                                        )),
+                                        ("Go for Steal the Ball", Debug((
+                                            message: "",
+                                            fail: false,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 7600.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 7400.0),
+                                    )),
+                                    ("Back defense", Debug((
+                                        message: "",
+                                        fail: false,
+                                        duration: 1.5,
+                                    )), [], (
+                                        pos: (2000.0, 7800.0),
+                                    )),
+                                ], (
+                                    pos: (1800.0, 6600.0),
+                                )),
+                            ], (
+                                pos: (1600.0, 6600.0),
+                            )),
+                        ], (
+                            pos: (1400.0, 6400.0),
+                        )),
+                        ("➡ Off-Ball Defense", Sequencer((
+                            random: false,
+                        )), [
+                            ("⌛ Delay", Delay((
+                                duration: 2.5,
+                            )), [
+                                ("Possible Help Defense", Selector((
+                                    random: false,
+                                )), [
+                                    ("~ Inverter", Inverter(()), [
+                                        ("Other opposing member is attacking without mark?", Debug((
+                                            message: "",
+                                            fail: true,
+                                            duration: 1.5,
+                                        )), [], (
+                                            pos: (2200.0, 8000.0),
+                                        )),
+                                    ], (
+                                        pos: (2000.0, 8000.0),
+                                    )),
+                                    ("Go Help Defense", Debug((
+                                        message: "",
+                                        fail: true,
+                                        duration: 1.5,
+                                    )), [], (
+                                        pos: (2000.0, 8200.0),
+                                    )),
+                                ], (
+                                    pos: (1800.0, 8000.0),
+                                )),
+                            ], (
+                                pos: (1600.0, 8000.0),
+                            )),
+                            ("Select Defensive Off-Ball Action", Selector((
+                                random: false,
+                            )), [
+                                ("👁 Block possible pass", Debug((
+                                    message: "",
+                                    fail: false,
+                                    duration: 1.5,
+                                )), [], (
+                                    pos: (1800.0, 8400.0),
+                                )),
+                                ("👁 Double Mark an opossing member", Debug((
+                                    message: "",
+                                    fail: false,
+                                    duration: 1.5,
+                                )), [], (
+                                    pos: (1800.0, 8600.0),
+                                )),
+                            ], (
+                                pos: (1600.0, 8400.0),
+                            )),
+                        ], (
+                            pos: (1400.0, 8000.0),
+                        )),
+                    ], (
+                        pos: (1200.0, 6400.0),
+                    )),
+                ], (
+                    pos: (1000.0, 6400.0),
+                )),
+            ], (
+                pos: (800.0, 6000.0),
+            )),
+        ], (
+            pos: (600.0, 0.0),
+        )),
+    ], (
+        pos: (400.0, 0.0),
+    )),
+], (
+    pos: (200.0, 0.0),
+))
