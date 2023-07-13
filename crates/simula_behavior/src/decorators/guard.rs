@@ -83,6 +83,16 @@ pub fn run(
             }
         }
 
+        if children.len() != 1 {
+            error!("Decorator node requires one child");
+            commands.entity(entity).insert(BehaviorFailure);
+            continue;
+        }
+
+        if started.is_some() {
+            guard.condition.value = BehaviorPropValue::None;
+        }
+
         let _ = guard.condition.fetch(node, &mut scripts);
         let child_entity = children[0]; // Safe because we checked for empty
         if let Ok(BehaviorChildQueryItem {
