@@ -579,25 +579,47 @@ where
         ui: &mut bevy_inspector_egui::egui::Ui,
         type_registry: &TypeRegistry,
     ) -> bool {
-        egui::Frame::none()
-            .inner_margin(PROP_FRAME_INNER_MARGIN)
-            .outer_margin(PROP_FRAME_OUTER_MARGIN)
-            .rounding(PROP_FRAME_RADIUS)
-            .fill(PROP_FRAME_COLOR)
-            .show(ui, |ui| {
-                ui.set_width(PROP_FRAME_WIDTH);
+        let mut changed = false;
+        let mut reset = false;
 
-                let mut changed = false;
-
-                let mut reset = false;
-
-                if let Some(prop) = self.as_mut() {
-                    if ui.small_button("-").clicked() {
-                        reset = true;
-                        changed |= true;
-                    }
-                    changed |= prop.ui(label, state, ui, type_registry);
-                } else {
+        if let Some(prop) = self.as_mut() {
+            let wrapper = egui::Frame::none()
+                .show(ui, |ui| changed |= prop.ui(label, state, ui, type_registry));
+            if egui::Frame::none()
+                .inner_margin(egui::Margin {
+                    top: -2.0,
+                    bottom: 0.0,
+                    left: 0.0,
+                    right: 0.0,
+                })
+                .outer_margin(egui::Margin {
+                    top: -wrapper.response.rect.height(),
+                    bottom: 0.0,
+                    left: 0.0,
+                    right: 0.0,
+                })
+                .fill(egui::Color32::TRANSPARENT)
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.add_space(170.0);
+                        ui.small_button("-")
+                    })
+                    .inner
+                })
+                .inner
+                .clicked()
+            {
+                reset = true;
+                changed |= true;
+            }
+        } else {
+            egui::Frame::none()
+                .inner_margin(PROP_FRAME_INNER_MARGIN)
+                .outer_margin(PROP_FRAME_OUTER_MARGIN)
+                .rounding(PROP_FRAME_RADIUS)
+                .fill(PROP_FRAME_COLOR)
+                .show(ui, |ui| {
+                    ui.set_width(PROP_FRAME_WIDTH);
                     ui.vertical(|ui| {
                         let label = label.unwrap_or("");
                         let label = egui::RichText::new(format!("{}", label))
@@ -607,21 +629,20 @@ where
                         ui.horizontal(|ui| {
                             ui.add_space(10.0);
 
-                            if ui.small_button("+").clicked() {
+                            if ui.button("?").clicked() {
                                 **self = Some(Prop::default());
                                 changed |= true;
                             }
                         });
                     });
-                }
+                })
+                .inner
+        }
 
-                if reset {
-                    **self = None;
-                }
-
-                changed
-            })
-            .inner
+        if reset {
+            **self = None;
+        }
+        changed
     }
 
     fn ui_readonly(
@@ -631,17 +652,17 @@ where
         ui: &mut bevy_inspector_egui::egui::Ui,
         type_registry: &TypeRegistry,
     ) {
-        egui::Frame::none()
-            .inner_margin(PROP_FRAME_INNER_MARGIN)
-            .outer_margin(PROP_FRAME_OUTER_MARGIN)
-            .rounding(PROP_FRAME_RADIUS)
-            .fill(PROP_FRAME_COLOR)
-            .show(ui, |ui| {
-                ui.set_width(PROP_FRAME_WIDTH);
+        if let Some(prop) = self.as_ref() {
+            prop.ui_readonly(label, state, ui, type_registry);
+        } else {
+            egui::Frame::none()
+                .inner_margin(PROP_FRAME_INNER_MARGIN)
+                .outer_margin(PROP_FRAME_OUTER_MARGIN)
+                .rounding(PROP_FRAME_RADIUS)
+                .fill(PROP_FRAME_COLOR)
+                .show(ui, |ui| {
+                    ui.set_width(PROP_FRAME_WIDTH);
 
-                if let Some(prop) = self.as_ref() {
-                    prop.ui_readonly(label, state, ui, type_registry);
-                } else {
                     ui.vertical(|ui| {
                         let label = label.unwrap_or("");
                         let label = egui::RichText::new(format!("{}", label))
@@ -652,7 +673,7 @@ where
                             ui.add_space(10.0);
                         });
                     });
-                }
-            });
+                });
+        }
     }
 }
