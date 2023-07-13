@@ -1,5 +1,5 @@
-use crate::debug::*;
 use crate::prelude::*;
+use crate::property_ui_readonly;
 use crate::ScriptContext;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
@@ -13,8 +13,7 @@ use simula_script::Script;
 #[reflect(InspectorOptions)]
 pub struct Wait {
     #[serde(default)]
-    #[inspector(min = 0.0, max = f64::MAX)]
-    pub duration: f64,
+    pub duration: BehaviorPropGeneric<f64>,
     #[serde(default)]
     pub fail: BehaviorPropGeneric<bool>,
     #[serde(skip)]
@@ -41,14 +40,7 @@ impl BehaviorUI for Wait {
     ) -> bool {
         let mut changed = false;
         changed |= behavior_ui!(self, fail, state, ui, type_registry);
-        changed |= add_parameter(
-            ui,
-            type_registry,
-            "duration",
-            self.duration.as_reflect_mut(),
-        );
-        changed |= add_parameter(ui, type_registry, "start", self.start.as_reflect_mut());
-        changed |= add_parameter(ui, type_registry, "ticks", self.ticks.as_reflect_mut());
+        changed |= behavior_ui!(self, duration, state, ui, type_registry);
         changed
     }
 
@@ -60,9 +52,14 @@ impl BehaviorUI for Wait {
         type_registry: &bevy::reflect::TypeRegistry,
     ) {
         behavior_ui_readonly!(self, fail, state, ui, type_registry);
-        add_parameter_readonly(ui, type_registry, "duration", self.duration.as_reflect());
-        add_parameter_readonly(ui, type_registry, "start", self.start.as_reflect());
-        add_parameter_readonly(ui, type_registry, "ticks", self.ticks.as_reflect());
+        behavior_ui_readonly!(self, duration, state, ui, type_registry);
+        match state {
+            Some(_) => {
+                property_ui_readonly!(self, start, state, ui, type_registry);
+                property_ui_readonly!(self, ticks, state, ui, type_registry);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -89,13 +86,26 @@ pub fn run(
             }
         }
 
-        if let BehaviorPropValue::Some(wait_fail) = &wait.fail.value.clone() {
+        if let BehaviorPropValue::None = wait.duration.value {
+            let result =
+                wait.duration
+                    .fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+        }
+
+        if let (BehaviorPropValue::Some(wait_fail), BehaviorPropValue::Some(wait_duration)) =
+            (&wait.fail.value.clone(), &wait.duration.value.clone())
+        {
             let elapsed = time.elapsed_seconds_f64();
             wait.ticks += 1;
             if started.is_some() {
                 wait.start = elapsed;
             }
-            if elapsed - wait.start > wait.duration - f64::EPSILON {
+            if elapsed - wait.start > wait_duration - f64::EPSILON {
                 if *wait_fail {
                     commands.entity(entity).insert(BehaviorFailure);
                 } else {

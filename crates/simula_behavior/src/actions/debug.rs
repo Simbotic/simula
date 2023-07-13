@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::property_ui_readonly;
 use crate::ScriptContext;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
@@ -15,8 +16,7 @@ pub struct Debug {
     #[serde(default)]
     pub fail: BehaviorPropGeneric<bool>,
     #[serde(default)]
-    #[inspector(min = 0.0, max = f64::MAX)]
-    pub duration: f64,
+    pub duration: BehaviorPropGeneric<f64>,
     #[serde(skip)]
     pub start: f64,
     #[serde(skip)]
@@ -30,34 +30,6 @@ impl BehaviorSpec for Debug {
     const DESC: &'static str = "Display a debug message and complete with success or failure";
 }
 
-pub fn add_parameter(
-    ui: &mut bevy_inspector_egui::egui::Ui,
-    type_registry: &bevy::reflect::TypeRegistry,
-    label: &str,
-    value: &mut dyn Reflect,
-) -> bool {
-    let mut result = false;
-    let type_registry = type_registry.read();
-    ui.horizontal(|ui| {
-        ui.label(label);
-        result = bevy_inspector_egui::reflect_inspector::ui_for_value(value, ui, &type_registry);
-    });
-    result
-}
-
-pub fn add_parameter_readonly(
-    ui: &mut bevy_inspector_egui::egui::Ui,
-    type_registry: &bevy::reflect::TypeRegistry,
-    label: &str,
-    value: &dyn Reflect,
-) {
-    let type_registry = type_registry.read();
-    ui.horizontal(|ui| {
-        ui.label(label);
-        bevy_inspector_egui::reflect_inspector::ui_for_value_readonly(value, ui, &type_registry);
-    });
-}
-
 impl BehaviorUI for Debug {
     fn ui(
         &mut self,
@@ -69,14 +41,7 @@ impl BehaviorUI for Debug {
         let mut changed = false;
         changed |= behavior_ui!(self, message, state, ui, type_registry);
         changed |= behavior_ui!(self, fail, state, ui, type_registry);
-        changed |= add_parameter(
-            ui,
-            type_registry,
-            "duration",
-            self.duration.as_reflect_mut(),
-        );
-        changed |= add_parameter(ui, type_registry, "start", self.start.as_reflect_mut());
-        changed |= add_parameter(ui, type_registry, "ticks", self.ticks.as_reflect_mut());
+        changed |= behavior_ui!(self, duration, state, ui, type_registry);
         changed
     }
 
@@ -89,9 +54,15 @@ impl BehaviorUI for Debug {
     ) {
         behavior_ui_readonly!(self, message, state, ui, type_registry);
         behavior_ui_readonly!(self, fail, state, ui, type_registry);
-        add_parameter_readonly(ui, type_registry, "duration", self.duration.as_reflect());
-        add_parameter_readonly(ui, type_registry, "start", self.start.as_reflect());
-        add_parameter_readonly(ui, type_registry, "ticks", self.ticks.as_reflect());
+        behavior_ui_readonly!(self, duration, state, ui, type_registry);
+
+        match state {
+            Some(_) => {
+                property_ui_readonly!(self, start, state, ui, type_registry);
+                property_ui_readonly!(self, ticks, state, ui, type_registry);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -139,22 +110,38 @@ pub fn run(
             }
         }
 
+        if let BehaviorPropValue::None = debug_action.duration.value {
+            let result = debug_action.duration.fetch(
+                node,
+                &mut scripts,
+                &script_ctx_handles,
+                &mut script_ctxs,
+            );
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+        }
+
         if let (
-            BehaviorPropValue::Some(debug_action_message),
-            BehaviorPropValue::Some(debug_action_fail),
+            BehaviorPropValue::Some(debug_message),
+            BehaviorPropValue::Some(debug_fail),
+            BehaviorPropValue::Some(debug_duration),
         ) = (
             &debug_action.message.value.clone(),
             &debug_action.fail.value.clone(),
+            &debug_action.duration.value.clone(),
         ) {
             let elapsed = time.elapsed_seconds_f64();
             debug_action.ticks += 1;
             if started.is_some() {
                 debug_action.start = elapsed;
                 let name = name.map(|name| name.as_str()).unwrap_or("");
-                info!("[{}:{}] {}", entity.index(), name, debug_action_message);
+                info!("[{}:{}] {}", entity.index(), name, debug_message);
             }
-            if elapsed - debug_action.start > debug_action.duration - f64::EPSILON {
-                if *debug_action_fail {
+            if elapsed - debug_action.start > debug_duration - f64::EPSILON {
+                if *debug_fail {
                     commands.entity(entity).insert(BehaviorFailure);
                 } else {
                     commands.entity(entity).insert(BehaviorSuccess);

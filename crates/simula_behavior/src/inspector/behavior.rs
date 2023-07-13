@@ -36,6 +36,24 @@ where
             &type_registry,
         )
     }
+
+    fn add_property_readonly(
+        value: &dyn Reflect,
+        label: &str,
+        _state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) {
+        let type_registry = type_registry.read();
+        ui.horizontal(|ui| {
+            ui.label(label);
+            bevy_inspector_egui::reflect_inspector::ui_for_value_readonly(
+                value,
+                ui,
+                &type_registry,
+            );
+        });
+    }
 }
 
 #[macro_export]
@@ -51,5 +69,18 @@ macro_rules! behavior_ui_readonly {
     ($s:expr, $field:ident, $state:expr, $ui:expr, $type_registry:expr) => {
         $s.$field
             .ui_readonly(Some(stringify!($field)), $state, $ui, $type_registry)
+    };
+}
+
+#[macro_export]
+macro_rules! property_ui_readonly {
+    ($s:expr, $field:ident, $state:expr, $ui:expr, $type_registry:expr) => {
+        Self::add_property_readonly(
+            $s.$field.as_reflect(),
+            stringify!($field),
+            $state,
+            $ui,
+            $type_registry,
+        )
     };
 }
