@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemParam, prelude::*};
 use serde::{Deserialize, Serialize};
 use simula_core::epath::EPath;
 use simula_script::{Script, ScriptContext};
@@ -47,20 +47,12 @@ where
     fn fetch(
         &mut self,
         node: &BehaviorNode,
-        scripts: &mut ResMut<Assets<Script>>,
-        script_ctx_handles: &Query<&Handle<ScriptContext>>,
-        script_ctxs: &mut Assets<ScriptContext>,
+        scripts: &mut ScriptQueries,
     ) -> Option<Result<(), String>> {
         let state: Result<(), String> = match self.prop_mut() {
             BehaviorEval::Eval { eval, handle } => {
                 if handle.is_none() {
-                    match make_handle(
-                        eval.to_owned(),
-                        node,
-                        scripts,
-                        script_ctx_handles,
-                        script_ctxs,
-                    ) {
+                    match make_handle(eval.to_owned(), node, scripts) {
                         Ok(new_handle) => {
                             *handle = Some(new_handle);
                             Ok(())
@@ -78,13 +70,7 @@ where
         let res = match state {
             Ok(_) => match self.prop() {
                 BehaviorEval::Eval { eval: _, handle } => {
-                    match eval::<Self::ValueType, Self::ScriptType>(
-                        &handle,
-                        node,
-                        scripts,
-                        script_ctx_handles,
-                        script_ctxs,
-                    ) {
+                    match eval::<Self::ValueType, Self::ScriptType>(&handle, node, scripts) {
                         Some(Ok(val)) => {
                             value = Some(BehaviorPropValue::Some(val.clone()));
                             Some(Ok(()))
@@ -233,23 +219,28 @@ impl BehaviorProp for BehaviorPropEPath {
     }
 }
 
+#[derive(SystemParam)]
+pub struct ScriptQueries<'w, 's> {
+    assets: ResMut<'w, Assets<Script>>,
+    ctx_handles: Query<'w, 's, &'static Handle<ScriptContext>>,
+    ctxs: ResMut<'w, Assets<ScriptContext>>,
+}
+
 fn make_handle(
     eval: impl Into<Cow<'static, str>>,
     node: &BehaviorNode,
-    scripts: &mut ResMut<Assets<Script>>,
-    script_ctx_handles: &Query<&Handle<ScriptContext>>,
-    script_ctxs: &mut Assets<ScriptContext>,
+    scripts: &mut ScriptQueries,
 ) -> Result<Handle<Script>, String> {
     // if we have a script context handle, compile the script
     // script context are stored in the tree entity
-    if let Some(script_ctx_handle) = script_ctx_handles.get(node.tree).ok() {
+    if let Some(script_ctx_handle) = scripts.ctx_handles.get(node.tree).ok() {
         // if we have a script context, compile the script
-        if let Some(script_ctx) = script_ctxs.get_mut(&script_ctx_handle) {
+        if let Some(script_ctx) = scripts.ctxs.get_mut(&script_ctx_handle) {
             let mut script = Script::default();
             script.script = eval.into();
             match script.compile(script_ctx) {
                 Ok(_) => {
-                    let script_handle = scripts.add(script);
+                    let script_handle = scripts.assets.add(script);
                     return Ok(script_handle.clone());
                 }
                 Err(err) => {
@@ -271,19 +262,17 @@ fn make_handle(
 fn eval<ValueType: Reflect + Default + Clone + TryFrom<ScriptType>, ScriptType: Reflect + Clone>(
     handle: &Option<Handle<Script>>,
     node: &BehaviorNode,
-    scripts: &Assets<Script>,
-    script_ctx_handles: &Query<&Handle<ScriptContext>>,
-    script_ctxs: &mut Assets<ScriptContext>,
+    scripts: &mut ScriptQueries,
 ) -> Option<Result<ValueType, String>>
 where
     <ValueType as TryFrom<ScriptType>>::Error: std::fmt::Debug,
 {
     if let Some(script_asset) = handle
         .as_ref()
-        .and_then(|script_handle| scripts.get(&script_handle))
+        .and_then(|script_handle| scripts.assets.get(&script_handle))
     {
-        if let Some(script_ctx_handle) = script_ctx_handles.get(node.tree).ok() {
-            if let Some(script_ctx) = script_ctxs.get_mut(&script_ctx_handle) {
+        if let Some(script_ctx_handle) = scripts.ctx_handles.get(node.tree).ok() {
+            if let Some(script_ctx) = scripts.ctxs.get_mut(&script_ctx_handle) {
                 let result = script_asset.eval::<ScriptType>(script_ctx);
                 match result {
                     Ok(result) => {

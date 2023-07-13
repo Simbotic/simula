@@ -41,7 +41,7 @@ pub mod prelude {
     };
     pub use crate::property::{
         BehaviorEval, BehaviorProp, BehaviorPropEPath, BehaviorPropGeneric, BehaviorPropOption,
-        BehaviorPropStr, BehaviorPropValue,
+        BehaviorPropStr, BehaviorPropValue, ScriptQueries,
     };
     pub use crate::protocol::{self};
     pub use crate::server::{

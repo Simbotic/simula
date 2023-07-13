@@ -2,7 +2,6 @@ use crate::prelude::*;
 use crate::ScriptContext;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::Script;
 
 /// Guard evals a script to control the flow of execution. If the script returns
 /// `true`, the child is executed. If the script returns `false`, the child is
@@ -73,9 +72,7 @@ pub fn run(
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    mut scripts: ResMut<Assets<Script>>,
-    script_ctx_handles: Query<&Handle<ScriptContext>>,
-    mut script_ctxs: ResMut<Assets<ScriptContext>>,
+    mut scripts: ScriptQueries,
 ) {
     for (entity, children, mut guard, node, started) in &mut guards {
         if let BehaviorPropValue::None = guard.condition.value {
@@ -90,8 +87,18 @@ pub fn run(
             }
         }
 
-            if children.len() != 1 {
-                error!("Decorator node requires one child");
+        let _ = guard.fetch(node, &mut scripts);
+        let child_entity = children[0]; // Safe because we checked for empty
+        if let Ok(BehaviorChildQueryItem {
+            child_entity,
+            child_parent: _,
+            child_failure,
+            child_success,
+            child_running: _,
+        }) = nodes.get(child_entity)
+        {
+            // Child failed, we fail
+            if child_failure.is_some() {
                 commands.entity(entity).insert(BehaviorFailure);
                 continue;
             }

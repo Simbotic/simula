@@ -588,15 +588,11 @@ where
             if egui::Frame::none()
                 .inner_margin(egui::Margin {
                     top: -2.0,
-                    bottom: 0.0,
-                    left: 0.0,
-                    right: 0.0,
+                    ..default()
                 })
                 .outer_margin(egui::Margin {
                     top: -wrapper.response.rect.height(),
-                    bottom: 0.0,
-                    left: 0.0,
-                    right: 0.0,
+                    ..default()
                 })
                 .fill(egui::Color32::TRANSPARENT)
                 .show(ui, |ui| {
@@ -628,7 +624,6 @@ where
                         ui.label(label);
                         ui.horizontal(|ui| {
                             ui.add_space(10.0);
-
                             if ui.button("?").clicked() {
                                 **self = Some(Prop::default());
                                 changed |= true;
@@ -662,7 +657,6 @@ where
                 .fill(PROP_FRAME_COLOR)
                 .show(ui, |ui| {
                     ui.set_width(PROP_FRAME_WIDTH);
-
                     ui.vertical(|ui| {
                         let label = label.unwrap_or("");
                         let label = egui::RichText::new(format!("{}", label))
