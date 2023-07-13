@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::{Script, ScriptContext};
 
 /// Guard evals a script to control the flow of execution. If the script returns
 /// `true`, the child is executed. If the script returns `false`, the child is
@@ -45,9 +44,7 @@ pub fn run(
         BehaviorRunQuery,
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    mut scripts: ResMut<Assets<Script>>,
-    script_ctx_handles: Query<&Handle<ScriptContext>>,
-    mut script_ctxs: ResMut<Assets<ScriptContext>>,
+    mut scripts: ScriptQueries,
 ) {
     for (entity, children, mut guard, node, started) in &mut guards {
         if children.len() != 1 {
@@ -60,7 +57,7 @@ pub fn run(
             guard.value = BehaviorPropValue::None;
         }
 
-        let _ = guard.fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+        let _ = guard.fetch(node, &mut scripts);
         let child_entity = children[0]; // Safe because we checked for empty
         if let Ok(BehaviorChildQueryItem {
             child_entity,
