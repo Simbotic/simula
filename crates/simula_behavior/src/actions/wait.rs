@@ -1,10 +1,8 @@
 use crate::prelude::*;
 use crate::property_ui_readonly;
-use crate::ScriptContext;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::Script;
 
 /// A wait will succeed after a specified amount of time.
 #[derive(
@@ -70,15 +68,11 @@ pub fn run(
         (Entity, &mut Wait, &BehaviorNode, Option<&BehaviorStarted>),
         BehaviorRunQuery,
     >,
-    mut scripts: ResMut<Assets<Script>>,
-    script_ctx_handles: Query<&Handle<ScriptContext>>,
-    mut script_ctxs: ResMut<Assets<ScriptContext>>,
+    mut scripts: ScriptQueries,
 ) {
     for (entity, mut wait, node, started) in &mut waits {
         if let BehaviorPropValue::None = wait.fail.value {
-            let result = wait
-                .fail
-                .fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+            let result = wait.fail.fetch(node, &mut scripts);
             if let Some(Err(err)) = result {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
@@ -87,9 +81,7 @@ pub fn run(
         }
 
         if let BehaviorPropValue::None = wait.duration.value {
-            let result =
-                wait.duration
-                    .fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+            let result = wait.duration.fetch(node, &mut scripts);
             if let Some(Err(err)) = result {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);

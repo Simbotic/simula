@@ -1,10 +1,8 @@
 use crate::prelude::*;
 use crate::property_ui_readonly;
-use crate::ScriptContext;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::Script;
 
 #[derive(
     Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize, InspectorOptions,
@@ -79,18 +77,11 @@ pub fn run(
         ),
         BehaviorRunQuery,
     >,
-    mut scripts: ResMut<Assets<Script>>,
-    script_ctx_handles: Query<&Handle<ScriptContext>>,
-    mut script_ctxs: ResMut<Assets<ScriptContext>>,
+    mut scripts: ScriptQueries,
 ) {
     for (entity, mut debug_action, name, node, started) in &mut debug_actions {
         if let BehaviorPropValue::None = debug_action.message.value {
-            let result = debug_action.message.fetch(
-                node,
-                &mut scripts,
-                &script_ctx_handles,
-                &mut script_ctxs,
-            );
+            let result = debug_action.message.fetch(node, &mut scripts);
             if let Some(Err(err)) = result {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
@@ -99,10 +90,7 @@ pub fn run(
         }
 
         if let BehaviorPropValue::None = debug_action.fail.value {
-            let result =
-                debug_action
-                    .fail
-                    .fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+            let result = debug_action.fail.fetch(node, &mut scripts);
             if let Some(Err(err)) = result {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
@@ -111,12 +99,7 @@ pub fn run(
         }
 
         if let BehaviorPropValue::None = debug_action.duration.value {
-            let result = debug_action.duration.fetch(
-                node,
-                &mut scripts,
-                &script_ctx_handles,
-                &mut script_ctxs,
-            );
+            let result = debug_action.duration.fetch(node, &mut scripts);
             if let Some(Err(err)) = result {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);

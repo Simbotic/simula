@@ -1,9 +1,7 @@
-use crate::ScriptContext;
 use crate::{prelude::*, property_ui_readonly};
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
-use simula_script::Script;
 
 #[derive(
     Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize, InspectorOptions,
@@ -70,16 +68,11 @@ pub fn run(
         (With<Timeout>, BehaviorIdleQuery),
     >,
     nodes: Query<BehaviorChildQuery, BehaviorChildQueryFilter>,
-    mut scripts: ResMut<Assets<Script>>,
-    script_ctx_handles: Query<&Handle<ScriptContext>>,
-    mut script_ctxs: ResMut<Assets<ScriptContext>>,
+    mut scripts: ScriptQueries,
 ) {
     for (entity, mut timeout, children, node, started, cursor) in &mut timeouts {
         if let BehaviorPropValue::None = timeout.duration.value {
-            let result =
-                timeout
-                    .duration
-                    .fetch(node, &mut scripts, &script_ctx_handles, &mut script_ctxs);
+            let result = timeout.duration.fetch(node, &mut scripts);
             if let Some(Err(err)) = result {
                 error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
