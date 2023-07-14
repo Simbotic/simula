@@ -1,22 +1,30 @@
-("? Selector", Selector((
+("❓ Selector", Selector((
     random: false,
 )), [
     ("⌛ Delay", Delay((
-        duration: 0.0,
+        duration: (
+            prop: Value(0.0),
+        ),
     )), [
         ("👁 Debug", Debug((
-            message: "pepe",
-            fail: false,
-            duration: 0.0,
+            message: (
+                prop: Value("pepe"),
+            ),
+            fail: (
+                prop: Value(false),
+            ),
+            duration: (
+                prop: Value(0.0),
+            ),
         )), [], (
-            pos: (855.0011, 80.28418),
+            pos: (600.0, 0.0),
         )),
     ], (
-        pos: (655.3651, 281.52148),
+        pos: (400.0, 0.0),
     )),
-    ("Inverter", Inverter(()), [], (
-        pos: (747.4497, 430.65234),
+    ("~ Inverter", Inverter(()), [], (
+        pos: (400.0, 200.0),
     )),
 ], (
-    pos: (297.09436, 280.65198),
+    pos: (200.0, 0.0),
 ))

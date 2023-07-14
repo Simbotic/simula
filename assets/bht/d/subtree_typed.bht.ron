@@ -1,9 +1,0 @@
-(
-    "Do Once",
-    Repeater((repeat:Times(1))),
-    [
-        ("Delay", Delay((duration: 1.0)), [
-            ("Subtree of different type", AnotherTree((asset: "bht/d/repeater_forever.bht.ron", unload: false))),
-        ]),
-    ]
-)

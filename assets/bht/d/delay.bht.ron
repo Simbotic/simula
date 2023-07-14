@@ -1,9 +1,27 @@
-(
-    "Loop forever",
-    Repeater((repeat:Forever)),
-    [
-        ("Delay", Delay((duration: 5.0)), [
-            ("Do a thing", Debug((message: "I'm doing a great thing!")))
-        ]),
-    ]
-)
+("Loop forever", Repeater((
+    repeat: Forever,
+)), [
+    ("Delay", Delay((
+        duration: (
+            prop: Value(5.0),
+        ),
+    )), [
+        ("Do a thing", Debug((
+            message: (
+                prop: Value("I\'m doing a great thing!"),
+            ),
+            fail: (
+                prop: Value(false),
+            ),
+            duration: (
+                prop: Value(0.0),
+            ),
+        )), [], (
+            pos: (600.0, 0.0),
+        )),
+    ], (
+        pos: (400.0, 0.0),
+    )),
+], (
+    pos: (200.0, 0.0),
+))
