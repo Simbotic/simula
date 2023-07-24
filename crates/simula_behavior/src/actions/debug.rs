@@ -1,8 +1,8 @@
 use crate::prelude::*;
+use crate::property_ui_readonly;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
 #[derive(
     Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize, InspectorOptions,
@@ -10,12 +10,11 @@ use std::borrow::Cow;
 #[reflect(InspectorOptions)]
 pub struct Debug {
     #[serde(default)]
-    pub message: Cow<'static, str>,
+    pub message: BehaviorPropStr,
     #[serde(default)]
-    pub fail: bool,
+    pub fail: BehaviorPropGeneric<bool>,
     #[serde(default)]
-    #[inspector(min = 0.0, max = f64::MAX)]
-    pub duration: f64,
+    pub duration: BehaviorPropGeneric<f64>,
     #[serde(skip)]
     pub start: f64,
     #[serde(skip)]
@@ -33,31 +32,35 @@ impl BehaviorUI for Debug {
     fn ui(
         &mut self,
         _label: Option<&str>,
-        _state: Option<protocol::BehaviorState>,
+        state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
         type_registry: &bevy::reflect::TypeRegistry,
     ) -> bool {
-        let type_registry = type_registry.read();
-        bevy_inspector_egui::reflect_inspector::ui_for_value(
-            self.as_reflect_mut(),
-            ui,
-            &type_registry,
-        )
+        let mut changed = false;
+        changed |= behavior_ui!(self, message, state, ui, type_registry);
+        changed |= behavior_ui!(self, fail, state, ui, type_registry);
+        changed |= behavior_ui!(self, duration, state, ui, type_registry);
+        changed
     }
 
     fn ui_readonly(
         &self,
         _label: Option<&str>,
-        _state: Option<protocol::BehaviorState>,
+        state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
         type_registry: &bevy::reflect::TypeRegistry,
     ) {
-        let type_registry = type_registry.read();
-        bevy_inspector_egui::reflect_inspector::ui_for_value_readonly(
-            self.as_reflect(),
-            ui,
-            &type_registry,
-        )
+        behavior_ui_readonly!(self, message, state, ui, type_registry);
+        behavior_ui_readonly!(self, fail, state, ui, type_registry);
+        behavior_ui_readonly!(self, duration, state, ui, type_registry);
+
+        match state {
+            Some(_) => {
+                property_ui_readonly!(self, start, state, ui, type_registry);
+                property_ui_readonly!(self, ticks, state, ui, type_registry);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -65,23 +68,67 @@ pub fn run(
     time: Res<Time>,
     mut commands: Commands,
     mut debug_actions: Query<
-        (Entity, &mut Debug, Option<&Name>, Option<&BehaviorStarted>),
+        (
+            Entity,
+            &mut Debug,
+            Option<&Name>,
+            &BehaviorNode,
+            Option<&BehaviorStarted>,
+        ),
         BehaviorRunQuery,
     >,
+    mut scripts: ScriptQueries,
 ) {
-    for (entity, mut debug_action, name, started) in &mut debug_actions {
-        let elapsed = time.elapsed_seconds_f64();
-        debug_action.ticks += 1;
-        if started.is_some() {
-            debug_action.start = elapsed;
-            let name = name.map(|name| name.as_str()).unwrap_or("");
-            info!("[{}:{}] {}", entity.index(), name, debug_action.message);
-        }
-        if elapsed - debug_action.start > debug_action.duration - f64::EPSILON {
-            if debug_action.fail {
+    for (entity, mut debug_action, name, node, started) in &mut debug_actions {
+        if let BehaviorPropValue::None = debug_action.message.value {
+            let result = debug_action.message.fetch(node, &mut scripts);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
-            } else {
-                commands.entity(entity).insert(BehaviorSuccess);
+                continue;
+            }
+        }
+
+        if let BehaviorPropValue::None = debug_action.fail.value {
+            let result = debug_action.fail.fetch(node, &mut scripts);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+        }
+
+        if let BehaviorPropValue::None = debug_action.duration.value {
+            let result = debug_action.duration.fetch(node, &mut scripts);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+        }
+
+        if let (
+            BehaviorPropValue::Some(debug_message),
+            BehaviorPropValue::Some(debug_fail),
+            BehaviorPropValue::Some(debug_duration),
+        ) = (
+            &debug_action.message.value.clone(),
+            &debug_action.fail.value.clone(),
+            &debug_action.duration.value.clone(),
+        ) {
+            let elapsed = time.elapsed_seconds_f64();
+            debug_action.ticks += 1;
+            if started.is_some() {
+                debug_action.start = elapsed;
+                let name = name.map(|name| name.as_str()).unwrap_or("");
+                info!("[{}:{}] {}", entity.index(), name, debug_message);
+            }
+            if elapsed - debug_action.start > debug_duration - f64::EPSILON {
+                if *debug_fail {
+                    commands.entity(entity).insert(BehaviorFailure);
+                } else {
+                    commands.entity(entity).insert(BehaviorSuccess);
+                }
             }
         }
     }

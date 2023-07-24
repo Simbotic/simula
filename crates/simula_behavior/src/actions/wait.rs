@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::property_ui_readonly;
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -10,10 +11,9 @@ use serde::{Deserialize, Serialize};
 #[reflect(InspectorOptions)]
 pub struct Wait {
     #[serde(default)]
-    #[inspector(min = 0.0, max = f64::MAX)]
-    pub duration: f64,
+    pub duration: BehaviorPropGeneric<f64>,
     #[serde(default)]
-    pub fail: bool,
+    pub fail: BehaviorPropGeneric<bool>,
     #[serde(skip)]
     pub start: f64,
     #[serde(skip)]
@@ -28,24 +28,81 @@ impl BehaviorSpec for Wait {
     success or failure.";
 }
 
-impl BehaviorUI for Wait {}
+impl BehaviorUI for Wait {
+    fn ui(
+        &mut self,
+        _label: Option<&str>,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) -> bool {
+        let mut changed = false;
+        changed |= behavior_ui!(self, fail, state, ui, type_registry);
+        changed |= behavior_ui!(self, duration, state, ui, type_registry);
+        changed
+    }
+
+    fn ui_readonly(
+        &self,
+        _label: Option<&str>,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) {
+        behavior_ui_readonly!(self, fail, state, ui, type_registry);
+        behavior_ui_readonly!(self, duration, state, ui, type_registry);
+        match state {
+            Some(_) => {
+                property_ui_readonly!(self, start, state, ui, type_registry);
+                property_ui_readonly!(self, ticks, state, ui, type_registry);
+            }
+            _ => {}
+        }
+    }
+}
 
 pub fn run(
     time: Res<Time>,
     mut commands: Commands,
-    mut waits: Query<(Entity, &mut Wait, Option<&BehaviorStarted>), BehaviorRunQuery>,
+    mut waits: Query<
+        (Entity, &mut Wait, &BehaviorNode, Option<&BehaviorStarted>),
+        BehaviorRunQuery,
+    >,
+    mut scripts: ScriptQueries,
 ) {
-    for (entity, mut wait, started) in &mut waits {
-        wait.ticks += 1;
-        let elapsed = time.elapsed_seconds_f64();
-        if started.is_some() {
-            wait.start = elapsed;
-        }
-        if elapsed - wait.start > wait.duration - f64::EPSILON {
-            if wait.fail {
+    for (entity, mut wait, node, started) in &mut waits {
+        if let BehaviorPropValue::None = wait.fail.value {
+            let result = wait.fail.fetch(node, &mut scripts);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
                 commands.entity(entity).insert(BehaviorFailure);
-            } else {
-                commands.entity(entity).insert(BehaviorSuccess);
+                continue;
+            }
+        }
+
+        if let BehaviorPropValue::None = wait.duration.value {
+            let result = wait.duration.fetch(node, &mut scripts);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+        }
+
+        if let (BehaviorPropValue::Some(wait_fail), BehaviorPropValue::Some(wait_duration)) =
+            (&wait.fail.value.clone(), &wait.duration.value.clone())
+        {
+            let elapsed = time.elapsed_seconds_f64();
+            wait.ticks += 1;
+            if started.is_some() {
+                wait.start = elapsed;
+            }
+            if elapsed - wait.start > wait_duration - f64::EPSILON {
+                if *wait_fail {
+                    commands.entity(entity).insert(BehaviorFailure);
+                } else {
+                    commands.entity(entity).insert(BehaviorSuccess);
+                }
             }
         }
     }

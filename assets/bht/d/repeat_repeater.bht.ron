@@ -1,30 +1,64 @@
-(
-    "Loop forever",
-    Repeater((repeat:Times(10))),
-    [
-        (
-            "Repeat List",
-            Any(()),
-            [
-                (
-                    "Repeater 1",
-                    Repeater((repeat:Times(3))),
-                    [
-                        ("Delay", Delay((duration: 1.0)), [
-                            ("Do a thing 1", Debug((message: "Doing #1")))
-                        ]),
-                    ]
+("Loop forever", Repeater((
+    repeat: Times(10),
+)), [
+    ("Repeat List", Any(()), [
+        ("Repeater 1", Repeater((
+            repeat: Times(3),
+        )), [
+            ("Delay", Delay((
+                duration: (
+                    prop: Value(1.0),
                 ),
-                (
-                    "Repeater 2",
-                    Repeater((repeat:Times(5))),
-                    [
-                        ("Delay", Delay((duration: 1.0)), [
-                            ("Do a thing 2", Debug((message: "Doing #2")))
-                        ]),
-                    ]
+            )), [
+                ("Do a thing 1", Debug((
+                    message: (
+                        prop: Value("Doing #1"),
+                    ),
+                    fail: (
+                        prop: Value(false),
+                    ),
+                    duration: (
+                        prop: Value(0.0),
+                    ),
+                )), [], (
+                    pos: (1000.0, 0.0),
+                )),
+            ], (
+                pos: (800.0, 0.0),
+            )),
+        ], (
+            pos: (600.0, 0.0),
+        )),
+        ("Repeater 2", Repeater((
+            repeat: Times(5),
+        )), [
+            ("Delay", Delay((
+                duration: (
+                    prop: Value(1.0),
                 ),
-            ]
-        )
-    ]
-)
+            )), [
+                ("Do a thing 2", Debug((
+                    message: (
+                        prop: Value("Doing #2"),
+                    ),
+                    fail: (
+                        prop: Value(false),
+                    ),
+                    duration: (
+                        prop: Value(0.0),
+                    ),
+                )), [], (
+                    pos: (1000.0, 200.0),
+                )),
+            ], (
+                pos: (800.0, 200.0),
+            )),
+        ], (
+            pos: (600.0, 200.0),
+        )),
+    ], (
+        pos: (400.0, 0.0),
+    )),
+], (
+    pos: (200.0, 0.0),
+))

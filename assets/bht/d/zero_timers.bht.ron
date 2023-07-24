@@ -2,23 +2,50 @@
     repeat: Times(0),
 )), [
     ("⌛ Delay", Delay((
-        duration: 5.0,
+        duration: (
+            prop: Value(5.0),
+        ),
     )), [
         ("⌛ Delay", Delay((
-            duration: 0.0,
+            duration: (
+                prop: Value(0.0),
+            ),
         )), [
             ("➡ Sequencer", Sequencer((
                 random: false,
             )), [
                 ("👁 Debug", Debug((
-                    message: "",
-                    fail: false,
-                    duration: 0.0,
-                ))),
+                    message: (
+                        prop: Value(""),
+                    ),
+                    fail: (
+                        prop: Value(false),
+                    ),
+                    duration: (
+                        prop: Value(0.0),
+                    ),
+                )), [], (
+                    pos: (1000.0, 0.0),
+                )),
                 ("⌛ Wait", Wait((
-                    duration: 0.0,
-                ))),
-            ]),
-        ]),
-    ]),
-])
+                    duration: (
+                        prop: Value(0.0),
+                    ),
+                    fail: (
+                        prop: Value(false),
+                    ),
+                )), [], (
+                    pos: (1000.0, 200.0),
+                )),
+            ], (
+                pos: (800.0, 0.0),
+            )),
+        ], (
+            pos: (600.0, 0.0),
+        )),
+    ], (
+        pos: (400.0, 0.0),
+    )),
+], (
+    pos: (200.0, 0.0),
+))

@@ -8,14 +8,19 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug, Deref, DerefMut, Component, Reflect, FromReflect, Clone, Deserialize, Serialize,
 )]
-pub struct Guard(BehaviorPropGeneric<bool>);
+pub struct Guard {
+    #[serde(default)]
+    pub condition: BehaviorPropGeneric<bool>,
+}
 
 impl Default for Guard {
     fn default() -> Self {
-        Self(BehaviorPropGeneric {
-            prop: BehaviorEval::Value(true),
-            ..default()
-        })
+        Self {
+            condition: BehaviorPropGeneric {
+                prop: BehaviorEval::Value(true),
+                ..default()
+            },
+        }
     }
 }
 
@@ -29,7 +34,29 @@ impl BehaviorSpec for Guard {
         not executed. The Scope of the script should be at the tree entity.";
 }
 
-impl BehaviorUI for Guard {}
+impl BehaviorUI for Guard {
+    fn ui(
+        &mut self,
+        _label: Option<&str>,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) -> bool {
+        let mut changed = false;
+        changed |= behavior_ui!(self, condition, state, ui, type_registry);
+        changed
+    }
+
+    fn ui_readonly(
+        &self,
+        _label: Option<&str>,
+        state: Option<protocol::BehaviorState>,
+        ui: &mut bevy_inspector_egui::egui::Ui,
+        type_registry: &bevy::reflect::TypeRegistry,
+    ) {
+        behavior_ui_readonly!(self, condition, state, ui, type_registry);
+    }
+}
 
 pub fn run(
     mut commands: Commands,
@@ -47,6 +74,15 @@ pub fn run(
     mut scripts: ScriptQueries,
 ) {
     for (entity, children, mut guard, node, started) in &mut guards {
+        if let BehaviorPropValue::None = guard.condition.value {
+            let result = guard.condition.fetch(node, &mut scripts);
+            if let Some(Err(err)) = result {
+                error!("Script errored: {:?}", err);
+                commands.entity(entity).insert(BehaviorFailure);
+                continue;
+            }
+        }
+
         if children.len() != 1 {
             error!("Decorator node requires one child");
             commands.entity(entity).insert(BehaviorFailure);
@@ -54,10 +90,10 @@ pub fn run(
         }
 
         if started.is_some() {
-            guard.value = BehaviorPropValue::None;
+            guard.condition.value = BehaviorPropValue::None;
         }
 
-        let _ = guard.fetch(node, &mut scripts);
+        let _ = guard.condition.fetch(node, &mut scripts);
         let child_entity = children[0]; // Safe because we checked for empty
         if let Ok(BehaviorChildQueryItem {
             child_entity,
@@ -77,7 +113,7 @@ pub fn run(
             }
             // Child is ready, eval script to see if we should pass on cursor
             else {
-                match &guard.value {
+                match &guard.condition.value {
                     BehaviorPropValue::Some(true) => {
                         // Script returned true, so let the child run
                         commands.entity(entity).remove::<BehaviorCursor>();

@@ -1,9 +1,20 @@
-(
-    "Loop forever",
-    Repeater((repeat:Forever)),
-    [
-        ("Delay", Delay((duration: 5.0)), [
-            ("Subtree with gate", Subtree((asset: "bht/d/gate_blackboard.bht.ron", unload: true))),
-        ]),
-    ]
-)
+("Loop forever", Repeater((
+    repeat: Forever,
+)), [
+    ("Delay", Delay((
+        duration: (
+            prop: Value(5.0),
+        ),
+    )), [
+        ("Subtree with gate", Subtree((
+            asset: "bht/d/gate_blackboard.bht.ron",
+            unload: true,
+        )), [], (
+            pos: (600.0, 0.0),
+        )),
+    ], (
+        pos: (400.0, 0.0),
+    )),
+], (
+    pos: (200.0, 0.0),
+))

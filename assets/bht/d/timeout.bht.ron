@@ -1,19 +1,29 @@
 ("⇉ Any", Any(()), [
     ("🕓 Timeout", Timeout((
-        duration: 5.0,
+        duration: (
+            prop: Value(5.0),
+        ),
     )), [
         ("⌛ Wait", Wait((
-            duration: 15.0,
-            fail: false,
+            duration: (
+                prop: Value(10.0),
+            ),
+            fail: (
+                prop: Value(false),
+            ),
         )), [], (
             pos: (600.0, 0.0),
         )),
     ], (
-        pos: (400.0, -0.12109375),
+        pos: (400.0, 0.0),
     )),
     ("⌛ Wait", Wait((
-        duration: 10.0,
-        fail: false,
+        duration: (
+            prop: Value(10.0),
+        ),
+        fail: (
+            prop: Value(false),
+        ),
     )), [], (
         pos: (400.0, 200.0),
     )),
