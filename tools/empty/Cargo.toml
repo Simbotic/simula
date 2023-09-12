@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
+[features]
+# default = ["gif"]
+# gif = ["simula_video/gif"]
+# webp = ["simula_video/webp"]
+gst = ["simula_video/gst"]
+
 [dependencies]
 bevy = { version = "0.10" }
 
@@ -12,4 +18,6 @@ simula_camera = { path = "../../crates/simula_camera" }
 simula_viz = { path = "../../crates/simula_viz" }
 simula_action = { path = "../../crates/simula_action" }
 simula_inspector = { path = "../../crates/simula_inspector" }
+simula_video = { path = "../../crates/simula_video" }
+
 

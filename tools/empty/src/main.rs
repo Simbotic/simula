@@ -12,6 +12,11 @@ use simula_viz::{
     lines::LinesPlugin,
 };
 
+use simula_video::{rt, VideoMaterial, VideoPlayer, VideoPlugin};
+#[cfg(feature = "gst")]
+use simula_video::{GstSink, GstSrc};
+
+
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
@@ -35,12 +40,17 @@ fn main() {
         .add_plugin(LinesPlugin)
         .add_plugin(AxesPlugin)
         .add_plugin(GridPlugin)
+        .add_plugin(VideoPlugin)
         .add_startup_system(setup)
-        .add_system(debug_info)
+        // .add_system(debug_info)
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>, 
+    mut video_materials: ResMut<Assets<VideoMaterial>>,
+    asset_server: Res<AssetServer>
+) {
     // grid
     let grid_color = Color::rgb(0.08, 0.06, 0.08);
     commands
@@ -115,6 +125,40 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         ..Default::default()
     });
+
+    #[cfg(feature = "gst")]
+    {
+        // video stream
+        let video_material = VideoMaterial {
+            color: Color::rgb(1.0, 1.0, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            ..Default::default()
+        };
+        commands
+            .spawn(MaterialMeshBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane {
+                    size: 1.4,
+                    ..default()
+                })),
+                material: video_materials.add(video_material),
+                transform: Transform::from_xyz(0.0, 1.0, -3.0)
+                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+                    .with_scale(Vec3::new(1.0, 1.0, 1.0)),
+                ..default()
+            })
+            .insert(VideoPlayer {
+                start_frame: 0,
+                end_frame: 80,
+                framerate: 20.0,
+                playing: true,
+                ..default()
+            })
+            .insert(GstSink {
+                size: UVec2::new(256, 256),
+                pipeline: String::from("rtspsrc location=rtsp://192.168.xx.xx:8554/stream ! appsink async=true name=simula")
+            })
+            .insert(Name::new("Video: Gst"));
+    }
 }
 
 fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {

@@ -182,6 +182,7 @@ fn pipeline_loop(pipeline: gst::Pipeline) -> Result<(), Error> {
 
     for msg in bus.iter_timed(gst::ClockTime::NONE) {
         use gst::MessageView;
+        eprintln!("{:?} \n", msg );
 
         match msg.view() {
             MessageView::Eos(..) => break,

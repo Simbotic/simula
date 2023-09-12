@@ -2039,6 +2039,7 @@ dependencies = [
  "simula_camera",
  "simula_core",
  "simula_inspector",
+ "simula_video",
  "simula_viz",
 ]
 
