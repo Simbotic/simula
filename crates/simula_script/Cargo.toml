@@ -5,9 +5,10 @@ edition = "2021"
 authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [dependencies]
-bevy = { version = "0.10" }
+bevy = { version = "0.12" }
 
 rhai = { version = "0.15", features = ["sync"]}
 serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
 
 [dev-dependencies]

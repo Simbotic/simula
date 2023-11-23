@@ -77,11 +77,10 @@ impl Ray3d {
     ) -> Option<Self> {
         let view = camera_transform.compute_matrix();
 
-        let (viewport_min, viewport_max) = camera.logical_viewport_rect()?;
+        let Rect { min, max } = camera.logical_viewport_rect()?;
         let screen_size = camera.logical_target_size()?;
-        let viewport_size = viewport_max - viewport_min;
-        let adj_cursor_pos =
-            cursor_pos_screen - Vec2::new(viewport_min.x, screen_size.y - viewport_max.y);
+        let viewport_size = max - min;
+        let adj_cursor_pos = cursor_pos_screen - Vec2::new(min.x, screen_size.y - max.y);
 
         let projection = camera.projection_matrix();
         let far_ndc = projection.project_point3(Vec3::NEG_Z).z;

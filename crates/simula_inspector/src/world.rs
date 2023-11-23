@@ -6,7 +6,7 @@ pub struct WorldInspectorPlugin;
 impl Plugin for WorldInspectorPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(WorldInspector::default())
-            .add_startup_system(setup);
+            .add_systems(Startup, setup);
     }
 }
 

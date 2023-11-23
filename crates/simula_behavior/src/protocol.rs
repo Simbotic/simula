@@ -16,7 +16,7 @@ pub struct BehaviorServer<T: BehaviorFactory> {
     pub receiver: Receiver<BehaviorProtocolClient<T>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Reflect, FromReflect, PartialEq, Hash, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect, PartialEq, Hash, Eq)]
 pub struct RemoteEntity {
     pub bits: u64,
     pub name: Cow<'static, str>,
@@ -49,9 +49,7 @@ pub enum StopOption {
     Remove,
 }
 
-#[derive(
-    Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect, PartialEq, Hash, Eq,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, PartialEq, Hash, Eq)]
 pub struct BehaviorFileId(Cow<'static, str>);
 
 impl BehaviorFileId {
@@ -68,9 +66,7 @@ impl BehaviorFileId {
     }
 }
 
-#[derive(
-    Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, FromReflect, PartialEq, Hash, Eq,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, Deref, DerefMut, Reflect, PartialEq, Hash, Eq)]
 pub struct BehaviorFileName(pub Cow<'static, str>);
 
 #[derive(Debug, Clone)]

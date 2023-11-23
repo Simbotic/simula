@@ -9,24 +9,27 @@ pub struct ScriptPlugin;
 
 impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<Script>()
-            .add_asset::<ScriptContext>()
+        app.init_asset::<Script>()
+            .init_asset::<ScriptContext>()
             .init_asset_loader::<ScriptLoader>()
-            .add_system(script_changed);
+            .add_systems(Update, script_changed);
     }
 }
 
 fn script_changed(mut script_events: EventReader<AssetEvent<Script>>) {
-    for event in script_events.iter() {
+    for event in script_events.read() {
         match event {
-            AssetEvent::Created { handle } => {
-                info!("Script {:?} was created", handle.id());
+            AssetEvent::Added { id } => {
+                info!("Script {:?} was created", id);
             }
-            AssetEvent::Modified { handle } => {
-                info!("Script {:?} was modified", handle.id());
+            AssetEvent::Modified { id } => {
+                info!("Script {:?} was modified", id);
             }
-            AssetEvent::Removed { handle } => {
-                info!("Script {:?} was removed", handle.id());
+            AssetEvent::Removed { id } => {
+                info!("Script {:?} was removed", id);
+            }
+            AssetEvent::LoadedWithDependencies { id } => {
+                info!("Script {:?} was loaded with dependencies", id);
             }
         }
     }

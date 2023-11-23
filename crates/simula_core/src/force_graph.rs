@@ -167,6 +167,7 @@ where
 }
 
 /// The main force graph structure.
+#[derive(Default)]
 pub struct ForceGraph<UserNodeData = (), UserEdgeData = ()> {
     pub parameters: SimulationParameters,
     graph: StableUnGraph<Node<UserNodeData>, EdgeData<UserEdgeData>>,

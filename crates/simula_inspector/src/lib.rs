@@ -13,11 +13,13 @@ pub struct InspectorPlugin;
 
 impl Plugin for InspectorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(bevy_egui::EguiPlugin)
-            .add_plugin(bevy_inspector_egui::DefaultInspectorConfigPlugin)
-            .insert_resource(Inspectors::default())
-            .add_startup_system(setup_ui)
-            .add_system(inspector_ui);
+        app.add_plugins((
+            bevy_egui::EguiPlugin,
+            bevy_inspector_egui::DefaultInspectorConfigPlugin,
+        ))
+        .insert_resource(Inspectors::default())
+        .add_systems(Startup, setup_ui)
+        .add_systems(Update, inspector_ui);
     }
 }
 

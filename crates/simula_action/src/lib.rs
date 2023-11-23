@@ -40,14 +40,16 @@ impl Plugin for ActionPlugin {
             .register_type::<HashSet<KeyCode>>()
             .register_type::<HashSet<MouseButton>>()
             .register_type::<HashMap<MouseAxis, f32>>()
-            .configure_set(
+            .configure_sets(
+                PreUpdate,
                 ActionStage::PreUpdate
                     .after(EguiSet::ProcessInput)
-                    .before(EguiSet::BeginFrame)
-                    .in_base_set(CoreSet::PreUpdate),
+                    .before(EguiSet::BeginFrame),
             )
-            .configure_set(ActionStage::Update.in_base_set(CoreSet::Update))
+            .configure_sets(Update, ActionStage::Update)
             .add_systems(
+                // TODO: Keep an eye on
+                PreUpdate,
                 (
                     keyboard_action_system,
                     mouse_button_action_system,
@@ -56,7 +58,7 @@ impl Plugin for ActionPlugin {
                     .chain()
                     .in_set(ActionStage::PreUpdate),
             )
-            .add_startup_system(setup);
+            .add_systems(Startup, setup);
     }
 }
 
@@ -100,7 +102,7 @@ pub fn keyboard_action_system(
     for mut action in keyboard_actions.iter_mut() {
         action.clear();
     }
-    for event in keyboard_input_events.iter() {
+    for event in keyboard_input_events.read() {
         if let KeyboardInput {
             key_code: Some(key_code),
             state,
@@ -131,7 +133,7 @@ pub fn mouse_button_action_system(
     for mut action in mouse_button_actions.iter_mut() {
         action.clear();
     }
-    for event in mouse_button_input_events.iter() {
+    for event in mouse_button_input_events.read() {
         for mut action in mouse_button_actions.iter_mut() {
             match event.state {
                 ButtonState::Pressed => action.enter(event.button),
@@ -160,7 +162,7 @@ pub fn mouse_axis_system(
         action_axis.set(MouseAxis::Y, 0.);
         action_axis.set(MouseAxis::Z, 0.);
     }
-    for event in mouse_motion_input_events.iter() {
+    for event in mouse_motion_input_events.read() {
         exy += event.delta * 0.01;
     }
     for mut action_axis in mouse_axis_actions.iter_mut() {
@@ -168,7 +170,7 @@ pub fn mouse_axis_system(
         action_axis.set(MouseAxis::Y, exy.y);
     }
     let mut ez = 0.;
-    for event in mouse_wheel_input_events.iter() {
+    for event in mouse_wheel_input_events.read() {
         for mut action_axis in mouse_axis_actions.iter_mut() {
             ez += event.y
                 * match event.unit {
@@ -180,7 +182,7 @@ pub fn mouse_axis_system(
     }
 }
 
-#[derive(Debug, Clone, Reflect, FromReflect)]
+#[derive(Debug, Clone, Reflect)]
 pub enum ActionMapButton {
     Keyboard(KeyCode),
     MouseButton(MouseButton),
@@ -199,7 +201,7 @@ impl From<MouseButton> for ActionMapButton {
     }
 }
 
-#[derive(Debug, Clone, Reflect, FromReflect)]
+#[derive(Debug, Clone, Reflect)]
 pub struct ActionMapInput<T>
 where
     T: Reflect + Clone + Debug + Eq + Hash + Send + Sync + 'static,
@@ -211,7 +213,7 @@ where
     pub alt: bool,
 }
 
-#[derive(Default, Debug, Clone, Deref, DerefMut, Component, Reflect, FromReflect)]
+#[derive(Default, Debug, Clone, Deref, DerefMut, Component, Reflect)]
 #[reflect(Component)]
 pub struct ActionMap<T>
 where
@@ -240,19 +242,19 @@ pub fn action_map<T, W>(
             for action_map_input in action_map.iter() {
                 let mut is_modified = true;
                 if action_map_input.ctrl {
-                    is_modified = is_modified && keyboard_action.on(KeyCode::LControl);
+                    is_modified = is_modified && keyboard_action.on(KeyCode::ControlLeft);
                 } else {
-                    is_modified = is_modified && !keyboard_action.on(KeyCode::LControl);
+                    is_modified = is_modified && !keyboard_action.on(KeyCode::ControlLeft);
                 }
                 if action_map_input.shift {
-                    is_modified = is_modified && keyboard_action.on(KeyCode::LShift);
+                    is_modified = is_modified && keyboard_action.on(KeyCode::ShiftLeft);
                 } else {
-                    is_modified = is_modified && !keyboard_action.on(KeyCode::LShift);
+                    is_modified = is_modified && !keyboard_action.on(KeyCode::ShiftLeft);
                 }
                 if action_map_input.alt {
-                    is_modified = is_modified && keyboard_action.on(KeyCode::LAlt);
+                    is_modified = is_modified && keyboard_action.on(KeyCode::AltLeft);
                 } else {
-                    is_modified = is_modified && !keyboard_action.on(KeyCode::LAlt);
+                    is_modified = is_modified && !keyboard_action.on(KeyCode::AltLeft);
                 }
 
                 // Handle on_enter
@@ -307,14 +309,14 @@ pub fn action_map<T, W>(
     }
 }
 
-#[derive(Debug, Clone, Copy, Reflect, FromReflect, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Reflect, PartialEq, Eq, Hash)]
 pub enum MouseAxis {
     X,
     Y,
     Z,
 }
 
-#[derive(Debug, Clone, Reflect, FromReflect)]
+#[derive(Debug, Clone, Reflect)]
 pub enum AxisMapSource {
     Keyboard {
         positive: KeyCode,
@@ -330,7 +332,7 @@ impl From<MouseAxis> for AxisMapSource {
     }
 }
 
-#[derive(Debug, Clone, Reflect, FromReflect)]
+#[derive(Debug, Clone, Reflect)]
 pub struct AxisMapInput<T>
 where
     T: Reflect + Clone + Debug + Eq + Hash + Send + Sync + 'static,
@@ -339,7 +341,7 @@ where
     pub source: AxisMapSource,
 }
 
-#[derive(Default, Debug, Deref, DerefMut, Component, Reflect, FromReflect)]
+#[derive(Default, Debug, Deref, DerefMut, Component, Reflect)]
 #[reflect(Component)]
 pub struct ActionAxisMap<T>
 where

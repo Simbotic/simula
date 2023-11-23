@@ -213,10 +213,11 @@ pub struct VoxelsBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
-#[derive(AsBindGroup, Debug, Clone, TypeUuid)]
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone, TypeUuid)]
 #[uuid = "9c3b191e-c141-11ec-bf25-02a179e5df2c"]
 pub struct VoxelsMaterial {}
 
@@ -236,20 +237,26 @@ impl Plugin for VoxelsPlugin {
         let voxel_mesh = VoxelMesh(mesh);
         app.insert_resource(voxel_mesh);
 
-        app.add_plugin(MaterialPlugin::<VoxelsMaterial>::default())
-            .add_system(generate_voxels);
+        app.add_plugins(MaterialPlugin::<VoxelsMaterial>::default())
+            .add_systems(Update, generate_voxels);
     }
 }
 
 fn generate_voxels(
     mut meshes: ResMut<Assets<Mesh>>,
     mut voxels: Query<
-        (Entity, &mut Voxels, &ComputedVisibility, &Handle<Mesh>),
+        (
+            Entity,
+            &mut Voxels,
+            &InheritedVisibility,
+            &ViewVisibility,
+            &Handle<Mesh>,
+        ),
         With<Handle<VoxelsMaterial>>,
     >,
 ) {
-    for (_entity, voxels, visibility, mesh_handle) in voxels.iter_mut() {
-        if !visibility.is_visible() {
+    for (_entity, voxels, inherited_visibility, view_visibility, mesh_handle) in voxels.iter_mut() {
+        if !inherited_visibility.get() && !view_visibility.get() {
             continue;
         }
         let voxel_mesh = merge(&voxels.voxels);

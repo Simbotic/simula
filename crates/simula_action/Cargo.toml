@@ -5,8 +5,8 @@ edition = "2021"
 authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [dependencies]
-bevy = { version = "0.10", features = ["serialize"] }
-bevy_egui = "0.20"
+bevy = { version = "0.12", features = ["serialize"] }
+bevy_egui = "0.23"
 simula_core = { path = "../../crates/simula_core" }
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.8"

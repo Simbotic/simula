@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::reflect::FromReflect;
 use bevy::render::camera::Camera;
 use simula_action::{
     action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
@@ -7,6 +6,7 @@ use simula_action::{
 };
 use std::ops::RangeInclusive;
 
+#[derive(Event)]
 pub enum CameraEvents {
     Orbit(Vec2),
     Pan(Vec2),
@@ -21,7 +21,7 @@ pub struct OrbitCamera {
     pub x: f32,
     pub y: f32,
     #[reflect(ignore)]
-    pub pitch_range: RangeInclusive<f32>,
+    pub pitch_range: RangeInclusiveFloat,
     pub distance: f32,
     pub center: Vec3,
     pub rotate_sensitivity: f32,
@@ -30,12 +30,30 @@ pub struct OrbitCamera {
     pub enabled: bool,
 }
 
+pub struct RangeInclusiveFloat(RangeInclusive<f32>);
+
+impl Default for RangeInclusiveFloat {
+    fn default() -> Self {
+        RangeInclusiveFloat(0.0..=std::f32::consts::FRAC_PI_2)
+    }
+}
+
+impl TypePath for RangeInclusiveFloat {
+    fn type_path() -> &'static str {
+        "simula_camera::orbitcam::RangeInclusiveFloat"
+    }
+
+    fn short_type_path() -> &'static str {
+        "RangeInclusiveFloat"
+    }
+}
+
 impl Default for OrbitCamera {
     fn default() -> Self {
         OrbitCamera {
             x: 0.0,
             y: std::f32::consts::FRAC_PI_2,
-            pitch_range: 0.01..=3.13,
+            pitch_range: RangeInclusiveFloat(0.01..=3.13),
             distance: 5.0,
             center: Vec3::ZERO,
             rotate_sensitivity: 10.0,
@@ -91,8 +109,8 @@ impl OrbitCameraPlugin {
                     camera.y -= delta.y * camera.rotate_sensitivity * time.delta_seconds();
                     camera.y = camera
                         .y
-                        .max(*camera.pitch_range.start())
-                        .min(*camera.pitch_range.end());
+                        .max(*camera.pitch_range.0.start())
+                        .min(*camera.pitch_range.0.end());
                 }
                 if mode.on(OrbitCameraMode::Pan) {
                     let x = motion.get(OrbitCameraMotion::Right).unwrap_or_default();
@@ -118,16 +136,16 @@ impl OrbitCameraPlugin {
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<OrbitCamera>()
-            .add_system(setup)
-            .add_system(action_map::<OrbitCameraMode, OrbitCamera>)
-            .add_system(action_axis_map::<OrbitCameraMotion, OrbitCamera>)
-            .add_system(Self::camera_motion)
-            .add_system(Self::camera_update)
+            .add_systems(Update, setup)
+            .add_systems(Update, action_map::<OrbitCameraMode, OrbitCamera>)
+            .add_systems(Update, action_axis_map::<OrbitCameraMotion, OrbitCamera>)
+            .add_systems(Update, Self::camera_motion)
+            .add_systems(Update, Self::camera_update)
             .add_event::<CameraEvents>();
     }
 }
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum OrbitCameraMode {
     #[default]
     Idle,
@@ -135,7 +153,7 @@ pub enum OrbitCameraMode {
     Pan,
 }
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum OrbitCameraMotion {
     #[default]
     Idle,

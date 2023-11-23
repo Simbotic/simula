@@ -40,38 +40,39 @@ pub struct VideoPlugin;
 
 impl Plugin for VideoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MaterialPlugin::<VideoMaterial>::default())
+        app.add_plugins(MaterialPlugin::<VideoMaterial>::default())
             .register_type::<VideoPlayer>()
-            .add_system(run);
+            .add_systems(Update, run);
 
-        app.add_startup_system(raw_src::setup_raw_src)
-            .add_system(raw_src::setup_raw_srcs)
-            .add_system(raw_src::process_raw_srcs);
+        app.add_systems(Startup, raw_src::setup_raw_src)
+            .add_systems(Update, (raw_src::setup_raw_srcs, raw_src::process_raw_srcs));
         raw_src::setup_render_graph(app);
 
         #[cfg(feature = "gif")]
-        app.add_asset::<GifAsset>()
+        app.init_asset::<GifAsset>()
             .init_asset_loader::<GifAssetLoader>()
-            .add_system(gif::run);
+            .add_systems(Update, gif::run);
 
         #[cfg(feature = "webp")]
-        app.add_asset::<WebPAsset>()
+        app.init_asset::<WebPAsset>()
             .init_asset_loader::<WebPAssetLoader>()
-            .add_system(webp::run);
+            .add_systems(Update, webp::run);
 
         #[cfg(feature = "gst")]
         {
-            app.add_startup_system(gst_sink::setup_gst_sink)
-                .add_system(gst_sink::stream_gst_sinks)
-                .add_system(gst_sink::launch_gst_sinks);
+            app.add_systems(Startup, gst_sink::setup_gst_sink)
+                .add_systems(
+                    Update,
+                    (gst_sink::stream_gst_sinks, gst_sink::launch_gst_sinks),
+                );
 
-            app.add_startup_system(gst_src::setup_gst_src)
-                .add_system(gst_src::stream_gst_srcs)
-                .add_system(gst_src::launch_gst_srcs);
+            app.add_systems(Startup, gst_src::setup_gst_src)
+                .add_systems(Update, (gst_src::stream_gst_srcs, gst_src::launch_gst_srcs));
         }
 
         #[cfg(feature = "video")]
-        app.add_startup_system(video::setup).add_systems(
+        app.add_systems(Startup, video::setup).add_systems(
+            Update,
             (
                 video::setup_video_tags,
                 video::blit_videos_to_canvas,

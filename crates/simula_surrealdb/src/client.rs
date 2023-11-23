@@ -15,7 +15,7 @@ impl Plugin for SurrealClientPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SurrealTasks>()
             .register_type::<SurrealClient>()
-            .add_system(client_connector);
+            .add_systems(Update, client_connector);
     }
 }
 

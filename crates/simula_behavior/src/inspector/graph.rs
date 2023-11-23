@@ -460,26 +460,33 @@ where
                     // Behavior label with tooltip
                     egui::Label::new(label).ui(ui).on_hover_ui_at_pointer(|ui| {
                         // Behavior tooltip
-                        let inner_type_name = behavior.inner_reflect().type_name();
-                        // Remove "simula_behavior::..." prefix, keep full custom types
-                        let inner_type_name = if inner_type_name.starts_with("simula_behavior") {
-                            inner_type_name
-                                .split("::")
-                                .fold(None, |acc, f| {
-                                    if let Some(acc) = acc {
-                                        Some(format!("{}::{}", acc, f))
-                                    } else {
-                                        if f.chars().next().map_or(false, |c| c.is_uppercase()) {
-                                            Some(f.to_string())
-                                        } else {
-                                            None
-                                        }
-                                    }
-                                })
-                                .unwrap_or("".to_string())
-                        } else {
-                            inner_type_name.to_string()
+                        let Some(inner_type_info) =
+                            behavior.inner_reflect().get_represented_type_info()
+                        else {
+                            return;
                         };
+                        // Remove "simula_behavior::..." prefix, keep full custom types
+                        let inner_type_name =
+                            if inner_type_info.type_path().starts_with("simula_behavior") {
+                                inner_type_info
+                                    .type_path()
+                                    .split("::")
+                                    .fold(None, |acc, f| {
+                                        if let Some(acc) = acc {
+                                            Some(format!("{}::{}", acc, f))
+                                        } else {
+                                            if f.chars().next().map_or(false, |c| c.is_uppercase())
+                                            {
+                                                Some(f.to_string())
+                                            } else {
+                                                None
+                                            }
+                                        }
+                                    })
+                                    .unwrap_or("".to_string())
+                            } else {
+                                inner_type_info.type_path().to_string()
+                            };
                         let tooltip = format!("{}\n\n{}", inner_type_name, behavior.desc());
                         ui.add(egui::Label::new(tooltip));
                     });

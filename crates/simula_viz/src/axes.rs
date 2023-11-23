@@ -1,7 +1,7 @@
 use super::lines::{Lines, LinesMaterial};
 use bevy::{
     prelude::*,
-    render::view::{ComputedVisibility, Visibility},
+    render::view::{InheritedVisibility, ViewVisibility, Visibility},
 };
 
 #[derive(Reflect, Component)]
@@ -27,7 +27,8 @@ pub struct AxesBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
 fn add_lines(mut commands: Commands, query: Query<Entity, (With<Axes>, Without<Lines>)>) {
@@ -61,7 +62,6 @@ pub struct AxesPlugin;
 impl Plugin for AxesPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Axes>()
-            .add_system(update)
-            .add_system(add_lines);
+            .add_systems(Update, (update, add_lines));
     }
 }

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// `true`, the child is executed. If the script returns `false`, the child is
 /// not executed. The Scope of the script should be at the tree entity.
 #[derive(
-    Debug, Deref, DerefMut, Component, Reflect, FromReflect, Clone, Deserialize, Serialize,
+    Debug, Deref, DerefMut, Component, Reflect, Clone, Deserialize, Serialize,
 )]
 pub struct Guard {
     #[serde(default)]
@@ -40,7 +40,7 @@ impl BehaviorUI for Guard {
         _label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &bevy::reflect::TypeRegistry,
+        type_registry: &bevy::reflect::TypeRegistryArc,
     ) -> bool {
         let mut changed = false;
         changed |= behavior_ui!(self, condition, state, ui, type_registry);
@@ -52,7 +52,7 @@ impl BehaviorUI for Guard {
         _label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &bevy::reflect::TypeRegistry,
+        type_registry: &bevy::reflect::TypeRegistryArc,
     ) {
         behavior_ui_readonly!(self, condition, state, ui, type_registry);
     }

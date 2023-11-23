@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [dependencies]
-bevy = { version = "0.10" }
+bevy = { version = "0.12" }
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }

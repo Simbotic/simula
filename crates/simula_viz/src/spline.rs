@@ -6,7 +6,7 @@ pub struct SplinePlugin;
 
 impl Plugin for SplinePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spline_lines);
+        app.add_systems(Update, spline_lines);
     }
 }
 
@@ -43,7 +43,8 @@ pub struct SplineBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
 fn spline_lines(mut query: Query<(&mut Lines, &Spline, &SplineGizmo, &Visibility)>) {

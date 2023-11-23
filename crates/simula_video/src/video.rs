@@ -128,11 +128,11 @@ pub(crate) fn setup_video_tags(world: &mut World) {
 
 pub(crate) fn blit_videos_to_canvas(world: &mut World) {
     let mut videos = world
-        .query_filtered::<(Entity, &VideoSrc, Option<&Visibility>, &ComputedVisibility), (With<VideoTag>, With<Handle<VideoMaterial>>)>();
+        .query_filtered::<(Entity, &VideoSrc, Option<&Visibility>, &InheritedVisibility, &ViewVisibility), (With<VideoTag>, With<Handle<VideoMaterial>>)>();
 
     let videos: Vec<(Entity, UVec2, bool, bool)> = videos
         .iter(world)
-        .map(|(entity, src, visibility, computed_visibility)| {
+        .map(|(entity, src, visibility, inherited_visibility, view_visibility)| {
             let visibility = if let Some(visibility) = visibility {
                 match visibility {
                     Visibility::Visible | Visibility::Inherited => true,
@@ -145,7 +145,7 @@ pub(crate) fn blit_videos_to_canvas(world: &mut World) {
                 entity,
                 src.size,
                 visibility,
-                computed_visibility.is_visible(),
+                inherited_visibility.get() && view_visibility.get(),
             )
         })
         .collect();

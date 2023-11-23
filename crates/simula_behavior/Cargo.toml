@@ -5,8 +5,8 @@ edition = "2021"
 authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [dependencies]
-bevy = { version = "0.10" }
-bevy-inspector-egui = "0.18"
+bevy = { version = "0.12" }
+bevy-inspector-egui = "0.21"
 
 egui_node_graph = { path = "../../crates/egui_node_graph" }
 
@@ -24,5 +24,6 @@ pretty-type-name = "1.0"
 anyhow = "1.0"
 strum = { version = "0.24", features = ["derive"] }
 crossbeam-channel = "0.5.0"
+thiserror = "1.0"
 
 [dev-dependencies]

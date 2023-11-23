@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 /// Subtree connects a behavior subtree to the current behavior tree.
-#[derive(Debug, Component, Reflect, FromReflect, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Component, Reflect, Clone, Default, Deserialize, Serialize)]
 pub struct Subtree<T: BehaviorFactory> {
     /// Behavior asset to load.
     pub asset: Cow<'static, str>,
@@ -25,7 +25,7 @@ impl<T: BehaviorFactory> Subtree<T> {
 
 impl<T> BehaviorSpec for Subtree<T>
 where
-    T: BehaviorFactory,
+    T: BehaviorFactory + TypePath,
 {
     // A subtree, once connected works as a decorator node
     const TYPE: BehaviorType = BehaviorType::Subtree;
@@ -34,7 +34,7 @@ where
     const DESC: &'static str = "Connects a behavior subtree to this node";
 }
 
-impl<T> BehaviorUI for Subtree<T> where T: BehaviorFactory {}
+impl<T> BehaviorUI for Subtree<T> where T: BehaviorFactory + TypePath {}
 
 pub fn run<T: BehaviorFactory>(
     mut commands: Commands,
@@ -52,8 +52,8 @@ pub fn run<T: BehaviorFactory>(
 ) {
     for (entity, children, subtree, child_tree) in &mut subtrees {
         if child_tree.is_none() {
-            let behavior_document: Handle<BehaviorDocument> =
-                asset_server.load(subtree.asset.as_ref());
+            let asset_path = subtree.asset.clone().into_owned();
+            let behavior_document: Handle<BehaviorDocument> = asset_server.load(asset_path);
             commands
                 .entity(entity)
                 .insert(behavior_document)

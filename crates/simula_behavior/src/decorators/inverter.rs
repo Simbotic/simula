@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Inverts result of their child node. Success becomes failure, and failure becomes success.
-#[derive(Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Component, Reflect, Clone, Deserialize, Serialize)]
 pub struct Inverter;
 
 impl BehaviorSpec for Inverter {

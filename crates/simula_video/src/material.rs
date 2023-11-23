@@ -14,7 +14,7 @@ impl Material for VideoMaterial {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(Asset, TypePath, AsBindGroup, TypeUuid, Debug, Clone)]
 #[uuid = "afbf5e64-6f79-11ed-9551-02a179e5df2a"]
 pub struct VideoMaterial {
     #[uniform(0)]

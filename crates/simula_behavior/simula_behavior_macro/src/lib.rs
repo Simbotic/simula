@@ -178,7 +178,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                     &mut self,
                     state: Option<protocol::BehaviorState>,
                     ui: &mut bevy_inspector_egui::egui::Ui,
-                    type_registry: &bevy::reflect::TypeRegistry,
+                    type_registry: &bevy::reflect::TypeRegistryArc,
                 ) -> bool {
                     match self {
                         #(#ui_variant_impls)*
@@ -189,7 +189,7 @@ fn impl_behavior_factory(ast: &syn::DeriveInput) -> TokenStream {
                     &self,
                     state: Option<protocol::BehaviorState>,
                     ui: &mut bevy_inspector_egui::egui::Ui,
-                    type_registry: &bevy::reflect::TypeRegistry,
+                    type_registry: &bevy::reflect::TypeRegistryArc,
                 ) {
                     match self {
                         #(#ui_readonly_variant_impls)*

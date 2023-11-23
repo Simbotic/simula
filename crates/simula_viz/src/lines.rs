@@ -140,10 +140,11 @@ pub struct LinesBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
 }
 
-#[derive(Default, AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(Asset, TypePath, Default, AsBindGroup, TypeUuid, Debug, Clone)]
 #[uuid = "6bb686a6-c2dc-11ec-89a7-02a179e5df2c"]
 pub struct LinesMaterial {}
 
@@ -161,10 +162,8 @@ impl Plugin for LinesPlugin {
         let line_mesh = LineMesh(mesh);
         app.insert_resource(line_mesh);
 
-        app.add_system(add_material)
-            .add_system(add_mesh)
-            .add_system(generate_lines)
-            .add_plugin(MaterialPlugin::<LinesMaterial>::default());
+        app.add_systems(Update, (add_material, add_mesh, generate_lines))
+            .add_plugins(MaterialPlugin::<LinesMaterial>::default());
     }
 }
 
@@ -196,12 +195,19 @@ fn add_mesh(
 fn generate_lines(
     mut meshes: ResMut<Assets<Mesh>>,
     mut lines: Query<
-        (Entity, &mut Lines, &ComputedVisibility, &Handle<Mesh>),
+        (
+            Entity,
+            &mut Lines,
+            &InheritedVisibility,
+            &ViewVisibility,
+            &Handle<Mesh>,
+        ),
         With<Handle<LinesMaterial>>,
     >,
 ) {
-    for (_entity, mut lines, visibility, mesh_handle) in lines.iter_mut() {
-        if !visibility.is_visible() {
+    for (_entity, mut lines, inherited_visibility, view_visibility, mesh_handle) in lines.iter_mut()
+    {
+        if !inherited_visibility.get() && !view_visibility.get() {
             lines.lines.clear();
             continue;
         }

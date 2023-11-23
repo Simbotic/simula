@@ -14,7 +14,7 @@ use std::str::FromStr;
 
 // TODO: is there a library that does this already?
 
-#[derive(Reflect, FromReflect, Clone, Debug, Hash, PartialEq, Eq, Default)]
+#[derive(Reflect, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub enum E {
     #[default]
     Root,
@@ -28,7 +28,7 @@ pub enum E {
     // TODO: Wildcard child, to keep going down the tree
 }
 
-#[derive(Deref, DerefMut, Reflect, FromReflect, Clone, Debug, Hash, PartialEq, Eq, Default)]
+#[derive(Deref, DerefMut, Reflect, Clone, Debug, Hash, PartialEq, Eq, Default)]
 pub struct EPath(Vec<E>);
 
 impl ToString for EPath {
@@ -182,7 +182,7 @@ pub struct EPathQueries<'w, 's> {
     pub roots: Query<'w, 's, Entity, Without<Parent>>,
 }
 
-#[derive(Reflect, FromReflect, Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Reflect, Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EEntity {
     pub path: EPath,
     pub entity: Entity,
@@ -482,7 +482,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();
@@ -519,7 +519,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();
@@ -556,7 +556,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();
@@ -603,7 +603,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();
@@ -654,7 +654,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();
@@ -691,7 +691,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();
@@ -737,7 +737,7 @@ mod tests {
         let mut app = App::new();
 
         // Add testor
-        app.add_system(select_test);
+        app.add_systems(Update, select_test);
 
         // Command queue
         let mut command_queue = CommandQueue::default();

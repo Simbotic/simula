@@ -7,7 +7,6 @@ use bevy::{
     },
 };
 use crossbeam_channel::{bounded, Receiver, Sender};
-use std::num::NonZeroU32;
 
 #[derive(Component)]
 pub struct RawSrc {
@@ -64,8 +63,8 @@ pub(crate) fn setup_raw_srcs(
 pub(crate) fn setup_render_graph(app: &mut App) {
     let render_app = app
         .sub_app_mut(RenderApp)
-        .add_system(extract_raw_srcs.in_schedule(ExtractSchedule))
-        .add_system(cleanup_raw_srcs.in_set(RenderSet::Cleanup));
+        .add_systems(ExtractSchedule, extract_raw_srcs)
+        .add_systems(Update, cleanup_raw_srcs.in_set(RenderSet::Cleanup));
 
     let mut graph = render_app.world.get_resource_mut::<RenderGraph>().unwrap();
 
@@ -156,11 +155,12 @@ impl bevy::render::render_graph::Node for RawSrcNode {
             {
                 let size = src_image.size;
 
-                let format = src_image.texture_format.describe();
+                let format = src_image.texture_format;
 
+                // TODO: Keep an eye on this.
                 let padded_bytes_per_row = RenderDevice::align_copy_bytes_per_row(
-                    (size.x as usize / format.block_dimensions.0 as usize)
-                        * format.block_size as usize,
+                    (size.x as usize / format.block_dimensions().0 as usize)
+                        * format.block_size(None).unwrap() as usize,
                 );
 
                 render_context.command_encoder().copy_texture_to_buffer(
@@ -169,10 +169,8 @@ impl bevy::render::render_graph::Node for RawSrcNode {
                         buffer: &src.buffer,
                         layout: ImageDataLayout {
                             offset: 0,
-                            bytes_per_row: Some(
-                                NonZeroU32::new(padded_bytes_per_row as u32).unwrap(),
-                            ),
-                            rows_per_image: Some(NonZeroU32::new(size.y as u32).unwrap()),
+                            bytes_per_row: Some(padded_bytes_per_row as u32),
+                            rows_per_image: Some(size.y as u32),
                         },
                     },
                     Extent3d {

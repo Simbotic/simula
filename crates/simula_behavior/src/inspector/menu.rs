@@ -122,7 +122,7 @@ pub fn ui<T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>>(
         // if seleted belavior is only listed, load it
         if let Some(selected_behavior) = &selected_behavior {
             if let Some(behavior_inspector_item) =
-                behavior_inspector.behaviors.get_mut(&selected_behavior)
+                behavior_inspector.behaviors.get_mut(selected_behavior)
             {
                 if let BehaviorInspectorState::Listing = behavior_inspector_item.state {
                     behavior_inspector_item.state = BehaviorInspectorState::Load;

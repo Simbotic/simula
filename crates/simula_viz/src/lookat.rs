@@ -5,7 +5,7 @@ pub struct LookAtPlugin;
 
 impl Plugin for LookAtPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(smooth_look_at);
+        app.add_systems(Update, smooth_look_at);
     }
 }
 

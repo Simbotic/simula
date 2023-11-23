@@ -11,23 +11,31 @@ use simula_script::{Script, ScriptContext};
 pub const MAX_ITERS: usize = 200;
 
 pub fn test_app(app: &mut App) -> &mut App {
-    app.add_plugin(AssetPlugin::default());
-    app.add_asset::<Script>();
-    app.add_asset::<ScriptContext>();
+    app.add_plugins(AssetPlugin::default());
+    app.init_asset::<Script>();
+    app.init_asset::<ScriptContext>();
     // Add the behaviors system to the app
-    app.add_systems((clear_behavior_started, complete_behavior, start_behavior).chain());
-    app.add_system(debug::run);
-    app.add_system(selector::run);
-    app.add_system(sequencer::run);
-    app.add_system(all::run);
-    app.add_system(any::run);
-    app.add_system(repeater::run);
-    app.add_system(inverter::run);
-    app.add_system(succeeder::run);
-    app.add_system(wait::run);
-    app.add_system(delay::run);
-    app.add_system(identity::run);
-    app.add_system(guard::run);
+    app.add_systems(
+        Update,
+        (clear_behavior_started, complete_behavior, start_behavior).chain(),
+    );
+    app.add_systems(
+        Update,
+        (
+            debug::run,
+            selector::run,
+            sequencer::run,
+            all::run,
+            any::run,
+            repeater::run,
+            inverter::run,
+            succeeder::run,
+            wait::run,
+            delay::run,
+            identity::run,
+            guard::run,
+        ),
+    );
     app.init_resource::<BehaviorTrace>();
     app
 }
@@ -35,7 +43,7 @@ pub fn test_app(app: &mut App) -> &mut App {
 #[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct TestBehaviorAttributes;
 
-#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, Reflect, FromReflect, BehaviorFactory)]
+#[derive(Serialize, Deserialize, TypeUuid, Debug, Clone, Reflect, BehaviorFactory)]
 #[uuid = "3d6cc56a-542e-11ed-9abb-02a179e5df2b"]
 #[BehaviorAttributes(TestBehaviorAttributes)]
 pub enum TestBehavior {
@@ -69,7 +77,7 @@ pub fn trace_behavior(behavior: &str) -> BehaviorTrace {
 
     // Create app
     let mut app = App::new();
-    app.add_plugin(bevy::time::TimePlugin::default());
+    app.add_plugins(bevy::time::TimePlugin::default());
     test_app(&mut app);
     let mut command_queue = CommandQueue::default();
     let mut commands = Commands::new(&mut command_queue, &app.world);

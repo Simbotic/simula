@@ -5,7 +5,7 @@ use simula_core::epath::EPath;
 use simula_script::{Script, ScriptContext};
 use std::borrow::Cow;
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize)]
+#[derive(Debug, Reflect, Clone, Deserialize, Serialize)]
 pub enum BehaviorEval<T: Reflect + Default> {
     Value(T),
     Eval {
@@ -22,7 +22,7 @@ impl<T: Reflect + Default> Default for BehaviorEval<T> {
     }
 }
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Reflect, Clone, Deserialize, Serialize, Default)]
 pub enum BehaviorPropValue<T: Reflect + Default> {
     #[default]
     None,
@@ -104,25 +104,25 @@ where
     }
 }
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default, Deref, DerefMut)]
+#[derive(Debug, Reflect, Clone, Deserialize, Serialize, Default, Deref, DerefMut)]
 pub struct BehaviorPropOption<Prop>(Option<Prop>)
 where
-    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone,
+    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone + TypePath,
     <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
         std::fmt::Debug;
 
 impl<Prop> BehaviorPropOption<Prop>
 where
-    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone,
+    Prop: BehaviorProp + FromReflect + Reflect + Default + Clone + TypePath,
     <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
         std::fmt::Debug,
 {
 }
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Reflect, Clone, Deserialize, Serialize, Default)]
 pub struct BehaviorPropGeneric<
-    ValueType: Reflect + Default + Clone + From<ScriptType>,
-    ScriptType: Reflect + Default = ValueType,
+    ValueType: Reflect + FromReflect + TypePath + Default + Clone + From<ScriptType>,
+    ScriptType: Reflect + TypePath + Default = ValueType,
 > {
     pub prop: BehaviorEval<ValueType>,
     #[serde(skip)]
@@ -134,8 +134,8 @@ pub struct BehaviorPropGeneric<
 
 impl<ValueType, ScriptType> BehaviorProp for BehaviorPropGeneric<ValueType, ScriptType>
 where
-    ValueType: FromReflect + Reflect + Default + Clone + From<ScriptType>,
-    ScriptType: Reflect + Default + Clone,
+    ValueType: FromReflect + Reflect + TypePath + Default + Clone + From<ScriptType>,
+    ScriptType: Reflect + TypePath + Default + Clone,
 {
     type ValueType = ValueType;
     type ScriptType = ScriptType;
@@ -157,7 +157,7 @@ where
     }
 }
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Reflect, Clone, Deserialize, Serialize, Default)]
 pub struct BehaviorPropStr {
     pub prop: BehaviorEval<Cow<'static, str>>,
     #[serde(skip)]
@@ -188,7 +188,7 @@ impl BehaviorProp for BehaviorPropStr {
     }
 }
 
-#[derive(Debug, Reflect, FromReflect, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Reflect, Clone, Deserialize, Serialize, Default)]
 pub struct BehaviorPropEPath {
     pub prop: BehaviorEval<EPath>,
     #[serde(skip)]
@@ -235,7 +235,7 @@ fn make_handle(
     // script context are stored in the tree entity
     if let Some(script_ctx_handle) = scripts.ctx_handles.get(node.tree).ok() {
         // if we have a script context, compile the script
-        if let Some(script_ctx) = scripts.ctxs.get_mut(&script_ctx_handle) {
+        if let Some(script_ctx) = scripts.ctxs.get_mut(script_ctx_handle) {
             let mut script = Script::default();
             script.script = eval.into();
             match script.compile(script_ctx) {
@@ -269,10 +269,10 @@ where
 {
     if let Some(script_asset) = handle
         .as_ref()
-        .and_then(|script_handle| scripts.assets.get(&script_handle))
+        .and_then(|script_handle| scripts.assets.get(script_handle))
     {
         if let Some(script_ctx_handle) = scripts.ctx_handles.get(node.tree).ok() {
-            if let Some(script_ctx) = scripts.ctxs.get_mut(&script_ctx_handle) {
+            if let Some(script_ctx) = scripts.ctxs.get_mut(script_ctx_handle) {
                 let result = script_asset.eval::<ScriptType>(script_ctx);
                 match result {
                     Ok(result) => {

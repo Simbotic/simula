@@ -8,7 +8,7 @@ pub struct FollowUIPlugin;
 
 impl Plugin for FollowUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(follow_ui.in_base_set(CoreSet::PreUpdate));
+        app.add_systems(PreUpdate, follow_ui);
     }
 }
 

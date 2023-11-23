@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::reflect::FromReflect;
 use simula_action::{
     action_axis_map, action_map, Action, ActionAxis, ActionAxisMap, ActionMap, ActionMapInput,
     ActionStage, AxisMapInput, AxisMapSource, MouseAxis,
@@ -146,8 +145,9 @@ impl FlyCameraPlugin {
 impl Plugin for FlyCameraPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<FlyCamera>()
-            .add_system(setup)
+            .add_systems(Update, setup)
             .add_systems(
+                Update,
                 (
                     action_map::<FlyCameraMode, FlyCamera>,
                     action_axis_map::<FlyCameraMotion, FlyCamera>,
@@ -159,13 +159,13 @@ impl Plugin for FlyCameraPlugin {
     }
 }
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum FlyCameraMode {
     #[default]
     Look,
 }
 
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum FlyCameraMotion {
     #[default]
     Idle,

@@ -1,6 +1,6 @@
 use crate::{BehaviorChildren, BehaviorCursor, BehaviorFactory, BehaviorNode, BehaviorTree};
 use bevy::{
-    asset::{AssetLoader, LoadContext, LoadedAsset},
+    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
     reflect::TypeUuid,
     utils::BoxedFuture,
@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use simula_script::ScriptContext;
 use std::borrow::Cow;
 use std::fmt::Debug;
+use thiserror::Error;
 
 /// This is the one and only data type for creating behaviors.
 /// The idea is to have an extremely simple data type that can be serialized,
@@ -59,35 +60,52 @@ where
     }
 }
 
-#[derive(Default, Debug, TypeUuid, Deserialize)]
+#[derive(Asset, TypePath, Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "B543FD10-86EA-42A6-BC87-2A9DB57BFBAD"]
 
 pub struct BehaviorAsset<T>
 where
-    T: BehaviorFactory,
+    T: BehaviorFactory + TypePath,
 {
     pub behavior: Behavior<T>,
     pub file_name: Option<Cow<'static, str>>,
 }
 
-#[derive(Default, Debug, TypeUuid, Deserialize, Deref)]
+#[derive(Asset, TypePath, Default, Debug, TypeUuid, Deserialize, Deref)]
 #[uuid = "7f117190-5353-11ed-ae42-02a179e5df2b"]
 pub struct BehaviorDocument(String);
+
+#[non_exhaustive]
+#[derive(Debug, Error)]
+pub enum BehaviorAssetLoaderError {
+    /// An [IO](std::io) Error
+    #[error("Could not load asset: {0}")]
+    Io(#[from] std::io::Error),
+    /// An [UTF8](std::str::Utf8Error) Error
+    #[error("Could not parse asset: {0}")]
+    Utf8(#[from] std::str::Utf8Error),
+}
 
 #[derive(Default)]
 pub struct BehaviorAssetLoader;
 
 impl AssetLoader for BehaviorAssetLoader {
+    type Asset = BehaviorDocument;
+    type Settings = ();
+    type Error = BehaviorAssetLoaderError;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
+        reader: &'a mut Reader,
+        _settings: &'a (),
+        _load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
-            let document = std::str::from_utf8(bytes)?.to_string();
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            let document = std::str::from_utf8(&bytes)?.to_string();
             let asset = BehaviorDocument(document);
-            load_context.set_default_asset(LoadedAsset::new(asset));
-            Ok(())
+            Ok(asset)
         })
     }
 
@@ -112,7 +130,7 @@ pub fn behavior_tree_reset<T>(
         (With<BehaviorTree<T>>, With<BehaviorTreeReset<T>>),
     >,
 ) where
-    T: BehaviorFactory + for<'de> Deserialize<'de>,
+    T: BehaviorFactory + TypePath + for<'de> Deserialize<'de>,
 {
     for (entity, behavior_asset, behavior_node) in loadings.iter() {
         // Remove behavior tree child nodes
@@ -155,7 +173,7 @@ pub fn behavior_document_to_asset<T>(
     asset_server: Res<AssetServer>,
     documents: Query<(Entity, &Handle<BehaviorDocument>), With<BehaviorTree<T>>>,
 ) where
-    T: BehaviorFactory + for<'de> Deserialize<'de>,
+    T: BehaviorFactory + TypePath + for<'de> Deserialize<'de>,
 {
     for (entity, behavior_document_handle) in documents.iter() {
         // Convert document into behavior asset
@@ -167,7 +185,7 @@ pub fn behavior_document_to_asset<T>(
             let res = ron::de::from_str::<Behavior<T>>(&behavior_document);
             if let Ok(behavior) = res {
                 // Get file name
-                let path = asset_server.get_handle_path(behavior_document_handle);
+                let path = asset_server.get_path(behavior_document_handle);
                 let file_name = path.and_then(|path| {
                     let file_path = path.path().to_string_lossy();
                     let file_name: Cow<'static, str> =

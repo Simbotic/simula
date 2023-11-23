@@ -4,7 +4,7 @@ use bevy_inspector_egui::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Debug, Default, Component, Reflect, FromReflect, Clone, Deserialize, Serialize, InspectorOptions,
+    Debug, Default, Component, Reflect, Clone, Deserialize, Serialize, InspectorOptions,
 )]
 #[reflect(InspectorOptions)]
 pub struct Timeout {
@@ -29,7 +29,7 @@ impl BehaviorUI for Timeout {
         _label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &bevy::reflect::TypeRegistry,
+        type_registry: &bevy::reflect::TypeRegistryArc,
     ) -> bool {
         let mut changed = false;
         changed |= behavior_ui!(self, duration, state, ui, type_registry);
@@ -41,7 +41,7 @@ impl BehaviorUI for Timeout {
         _label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &bevy::reflect::TypeRegistry,
+        type_registry: &bevy::reflect::TypeRegistryArc,
     ) {
         behavior_ui_readonly!(self, duration, state, ui, type_registry);
         match state {

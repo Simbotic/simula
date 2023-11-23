@@ -11,8 +11,8 @@ webp = ["simula_video/webp"]
 gst = ["simula_video/gst"]
 
 [dependencies]
-bevy = { version = "0.10" }
-bevy_mod_debugdump = "0.7"
+bevy = { version = "0.12" }
+bevy_mod_debugdump = "0.9"
 
 simula_core = { path = "../../crates/simula_core" }
 simula_camera = { path = "../../crates/simula_camera" }

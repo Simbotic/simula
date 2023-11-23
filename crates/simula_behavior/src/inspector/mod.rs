@@ -50,8 +50,8 @@ where
         app.insert_resource(client)
             .insert_resource(server)
             .insert_resource(BehaviorInspector::<T>::default())
-            .add_startup_system(setup::<T>)
-            .add_system(update::<T>);
+            .add_systems(Startup, setup::<T>)
+            .add_systems(Update, update::<T>);
     }
 }
 

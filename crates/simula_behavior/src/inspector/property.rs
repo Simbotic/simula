@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::{prelude::*, reflect::TypeRegistry};
+use bevy::{prelude::*, reflect::TypeRegistryArc};
 use bevy_inspector_egui::{egui, reflect_inspector};
 use simula_core::epath::EPath;
 use std::str::FromStr;
@@ -35,15 +35,15 @@ const PROP_EVAL_ICON: &str = "λ";
 
 impl<ValueType, ScriptType> BehaviorUI for BehaviorPropGeneric<ValueType, ScriptType>
 where
-    ValueType: FromReflect + Reflect + Default + Clone + From<ScriptType>,
-    ScriptType: Reflect + Default,
+    ValueType: FromReflect + Reflect + TypePath + Default + Clone + From<ScriptType>,
+    ScriptType: Reflect + TypePath + Default,
 {
     fn ui(
         &mut self,
         label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) -> bool {
         egui::Frame::none()
             .inner_margin(PROP_FRAME_INNER_MARGIN)
@@ -130,7 +130,7 @@ where
         label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) {
         egui::Frame::none()
             .inner_margin(PROP_FRAME_INNER_MARGIN)
@@ -210,7 +210,7 @@ impl BehaviorUI for BehaviorPropStr {
         label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        _type_registry: &TypeRegistry,
+        _type_registry: &TypeRegistryArc,
     ) -> bool {
         egui::Frame::none()
             .inner_margin(PROP_FRAME_INNER_MARGIN)
@@ -295,7 +295,7 @@ impl BehaviorUI for BehaviorPropStr {
         label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        _type_registry: &TypeRegistry,
+        _type_registry: &TypeRegistryArc,
     ) {
         egui::Frame::none()
             .inner_margin(PROP_FRAME_INNER_MARGIN)
@@ -375,7 +375,7 @@ impl BehaviorUI for BehaviorPropEPath {
         label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        _type_registry: &TypeRegistry,
+        _type_registry: &TypeRegistryArc,
     ) -> bool {
         egui::Frame::none()
             .inner_margin(PROP_FRAME_INNER_MARGIN)
@@ -491,7 +491,7 @@ impl BehaviorUI for BehaviorPropEPath {
         label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        _type_registry: &TypeRegistry,
+        _type_registry: &TypeRegistryArc,
     ) {
         egui::Frame::none()
             .inner_margin(PROP_FRAME_INNER_MARGIN)
@@ -568,7 +568,7 @@ impl BehaviorUI for BehaviorPropEPath {
 
 impl<Prop> BehaviorUI for BehaviorPropOption<Prop>
 where
-    Prop: BehaviorProp + BehaviorUI,
+    Prop: BehaviorProp + BehaviorUI + TypePath,
     <<Prop as BehaviorProp>::ValueType as TryFrom<<Prop as BehaviorProp>::ScriptType>>::Error:
         std::fmt::Debug,
 {
@@ -577,7 +577,7 @@ where
         label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) -> bool {
         let mut changed = false;
         let mut reset = false;
@@ -645,7 +645,7 @@ where
         label: Option<&str>,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) {
         if let Some(prop) = self.as_ref() {
             prop.ui_readonly(label, state, ui, type_registry);

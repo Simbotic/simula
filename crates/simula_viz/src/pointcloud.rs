@@ -2,7 +2,9 @@ use bevy::{
     core_pipeline::core_3d::Transparent3d,
     ecs::system::{lifetimeless::*, SystemParamItem},
     math::prelude::*,
-    pbr::{MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup, SetMeshViewBindGroup},
+    pbr::{
+        MeshPipeline, MeshPipelineKey, RenderMeshInstances, SetMeshBindGroup, SetMeshViewBindGroup,
+    },
     prelude::*,
     render::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
@@ -36,13 +38,13 @@ pub struct PointcloudPlugin;
 
 impl Plugin for PointcloudPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractComponentPlugin::<Pointcloud>::default());
+        app.add_plugins(ExtractComponentPlugin::<Pointcloud>::default());
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawCustom>()
             .init_resource::<PointcloudPipeline>()
             .init_resource::<SpecializedMeshPipelines<PointcloudPipeline>>()
-            .add_system(queue_pointclouds.in_set(RenderSet::Queue))
-            .add_system(prepare_pointclouds.in_set(RenderSet::Prepare));
+            // .add_systems(Update, queue_pointclouds.in_set(RenderSet::Queue))
+            .add_systems(Update, prepare_pointclouds.in_set(RenderSet::Prepare));
     }
 }
 
@@ -54,47 +56,51 @@ pub struct PointData {
     pub color: [f32; 4],
 }
 
-#[allow(clippy::too_many_arguments)]
-fn queue_pointclouds(
-    transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
-    custom_pipeline: Res<PointcloudPipeline>,
-    msaa: Res<Msaa>,
-    mut pipelines: ResMut<SpecializedMeshPipelines<PointcloudPipeline>>,
-    mut pipeline_cache: ResMut<PipelineCache>,
-    meshes: Res<RenderAssets<Mesh>>,
-    material_meshes: Query<
-        (Entity, &MeshUniform, &Handle<Mesh>),
-        (With<Handle<Mesh>>, With<Pointcloud>),
-    >,
-    mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
-) {
-    let draw_custom = transparent_3d_draw_functions
-        .read()
-        .get_id::<DrawCustom>()
-        .unwrap();
+// #[allow(clippy::too_many_arguments)]
+// fn queue_pointclouds(
+//     transparent_3d_draw_functions: Res<DrawFunctions<Transparent3d>>,
+//     custom_pipeline: Res<PointcloudPipeline>,
+//     msaa: Res<Msaa>,
+//     mut pipelines: ResMut<SpecializedMeshPipelines<PointcloudPipeline>>,
+//     mut pipeline_cache: ResMut<PipelineCache>,
+//     meshes: Res<RenderAssets<Mesh>>,
+//     material_meshes: Query<(Entity, &Handle<Mesh>), (With<Handle<Mesh>>, With<Pointcloud>)>,
+//     mut views: Query<(&ExtractedView, &mut RenderPhase<Transparent3d>)>,
+//     render_mesh_instances: Res<RenderMeshInstances>,
+// ) {
+//     let draw_custom = transparent_3d_draw_functions
+//         .read()
+//         .get_id::<DrawCustom>()
+//         .unwrap();
 
-    let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
+//     let msaa_key = MeshPipelineKey::from_msaa_samples(msaa.samples());
 
-    for (view, mut transparent_phase) in views.iter_mut() {
-        let view_matrix = view.transform.compute_matrix();
-        let view_row_2 = view_matrix.row(2);
-        for (entity, mesh_uniform, mesh_handle) in material_meshes.iter() {
-            if let Some(mesh) = meshes.get(mesh_handle) {
-                let key =
-                    msaa_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology);
-                let pipeline = pipelines
-                    .specialize(&mut pipeline_cache, &custom_pipeline, key, &mesh.layout)
-                    .unwrap();
-                transparent_phase.add(Transparent3d {
-                    entity,
-                    pipeline,
-                    draw_function: draw_custom,
-                    distance: view_row_2.dot(mesh_uniform.transform.col(3)),
-                });
-            }
-        }
-    }
-}
+//     for (view, mut transparent_phase) in views.iter_mut() {
+//         let view_matrix = view.transform.compute_matrix();
+//         let view_row_2 = view_matrix.row(2);
+//         for (entity, mesh_handle) in material_meshes.iter() {
+//             if let Some(mesh) = meshes.get(mesh_handle) {
+//                 let Some(mesh_instance) = render_mesh_instances.get(&entity) else {
+//                     continue;
+//                 };
+//                 let key =
+//                     msaa_key | MeshPipelineKey::from_primitive_topology(mesh.primitive_topology);
+//                 let pipeline = pipelines
+//                     .specialize(&mut pipeline_cache, &custom_pipeline, key, &mesh.layout)
+//                     .unwrap();
+//                 // TODO: Check with Alex
+//                 transparent_phase.add(Transparent3d {
+//                     entity,
+//                     pipeline,
+//                     draw_function: draw_custom,
+//                     distance: view_row_2.dot(mesh_instance.transforms.transform),
+//                     batch_range: 0..1,
+//                     dynamic_offset: None,
+//                 });
+//             }
+//         }
+//     }
+// }
 
 #[derive(Component)]
 struct InstanceBuffer {
@@ -210,8 +216,8 @@ impl<P: PhaseItem> RenderCommand<P> for DrawMeshInstanced {
                 pass.set_index_buffer(buffer.slice(..), 0, *index_format);
                 pass.draw_indexed(0..*count, 0, 0..instance_buffer.length as u32);
             }
-            GpuBufferInfo::NonIndexed { vertex_count } => {
-                pass.draw(0..*vertex_count, 0..instance_buffer.length as u32);
+            GpuBufferInfo::NonIndexed => {
+                pass.draw(0..gpu_mesh.vertex_count, 0..instance_buffer.length as u32);
             }
         }
         RenderCommandResult::Success

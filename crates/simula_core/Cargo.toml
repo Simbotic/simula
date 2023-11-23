@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Alex Rozgo <alex.rozgo@gmail.com>"]
 
 [dependencies]
-bevy = { version = "0.10" }
+bevy = { version = "0.12" }
 serde = { version = "1.0", features = ["derive"] }
 num-traits = "0.2"
 enum-iterator = "1.4"
@@ -16,5 +16,5 @@ petgraph = "0.6"
 clap = { version = "=4.3.4", features = ["derive"] }
 
 [dev-dependencies]
-bevy = { version = "0.10", default-features = true }
+bevy = { version = "0.12", default-features = true }
 ron = "0.8"

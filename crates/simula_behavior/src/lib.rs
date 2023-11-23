@@ -5,13 +5,13 @@ use asset::{
 };
 use bevy::{
     ecs::{
-        entity::{EntityMap, MapEntities, MapEntitiesError},
+        entity::{EntityMapper, MapEntities},
         query::WorldQuery,
         reflect::ReflectMapEntities,
         system::EntityCommands,
     },
     prelude::*,
-    reflect::{TypeRegistry, TypeUuid},
+    reflect::{TypeRegistryArc, TypeUuid},
 };
 use composites::*;
 use decorators::*;
@@ -61,14 +61,13 @@ pub struct BehaviorPlugin;
 
 impl Plugin for BehaviorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ScriptPlugin)
+        app.add_plugins(ScriptPlugin)
             .init_asset_loader::<BehaviorAssetLoader>()
-            .add_asset::<BehaviorDocument>()
-            .configure_set(BehaviorSet::PostUpdate.in_base_set(CoreSet::PostUpdate))
+            .init_asset::<BehaviorDocument>()
+            .configure_sets(PostUpdate, BehaviorSet::PostUpdate)
             .add_systems(
-                (clear_behavior_started, complete_behavior, start_behavior)
-                    .chain()
-                    .in_set(BehaviorSet::PostUpdate),
+                PostUpdate,
+                (clear_behavior_started, complete_behavior, start_behavior).chain(),
             )
             .register_type::<BehaviorNode>()
             .register_type::<BehaviorSuccess>()
@@ -91,19 +90,24 @@ impl Plugin for BehaviorPlugin {
             .register_type::<Identity>()
             .register_type::<Guard>()
             .register_type::<Timeout>()
-            .add_system(debug::run)
-            .add_system(selector::run)
-            .add_system(sequencer::run)
-            .add_system(all::run)
-            .add_system(any::run)
-            .add_system(repeater::run)
-            .add_system(inverter::run)
-            .add_system(succeeder::run)
-            .add_system(wait::run)
-            .add_system(delay::run)
-            .add_system(identity::run)
-            .add_system(guard::run)
-            .add_system(timeout::run);
+            .add_systems(
+                Update,
+                (
+                    debug::run,
+                    selector::run,
+                    sequencer::run,
+                    all::run,
+                    any::run,
+                    repeater::run,
+                    inverter::run,
+                    succeeder::run,
+                    wait::run,
+                    delay::run,
+                    identity::run,
+                    guard::run,
+                    timeout::run,
+                ),
+            );
     }
 }
 
@@ -117,12 +121,15 @@ pub struct BehaviorTreePlugin<T: BehaviorFactory>(pub std::marker::PhantomData<T
 
 impl<T> Plugin for BehaviorTreePlugin<T>
 where
-    T: BehaviorFactory + Serialize + for<'de> Deserialize<'de>,
+    T: BehaviorFactory + TypePath + Serialize + for<'de> Deserialize<'de>,
 {
     fn build(&self, app: &mut App) {
         app.register_type::<BehaviorTree<T>>()
-            .add_asset::<BehaviorAsset<T>>()
-            .add_systems((behavior_document_to_asset::<T>, behavior_tree_reset::<T>).chain());
+            .init_asset::<BehaviorAsset<T>>()
+            .add_systems(
+                Update,
+                (behavior_document_to_asset::<T>, behavior_tree_reset::<T>).chain(),
+            );
     }
 }
 
@@ -177,7 +184,7 @@ pub trait BehaviorFactory:
         &mut self,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) -> bool;
 
     /// ui readonly inspector for behavior properties
@@ -185,7 +192,7 @@ pub trait BehaviorFactory:
         &self,
         state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     );
 
     /// copy behavior data from entity into this behavior
@@ -258,12 +265,10 @@ impl FromWorld for BehaviorNode {
     }
 }
 
+// TODO: Check possible implementation with map_specific_entities
 impl MapEntities for BehaviorNode {
-    fn map_entities(&mut self, entity_map: &EntityMap) -> Result<(), MapEntitiesError> {
-        if let Ok(mapped_entity) = entity_map.get(self.tree) {
-            self.tree = mapped_entity;
-        }
-        Ok(())
+    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
+        self.tree = entity_mapper.get_or_reserve(self.tree);
     }
 }
 
@@ -278,12 +283,10 @@ impl FromWorld for BehaviorParent {
     }
 }
 
+// TODO: Check possible implementation with map_specific_entities
 impl MapEntities for BehaviorParent {
-    fn map_entities(&mut self, entity_map: &EntityMap) -> Result<(), MapEntitiesError> {
-        if let Ok(mapped_entity) = entity_map.get(self.0) {
-            self.0 = mapped_entity;
-        }
-        Ok(())
+    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
+        self.0 = entity_mapper.get_or_reserve(self.0);
     }
 }
 

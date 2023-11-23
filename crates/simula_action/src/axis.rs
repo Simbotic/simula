@@ -73,7 +73,7 @@ mod tests {
     use super::*;
     use bevy::input::gamepad::{Gamepad, GamepadButton, GamepadButtonType};
 
-    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect, FromReflect)]
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
     pub enum TestGamepad {
         Gamepad(GamepadButton),
     }

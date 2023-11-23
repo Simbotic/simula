@@ -1,5 +1,5 @@
 use bevy::{
-    asset::{AssetLoader, LoadContext, LoadedAsset},
+    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
     reflect::TypeUuid,
     utils::BoxedFuture,
@@ -7,8 +7,9 @@ use bevy::{
 use rhai as script;
 use serde::Deserialize;
 use std::borrow::Cow;
+use thiserror::Error;
 
-#[derive(TypeUuid)]
+#[derive(Asset, TypePath, TypeUuid)]
 #[uuid = "1EDAA495-674E-45AA-903B-212D088BD991"]
 pub struct ScriptContext {
     pub engine: script::Engine,
@@ -39,7 +40,7 @@ impl ScriptContext {
 //     fn from_script(script: &str) -> Result<OutputType, Box<script::EvalAltResult>>;
 // }
 
-#[derive(Default, Debug, TypeUuid, Deserialize)]
+#[derive(Asset, TypePath, Default, Debug, TypeUuid, Deserialize)]
 #[uuid = "6687C58B-CCE2-4BD2-AD28-7AA3ED6C355B"]
 pub struct Script {
     pub script: Cow<'static, str>,
@@ -77,19 +78,35 @@ impl Script {
 #[derive(Default)]
 pub struct ScriptLoader;
 
+#[non_exhaustive]
+#[derive(Debug, Error)]
+pub enum ScriptLoaderError {
+    /// An [IO](std::io) Error
+    #[error("Could not load asset: {0}")]
+    Io(#[from] std::io::Error),
+    // An [UTF8](std::str::Utf8Error) Error
+    #[error("Could not parse asset as UTF8: {0}")]
+    Utf8(#[from] std::string::FromUtf8Error),
+}
+
 impl AssetLoader for ScriptLoader {
+    type Asset = Script;
+    type Settings = ();
+    type Error = ScriptLoaderError;
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<(), bevy::asset::Error>> {
+        reader: &'a mut Reader,
+        _settings: &'a (),
+        _load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
-            let script = String::from_utf8(bytes.to_vec()).unwrap();
-            load_context.set_default_asset(LoadedAsset::new(Script {
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            let script = String::from_utf8(bytes.to_vec())?;
+            Ok(Script {
                 script: script.into(),
                 ast: None,
-            }));
-            Ok(())
+            })
         })
     }
 

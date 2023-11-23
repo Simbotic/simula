@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy::{prelude::*, reflect::TypeRegistry};
+use bevy::{prelude::*, reflect::TypeRegistryArc};
 
 pub trait BehaviorUI
 where
@@ -11,7 +11,7 @@ where
         _label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) -> bool {
         let type_registry = type_registry.read();
         bevy_inspector_egui::reflect_inspector::ui_for_value(
@@ -27,7 +27,7 @@ where
         _label: Option<&str>,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) {
         let type_registry = type_registry.read();
         bevy_inspector_egui::reflect_inspector::ui_for_value_readonly(
@@ -42,7 +42,7 @@ where
         label: &str,
         _state: Option<protocol::BehaviorState>,
         ui: &mut bevy_inspector_egui::egui::Ui,
-        type_registry: &bevy::reflect::TypeRegistry,
+        type_registry: &TypeRegistryArc,
     ) {
         let type_registry = type_registry.read();
         ui.horizontal(|ui| {
