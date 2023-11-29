@@ -15,8 +15,9 @@ impl Plugin for MonkeyPlugin {
             .register_type::<Action<MonkeyMove>>()
             .register_type::<ActionMap<MonkeyDo>>()
             .register_type::<ActionAxisMap<MonkeyMove>>()
-            .add_startup_system(monkey_setup)
+            .add_systems(Startup, monkey_setup)
             .add_systems(
+                Update,
                 (
                     action_map::<MonkeyDo, MonkeyActor>,
                     action_axis_map::<MonkeyMove, MonkeyActor>,
@@ -34,7 +35,7 @@ impl Plugin for MonkeyPlugin {
 pub struct MonkeyActor;
 
 // Actions
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum MonkeyDo {
     #[default]
     Idle,
@@ -44,7 +45,7 @@ pub enum MonkeyDo {
 }
 
 // Move action axes
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum MonkeyMove {
     #[default]
     Idle,
@@ -55,7 +56,7 @@ pub enum MonkeyMove {
 }
 
 // Look around action axes
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect, FromReflect)]
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
 pub enum MonkeyLook {
     #[default]
     Idle,

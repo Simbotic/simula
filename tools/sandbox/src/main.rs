@@ -1,6 +1,6 @@
 use bevy::{
     core_pipeline::clear_color::ClearColorConfig,
-    diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
+    diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
     // log::LogPlugin,
     prelude::*,
     render::{
@@ -68,30 +68,37 @@ fn main() {
 
             ..default()
         }))
-        .add_plugin(InspectorPlugin)
-        .add_plugin(WorldInspectorPlugin)
-        .add_plugin(ActionPlugin)
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(FlyCameraPlugin)
-        .add_plugin(LinesPlugin)
-        .add_plugin(AxesPlugin)
-        .add_plugin(GridPlugin)
-        .add_plugin(VoxelsPlugin)
-        .add_plugin(PointcloudPlugin)
-        .add_plugin(MonkeyPlugin)
-        .add_plugin(VideoPlugin)
-        .add_plugin(LookAtPlugin)
-        .add_plugin(FollowUIPlugin)
-        .add_plugin(SignalPlugin)
-        .add_startup_system(setup)
-        .add_system(debug_info)
-        .add_system(line_test)
-        .add_system(follow_ui)
-        .add_system(ease_lines)
-        .add_system(signal_generator_lines)
-        .add_system(signal_control_lines)
-        .add_system(rotate_system)
-        .add_system(force_graph_test);
+        .add_plugins((
+            InspectorPlugin,
+            WorldInspectorPlugin,
+            ActionPlugin,
+            FrameTimeDiagnosticsPlugin::default(),
+            FlyCameraPlugin,
+            LinesPlugin,
+            AxesPlugin,
+            GridPlugin,
+            VoxelsPlugin,
+            // PointcloudPlugin,
+            MonkeyPlugin,
+            VideoPlugin,
+            LookAtPlugin,
+            FollowUIPlugin,
+            SignalPlugin,
+        ))
+        .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            (
+                debug_info,
+                line_test,
+                follow_ui,
+                ease_lines,
+                signal_generator_lines,
+                signal_control_lines,
+                rotate_system,
+                force_graph_test,
+            ),
+        );
 
     // bevy_mod_debugdump::print_main_schedule(&mut app);
     // bevy_mod_debugdump::print_render_schedule(&mut app);
@@ -319,11 +326,8 @@ fn setup(
         },
         style: Style {
             position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(5.0),
-                right: Val::Px(5.0),
-                ..default()
-            },
+            bottom: Val::Px(5.0),
+            right: Val::Px(5.0),
             ..default()
         },
         ..default()
@@ -569,7 +573,8 @@ fn setup(
                     .collect(),
             ),
             Visibility::default(),
-            ComputedVisibility::default(),
+            InheritedVisibility::default(),
+            ViewVisibility::default(),
             NoFrustumCulling,
         ))
         .insert(Name::new("Pointcloud"));
@@ -745,7 +750,7 @@ fn setup(
         .insert(Name::new("Video: RenderTarget"));
 }
 
-fn debug_info(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text>) {
+fn debug_info(diagnostics: Res<DiagnosticsStore>, mut query: Query<&mut Text>) {
     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
         if let Some(average) = fps.average() {
             for mut text in query.iter_mut() {
@@ -829,7 +834,7 @@ fn follow_ui(
 
                 let circle_line = {
                     let n = 512;
-                    let circle_points: egui::plot::PlotPoints = (0..=n)
+                    let circle_points: egui_plot::PlotPoints = (0..=n)
                         .map(|i| {
                             let t = egui::remap(
                                 i as f64,
@@ -840,34 +845,33 @@ fn follow_ui(
                             [r * t.cos(), r * t.sin()]
                         })
                         .collect();
-                    egui::plot::Line::new(circle_points)
+                    egui_plot::Line::new(circle_points)
                         .color(egui::Color32::from_rgb(100, 200, 100))
-                        .style(egui::plot::LineStyle::Solid)
+                        .style(egui_plot::LineStyle::Solid)
                 };
 
                 let sin_line = {
-                    egui::plot::Line::new(egui::plot::PlotPoints::from_explicit_callback(
+                    egui_plot::Line::new(egui_plot::PlotPoints::from_explicit_callback(
                         move |x| 0.5 * (2.0 * x).sin() * time.sin(),
                         ..,
                         512,
                     ))
                     .color(egui::Color32::from_rgb(200, 100, 100))
-                    .style(egui::plot::LineStyle::Solid)
+                    .style(egui_plot::LineStyle::Solid)
                 };
 
                 let thingy_line = {
-                    egui::plot::Line::new(egui::plot::PlotPoints::from_parametric_callback(
+                    egui_plot::Line::new(egui_plot::PlotPoints::from_parametric_callback(
                         move |t| ((2.0 * t + time).sin(), (3.0 * t).sin()),
                         0.0..=std::f64::consts::TAU,
                         256,
                     ))
                     .color(egui::Color32::from_rgb(100, 150, 250))
-                    .style(egui::plot::LineStyle::Solid)
+                    .style(egui_plot::LineStyle::Solid)
                     .name(format!("t = {:.2}", time))
                 };
 
-                let plot =
-                    egui::plot::Plot::new("lines_demo").legend(egui::plot::Legend::default());
+                let plot = egui_plot::Plot::new("lines_demo").legend(egui_plot::Legend::default());
                 plot.show_background(false).show(ui, |plot_ui| {
                     plot_ui.line(circle_line);
                     plot_ui.line(sin_line);
